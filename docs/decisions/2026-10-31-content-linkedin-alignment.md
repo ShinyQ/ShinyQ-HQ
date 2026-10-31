@@ -1,0 +1,5 @@
+# Content: LinkedIn alignment
+
+- Date: 2026-10-31
+
+Owner review of the site against the LinkedIn profile, item by item. Added: the LILT AI freelance role (AI Benchmark Engineer for Indonesian Terminal-Bench tasks, October 2026 to present, `lilt-ai-2026`), named under C8 as the owner's own freelance client; the faculty and graduate honors on `graduation-2023`; the Sentiboard DJKI copyright registration; the Jenius priority-customer synchronizer (up to 30% faster, in the summary because the entry already has four highlights); and a "How I work" sentence on deterministic code and evaluated, guarded, observable LLM features. Skills may now come from any source, not only the CV: the CV groups keep CV order and every CV skill, and a group may list more (GraphQL and CodeIgniter in Backend, Firebase in Data and messaging). LinkedIn facts that conflict with the CV (titles, the Jenius start month, years of experience, uptime and latency numbers) keep the CV values, and LinkedIn items blocked by the hard rules (client names, money amounts, the Master's degree) stay off the site.

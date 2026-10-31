@@ -32,8 +32,8 @@
       "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, melalui beragam proyek, dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan tim Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang dapat disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menghasilkan jawaban tanpa dasar. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
-      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
-      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot, Claude Code, dan Codex mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik."
+      "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method. Exact logic stays in deterministic code, and an LLM feature is done only when it is evaluated, guarded and observable.",
+      "id": "Saya menetapkan setiap fitur dalam spec tertulis dengan acceptance criteria. GitHub Copilot, Claude Code, dan Codex mengerjakan sebagian besar implementasi secara paralel; saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan merge. Saya mengevaluasi perubahan dengan gold set, A/B test, CI gate, dan shadow mode, serta menyertakan metode pengukuran saat melaporkan metrik. Logika yang harus pasti tetap berada di kode deterministik, dan fitur LLM baru dianggap selesai setelah dievaluasi, dilengkapi guardrail, dan dapat dipantau."
     },
     "principles": [
       {
@@ -453,8 +453,10 @@
         "Gin",
         "Echo",
         "Laravel",
+        "CodeIgniter",
         "Flask",
-        "Django"
+        "Django",
+        "GraphQL"
       ]
     },
     {
@@ -481,6 +483,7 @@
         "PostgreSQL",
         "MySQL",
         "MongoDB",
+        "Firebase",
         "Redis",
         "Kafka",
         "RabbitMQ",
@@ -1569,6 +1572,10 @@
             {
               "en": "Documented the work in a paper (Aplikasi Sentiboard)",
               "id": "Mendokumentasikan proyek ini dalam paper (Aplikasi Sentiboard)"
+            },
+            {
+              "en": "Registered the Sentiboard application as a copyrighted work with DJKI (December 2022)",
+              "id": "Mencatatkan aplikasi Sentiboard sebagai ciptaan berhak cipta di DJKI (Desember 2022)"
             }
           ],
           "stack": [
@@ -1679,7 +1686,16 @@
             "en": "I graduated in Computer Science (Informatics) with a GPA of 3.88 / 4.00.",
             "id": "Saya lulus S1 Informatika dengan IPK 3,88 / 4,00."
           },
-          "highlights": [],
+          "highlights": [
+            {
+              "en": "1st Most Outstanding Student, Faculty of Informatics (2022/2023)",
+              "id": "Mahasiswa Berprestasi 1 Fakultas Informatika (2022/2023)"
+            },
+            {
+              "en": "2nd Most Outstanding Graduate (2022/2023)",
+              "id": "Lulusan Berprestasi 2 (2022/2023)"
+            }
+          ],
           "stack": [],
           "discipline": "other",
           "confidence": "verified",
@@ -1898,8 +1914,8 @@
           "start": "2024-06",
           "end": "2025-12",
           "summary": {
-            "en": "I built backend services and React dashboards for insurance and priority-customer products at a digital bank. The dashboards reduced manual reporting work by about 90%.",
-            "id": "Saya membangun layanan backend dan dashboard React untuk produk asuransi dan nasabah prioritas di bank digital. Dashboard tersebut mengurangi pekerjaan pelaporan manual sekitar 90%."
+            "en": "I built backend services and React dashboards for insurance and priority-customer products at a digital bank. The dashboards reduced manual reporting work by about 90%, and I made the priority-customer synchronizer up to 30% faster by removing redundant steps and running work concurrently.",
+            "id": "Saya membangun layanan backend dan dashboard React untuk produk asuransi dan nasabah prioritas di bank digital. Dashboard tersebut mengurangi pekerjaan pelaporan manual sekitar 90%, dan saya mempercepat synchronizer nasabah prioritas hingga 30% dengan menghapus langkah yang berulang dan menjalankan proses secara konkuren."
           },
           "highlights": [
             {
@@ -2306,6 +2322,49 @@
           "discipline": "ai",
           "confidence": "verified",
           "icon": "badge-check"
+        },
+        {
+          "id": "lilt-ai-2026",
+          "slug": "lilt-ai-2026",
+          "type": "freelance",
+          "org": "LILT AI (United States, remote)",
+          "role": {
+            "en": "AI Benchmark Engineer, Indonesian (freelance)",
+            "id": "AI Benchmark Engineer, Bahasa Indonesia (freelance)"
+          },
+          "start": "2026-10",
+          "end": "present",
+          "summary": {
+            "en": "I design Indonesian-language tasks for Terminal-Bench, an agentic coding benchmark that evaluates frontier AI models on realistic terminal and programming work with Indonesian language and conventions.",
+            "id": "Saya merancang task berbahasa Indonesia untuk Terminal-Bench, benchmark agentic coding yang mengevaluasi model AI frontier pada pekerjaan terminal dan pemrograman yang realistis dengan bahasa dan konvensi Indonesia."
+          },
+          "highlights": [
+            {
+              "en": "Built each task end to end: native-language datasets, Dockerized environments, Python reference solutions and pytest verifiers",
+              "id": "Membangun setiap task secara end-to-end: dataset berbahasa Indonesia, environment Docker, solusi referensi Python, dan verifier pytest"
+            },
+            {
+              "en": "Hardened verifiers with held-out data, sandboxed reruns and tamper checks",
+              "id": "Memperkuat verifier dengan data held-out, rerun dalam sandbox, dan pemeriksaan tamper"
+            },
+            {
+              "en": "Measured difficulty with agentic probe runs across several LLMs before submission",
+              "id": "Mengukur tingkat kesulitan lewat probe run agentic pada beberapa LLM sebelum submit"
+            },
+            {
+              "en": "Used failure analysis to separate language-understanding gaps from generic coding errors",
+              "id": "Memakai analisis kegagalan untuk memisahkan celah pemahaman bahasa dari error coding umum"
+            }
+          ],
+          "stack": [
+            "Python",
+            "Docker",
+            "pytest",
+            "LLM evaluation"
+          ],
+          "discipline": "ai",
+          "confidence": "self-reported",
+          "icon": "square-terminal"
         }
       ],
       "timeTravel": {

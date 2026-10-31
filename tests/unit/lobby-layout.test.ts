@@ -175,8 +175,8 @@ describe("Lobby layout", () => {
       }
       // Split cells in one grid column share one second sub-column edge, so the sub-columns line up down the wall.
       for (const offsets of splits) expect(offsets.size).toBeLessThanOrEqual(1);
-      // Today: AI keeps one column ("Azure OpenAI (incl. Realtime)" is too wide for half a cell); Azure and Data science split.
-      expect(l.cells.map((c) => c.columns.map((col) => col.items.length))).toEqual([[9], [6, 6], [6, 6], [6], [4, 4], [5], [4, 3], [5, 4]]);
+      // Today: AI keeps one column ("Azure OpenAI (incl. Realtime)" is too wide for half a cell); Azure, Data science, Backend and Data split.
+      expect(l.cells.map((c) => c.columns.map((col) => col.items.length))).toEqual([[9], [6, 6], [6, 6], [6], [5, 5], [5], [4, 4], [5, 4]]);
     }
     const short = skillsWallLayout([{ label: "a", items: ["1", "2", "3", "4", "5", "6"] }]);
     expect(short.cells[0].columns).toHaveLength(1);
