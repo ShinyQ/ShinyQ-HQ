@@ -146,6 +146,8 @@ const ENTRIES: readonly [string, Entry][] = [
   // Simple Icons dropped Oracle's Java mark; the OpenJDK mark stands for Java.
   svg("java", "Java", ["openjdk"]),
   svg("mongodb", "MongoDB"),
+  svg("firebase", "Firebase"),
+  svg("pytest", "pytest"),
   svg("numpy", "NumPy"),
   svg("keras", "Keras"),
   svg("nuxt", "Nuxt", ["nuxt.js"]),
