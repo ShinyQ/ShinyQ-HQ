@@ -9,7 +9,8 @@ import idMessages from "../../messages/id.json";
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 
 describe("buildExperienceData", () => {
-  it("resolves every text for the requested locale", () => {
+  // Two full builds of the experience data: under the whole parallel suite they took past the 5 s default now and then.
+  it("resolves every text for the requested locale", { timeout: 20_000 }, () => {
     const en = buildExperienceData("en", names);
     const id = buildExperienceData("id", names);
     expect(en.locale).toBe("en");
