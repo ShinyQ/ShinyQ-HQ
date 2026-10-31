@@ -162,7 +162,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Scene draw calls per frame, any floor | under 150 (L1 125, RF 79, B1 100); at most 20 post passes |
 | Triangles per frame | under 30k |
 | Shader programs per floor | `e2e/perf/baseline.json` plus 2 |
-| Memory gates | zero growth in geometries, textures and programs; under 2 MB JS heap growth |
+| Memory gates | zero growth in geometries, textures and programs; under 256 KB retained JS growth (`memory.spec`, heap snapshot), under 2 MB heap in use (`memory-full`) |
 | Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 82 KB |
 | Study guide reader (on the Read click) | chunk 160 KB, worker 400 KB gzip |
 | Ask knowledge pack (Workers KV) | text `PACK_MAX_BYTES` 384 KiB, stored value 768 KiB, bundled fallback 24 KiB |

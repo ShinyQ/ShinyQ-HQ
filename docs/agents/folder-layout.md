@@ -472,6 +472,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### e2e/ support and perf lane
 
 - `e2e/budgets.ts`: every 3D CI threshold (render, bytes, programs, memory).
+- `e2e/heap.ts`: `readRetainedJsBytes`, the retained JS of a heap snapshot (objects, closures, arrays, strings; no V8 code or Blink memory) that `e2e/memory.spec.ts` gates.
 - `e2e/office-fixtures.ts`: Agent Office snapshots for `office.spec.ts`, `office-classic.spec.ts` and `scripts/office-shots.ts` (the nine states over two snapshots, one private desk without a title, one off-duty slot).
 - `e2e/durations.json`: median seconds per test of both lanes from CI logs (`bun run e2e:durations`), for the CI shard split.
 - `e2e/perf/`: perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`).
