@@ -22,7 +22,8 @@ const MOUNT_FRAMES = 180;
 
 /**
  * Shader warm-up (REPORT F5.6, SP9; owner request 4): compiles everything mounted right after the first
- * frame, then, only while the boot card is up (still camera), mounts each other floor hidden, compiles
+ * frame (floor content only once its `FloorPrep` began, so a floor that committed just before still sets its
+ * final variants first: `precompileScene`), then, only while the boot card is up (still camera), mounts each other floor hidden, compiles
  * and pins its programs, and unmounts it. The floor in flight finishes when the intro starts; nothing
  * new mounts after that. Never draws: the boot and intro show only the Lobby's detail (tower/visibility.ts),
  * and a Career Road mounted for warming is hidden (floors/CareerArchive.tsx).
