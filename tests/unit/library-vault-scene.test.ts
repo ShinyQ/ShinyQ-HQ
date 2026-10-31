@@ -2,7 +2,7 @@ import { Matrix4, Vector3, type InstancedMesh } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
-import { bookMatrix, coverMatrix, coverOpen, issuerTone, ISSUER_TONE, plinthMatrix, VAULT_SCENE } from "@/experience/floors/library/decor/vault";
+import { bookMatrix, bookOpen, coverMatrix, coverOpen, issuerTone, ISSUER_TONE, plinthMatrix, VAULT_SCENE } from "@/experience/floors/library/decor/vault";
 import { endPlazaSigns } from "@/experience/floors/library/decor/EndPlaza";
 import { vaultMeshes } from "@/experience/floors/library/decor/StudyVault";
 import { END_SIGN_NEAR, VAULT_PRIORITY, vaultZone } from "@/experience/floors/library/decor/signFrame";
@@ -35,10 +35,11 @@ describe("coverOpen", () => {
     expect(coverOpen(0)).toBe(1);
   });
 
-  it("stands half open from the stop (every book is the arc's radius away) and shut from the ring road", () => {
+  it("stands half open from the stop (on either arc) and shut from the ring road, opening fully at the book", () => {
     for (const book of vault.books) {
-      expect(coverOpen(Math.hypot(book.at.x - vault.stop.x, book.at.z - vault.stop.z))).toBeCloseTo(0.5, 6);
-      expect(coverOpen(Math.hypot(book.at.x - vault.entry.x, book.at.z - vault.entry.z))).toBe(0);
+      expect(bookOpen(book, vault.stop, vault.stop.x, vault.stop.z)).toBeCloseTo(0.5, 6);
+      expect(bookOpen(book, vault.stop, vault.entry.x, vault.entry.z)).toBe(0);
+      expect(bookOpen(book, vault.stop, book.at.x, book.at.z)).toBe(1);
     }
   });
 
@@ -62,7 +63,7 @@ describe("bookMatrix", () => {
       const base = at(m, 0, 0, 0);
       expect(base.x).toBeCloseTo(book.at.x, 6);
       expect(base.z).toBeCloseTo(book.at.z, 6);
-      expect(base.y).toBeCloseTo(VAULT_SCENE.plinth, 6);
+      expect(base.y).toBeCloseTo(VAULT_SCENE.plinth + book.rise, 6);
       expect(at(m, 0, 1, 0).y - base.y).toBeCloseTo(B.h, 6);
       // The spine face (local +z) is the face nearest the stop, square to it.
       const spine = flat(at(m, 0, 0, 0.5));
@@ -79,14 +80,14 @@ describe("bookMatrix", () => {
 });
 
 describe("plinthMatrix", () => {
-  it("lies under each book, its top at the books' base, wider and deeper than the book", () => {
+  it("lies under each book from the floor up, its top at the book's base (the riser on the back arc), wider and deeper than the book", () => {
     for (const book of vault.books) {
       const m = plinthMatrix(book, new Matrix4());
       const body = bookMatrix(book, new Matrix4());
       // The unit box's y (0 to 1) runs along the depth and its z (-0.5 to 0.5) up.
       const ys = [0, 1].flatMap((y) => [-0.5, 0.5].map((z) => at(m, 0.5, y, z).y));
       expect(Math.min(...ys)).toBeCloseTo(0, 6);
-      expect(Math.max(...ys)).toBeCloseTo(VAULT_SCENE.plinth, 6);
+      expect(Math.max(...ys)).toBeCloseTo(VAULT_SCENE.plinth + book.rise, 6);
       // Every corner of the book's base lies within the plinth's footprint.
       const inverse = m.clone().invert();
       for (const [x, z] of [[-0.5, -0.5], [-0.5, 0.5], [0.5, -0.5], [0.5, 0.5]]) {
@@ -135,10 +136,9 @@ describe("coverMatrix", () => {
     }
   });
 
-  it("never reaches the neighbouring book when fully open", () => {
-    const right = vault.books.slice(0, -1);
-    right.forEach((book, i) => {
-      const next = vault.books[i + 1];
+  it("never reaches another book (either arc) when fully open", () => {
+    for (const book of vault.books)
+      vault.books.filter((b) => b !== book).forEach((next) => {
       const cover = coverMatrix(book, 1, new Matrix4());
       const nextBody = bookMatrix(next, new Matrix4());
       const inverse = nextBody.clone().invert();
@@ -176,11 +176,11 @@ describe("the vault's signs", () => {
       const ahead = (at.x - book.at.x) * book.facing.x + (at.z - book.at.z) * book.facing.z;
       expect(ahead).toBeGreaterThan(B.d / 2);
       expect(ahead).toBeLessThan(B.d / 2 + 1);
-      expect(s.y).toBeLessThan(VAULT_SCENE.plinth + B.h);
+      expect(s.y).toBeLessThan(VAULT_SCENE.plinth + book.rise + B.h);
     });
     const title = signs[meta.findIndex((m) => m.kind === "vault")];
     expect(title.text).toBe("STUDY VAULT");
-    expect(title.y).toBeGreaterThan(VAULT_SCENE.plinth + B.h);
+    expect(title.y).toBeGreaterThan(VAULT_SCENE.plinth + Math.max(...vault.books.map((b) => b.rise)) + B.h);
     expect(END_SIGN_NEAR.guide).toBe(0);
     expect(END_SIGN_NEAR.vault).toBe(0);
   });

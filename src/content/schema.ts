@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GUIDE_SLUG } from "./guides";
+import { GUIDE_SLUG, MAX_GUIDES } from "./guides";
 import { liveUrlProblem } from "./live-links";
 import { LOCALES } from "./locales";
 import { HEADLINE_MAX } from "./selectors";
@@ -587,7 +587,7 @@ export const StudyGuideSchema = z.strictObject({
 export const StudyGuidesFileSchema = z
   .strictObject({
     $comment: z.string().optional(),
-    guides: z.array(StudyGuideSchema),
+    guides: z.array(StudyGuideSchema).max(MAX_GUIDES, `At most ${MAX_GUIDES} study guides: the L4 Study Vault stands no more`),
   })
   .superRefine((file, ctx) => {
     for (const key of ["slug", "certId"] as const) {

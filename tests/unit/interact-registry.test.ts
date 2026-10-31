@@ -352,7 +352,7 @@ describe("interactablesFor on the real content", () => {
     expect(books.map((b) => b.id)).toEqual(vault.books.map((b) => `L4:vault:${b.slug}`));
     vault.books.forEach((book, i) => {
       const item = books[i];
-      expect(item).toMatchObject({ floor: "L4", kind: "station", height: 4.2, action: { type: "command", command: `guide:${book.slug}` } });
+      expect(item).toMatchObject({ floor: "L4", kind: "station", height: book.rise + 4.2, action: { type: "command", command: `guide:${book.slug}` } });
       expect(item.at).toEqual(vault.stop);
       expect(item.bounds).toEqual(book.rect);
       expect(item.label).toBe(`Read the ${book.code ?? book.spine} study guide`);
