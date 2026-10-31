@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { DECLINED_QUERY, formatPrivateQuestions, formatReport, groupQuestions, OVER_REFUSED_QUERY, parseSqlRows, QUERIES, QUESTIONS_QUERY, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
+import { DECLINED_QUERY, formatPrivateQuestions, formatReport, groupQuestions, OVER_REFUSED_QUERY, parseSqlRows, primaryFailures, QUERIES, QUESTIONS_QUERY, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
 
 describe("groupQuestions", () => {
   it("merges spellings by normalized text and keeps the most common one", () => {
@@ -133,6 +133,30 @@ describe("report", () => {
     expect(QUERIES.retrieval).toContain("blob15 AS key");
     expect(DECLINED_QUERY).toContain("blob1 = 'decline'");
     expect(OVER_REFUSED_QUERY).toContain("blob16 = 'match'");
+  });
+
+  it("counts primary failures by the first tier's reason only, never later tiers or text (2026-10-31)", () => {
+    const trails = [
+      { key: "@cf/google/gemma-4-26b-a4b-it:quota > @cf/mistralai/mistral-small-3.1-24b-instruct:breaker_open", n: 1 },
+      { key: "@cf/google/gemma-4-26b-a4b-it:breaker_open > @cf/mistralai/mistral-small-3.1-24b-instruct:breaker_open", n: 8 },
+      { key: "@cf/google/gemma-4-26b-a4b-it:first_token_timeout", n: 2 },
+      { key: "<b>odd</b>", n: 3 },
+    ];
+    expect(primaryFailures(trails)).toEqual([
+      { key: "breaker_open", n: 8 },
+      { key: "other", n: 3 },
+      { key: "first_token_timeout", n: 2 },
+      { key: "quota", n: 1 },
+    ]);
+    const md = formatReport({ weekOf: "2026-10-19", topics: [], outcomes: [{ key: "answer", n: 20 }], sources: [{ key: "primary", n: 20 }], trails });
+    expect(md).toContain("## Primary failures");
+    expect(md).toContain("| breaker_open | 8 | 40% |");
+    expect(md).toContain("| quota | 1 | 5% |");
+    expect(md).not.toContain("mistral-small");
+    expect(md).not.toContain("odd");
+    expect(formatReport({ weekOf: "2026-10-19", topics: [], outcomes: [], sources: [] })).toContain("## Primary failures\n\nNone this week.");
+    expect(QUERIES.trails).toContain("blob11 AS key");
+    expect(QUERIES.trails).toContain("blob1 != 'rejected'");
   });
 
   it("says so when nothing was unanswered", () => {
