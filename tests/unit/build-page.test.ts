@@ -124,7 +124,8 @@ describe("dashboardTiles", () => {
     expect(dashboardTiles({ generatedAt: "2026-10-17" }, 5).map((t) => t.id)).toEqual(["floors"]);
     expect(dashboardTiles({ generatedAt: "2026-10-17" }).map((t) => t.id)).toEqual([]);
     const ids = dashboardTiles(facts, 5).map((t) => t.id);
-    expect(ids).toEqual(["mergedPrs", "commits", "unitFiles", "e2eTests", "specs", "plans", "floors", "js3dKb", "sceneCalls", "triangles"]);
+    // No budget tiles: the Gates state every budget (one home per topic).
+    expect(ids).toEqual(["mergedPrs", "commits", "unitFiles", "e2eTests", "specs", "plans", "floors"]);
   });
 
   it("takes every value from the facts", () => {
@@ -133,8 +134,8 @@ describe("dashboardTiles", () => {
     expect(tiles.commits).toMatchObject({ value: facts.git?.commits, since: facts.git?.firstCommit });
     expect(tiles.unitFiles.value).toBe(facts.tests?.unitFiles);
     expect(tiles.e2eTests.value).toBe(facts.tests?.e2e);
-    expect(tiles.js3dKb).toMatchObject({ value: facts.budgets?.js3dKb, unit: "kb" });
-    expect(tiles.triangles.value).toBe(facts.budgets?.triangles);
+    expect(tiles.specs.value).toBe(facts.docs?.specs);
+    expect(tiles.plans.value).toBe(facts.docs?.plans);
   });
 
   it("drops an end-to-end count the snapshot could not measure and never shows a unit test count", () => {

@@ -37,7 +37,9 @@ describe("build story content", () => {
     expect(deploy).toMatch(/push:\n\s+branches: \[main\]/);
     expect(deploy).toContain("scripts/merge-gate.ts");
     expect(rollback).toContain("scripts/rollback.ts");
-    const text = story.stations.blueprint.steps[4];
+    // One home: the main-run gate explains deploy and rollback; the Blueprint and the Agents loop no longer repeat it.
+    const text = story.stations.gates.gates.find((g) => g.id === "main-complement")!.text;
+    for (const step of [...story.stations.blueprint.steps, ...story.stations.agents.steps.map((s) => s.text)]) expect(step.en).not.toMatch(/roll(?:s|ed)? (?:production )?back|rollback/i);
     expect(text.en).toMatch(/merge/i);
     expect(text.en).toMatch(/same (?:code|tree)/i);
     expect(text.en).toMatch(/(?:complete|full) CI on main/i);
@@ -83,7 +85,7 @@ describe("build story content", () => {
 
   it("numbers rounds in order with contiguous pull request ranges and an open last round", () => {
     const rounds = story.stations.timeline.rounds;
-    expect(rounds).toHaveLength(13);
+    expect(rounds).toHaveLength(17);
     expect(rounds.at(-1)!.prs.to).toBeNull();
     expect(rounds[0].prs.from).toBe(1);
   });

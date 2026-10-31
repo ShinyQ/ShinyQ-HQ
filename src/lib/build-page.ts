@@ -49,17 +49,19 @@ export function roundDates({ first, last }: { first?: string; last?: string }, l
   return `${formatDate(from, locale)} ${join} ${formatDate(to, locale)}`;
 }
 
-export type DashboardTileId = "mergedPrs" | "commits" | "unitFiles" | "e2eTests" | "specs" | "plans" | "floors" | "js3dKb" | "sceneCalls" | "triangles";
+export type DashboardTileId = "mergedPrs" | "commits" | "unitFiles" | "e2eTests" | "specs" | "plans" | "floors";
 
 export interface DashboardTile {
   id: DashboardTileId;
   value: number;
-  unit?: "kb";
   /** The first commit date, for "commits since". */
   since?: string;
 }
 
-/** Dashboard numbers in display order, only those the snapshot (and the content's floor count) carry. */
+/**
+ * Dashboard numbers in display order, only those the snapshot (and the content's floor count) carry. The budgets are
+ * not here: the Gates state every one of them.
+ */
 export function dashboardTiles(facts: BuildFacts, floors?: number): DashboardTile[] {
   const tiles: (DashboardTile | false | undefined)[] = [
     facts.git && { id: "mergedPrs", value: facts.git.mergedPrs },
@@ -69,9 +71,6 @@ export function dashboardTiles(facts: BuildFacts, floors?: number): DashboardTil
     facts.docs && { id: "specs", value: facts.docs.specs },
     facts.docs && { id: "plans", value: facts.docs.plans },
     floors !== undefined && { id: "floors", value: floors },
-    facts.budgets && { id: "js3dKb", value: facts.budgets.js3dKb, unit: "kb" },
-    facts.budgets && { id: "sceneCalls", value: facts.budgets.sceneCalls },
-    facts.budgets && { id: "triangles", value: facts.budgets.triangles },
   ];
   return tiles.filter((t): t is DashboardTile => Boolean(t));
 }
