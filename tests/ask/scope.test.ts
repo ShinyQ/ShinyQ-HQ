@@ -88,6 +88,12 @@ describe("privateTopic", () => {
   it.each([
     ["Is Kurniadi married, and does he have kids?", "family"],
     ["Siapa pacarnya?", "family"],
+    ["Siapa mantan shiny?", "family"],
+    ["Kurniadi punya mantan?", "family"],
+    ["Mantannya siapa?", "family"],
+    ["Who is his ex?", "family"],
+    ["Is Kurniadi single?", "family"],
+    ["Dia jomblo?", "family"],
     ["Apakah Kurniadi punya masalah kesehatan mental?", "health"],
     ["Is he sick?", "health"],
     ["Kurniadi agamanya apa?", "religion"],
@@ -134,6 +140,13 @@ describe("privateTopic", () => {
     "Does his CV screening platform rank candidates?",
     "Apa isi panel Pengaturan situs ini?",
     "What settings can I change on this site?",
+    // "Mantan" of a role or an officeholder is not an ex-partner; "ex" inside other words is not one either.
+    "Apa kata mantan atasannya tentang dia?",
+    "Apa pendapat dia tentang kebijakan AI mantan presiden?",
+    "Apakah dia mantan karyawan Jenius?",
+    "What did his ex-colleagues build with him?",
+    "Is the voice agent single-tenant?",
+    "Does he build Excel automations?",
   ])("leaves %s to the model", (q) => expect(privateTopic(q)).toBeNull());
 
   it("never fires on a curated question or a golden question that expects an answer", () => {

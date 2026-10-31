@@ -250,11 +250,15 @@ export function properNouns(text: string): string[] {
 
 const EMPLOYMENT = /\b(?:work(?:s|ed|ing)?|employed|joined|interned|bekerja|kerja|bergabung|magang)\s+(?:at|for|di|untuk|pada)\s+((?:\p{Lu}[\p{L}\p{N}&.'-]*)(?:\s+\p{Lu}[\p{L}\p{N}&.'-]*){0,4})/gu;
 
-/** Employers or clients named in "worked at X" phrases that are not in the allowlist (T3). */
+/** A negation right before "worked at X" ("has not", "never", "didn't", "tidak pernah"): a denial names no employer. */
+const NEGATED = /(?:\b(?:not|never)|n't)\s+(?:(?:ever|yet|actually)\s+)?$|\b(?:tidak|belum|bukan)(?:\s+pernah)?\s+$/i;
+
+/** Employers or clients named in "worked at X" phrases that are not in the allowlist (T3). A denied claim is not one. */
 export function unknownEmployers(text: string, entities: readonly string[]): string[] {
   const known = entities.map((e) => e.toLowerCase());
   const out: string[] = [];
   for (const match of text.matchAll(EMPLOYMENT)) {
+    if (NEGATED.test(text.slice(Math.max(0, (match.index ?? 0) - 24), match.index))) continue;
     const name = match[1].trim().toLowerCase();
     if (!known.some((k) => k.includes(name) || name.includes(k.split(" (")[0]))) out.push(match[1].trim());
   }

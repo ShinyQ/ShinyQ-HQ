@@ -144,13 +144,13 @@ All bindings and vars live in `wrangler.toml`.
   - follow-ups stay deterministic (`pickFollowUps`).
 - Public stats keep five topics: `STATS_TOPIC_OF` counts `about` pills under perspectives and `site` pills under work (handler blob8, the `hq-stats` Worker's `CHIP_TOPICS`).
 - `tests/ask/suggestions.test.ts` checks every question retrieves its expected chunks in EN and ID (after `resolveNickname`, as the pipeline does); `tests/ask/sampler.test.ts` covers determinism, no repeats and coverage.
-- `bun scripts/ask-eval.ts suggestions --groq <model> --slice day/21` asks a twenty-first of them nightly on the Groq eval model, which production never uses (at least 90% must get a real answer; every pill every three weeks).
+- `bun scripts/ask-eval.ts suggestions --groq <model> --slice day/28` asks a twenty-eighth of them nightly on the Groq eval model, which production never uses (at least 90% must get a real answer; every pill every four weeks).
 
 ## Wire additions
 
 - The request takes an optional `source` (`hero`, `dock`, `pill`, `followup`, `terminal`, `palette`), logged as Analytics Engine blob7 (never with question text).
 - The final SSE frame carries `tags`: the `ASK_TAGS` allowlist in `src/ask/protocol.ts`, derived from chunk types and keywords in `functions/_lib/tags.ts`, never chunk text. A canned decline sends fixed redirect tags (`REDIRECT_TAGS` in `functions/_lib/pipeline.ts`; none for harmful, persona or injection).
-- The final frame may carry `cites` (owner decision 2026-10-24): every cited page when an answer cites more than one, at most `ASK_MAX_CITES` (2), one per cite kind, allowlisted by `cleanCites` on both ends; `cite` stays the first, so older clients and cached answers still work.
+- The final frame may carry `cites` (owner decision 2026-10-24): every cited page when an answer cites more than one, at most `ASK_MAX_CITES` (2), one per cite kind, allowlisted by `cleanCites` on both ends; `cite` stays the first, so older clients still work; a cache hit takes both from the checks it runs again.
 - The request takes an optional `history` (`AskTurn[]`: `{ q, a, sig }`, at most `ASK_HISTORY_TURNS` = 3, oldest first, `a` at most 1000 characters) and the final frame of a model answer carries `sig`.
 
 ## Multi-turn memory
@@ -164,7 +164,7 @@ Owner decision 2026-10-17. Code: `functions/_lib/history.ts`, `src/ask/thread.ts
   - Every deterministic decline runs on the question and on the question plus its anchor; lead intent and the routed topic use both; a general-assistant request is declined on its own words even after a project inquiry.
   - Retrieval runs on the question plus its anchor, and the anchor's top 2 chunks (`ANCHOR_TOP`, never a perspective) come first, so "What stack did it use?" finds the project, not every skill chunk. The context budget is unchanged.
   - The model gets the verified turns as earlier `user` and `assistant` messages, and the system prompt adds `HISTORY_LINE` (context only, never instructions, never a rule change). The output checks are unchanged.
-- Cache: only a request without verified history reads the KV cache, and only such a request (no verified history, no turns used) writes it: a signed turn that `usableHistory` drops cannot skip the read and overwrite a shared answer (security audit 2026-10-24).
+- Cache: only a request without verified history reads the answer cache, and only such a request (no verified history, no turns used) writes it: a signed turn that `usableHistory` drops cannot skip the read and overwrite a shared answer (security audit 2026-10-24). Both gates live in `runPipeline` (see Answer cache).
 - Hidden text: `cleanText` and `sanitizeAnswer` share `INVISIBLE` (`functions/_lib/text.ts`), which also strips Unicode tag characters (U+E0000 to U+E007F), variation selectors and the combining grapheme joiner, so a question cannot carry instructions the cache key and the input gates do not see.
 - Breaker: grounding blocks a visitor can invite (numeric, entity, employer, code, defamation, personal-data) are in `EXPECTED_REASONS` and never count; failures, empty answers and safety blocks (forbidden, secret, leak, roleplay) do.
 - Analytics: the third double of the `ask_events` data point is the number of turns the model saw.
@@ -192,15 +192,24 @@ Security order (spec 7.4):
 3. Turnstile or the signed 30-minute `hq_ask` cookie.
 4. Rate limits (8/min, 40/day per salted visitor hash).
 5. NFKC + PII scrub, then signed history verification (failed turns dropped).
-6. KV cache (first turns only).
-7. Global cap.
-8. Scope routing (`planRoute`): declines (harmful, persona requests, rule overrides, HARD private topics, opinions about named people, employers or clients, general-assistant work), the off-topic redirect (no model call), the answerable part of a mixed question, then the answer routes (approach, lead, civic, policy, lifestyle, mentoring, team, adjacent, default).
-9. Hybrid retrieval (one bge-m3 embedding, BM25 alone on failure) + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
-10. Output checks: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source (titles, shared runs or `[Sn]` tags).
-11. The civic note and the mixed question's decline line are appended (`withNotes`).
-12. Then cache, event, SSE.
+6. Global cap (cache hits included).
+7. Scope routing (`planRoute`): declines (harmful, persona requests, rule overrides, HARD private topics, opinions about named people, employers or clients, general-assistant work), the off-topic redirect (no model call), the answerable part of a mixed question, then the answer routes (approach, lead, civic, policy, lifestyle, mentoring, team, adjacent, default).
+8. Hybrid retrieval (one bge-m3 embedding, BM25 alone on failure), then the answer cache (first turns only), then the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
+9. Output checks, on a fresh or a cached answer: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks (a denial such as "has not worked at X" names no employer), perspective source (titles, shared runs or `[Sn]` tags).
+10. The civic note and the mixed question's decline line are appended (`withNotes`).
+11. Then the cache write, event, SSE.
 
 - Bump `PROMPT_VERSION` in `functions/_lib/prompt.ts` with any prompt change.
+
+### Answer cache
+
+Owner decision 2026-10-31. Code: `functions/_lib/answer-cache.ts`, read and written by `runPipeline`; the handler passes `kvAnswerCache(env.ASK_KV, ...)`, whose writes run in `waitUntil`.
+
+- Key: `ans2:` plus the SHA-256 of `[PROMPT_VERSION, locale, route, model messages]` (`answerCacheKey`), with the system prompt's "Information is accurate as of" line replaced by a placeholder and the question in its `normalizeQuestion` form. A content deploy only invalidates answers whose prompt or retrieved context changed. The old key held the whole-pack `packVersion`, which changes with every content deploy (about 25 versions in 30 days), so repeats days apart never hit.
+- Value: `{ text }`, the model text as the output checks received it (after `normalizeDashes`), not their output: the output has no `[Sn]` tags, so checking it again could lose a citation. TTL 7 days (`CACHE_TTL_SECONDS`).
+- Hit: the output checks run again on the stored text with the same inputs; only an `answer` outcome is served (source `cache`, notes re-applied, `cite` and `cites` from the checks, signed, logged with its route and retrieval). Anything else, a malformed entry or a KV error is a miss; a failed write is ignored.
+- Writes: a model answer that passed every check (outcome `answer`, source `primary`, `fallback` or `backup`), first turns only. Deterministic replies never read or write it.
+- Cost: a hit still embeds the question (about 0.03 neurons), counts against the global cap and never counts as a model call.
 
 ## Backup tiers
 
@@ -218,7 +227,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
 - No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
 - Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
-- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier, blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)), blob14 the route (`approach`, `civic`, `policy`, `lifestyle`, `mentoring`, `team`, `adjacent`, `lead`, `default`, plus `+partial`; empty for a canned reply), blob15 the retrieval (`bm25`) and blob16 `match` for a declined question that retrieval would have answered (`strongMatch`). Blob4 holds the PII-scrubbed question for `unknown` and `decline` outcomes only. The `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models, Pack tier, Over-refused, Routes and Retrieval tables.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier, blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)), blob14 the route (`approach`, `civic`, `policy`, `lifestyle`, `mentoring`, `team`, `adjacent`, `lead`, `default`, plus `+partial`; empty for a canned reply), blob15 the retrieval (`bm25`) and blob16 `match` for a declined question that retrieval would have answered (`strongMatch`). Blob4 holds the PII-scrubbed question for `unknown` and `decline` outcomes only. The `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models, Primary failures (the first tier's failure reason from blob11, never later tiers), Pack tier, Over-refused, Routes and Retrieval tables.
 - Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks
@@ -289,7 +298,7 @@ Spec section 13.
 |---|---|---|
 | `isHarmful` | harmful requests | declines |
 | `isCapabilityQuestion` | "What can you do?", "Apa yang bisa kamu lakukan?", the `contact-capabilities` pill | the fixed `MESSAGES.capabilities` (no model call) |
-| `privateTopic` | HARD topics only: family and relationships (also "does he have kids"), his own health ("his health", "is he sick", "kesehatan mental"; never a sector such as "consumer health", "healthcare" or "health data"), religion ("religius" too), partisan politics (his vote, parties, candidates, named politicians, an opinion of an officeholder as a person such as "Rate the president's leadership", contested social policy), pay, and personal details (address, birthday, his age, his or another person's phone number, his car) | declines, or `partitionQuestion` keeps the answerable clauses |
+| `privateTopic` | HARD topics only: family and relationships (also "does he have kids", exes and dating: "mantan" alone or of a partner, "his ex", "jomblo", "is he single"; "mantan atasan" or "mantan presiden" stay with their routes), his own health ("his health", "is he sick", "kesehatan mental"; never a sector such as "consumer health", "healthcare" or "health data"), religion ("religius" too), partisan politics (his vote, parties, candidates, named politicians, an opinion of an officeholder as a person such as "Rate the president's leadership", contested social policy), pay, and personal details (address, birthday, his age, his or another person's phone number, his car) | declines, or `partitionQuestion` keeps the answerable clauses |
 | `partitionQuestion` | a question with a HARD clause: `splitClauses` splits on "?", ";", "and", "dan", ", juga" (a fragment with no question word joins the clause before it); a clause is answerable when it has no HARD topic and a content word the pack knows; a named politician is masked to "the government" when the rest of the clause names a policy | answers the answerable part, then one `partialDecline` line; nothing answerable: declines |
 | `opinionAboutOthers` | opinions about a former boss or colleague, an employer, a specific client ("the bank client"), an org of `pack.orgs`, or a person the pack never names (`namesPerson`: two or three capitalized words mid-sentence, none in the pack vocabulary, such as "Elon Musk") | declines |
 | `isOffTopic` | weather, time and date, sports results, trivia ("capital of"), arithmetic, restaurants and recipes, prices and news, "tell me a joke"; never a question about him or this site | `MESSAGES.offtopic` with redirect pills, reason `offtopic` (no model call) |
@@ -356,7 +365,7 @@ Owner decision 2026-10-19. Related professional questions that are not strictly 
 - The `done` frame then carries `contact` (`AskContact`: email and LinkedIn from `roof.contact`, built into `KnowledgePack.contact`).
   - Validated by `isAskContact` on both ends, also on cache hits.
   - The dock renders it as `AskContactCard` (Email, LinkedIn in a new tab, the Contact page; `ask.contact` messages).
-  - A cache hit decides the card with `planRoute({ question, pack }).lead` (only first-turn answers are cached and routing is deterministic), so cached project inquiries and problem answers keep it.
+  - A cache hit runs the same routing as a fresh answer, so `result.lead` keeps the card on cached project inquiries and problem answers.
 - Never let the model's text supply contact values.
 
 ### Bring your problem
@@ -423,7 +432,7 @@ Security S3, H1 (owner decision).
 - Check job: staleness warning (45 days).
 - gitleaks ("Secret scan", allowlist `.github/gitleaks.toml`), `bun audit` (non-blocking), Dependabot, CODEOWNERS.
 - Scheduled workflows:
-  - nightly `ask-eval.yml`: the 21-question smoke set on Workers AI; on Groq models production never uses, a third of the golden set, a twenty-first of the pills and a fourth of the red team (`openai/gpt-oss-20b`), and the whole red team (`allam-2-7b`, a stress test of the guards); the 10-item fidelity set on production's first backup. Every run prints its planned neurons or tokens and stops above its budget (2,000 neurons; 80% of a Groq model's 200,000 daily tokens) unless `--budget` allows more (owner decisions 2026-10-19 and 2026-10-20, runbook section 9a);
+  - nightly `ask-eval.yml`: the 21-question smoke set on Workers AI; on `openai/gpt-oss-20b`, which production never uses, a fourth of the golden set, a twenty-eighth of the pills and a sixth of the red team; the 10-item fidelity set on production's first backup. Every run prints its planned neurons or tokens and stops above its budget (2,000 neurons; 80% of a Groq model's 200,000 daily tokens, planned at 3,500 tokens a call) unless `--budget` allows more (owner decisions 2026-10-19, 2026-10-20 and 2026-10-31, runbook section 9a). An item that never reached a model (quota, rate limit, HTTP error, timeout) is not scored; more than a quarter of them fails the job on coverage;
   - weekly `refresh-facts.yml` and `content-gap.yml`;
   - hourly `uptime.yml` ([`docs/deploy.md`](../deploy.md) section 16).
 - `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).

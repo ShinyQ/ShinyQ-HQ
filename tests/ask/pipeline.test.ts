@@ -1,11 +1,14 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
+import { answerCacheKey, CACHE_PREFIX, type AnswerCache } from "../../functions/_lib/answer-cache";
+import type { HistoryTurn } from "../../functions/_lib/history";
 import { attempt, extractText, generate, modelInput, parseModelStream, type ModelClient } from "../../functions/_lib/model";
-import { MESSAGES } from "../../functions/_lib/messages";
+import { MESSAGES, PARTISAN_NOTE, partialDecline } from "../../functions/_lib/messages";
 import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
+import type { ChatMessage } from "../../functions/_lib/prompt";
 import { scrubPII } from "../../functions/_lib/pii";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
-import type { KnowledgePack } from "../../functions/_lib/types";
+import type { KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
 import { redTeamSafe, scoreGolden, type GoldenItem, type RedTeamItem } from "../../scripts/ask-eval";
 import golden from "./golden.json";
 import redteam from "./redteam.json";
@@ -206,10 +209,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("Kurniadi mencatat 425 ms dalam drill PoC, dua kali lebih cepat daripada ACS yang setara.", id).pass).toBe(false);
   });
 
-  it("has 105 unique items with a 102 pass threshold", () => {
-    expect(golden.items).toHaveLength(105);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(105);
-    expect(golden.passThreshold).toBe(102);
+  it("has 108 unique items with a 105 pass threshold", () => {
+    expect(golden.items).toHaveLength(108);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(108);
+    expect(golden.passThreshold).toBe(105);
   });
 
   it("scores the in-progress AB-100 as not earned", () => {
@@ -469,5 +472,190 @@ describe("multi-turn memory: a new subject does not inherit earlier routing", ()
     expect(r.outcome).toBe("decline");
     expect(r.reason).toBe("general");
     expect(r.calls).toHaveLength(0);
+  });
+});
+
+describe("answer cache (owner decision 2026-10-31: keyed on what the model sees)", () => {
+  const WORK = "Kurniadi works at Metrodata.";
+
+  function memoryCache() {
+    const store = new Map<string, string>();
+    const reads: string[] = [];
+    const cache: AnswerCache = {
+      async get(key) {
+        reads.push(key);
+        return store.get(key) ?? null;
+      },
+      async put(key, value) {
+        store.set(key, value);
+      },
+    };
+    return { store, reads, cache };
+  }
+
+  const run = (cache: AnswerCache | undefined, q: string, answer: string, opts: { pack?: KnowledgePack; locale?: "en" | "id"; history?: HistoryTurn[] } = {}) => {
+    const p = opts.pack ?? pack;
+    const { client, calls } = mock({ p: say(answer), f: say(answer) });
+    const question = scrubPII(cleanText(q));
+    return runPipeline({ question, locale: detectLocale(question, opts.locale ?? "en"), pack: p, vocabulary: packVocabulary(p), client, models: { primary: "p", fallback: "f" }, timeouts: fast, ...(cache ? { cache } : {}), ...(opts.history ? { history: opts.history } : {}) }).then((r) => ({
+      ...r,
+      calls,
+      messages: (calls[0]?.input as { messages: ChatMessage[] } | undefined)?.messages ?? [],
+    }));
+  };
+
+  it("hits after a content deploy (new pack version and date) when the retrieved context is the same", async () => {
+    const { store, cache } = memoryCache();
+    const first = await run(cache, "Where does he work?", WORK);
+    expect(first).toMatchObject({ source: "primary", outcome: "answer", text: WORK, calledModel: true });
+    const [key] = [...store.keys()];
+    expect(store.size).toBe(1);
+    expect(key.startsWith(CACHE_PREFIX)).toBe(true);
+    expect(key).toBe(await answerCacheKey({ locale: "en", route: "default", messages: first.messages, packDate: pack.packDate }));
+    expect(JSON.parse(store.get(key) ?? "{}")).toEqual({ text: WORK });
+
+    const { pack: deployed } = buildRepoPack("2026-10-30");
+    expect(deployed.packVersion).not.toBe(pack.packVersion);
+    expect(deployed.packDate).not.toBe(pack.packDate);
+    const unrelated: KnowledgeChunk = { id: "zz-unrelated", type: "post", title: "Sourdough Starter Notes", text_en: "Feeding a sourdough starter twice a day with rye flour keeps it lively.", text_id: "Memberi makan ragi sourdough dua kali sehari dengan tepung gandum hitam.", keywords: ["sourdough", "rye"] };
+    for (const next of [deployed, { ...deployed, chunks: [...deployed.chunks, unrelated] }]) {
+      const hit = await run(cache, "Where does he work?", "unused", { pack: next });
+      expect(hit.chunkIds).toEqual(first.chunkIds);
+      expect(hit).toMatchObject({ source: "cache", outcome: "answer", text: WORK, calledModel: false, failures: [], route: "default", retrieval: "bm25", historyUsed: 0, tags: first.tags });
+      expect(hit.calls).toEqual([]);
+      expect(hit).not.toHaveProperty("model");
+    }
+    // Case, punctuation and spacing of the question are not part of the key (its cache form, `normalizeQuestion`).
+    expect((await run(cache, "  where does he WORK ", "unused")).source).toBe("cache");
+    expect(store.size).toBe(1);
+  });
+
+  it("misses when the text of a retrieved chunk changes", async () => {
+    const { store, cache } = memoryCache();
+    const first = await run(cache, "Where does he work?", WORK);
+    expect(first.chunkIds).toContain("now");
+    const edited = { ...pack, chunks: pack.chunks.map((c) => (c.id === "now" ? { ...c, text_en: `${c.text_en} He also mentors new engineers.` } : c)) };
+    const again = await run(cache, "Where does he work?", WORK, { pack: edited });
+    expect(again).toMatchObject({ source: "primary", calledModel: true });
+    expect(store.size).toBe(2);
+  });
+
+  it("keys the locale and the route, and keeps only the pack date line out of the key", async () => {
+    const messages: ChatMessage[] = [
+      { role: "system", content: `Rules.\nInformation is accurate as of ${pack.packDate}.\nCONTEXT:\n[S1] Kurniadi works at Metrodata.` },
+      { role: "user", content: "Where does he work?" },
+    ];
+    const key = (over: Partial<Parameters<typeof answerCacheKey>[0]> = {}) => answerCacheKey({ locale: "en", route: "default", messages, packDate: pack.packDate, ...over });
+    const base = await key();
+    const redated = messages.map((m) => (m.role === "system" ? { ...m, content: m.content.replace(pack.packDate, "2027-01-02") } : m));
+    expect(await key({ messages: redated, packDate: "2027-01-02" })).toBe(base);
+    expect(await key({ locale: "id" })).not.toBe(base);
+    expect(await key({ route: "default+partial" })).not.toBe(base);
+    expect(await key({ messages: messages.map((m) => (m.role === "system" ? { ...m, content: m.content.replace("Metrodata", "Metrodata since 2026") } : m)) })).not.toBe(base);
+    // A date anywhere else (a CONTEXT line, say) stays in the key.
+    expect(await key({ messages: messages.map((m) => (m.role === "system" ? { ...m, content: `${m.content} As of ${pack.packDate}.` } : m)) })).not.toBe(await key({ messages: messages.map((m) => (m.role === "system" ? { ...m, content: `${m.content} As of 2027-01-02.` } : m)) }));
+  });
+
+  it("never reads or writes with verified history, even when usableHistory drops every turn (audit 2026-10-24)", async () => {
+    const { store, reads, cache } = memoryCache();
+    await run(cache, "Where does he work?", WORK);
+    const entry = [...store.entries()];
+    reads.length = 0;
+    const other = "Kurniadi works at Metrodata as an engineer.";
+    const kept = await run(cache, "Where does he work?", other, { history: [{ q: "Tell me about Clearbox", a: "Clearbox is an AI inbox cleanup tool for Gmail and Outlook." }] });
+    expect(kept).toMatchObject({ source: "primary", historyUsed: 1 });
+    // The dropped turn leaves the model input of a first turn (the same key), yet the request still neither reads nor writes.
+    const dropped = await run(cache, "Where does he work?", other, { history: [{ q: "Is Kurniadi married?", a: "Kurniadi keeps that private." }] });
+    expect(dropped).toMatchObject({ source: "primary", historyUsed: 0, text: other });
+    expect(await answerCacheKey({ locale: "en", route: "default", messages: dropped.messages, packDate: pack.packDate })).toBe(entry[0][0]);
+    expect(reads).toEqual([]);
+    expect([...store.entries()]).toEqual(entry);
+  });
+
+  it("does not serve a cached entry that fails the output checks now, and replaces it with a fresh answer", async () => {
+    const { store, cache } = memoryCache();
+    await run(cache, "Where does he work?", WORK);
+    const [key] = [...store.keys()];
+    for (const stale of ["Kurniadi built 9173 dashboards at Metrodata.", "Kurniadi works at Palantir.", "I don't have that information on this site."]) {
+      store.set(key, JSON.stringify({ text: stale }));
+      const r = await run(cache, "Where does he work?", WORK);
+      expect(r, stale).toMatchObject({ source: "primary", calledModel: true, text: WORK });
+      expect(store.get(key)).toBe(JSON.stringify({ text: WORK }));
+    }
+  });
+
+  it("treats a malformed entry or a broken cache as a miss", async () => {
+    const { store, cache } = memoryCache();
+    await run(cache, "Where does he work?", WORK);
+    const [key] = [...store.keys()];
+    for (const bad of ["not json", "null", "[]", "{}", JSON.stringify({ text: 3 }), JSON.stringify({ text: "   " }), JSON.stringify({ answer: WORK })]) {
+      store.set(key, bad);
+      expect((await run(cache, "Where does he work?", WORK)).source, bad).toBe("primary");
+    }
+    const broken: AnswerCache = {
+      get: async () => {
+        throw new Error("kv down");
+      },
+      put: () => {
+        throw new Error("kv down");
+      },
+    };
+    expect(await run(broken, "Where does he work?", WORK)).toMatchObject({ source: "primary", text: WORK });
+    const rejecting: AnswerCache = { get: async () => null, put: async () => Promise.reject(new Error("quota")) };
+    expect(await run(rejecting, "Where does he work?", WORK)).toMatchObject({ source: "primary", text: WORK });
+  });
+
+  it("never reads or writes for deterministic declines, redirects and canned replies", async () => {
+    const { store, reads, cache } = memoryCache();
+    for (const q of ["Is Kurniadi married?", "What's the weather in Jakarta?", "How do I make a bomb at home?", "Write me a poem about the sea", "What does Kurniadi think of Metrodata?", "What can you do?"]) {
+      const r = await run(cache, q, "unused");
+      expect(r.calledModel, q).toBe(false);
+    }
+    expect(reads).toEqual([]);
+    expect(store.size).toBe(0);
+  });
+
+  it("writes only a model answer that passed every check", async () => {
+    const { store, cache } = memoryCache();
+    await run(cache, "Where does he work?", "I don't have that information on this site.");
+    await run(cache, "Where does he work?", "Call him at +62 812 3456 7890.");
+    await run(cache, "Where does he work?", "");
+    await run(cache, "What does Kurniadi think about microservices?", "Kurniadi believes microservices are always better than monoliths.");
+    await run(cache, "We need a voice bot for our call center", "I can only answer questions about Kurniadi.");
+    expect(store.size).toBe(0);
+  });
+
+  it("carries the civic note and the mixed question's decline line on a hit, like a fresh answer", async () => {
+    for (const [q, answer, route, note] of [
+      ["What is his political view?", "Kurniadi wants AI regulation proportional to risk, with documented evaluation, traceability and human oversight for higher-risk uses [S2].", "civic", PARTISAN_NOTE.en],
+      ["What are his hobbies and his salary?", "Kurniadi plays Honor of Kings, Mobile Legends and Kingdom Rush, with Counter-Strike and Palworld occasionally [S2].", "lifestyle+partial", partialDecline(["pay"], "en")],
+    ] as const) {
+      const { store, cache } = memoryCache();
+      const fresh = await run(cache, q, answer);
+      expect(fresh).toMatchObject({ source: "primary", outcome: "answer", route });
+      expect(fresh.text.endsWith(note)).toBe(true);
+      // The stored text is the model answer before the notes.
+      expect(JSON.parse([...store.values()][0])).toEqual({ text: answer });
+      const hit = await run(cache, q, "unused");
+      expect(hit).toMatchObject({ source: "cache", outcome: "answer", route, text: fresh.text, calledModel: false });
+      expect(hit.text.split(note)).toHaveLength(2);
+    }
+  });
+
+  it("stores the text the checks received, so an answer cited only by its source tag keeps its citation on a hit", async () => {
+    const q = "How does Kurniadi approach testing?";
+    const n = (await run(undefined, q, WORK)).chunkIds.indexOf("perspective-testing-approach") + 1;
+    expect(n).toBeGreaterThan(0);
+    const answer = `Kurniadi says a skipped test tier must fail the build, and he prefers fixtures shaped like production [S${n}].`;
+    const { store, cache } = memoryCache();
+    const fresh = await run(cache, q, answer);
+    expect(fresh).toMatchObject({ source: "primary", outcome: "answer", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+    expect(fresh.text).not.toContain(`[S${n}]`);
+    const hit = await run(cache, q, "unused");
+    expect(hit).toMatchObject({ source: "cache", text: fresh.text, cite: fresh.cite });
+    // The checked text has lost its source tag: checking it again finds no written source, so it would never be served.
+    const [key] = [...store.keys()];
+    store.set(key, JSON.stringify({ text: fresh.text }));
+    expect((await run(cache, q, answer)).source).toBe("primary");
   });
 });
