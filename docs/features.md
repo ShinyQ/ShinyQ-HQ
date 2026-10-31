@@ -385,7 +385,7 @@ Route `/en/library`.
 ### Topic Constellation
 
 - The timeline ends in a round plaza where every topic of the writing (from post tags, papers, models and talks) glows as an orb slowly orbiting a pedestal.
-- Click an orb (or pick a topic in its drawer, or Cmd-K "Show writing about X"): every matching desk and every bay holding a matching post lights up with a beacon, the road to them glows and "N pieces on X" floats above.
+- Click an orb (or pick a topic in its drawer, or Cmd-K "Show writing about X"): every matching desk and every bay holding a matching post lights up with a beacon, the road to them glows and "N pieces on X" floats right above the picked topic's label.
 - The pick lives in the URL (`#library-topic=<slug>`). The Classic Writing page has the same topics as a filter (`/library?topic=<slug>`).
 - The research metrics stand on a monument on the plaza's north rim (citations, h-index, the source and its date; a click opens the Research desk), and a **Back to elevator** pad waits south of it.
 

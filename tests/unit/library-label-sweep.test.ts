@@ -28,9 +28,12 @@ import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l
 // The timeline signs as `NewsroomDecor` builds them: the featured stage carries its title on the headline wall.
 const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
 const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
-const timeline = librarySigns({ layout, zones, titles: postTitles(data.library), tracks });
-const half = libraryPlateHalves(timeline.signs);
-const texts = timeline.signs.map((s) => s.text.replace(/\s+/g, " "));
+/** Desktop and portrait phone sizes (camera class `mobile`: the phone reading rule's track names and titles). */
+const timelineFor = (phone: boolean) => {
+  const signs = librarySigns({ layout, zones, titles: postTitles(data.library), tracks, phone });
+  return { ...signs, half: libraryPlateHalves(signs.signs), texts: signs.signs.map((s) => s.text.replace(/\s+/g, " ")) };
+};
+type Timeline = ReturnType<typeof timelineFor>;
 
 // The end plaza signs as `Experience.tsx` labels them (no topic picked).
 const plaza = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), l4EndLabels, null);
@@ -82,7 +85,8 @@ function audit(plates: readonly Plate[], caps: Caps, rover: Quad | null) {
 }
 
 /** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`, `live` the pulled spine's room. */
-function frame(drive: Drive, camera: PerspectiveCamera, angle: number, live: string | null = null) {
+function frame(timeline: Timeline, drive: Drive, camera: PerspectiveCamera, angle: number, live: string | null = null) {
+  const { half, texts } = timeline;
   const v = new Vector3();
   const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v, vault: vaultZone(drive.pos, layout.end!.vault) });
   const work = createLibraryFrame();
@@ -101,11 +105,13 @@ function frame(drive: Drive, camera: PerspectiveCamera, angle: number, live: str
 }
 
 const DEVICES = [
-  { id: "desktop", size: { width: 1440, height: 900 }, lead: LIBRARY_LABEL_MAX.lead.wide },
-  { id: "phone", size: { width: 390, height: 844 }, lead: LIBRARY_LABEL_MAX.lead.narrow },
+  { id: "desktop", size: { width: 1440, height: 900 }, lead: LIBRARY_LABEL_MAX.lead.wide, phone: false },
+  { id: "phone", size: { width: 390, height: 844 }, lead: LIBRARY_LABEL_MAX.lead.narrow, phone: true },
 ] as const;
 
-describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, size, lead }) => {
+describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, size, lead, phone }) => {
+  const timeline = timelineFor(phone);
+  const { texts } = timeline;
   const caps: Caps = { section: LIBRARY_LABEL_MAX.section, track: LIBRARY_LABEL_MAX.track, lead, spine: LIBRARY_LABEL_MAX.spine };
 
   it("never overlap, stay within the caps and show each bay's track and each zone's sign", () => {
@@ -116,7 +122,7 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, size, lead }) => {
       visited.push(pose);
       const camera = drive.camera();
       return ANGLES.map((angle) => {
-        const { plates, rover } = frame(drive, camera, angle, live);
+        const { plates, rover } = frame(timeline, drive, camera, angle, live);
         expect(audit(plates, caps, rover), `${id} ${pose} at orbit ${angle.toFixed(2)}`).toEqual({ hits: [], onRover: [], overCap: [], twice: [] });
         return plates;
       });
@@ -190,7 +196,7 @@ describe("the sweep's audit", () => {
     const drive = new Drive({ width: 1440, height: 900 });
     const bay = layout.bays[0];
     drive.to(bay.stop);
-    const { plates } = frame(drive, drive.camera(), 0, nearestSpine(bay, bay.stop));
+    const { plates } = frame(timelineFor(false), drive, drive.camera(), 0, nearestSpine(bay, bay.stop));
     expect(plates.length).toBeGreaterThan(2);
   });
 });
