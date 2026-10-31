@@ -39,15 +39,16 @@ describe("eval neuron budget", () => {
     const production = /ASK_BACKUP_MODELS = "([^"]+)"/.exec(readFileSync("wrangler.toml", "utf8"))![1].split(",");
     const model = (name: string) => new RegExp(`${name}: (\\S+)`).exec(workflow)![1];
     expect(production).not.toContain(model("EVAL_GROQ_EVAL"));
-    expect(production).not.toContain(model("EVAL_GROQ_STRESS"));
+    // allam-2-7b stopped on 2026-10-31: the prompt fills its 4,096-token context.
+    expect(workflow).not.toContain("EVAL_GROQ_STRESS");
+    expect(workflow).not.toMatch(/^\s+EVAL_GROQ_\w+: allam/m);
     expect(model("EVAL_GROQ_BACKUP")).toBe(production[0]);
     const runs = [...workflow.matchAll(/run: bun scripts\/ask-eval\.ts (.+)/g)].map((m) => m[1]);
     expect(runs).toEqual([
       "smoke",
-      'golden --groq "$EVAL_GROQ_EVAL" --slice day/3',
-      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/21',
-      'redteam --groq "$EVAL_GROQ_STRESS"',
-      'redteam --groq "$EVAL_GROQ_EVAL" --slice day/4',
+      'golden --groq "$EVAL_GROQ_EVAL" --slice day/4',
+      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/28',
+      'redteam --groq "$EVAL_GROQ_EVAL" --slice day/6',
       'fidelity --groq "$EVAL_GROQ_BACKUP"',
     ]);
     // The eval model's runs follow each other: golden, then the pills, then the red team (one per-minute limit).
@@ -69,13 +70,12 @@ describe("eval neuron budget", () => {
     for (let d = 0; d < 84; d++) {
       const day = new Date(Date.UTC(2026, 9, 20 + d));
       const calls =
-        (await countModelCalls(sliceItems(g, "day/3", day) as never, deps)) +
-        (await countModelCalls(sliceItems(pills, "day/21", day) as never, deps)) +
-        (await countModelCalls(sliceItems(redteam.items as never[], "day/4", day), deps));
+        (await countModelCalls(sliceItems(g, "day/4", day) as never, deps)) +
+        (await countModelCalls(sliceItems(pills, "day/28", day) as never, deps)) +
+        (await countModelCalls(sliceItems(redteam.items as never[], "day/6", day), deps));
       worst = Math.max(worst, calls);
     }
     expect(planGroqTokens(worst).share).toBeLessThanOrEqual(GROQ_BUDGET_SHARE);
-    expect(planGroqTokens(await countModelCalls(redteam.items as never, deps)).share).toBeLessThanOrEqual(GROQ_BUDGET_SHARE);
     expect(planGroqTokens(await countModelCalls(golden.items.filter((i) => (FIDELITY_GOLDEN as readonly string[]).includes(i.id)) as never, deps)).share).toBeLessThanOrEqual(0.2);
   }, 180_000);
 });

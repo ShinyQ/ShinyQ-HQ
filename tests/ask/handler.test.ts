@@ -4,11 +4,13 @@ import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { createPackSource, staticPackSource, type PackSource } from "../../functions/_lib/pack-source";
 import { buildFallbackPack, buildPackArtifacts } from "@/ask/pack";
-import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
-import { MESSAGES } from "../../functions/_lib/messages";
+import { answerCacheKey, CACHE_PREFIX, CACHE_TTL_SECONDS } from "../../functions/_lib/answer-cache";
+import { createAskHandler, frame, pieces } from "../../functions/_lib/handler";
+import { MESSAGES, PARTISAN_NOTE, partialDecline } from "../../functions/_lib/messages";
 import { cleanText } from "../../functions/_lib/text";
-import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow, resetModelBreakers } from "../../functions/_lib/limits";
+import { BREAKER_MIN_SAMPLES, globalDayKey, resetBreaker, resetMinuteWindow, resetModelBreakers } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
+import type { ChatMessage } from "../../functions/_lib/prompt";
 import { answerTags, chunkTags } from "../../functions/_lib/tags";
 import { hasValidSession, issueSession, originAllowed, visitorHash } from "../../functions/_lib/security";
 import type { AskEnv, KnowledgePack, KvNamespace, PagesContext } from "../../functions/_lib/types";
@@ -30,14 +32,21 @@ beforeEach(() => {
 class MemoryKv implements KvNamespace {
   store = new Map<string, string>();
   writes = 0;
+  gets: string[] = [];
+  ttls = new Map<string, number | undefined>();
   async get(key: string) {
+    this.gets.push(key);
     return this.store.get(key) ?? null;
   }
-  async put(key: string, value: string) {
+  async put(key: string, value: string, options?: { expirationTtl?: number }) {
     this.writes++;
+    this.ttls.set(key, options?.expirationTtl);
     this.store.set(key, value);
   }
 }
+
+/** Shared answer entries (`ans2:`). */
+const answerKeys = (kv: MemoryKv) => [...kv.store.keys()].filter((k) => k.startsWith(CACHE_PREFIX));
 
 interface Setup {
   env?: Partial<AskEnv>;
@@ -295,36 +304,112 @@ describe("rate limits, global cap and circuit breaker (T8)", () => {
 });
 
 describe("answers, cache and SSE framing (T6, T9)", () => {
-  it("streams JSON frames and caches a passing answer", async () => {
-    const { call, kv, modelCalls } = setup();
+  it("streams JSON frames and caches a passing answer under the key of its model input", async () => {
+    const { call, kv, modelCalls, modelInputs } = setup();
     const list = await frames(await call());
     expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
     const done = doneOf(list);
     expect(done).toMatchObject({ done: true, outcome: "answer", source: "primary", asOf: pack.packDate });
     expect(Object.keys(done).sort()).toEqual(["asOf", "done", "outcome", "sig", "source", "tags"]);
     expect(done.tags).toContain("career");
-    const key = await cacheKey(pack.packVersion, "en", "Where does he work?");
+    const key = await answerCacheKey({ locale: "en", route: "default", messages: modelInputs[0].messages as ChatMessage[], packDate: pack.packDate });
+    expect(answerKeys(kv)).toEqual([key]);
     expect(JSON.parse(kv.store.get(key) ?? "{}")).toEqual({ text: "Kurniadi works at Metrodata." });
+    expect(kv.ttls.get(key)).toBe(CACHE_TTL_SECONDS);
 
     const again = await frames(await call({ body: { q: "where does he WORK", locale: "en" } }));
+    expect(answerOf(again)).toBe("Kurniadi works at Metrodata.");
     expect(doneOf(again).source).toBe("cache");
     expect(doneOf(again).tags).toEqual(done.tags);
     expect(modelCalls).toHaveLength(1);
   });
 
-  it("keys the cache by pack version, prompt version and locale", async () => {
-    const a = await cacheKey("v1", "en", "Where does he work?");
-    expect(await cacheKey("v1", "en", "where does he work")).toBe(a);
-    expect(await cacheKey("v2", "en", "Where does he work?")).not.toBe(a);
-    expect(await cacheKey("v1", "id", "Where does he work?")).not.toBe(a);
+  it("signs and logs a cache hit as source cache, with its route and retrieval, and never counts a model call", async () => {
+    const { call, kv, events, modelCalls } = setup();
+    const fresh = doneOf(await frames(await call()));
+    expect(kv.store.get(globalDayKey(NOW))).toBe("1");
+    const hit = doneOf(await frames(await call()));
+    expect(hit).toMatchObject({ outcome: "answer", source: "cache", sig: fresh.sig });
+    expect(hit.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(modelCalls).toHaveLength(1);
+    expect(kv.store.get(globalDayKey(NOW))).toBe("1");
+    const blobs = events[1].blobs ?? [];
+    expect(blobs[0]).toBe("answer");
+    expect(blobs[2]).toBe("cache");
+    expect(blobs[3]).toBe("");
+    expect(blobs.slice(9, 15)).toEqual(["", "", "memory", "", "default", "bm25"]);
+    expect(events[1]).toMatchObject({ doubles: [expect.any(Number), 1, 0] });
+  });
+
+  it("serves a repeated first-turn question from the cache after a content deploy that leaves its context unchanged", async () => {
+    let current = pack;
+    const { pack: deployed } = buildRepoPack("2026-10-30");
+    expect(deployed.packVersion).not.toBe(pack.packVersion);
+    const { call, modelCalls } = setup({ source: () => ({ load: (env) => staticPackSource(current).load(env), packDate: async () => current.packDate }) });
+    expect(doneOf(await frames(await call())).source).toBe("primary");
+    current = deployed;
+    const hit = await frames(await call());
+    expect(doneOf(hit)).toMatchObject({ source: "cache", asOf: deployed.packDate });
+    expect(answerOf(hit)).toBe("Kurniadi works at Metrodata.");
+    expect(modelCalls).toHaveLength(1);
+    // A deploy that changes a retrieved chunk asks the model again.
+    current = { ...deployed, chunks: deployed.chunks.map((c) => (c.id === "now" ? { ...c, text_en: `${c.text_en} He also mentors new engineers.` } : c)) };
+    expect(doneOf(await frames(await call())).source).toBe("primary");
+    expect(modelCalls).toHaveLength(2);
+  });
+
+  it("serves the civic note and the mixed question's decline line with a cache hit, signed like the fresh answer", async () => {
+    for (const [q, answer, note] of [
+      ["What is his political view?", "Kurniadi wants AI regulation proportional to risk, with documented evaluation, traceability and human oversight for higher-risk uses [S2].", PARTISAN_NOTE.en],
+      ["What are his hobbies and his salary?", "Kurniadi plays Honor of Kings, Mobile Legends and Kingdom Rush, with Counter-Strike and Palworld occasionally [S2].", partialDecline(["pay"], "en")],
+    ] as const) {
+      const { call, kv, modelCalls } = setup({ answer });
+      const fresh = await frames(await call({ body: { q, locale: "en" } }));
+      expect(answerOf(fresh).endsWith(note)).toBe(true);
+      expect(answerKeys(kv).map((k) => JSON.parse(kv.store.get(k) ?? "{}"))).toEqual([{ text: answer }]);
+      const hit = await frames(await call({ body: { q, locale: "en" } }));
+      expect(doneOf(hit)).toMatchObject({ source: "cache", sig: doneOf(fresh).sig });
+      expect(answerOf(hit)).toBe(answerOf(fresh));
+      expect(modelCalls).toHaveLength(1);
+    }
+  });
+
+  it("applies the global daily cap to cache hits", async () => {
+    const { call, kv, modelCalls } = setup({ env: { ASK_DAILY_CAP: "1" } });
+    expect(doneOf(await frames(await call())).source).toBe("primary");
+    const capped = await call();
+    expect(capped.status).toBe(503);
+    expect(await capped.json()).toMatchObject({ error: "paused" });
+    expect(answerKeys(kv)).toHaveLength(1);
+    expect(modelCalls).toHaveLength(1);
   });
 
   it("never caches declines, unknowns, blocked or fallback answers", async () => {
     for (const answer of ["I don't have that information on this site.", "I can only answer questions about Kurniadi.", "Call him at +62 812 3456 7890.", ""]) {
       const { call, kv } = setup({ answer });
       await frames(await call());
-      expect([...kv.store.keys()].filter((k) => k.startsWith("ans:")), answer).toEqual([]);
+      expect(answerKeys(kv), answer).toEqual([]);
     }
+  });
+
+  it("swallows cache read and write failures: a broken cache is a miss", async () => {
+    const { call, kv, modelCalls } = setup();
+    kv.get = async (key: string) => {
+      if (key.startsWith(CACHE_PREFIX)) throw new Error("kv down");
+      return kv.store.get(key) ?? null;
+    };
+    const put = kv.put.bind(kv);
+    kv.put = async (key: string, value: string, options?: { expirationTtl?: number }) => {
+      if (key.startsWith(CACHE_PREFIX)) throw new Error("quota");
+      return put(key, value, options);
+    };
+    for (let i = 0; i < 2; i++) {
+      const response = await call();
+      expect(response.status).toBe(200);
+      expect(doneOf(await frames(response)).source).toBe("primary");
+    }
+    expect(modelCalls).toHaveLength(2);
+    expect(answerKeys(kv)).toEqual([]);
   });
 
   it("keeps hostile model tokens inside JSON frames", async () => {
@@ -432,7 +517,7 @@ describe("Groq backup tiers", () => {
     expect(blobs[9]).toBe("qwen/qwen3.8-27b");
     expect(blobs[10]).toContain("quota");
     expect(blobs[10].length).toBeLessThanOrEqual(200);
-    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toHaveLength(1);
+    expect(answerKeys(kv)).toHaveLength(1);
     const again = doneOf(await frames(await call()));
     expect(again.source).toBe("cache");
     expect(events[1].blobs?.slice(9, 11)).toEqual(["", ""]);
@@ -453,7 +538,7 @@ describe("Groq backup tiers", () => {
     const list = await frames(await call());
     expect(answerOf(list)).not.toContain("3456");
     expect(doneOf(list).source).toBe("none");
-    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
+    expect(answerKeys(kv)).toEqual([]);
   });
 });
 
@@ -494,50 +579,61 @@ describe("chunk tags", () => {
 describe("perspectives through the Function (spec section 13)", () => {
   const principlesAnswer = "Kurniadi writes that he defines each feature in a written spec with acceptance criteria.";
 
-  it("sends the citation in the done frame and keeps it with the cached answer", async () => {
+  it("sends the citation in the done frame and again with the cached answer", async () => {
     const { call, kv, modelCalls } = setup({ answer: principlesAnswer });
     const body = { q: "What are Kurniadi's coding principles?", locale: "en" };
     const done = doneOf(await frames(await call({ body })));
     expect(done).toMatchObject({ outcome: "answer", source: "primary", cite: "/contact#how" });
     expect(done.tags).toContain("perspectives");
-    const key = await cacheKey(pack.packVersion, "en", body.q);
-    expect(JSON.parse(kv.store.get(key) ?? "{}")).toEqual({ text: principlesAnswer, cite: "/contact#how" });
+    expect(answerKeys(kv).map((k) => JSON.parse(kv.store.get(k) ?? "{}"))).toEqual([{ text: principlesAnswer }]);
     const again = doneOf(await frames(await call({ body })));
-    expect(again).toMatchObject({ source: "cache", cite: "/contact#how" });
+    expect(again).toMatchObject({ source: "cache", cite: "/contact#how", tags: done.tags });
     expect(modelCalls).toHaveLength(1);
   });
 
-  it("cites a perspective answer through its backing post in the done frame and the cache", async () => {
+  it("cites a perspective answer through its backing post, fresh and from the cache", async () => {
     const answer = 'In his written view "How do you approach testing?", Kurniadi says CI should fail closed and every real failure becomes a regression test.';
     const { call, kv } = setup({ answer });
     const body = { q: "How does Kurniadi approach testing?", locale: "en" };
     const done = doneOf(await frames(await call({ body })));
     expect(done).toMatchObject({ outcome: "answer", source: "primary", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
-    expect(JSON.parse(kv.store.get(await cacheKey(pack.packVersion, "en", body.q)) ?? "{}")).toEqual({ text: answer, cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+    expect(answerKeys(kv).map((k) => JSON.parse(kv.store.get(k) ?? "{}"))).toEqual([{ text: answer }]);
+    expect(doneOf(await frames(await call({ body })))).toMatchObject({ source: "cache", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
   });
 
   it("serves a cached answer without em dashes", async () => {
     const { call, kv } = setup();
-    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata \u2014 as an engineer." }));
+    await frames(await call());
+    const [key] = answerKeys(kv);
+    kv.store.set(key, JSON.stringify({ text: "Kurniadi works at Metrodata \u2014 as an engineer." }));
     const list = await frames(await call());
     expect(doneOf(list).source).toBe("cache");
     expect(answerOf(list)).toBe("Kurniadi works at Metrodata, as an engineer.");
   });
 
-  it("drops a cached About anchor of a perspective: they have no page any more", async () => {
+  it("takes the citation of a cached answer from the checks, never from the stored entry", async () => {
     const { call, kv } = setup();
-    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "/contact#perspectives-testing-approach" }));
-    const done = doneOf(await frames(await call()));
-    expect(done.source).toBe("cache");
-    expect(done).not.toHaveProperty("cite");
+    await frames(await call());
+    const [key] = answerKeys(kv);
+    for (const cite of ["/contact#perspectives-testing-approach", "https://evil.example"]) {
+      kv.store.set(key, JSON.stringify({ text: "Kurniadi works at Metrodata.", cite, cites: [cite, "/labs"] }));
+      const done = doneOf(await frames(await call()));
+      expect(done.source).toBe("cache");
+      expect(done).not.toHaveProperty("cite");
+      expect(done).not.toHaveProperty("cites");
+    }
   });
 
-  it("drops a cached citation that is not an allowlisted path", async () => {
-    const { call, kv } = setup();
-    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "https://evil.example" }));
-    const done = doneOf(await frames(await call()));
-    expect(done.source).toBe("cache");
-    expect(done).not.toHaveProperty("cite");
+  it("does not serve a cached answer that fails the checks now", async () => {
+    const { call, kv, modelCalls } = setup();
+    await frames(await call());
+    const [key] = answerKeys(kv);
+    kv.store.set(key, JSON.stringify({ text: "Kurniadi works at Metrodata. Call him at +62 812 3456 7890." }));
+    const list = await frames(await call());
+    expect(doneOf(list).source).toBe("primary");
+    expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
+    expect(modelCalls).toHaveLength(2);
+    expect(JSON.parse(kv.store.get(key) ?? "{}")).toEqual({ text: "Kurniadi works at Metrodata." });
   });
 
   it("declines personal and third-party opinion questions without a model call or a cache write", async () => {
@@ -553,7 +649,8 @@ describe("perspectives through the Function (spec section 13)", () => {
       expect(doneOf(list).cite).toBeUndefined();
     }
     expect(modelCalls).toEqual([]);
-    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
+    expect(answerKeys(kv)).toEqual([]);
+    expect(kv.gets.filter((k) => k.startsWith(CACHE_PREFIX))).toEqual([]);
   });
 
   it("answers an unsourced opinion with the no-view message, names no unrelated source and never caches it", async () => {
@@ -563,7 +660,7 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none" });
     // No written source is about microservices, so no title or link (owner decision 2026-10-19).
     expect(doneOf(list).cite).toBeUndefined();
-    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
+    expect(answerKeys(kv)).toEqual([]);
   });
 
   it("logs a declined question's scrubbed text and the over-refusal flag (owner decision 2026-10-24)", async () => {
@@ -640,29 +737,32 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
 
   it("signs a cache hit, and a follow-up never reads or writes the cache", async () => {
     const s = setup({ answer: ANSWER });
-    const cached = () => [...s.kv.store.keys()].filter((k) => k.startsWith("ans:")).length;
+    const cached = () => answerKeys(s.kv).length;
+    const reads = () => s.kv.gets.filter((k) => k.startsWith(CACHE_PREFIX)).length;
     const turn = await firstTurn(s);
     expect(cached()).toBe(1);
     const hit = doneOf(await frames(await s.call({ body: { q: FIRST, locale: "en" } })));
     expect(hit.source).toBe("cache");
     expect(hit.sig).toBe(turn.sig);
     const calls = s.modelCalls.length;
+    const read = reads();
     // Same question as the cached one, but with history: it goes to the model and is not stored.
-    const before = s.kv.store.get([...s.kv.store.keys()].find((k) => k.startsWith("ans:")) as string);
+    const before = s.kv.store.get(answerKeys(s.kv)[0]);
     const follow = doneOf(await frames(await s.call({ body: { q: "Which inboxes does it clean?", locale: "en", history: [turn] } })));
     expect(follow.source).toBe("primary");
     expect(s.modelCalls.length).toBe(calls + 1);
     expect(cached()).toBe(1);
-    expect(s.kv.store.get([...s.kv.store.keys()].find((k) => k.startsWith("ans:")) as string)).toBe(before);
+    expect(s.kv.store.get(answerKeys(s.kv)[0])).toBe(before);
     const repeat = doneOf(await frames(await s.call({ body: { q: FIRST, locale: "en", history: [turn] } })));
     expect(repeat.source).toBe("primary");
+    expect(reads()).toBe(read);
   });
 
   it("a signed turn the pipeline drops still blocks the cache write, so it cannot overwrite a shared answer (audit 2026-10-24)", async () => {
     const answers = [ANSWER, "Clearbox cleans Gmail and Outlook inboxes with AI.", "Clearbox is a tool."];
     let n = 0;
     const s = setup({ answer: () => (async function* () { yield answers[Math.min(n++, answers.length - 1)]; })() });
-    const entry = () => s.kv.store.get([...s.kv.store.keys()].find((k) => k.startsWith("ans:")) as string);
+    const entry = () => s.kv.store.get(answerKeys(s.kv)[0]);
     await firstTurn(s);
     const before = entry();
     // A mixed question is answered for its answerable clause and signed with the full question, private clause included.
@@ -671,8 +771,12 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
     expect(mixed.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
     const turn = { q: "Tell me about Clearbox and is he married?", a: answerOf(mixedFrames), sig: mixed.sig as string };
     // The turn verifies (the read is skipped), usableHistory then drops it (historyUsed 0): the shared entry must stay.
+    const reads = s.kv.gets.filter((k) => k.startsWith(CACHE_PREFIX)).length;
+    const entries = answerKeys(s.kv).length;
     const overwrite = doneOf(await frames(await s.call({ body: { q: FIRST, locale: "en", history: [turn] } })));
     expect(overwrite.source).toBe("primary");
+    expect(s.kv.gets.filter((k) => k.startsWith(CACHE_PREFIX))).toHaveLength(reads);
+    expect(answerKeys(s.kv)).toHaveLength(entries);
     expect(entry()).toBe(before);
   });
 
@@ -712,8 +816,8 @@ describe("knowledge pack source", () => {
     expect(done).toMatchObject({ outcome: "answer", asOf: fallback.packDate });
     expect(events[0].blobs?.[4]).toBe(fallback.packVersion);
     expect(events[0].blobs?.[11]).toBe("fallback");
-    // The answer cache keys on the fallback's own version, never the full pack's.
-    expect([...kv.store.keys()]).toContain(await cacheKey(fallback.packVersion, "en", "Where does he work now?"));
+    // The answer cache keys on what the model saw: the fallback pack's own retrieved context.
+    expect(answerKeys(kv)).toHaveLength(1);
   });
 
   it("serves the KV pack when the pointer and value are published", async () => {

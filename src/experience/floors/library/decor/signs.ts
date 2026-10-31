@@ -7,8 +7,12 @@ import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryS
 
 /** L4 floating signs (spectacle round: no words painted on the floor). Pure: Vitest runs it in node. */
 
-/** One height rule (Round 7 F): section and track signs have their plate bottom here, above the rover and the station icons. */
-export const L4_SIGN = { bottom: 5.6 } as const;
+/**
+ * One height rule (Round 7 F): section and track signs have their plate bottom here, above the rover and the station icons.
+ * A track name on a portrait phone sits `phoneLift` higher: at the phone size it would otherwise end a few pixels above
+ * its bay's live spine title at the bay's stop and lose the place to it (nightly sweep, 2026-10-29).
+ */
+export const L4_SIGN = { bottom: 5.6, phoneLift: 0.4 } as const;
 /** Zone and track sign type size; a track name on a portrait phone (camera class `mobile`): `phone` size, wrapped at `phoneWrap` characters. */
 export const ZONE_SIGN = { fontSize: 0.6, letterSpacing: 0.12, phone: 0.7, phoneWrap: 14 } as const;
 /** Post titles: type size and the wrap width (characters); on a portrait phone `phone` and `phoneWrap` (the phone reading rule). */
@@ -36,9 +40,9 @@ export function stationBackEdge({ rect: r, center: c, facing: f }: Pick<LibraryS
   return { x: c.x + (f.x * (r.maxX - r.minX)) / 2, z: c.z + (f.z * (r.maxZ - r.minZ)) / 2 };
 }
 
-/** A section or track name: upper case, the zone sign type, plate bottom on `L4_SIGN.bottom` (`phone`: a track name on a portrait phone). */
+/** A section or track name: upper case, the zone sign type, plate bottom on `L4_SIGN.bottom` (`phone`: a track name on a portrait phone, `phoneLift` higher). */
 const nameSign = (text: string, at: Vec2, color: string, phone = false): SignSpec =>
-  atBottom(L4_SIGN.bottom, {
+  atBottom(L4_SIGN.bottom + (phone ? L4_SIGN.phoneLift : 0), {
     text: phone ? wrapSign(text.toUpperCase(), ZONE_SIGN.phoneWrap) : text.toUpperCase(),
     x: at.x,
     z: at.z,

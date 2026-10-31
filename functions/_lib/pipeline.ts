@@ -1,5 +1,6 @@
 import type { AskLocale, AskOutcome, AskSource, AskTag } from "../../src/ask/protocol";
-import { checkAnswer, firstPersonVoice, relevantClosest, type CheckFailure } from "./checks";
+import { answerCacheKey, readCache, writeCache, type AnswerCache } from "./answer-cache";
+import { checkAnswer, firstPersonVoice, relevantClosest, type CheckFailure, type CheckInput, type CheckResult } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, PARTISAN_NOTE, partialDecline, type CannedKind } from "./messages";
@@ -36,6 +37,8 @@ export interface PipelineInput {
   deadlineMs?: number;
   /** Question embedder (Workers AI bge-m3, `bindingEmbedder`): hybrid retrieval when the pack has vectors; absent or failing keeps BM25. */
   embed?: Embedder;
+  /** Shared answer cache (functions/_lib/answer-cache.ts), read and written for first turns only; absent in the eval. */
+  cache?: AnswerCache;
 }
 
 export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "persona" | "injection" | "offtopic" | "model_failed" | "model_decline";
@@ -304,18 +307,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(approach ? { approach: { matches: outlined.map((c) => c.title), locale } } : lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
   const messages = buildMessages(pack.packDate, context, plan.modelQuestion, routing, history);
   const historyUsed = history.length;
-  const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
-  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, locale, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
   const leadFlag = lead ? { lead: true } : {};
-  const modelOf = generation.model ? { model: generation.model } : {};
   const common = { route: routeLabel, retrieval: semantic ? ("hybrid" as const) : ("bm25" as const) };
-  if (generation.source === "none") {
-    if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true, historyUsed, ...common };
-    return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, historyUsed, ...common };
-  }
-
-  const check = checkAnswer({
-    answer: normalizeDashes(generation.text),
+  const checkInput: Omit<CheckInput, "answer"> = {
     question: routed,
     context,
     packDate: pack.packDate,
@@ -330,7 +324,29 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     adjacent,
     mentoring,
     locale,
-  });
+  };
+  // Only a request without verified history reads or writes the shared answers (security audit 2026-10-24): a signed
+  // turn that usableHistory drops can neither skip the read nor overwrite another visitor's answer.
+  const cache = input.cache && !input.history?.length ? input.cache : undefined;
+  const cacheKey = cache ? await answerCacheKey({ locale, route: routeLabel, messages, packDate: pack.packDate }) : "";
+  if (cache) {
+    const stored = await readCache(cache, cacheKey);
+    // The stored model text passes the same output checks again, so a tightened check or a new pack date applies to it.
+    const hit = stored === null ? null : checkAnswer({ ...checkInput, answer: normalizeDashes(stored) });
+    if (hit?.ok && hit.outcome === "answer") {
+      return { text: withNotes(hit.text, plan, locale), outcome: "answer", source: "cache", failures: [], calledModel: false, chunkIds, tags, ...citesOf(hit), ...leadFlag, historyUsed, ...common };
+    }
+  }
+  const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
+  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, locale, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
+  const modelOf = generation.model ? { model: generation.model } : {};
+  if (generation.source === "none") {
+    if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true, historyUsed, ...common };
+    return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, historyUsed, ...common };
+  }
+
+  const answer = normalizeDashes(generation.text);
+  const check = checkAnswer({ ...checkInput, answer });
   if (!check.ok) {
     // A project inquiry whose answer cannot be shown still gets the invitation and the card; safety replacements stay.
     const replacement: CannedKind = lead && check.replacement !== "restricted" ? "lead" : check.replacement;
@@ -367,6 +383,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     const kind: CannedKind = lead ? "lead" : "decline";
     return { text: canned(kind, locale), outcome: OUTCOME_OF[kind], source: "none", reason: "model_decline", raw: generation.text, failures: generation.failures, ...modelOf, calledModel: true, chunkIds, tags: lead ? tags : (REDIRECT_TAGS.decline ?? []), ...leadFlag, historyUsed, ...common };
   }
+  // A model answer that passed every check is shared under its key (first turns only, see the read above). The value is
+  // the text the checks received, not their output: the output has no source tags, so checking it again could lose a citation.
+  if (cache && historyUsed === 0 && check.outcome === "answer" && (generation.source === "primary" || generation.source === "fallback" || generation.source === "backup")) writeCache(cache, cacheKey, answer);
   return {
     text: withNotes(check.text, plan, locale),
     outcome: check.outcome,
@@ -377,10 +396,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     calledModel: true,
     chunkIds,
     tags,
-    ...(check.cite ? { cite: check.cite } : {}),
-    ...(check.cites && check.cites.length > 1 ? { cites: check.cites } : {}),
+    ...citesOf(check),
     ...leadFlag,
     historyUsed,
     ...common,
   };
+}
+
+/** The cite and the cites (only when there is more than one) of a passing check. */
+function citesOf(check: Extract<CheckResult, { ok: true }>): Pick<PipelineResult, "cite" | "cites"> {
+  return { ...(check.cite ? { cite: check.cite } : {}), ...(check.cites && check.cites.length > 1 ? { cites: check.cites } : {}) };
 }

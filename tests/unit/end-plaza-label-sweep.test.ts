@@ -18,7 +18,7 @@ import { L4_FLOOR_Y, L4Drive, l4Data as data, l4EndLabels, l4Floor as floor, l4L
  * as `useEndSignPlacement` runs it), on a desktop and a phone, at the rendered sweep's poses: the plaza approach, the
  * constellation stop (idle, a topic picked, the camera orbited), the monument stop and the Study Vault stop. Every pose
  * is checked at several orbit angles of the topic labels: no two shown plates overlap by more than 2% of the smaller
- * (one known pair excepted, `knownOverlap`).
+ * (no exception: the count headline sits above the picked label at every orbit angle).
  */
 
 const TOPICS = data.library.topics;
@@ -42,16 +42,6 @@ function plazaFor(pick: TopicPick | null, phone = false) {
   return { signs, meta, sizes: signs.map(signPlate), texts: signs.map((s) => s.text.replace(/\s+/g, " ")) };
 }
 
-/**
- * A known overlap, left out of the check until the placement fixes it (it breaks the owner rule that no end plaza label
- * covers another, docs/decisions/2026-10-23-test-consolidation.md): the picked topic's label and the "N pieces on X"
- * headline always show (the placement never moves or hides either), and from the constellation stop the label passes in
- * front of the headline for part of every orbit (about a quarter of it on a phone, almost half on a desktop; a rendered
- * probe agrees). The rendered sweep read one orbit angle, set by how long the run took, and never landed in that part.
- * Remove this exception with the fix.
- */
-const knownOverlap = (a: Plate, b: Plate) => [a.kind, b.kind].includes("count") && [a, b].some((p) => p.kind === "topic" && p.picked);
-
 /** The rendered sweep's check: pairs of shown plates whose screen quads overlap by more than 2% of the smaller one. */
 function overlaps(plates: readonly Plate[]): string[] {
   const hits: string[] = [];
@@ -59,7 +49,7 @@ function overlaps(plates: readonly Plate[]): string[] {
     for (let j = i + 1; j < plates.length; j++) {
       const a = plates[i].quad;
       const b = plates[j].quad;
-      if (polygonOverlap(a, b) > 0.02 * Math.min(polygonArea(a), polygonArea(b)) && !knownOverlap(plates[i], plates[j])) hits.push(`${plates[i].text} x ${plates[j].text}`);
+      if (polygonOverlap(a, b) > 0.02 * Math.min(polygonArea(a), polygonArea(b))) hits.push(`${plates[i].text} x ${plates[j].text}`);
     }
   return hits;
 }
@@ -147,9 +137,9 @@ describe("the end plaza sweep's check", () => {
     expect(overlaps([plate("A", 0), plate("B", 99)])).toEqual([]);
   });
 
-  it("leaves out only the picked label over the count headline", () => {
+  it("makes no exception for the picked label over the count headline (#297)", () => {
     const count: Plate = { ...plate("6 pieces", 50), kind: "count" };
-    expect(overlaps([{ ...plate("Picked", 0), picked: true }, count])).toEqual([]);
+    expect(overlaps([{ ...plate("Picked", 0), picked: true }, count])).toEqual(["Picked x 6 pieces"]);
     expect(overlaps([plate("Other", 0), count])).toEqual(["Other x 6 pieces"]);
   });
 });

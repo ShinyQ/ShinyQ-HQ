@@ -95,7 +95,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 
 - The timeline words are one `FloatingSigns` group `library-signs` (`LibrarySigns.tsx`, 2 draw calls).
   - Pure specs in `decor/signs.ts`; `librarySigns` lists every sign with its `LibrarySignMeta` (`kind`, `room`), building each bay's slots once; post titles come by post slug (`postTitles` in `decor/common.tsx`).
-- Section and track names share one height: `L4_SIGN.bottom`, 5.6 u, upper case in the zone sign type (`ZONE_SIGN`: 0.6, letter spacing 0.12).
+- Section and track names share one height: `L4_SIGN.bottom`, 5.6 u, upper case in the zone sign type (`ZONE_SIGN`: 0.6, letter spacing 0.12). On a portrait phone a track name sits `L4_SIGN.phoneLift` (0.4 u) higher: at its phone size it otherwise ended about 3 px above its bay's live spine title at the bay's stop, inside `LABEL_GAP`, and lost the place.
 - Kinds of sign (`LibrarySignKind`):
   - `section`: one per zone with a station (Posts over the featured stage, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first station (`stationBackEdge`).
   - `track`: each bay's track name over the bay's back edge (from content); `room` is the bay room `L4:track:<slug>`.
@@ -158,7 +158,7 @@ No label may cover another (owner decision).
 
 - `useEndSignPlacement` calls the pure frame `endPlazaFrame` (`decor/signFrame.ts`), which projects each plate (yaw-facing, upright).
 - `placeLabels` (`fx/labelPlacement.ts`, pure) keeps:
-  - the count headline, the monument plates (stacked in one column) and the picked topic;
+  - the count headline, the monument plates (stacked in one column) and the picked topic. The count headline is stacked over the picked topic's label (`COUNT_GAP` 0.25 u between the plates) and rides the orbit with it, so the two never overlap at any orbit angle (#297; it used to float at a fixed 12.6 u over the cloud and crossed the picked label for part of every orbit);
   - then the other topic labels by priority (hovered orb, bigger topic, nearer), up to 8 (5 on phones), where they cover nothing.
 - Labels fade out when the camera is right under them.
 - The result reaches `FloatingSigns` through its `visibility` prop (a per-sign opacity array).
@@ -254,21 +254,21 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
 ## Tests
 
 - `tests/unit/end-plaza-label-sweep.test.ts` (every PR): no end plaza label overlap (`polygonOverlap` of the quads, over 2 percent of the smaller) from the approach, the constellation stop (idle, a topic picked, the camera turned a little), the monument stop and the vault stop, at 8 orbit angles of the topic labels, desktop and phone, without a renderer; the bigger topics, the picked topic and its count, the 5 monument plates, every spine and the vault sign show.
-  - Known overlap, left out of the check until a placement fix (it breaks the owner rule that no end plaza label covers another): the picked topic's label crosses the always-shown count headline for part of every orbit (about a quarter on a phone, almost half on a desktop); neither plate is placed, so only a placement change can fix it. The fix removes `knownOverlap` from the sweep.
+  - No exception: the picked topic's label and the count headline are checked like every other pair.
 - `tests/unit/library-label-sweep.test.ts` (every PR, about 1 s): the same sweep and assertions as `e2e/library-labels.spec.ts`, without a renderer.
   - The real layout and signs, the scene's own per-frame placement (`signFrame.ts`) and the follow camera as `CameraDirector` settles it (the autopilot route by `roadRoute`, view zones, look-ahead, offset scale, camera collision).
   - Each pose is checked at 8 orbit angles of the end plaza's topic labels.
   - A change to the camera rig, the view zones or the placement that the sweep does not follow shows as a gap between the two; the rendered spec stays the reference.
 - Study Vault:
   - `tests/unit/library-vault.test.ts` (layout, space rules, framing) and `tests/unit/library-vault-scene.test.ts` (`coverOpen` and `bookOpen`, the book, plinth and cover matrices, tones, sign positions, `vaultZone` and priorities);
-  - the label sweep's `vault` pose: all 4 spines and the `STUDY VAULT` sign show at each of the 8 orbit angles, desktop and phone, with no overlap;
+  - the label sweep's `vault` pose: every spine and the `STUDY VAULT` sign show at each of the 8 orbit angles, desktop and phone, with no overlap;
   - `e2e/guides-vault.spec.ts` (lite, the fixture PDF from `e2e/fixtures/guide-pdf.ts`; desktop with full motion and a phone with reduced motion): covers follow `bookOpen` at the stop, the pointed book opens fully (snapped under reduced motion), a click (desktop) or tap then Go (phone) opens the reader in this tab, Esc gives the 3D view back; a book clicked from the constellation stop drives to the vault first;
   - `vault` poses in `tests/unit/end-plaza-label-sweep.test.ts` (every PR) and `e2e/library-labels.spec.ts` (`@nightly`);
   - `e2e/perf/floors.spec.ts`: L4 per tier at the vault stop (peak `settled-L4-vault`), same caps and program baseline.
 - `e2e/library-labels.spec.ts`:
   - timeline label overlap under 2 percent of the smaller plate over the arrival, each bay's stop (its drawer closed), mid-lane between bays and each desk, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
   - the caps per kind, no duplicate text, no label on the rover;
-  - each bay's track name and its live spine's title at its stop (the title of `__hq.probes.shelves.pulled`; the unit sweep sets `live` to the spine nearest the stop, as `TrackShelves` pulls it);
+  - each bay's track name and its live spine's title at its stop (the title of `__hq.probes.shelves.pulled`; the unit sweep `tests/unit/library-label-sweep.test.ts` sets `live` to the spine nearest the stop, as `TrackShelves` pulls it, and builds the phone device's signs at their phone sizes, so a PR catches what used to fail only in this nightly spec);
   - each zone's sign on its approach, road or door pose;
   - opt-in `L4_SHOTS` captures and numbers.
 - Track shelves (unit tests per area are listed in the sections above):

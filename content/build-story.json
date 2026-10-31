@@ -794,8 +794,8 @@
         {
           "title": { "en": "Nightly Evals", "id": "Evaluasi Malam Hari" },
           "text": {
-            "en": "Every night a 20-question smoke test runs on Gemma 4, and slices of the golden set, the curated questions and a red team run on a Groq model production never uses; a fidelity set checks the first backup. A red-team failure opens an issue.",
-            "id": "Setiap malam smoke test berisi 20 pertanyaan dijalankan di Gemma 4, sementara sebagian golden set, pertanyaan pilihan, dan red team dijalankan di model Groq yang tidak dipakai production; set fidelity menguji model cadangan pertama. Jika red team gagal, issue dibuka."
+            "en": "Every night a 21-question smoke test runs on Gemma 4, and rotating slices of the golden set, the curated questions and the red team run on a Groq model production never uses; a fidelity set checks the first backup. A question that never reached a model counts as not run, not as a wrong answer, and a red-team failure opens an issue.",
+            "id": "Setiap malam smoke test berisi 21 pertanyaan dijalankan di Gemma 4, sementara sebagian golden set, pertanyaan pilihan, dan red team dijalankan bergiliran di model Groq yang tidak dipakai production; set fidelity menguji model cadangan pertama. Pertanyaan yang tidak sampai ke model dihitung tidak dijalankan, bukan jawaban salah, dan jika red team gagal, issue dibuka."
           }
         }
       ]

@@ -106,6 +106,24 @@ export interface Report {
   routes?: CountRow[];
   /** Retrieval of model answers (blob15): bm25 or hybrid. */
   retrieval?: CountRow[];
+  /** Failure trails (blob11, `model:reason > model:reason`): only the first tier's reason is published. */
+  trails?: CountRow[];
+}
+
+/** The model chain's attempt failures (`AttemptFailure` in functions/_lib/model.ts); anything else is published as "other". */
+const FAILURE_REASONS: ReadonlySet<string> = new Set(["error", "first_token_timeout", "total_timeout", "empty", "quota", "rate_limited", "unavailable", "auth", "breaker_open", "deadline"]);
+
+/** Questions whose first model tier failed, by that tier's reason (`quota`, `breaker_open`, `first_token_timeout`, ...). */
+export function primaryFailures(trails: readonly CountRow[]): CountRow[] {
+  const counts = new Map<string, number>();
+  for (const row of trails) {
+    if (row.n <= 0) continue;
+    const first = row.key.split(">")[0]?.trim() ?? "";
+    const colon = first.lastIndexOf(":");
+    const reason = colon >= 0 && FAILURE_REASONS.has(first.slice(colon + 1)) ? first.slice(colon + 1) : "other";
+    counts.set(reason, (counts.get(reason) ?? 0) + row.n);
+  }
+  return [...counts].map(([key, n]) => ({ key, n })).sort((a, b) => b.n - a.n || a.key.localeCompare(b.key));
 }
 
 const PACK_TIERS = ["memory", "kv", "pin", "fallback"];
@@ -145,6 +163,19 @@ export function formatReport(report: Report): string {
   if (models.length) {
     lines.push("", "## Models", "", "| Model | Count | Share |", "|---|---|---|");
     for (const r of models.sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, total)} |`);
+  }
+  const failures = primaryFailures(report.trails ?? []);
+  lines.push("", "## Primary failures", "");
+  if (failures.length) {
+    lines.push(
+      "Questions whose first model tier failed, by its reason: `quota` or `breaker_open` means the daily Workers AI neurons ran out (until 00:00 UTC), `first_token_timeout` a slow first token, `rate_limited` or `error` an upstream error.",
+      "",
+      "| Reason | Count | Share |",
+      "|---|---|---|",
+    );
+    for (const r of failures) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, total)} |`);
+  } else {
+    lines.push("None this week.");
   }
   if (report.entries?.length) {
     lines.push("", "## Entry points", "", "| Entry point | Count | Share |", "|---|---|---|");
@@ -214,7 +245,7 @@ export const DECLINED_QUERY =
 export const OVER_REFUSED_QUERY =
   "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'decline' AND blob16 = 'match' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
 
-/** The public report's queries: counts by outcome, source, model, reason, entry point, unanswered topic, over-refusal, route and retrieval. */
+/** The public report's queries: counts by outcome, source, model, reason, entry point, unanswered topic, over-refusal, route, retrieval and failure trail. */
 export const QUERIES = {
   topics: "SELECT blob8 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   outcomes: "SELECT blob1 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
@@ -226,6 +257,7 @@ export const QUERIES = {
   overRefused: "SELECT blob6 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob16 = 'match' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   routes: "SELECT blob14 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob14 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   retrieval: "SELECT blob15 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob15 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  trails: "SELECT blob11 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob11 != '' AND blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
 };
 
 async function sql(account: string, token: string, query: string): Promise<CountRow[]> {
@@ -266,10 +298,10 @@ async function main() {
     process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(declined), "Declined questions", "None in the last 7 days.")}`);
     return;
   }
-  const [topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval] = await Promise.all(
-    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models, QUERIES.tiers, QUERIES.overRefused, QUERIES.routes, QUERIES.retrieval].map((query) => sql(account, token, query)),
+  const [topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval, trails] = await Promise.all(
+    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models, QUERIES.tiers, QUERIES.overRefused, QUERIES.routes, QUERIES.retrieval, QUERIES.trails].map((query) => sql(account, token, query)),
   );
-  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval });
+  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval, trails });
   const unknownTotal = outcomes.find((r) => r.key === "unknown")?.n ?? 0;
   writeFileSync(process.env.CONTENT_GAP_REPORT || "content-gap-report.md", report);
   console.log(report);

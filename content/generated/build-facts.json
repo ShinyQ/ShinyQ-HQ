@@ -1,8 +1,8 @@
 {
   "generatedAt": "2026-10-31",
-  "commit": "814d0cb",
+  "commit": "2fe0a3d",
   "git": {
-    "commits": 297,
+    "commits": 299,
     "firstCommit": "2026-10-09",
     "mergedPrs": 283,
     "latestPr": 351
@@ -412,7 +412,7 @@
     }
   ],
   "tests": {
-    "unitFiles": 493,
+    "unitFiles": 494,
     "e2e": 713,
     "e2eFiles": 62,
     "perfFiles": 7
@@ -438,7 +438,7 @@
   },
   "log": {
     "decisions": {
-      "total": 246,
+      "total": 248,
       "areas": [
         {
           "area": "Content",
@@ -450,7 +450,7 @@
         },
         {
           "area": "Ask",
-          "count": 20
+          "count": 21
         },
         {
           "area": "L1 Agent Office",
@@ -465,15 +465,21 @@
           "count": 13
         },
         {
-          "area": "Stats",
+          "area": "L4 Writing",
           "count": 11
         },
         {
-          "area": "HUD",
-          "count": 10
+          "area": "Stats",
+          "count": 11
         }
       ],
       "latest": [
+        {
+          "date": "2026-10-31",
+          "area": "L4 Writing",
+          "file": "2026-10-31-l4-writing-labels-calibration.md",
+          "text": "Two end-of-month calibration fixes on L4 labels, both under the owner rule that no label covers another."
+        },
         {
           "date": "2026-10-31",
           "area": "Content: LinkedIn alignment",
@@ -493,6 +499,12 @@
           "text": "Owner request: the B1 content felt redundant; the owner chose all three fixes."
         },
         {
+          "date": "2026-10-31",
+          "area": "Ask",
+          "file": "2026-10-31-ask-calibration-and-evals.md",
+          "text": "Ask calibration and the nightly eval."
+        },
+        {
           "date": "2026-10-29",
           "area": "Content: certifications and study guides",
           "file": "2026-10-29-content-gh-300-in-progress-and-study-guide.md",
@@ -509,18 +521,6 @@
           "area": "3D experience",
           "file": "2026-10-28-phone-first-3d-part-2.md",
           "text": "Phone-first 3D, part 2: floor framing and legibility plus the keyboard hints are part 2; joystick on demand, gestures and a landscape camera go to part 3."
-        },
-        {
-          "date": "2026-10-27",
-          "area": "HUD",
-          "file": "2026-10-27-tour-no-drive.md",
-          "text": "The first-session tour never moves the rover by itself."
-        },
-        {
-          "date": "2026-10-27",
-          "area": "Classic site",
-          "file": "2026-10-27-page-view-hallmark-classic-redesign.md",
-          "text": "Hallmark redesign of the Classic site at full depth, keeping the Neon Grid brand (void paper, one cyan signal, Archivo condensed, Inter); the system is locked in DESIGN.md."
         }
       ]
     },
@@ -565,8 +565,8 @@
     }
   },
   "ask": {
-    "golden": 105,
-    "passMark": 102,
+    "golden": 108,
+    "passMark": 105,
     "promptDate": "2026-10-27",
     "packKb": 384,
     "historyTurns": 5,

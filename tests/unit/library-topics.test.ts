@@ -111,11 +111,11 @@ describe("end plaza signs", () => {
       const below = monument[i];
       expect(above.y - signPlate(above).h / 2).toBeGreaterThan(below.y + signPlate(below).h / 2);
     }
-    // The headline floats above every topic label, and the picked label is the larger one.
+    // The headline is stacked over the picked label and rides the orbit with it (#297), and the picked label is the larger one.
     const count = signs[meta.findIndex((m) => m.kind === "count")];
-    const tops = signs.filter((_, i) => meta[i].kind === "topic").map((s) => s.y + signPlate(s).h / 2);
-    expect(count.y - signPlate(count).h / 2).toBeGreaterThan(Math.max(...tops));
     const voice = signs[meta.findIndex((m) => m.slug === "voice-ai")];
+    expect([count.x, count.z, count.orbit]).toEqual([voice.x, voice.z, true]);
+    expect(count.y - signPlate(count).h / 2).toBeGreaterThan(voice.y + signPlate(voice).h / 2);
     const other = signs[meta.findIndex((m) => m.slug === "case-study")];
     expect(voice.fontSize).toBeGreaterThan(other.fontSize);
     expect(other.opacity).toBeLessThan(1);
