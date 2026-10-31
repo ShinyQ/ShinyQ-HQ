@@ -34,8 +34,13 @@ describe("workflow pinning (S4)", () => {
     expect(keep).toEqual(["refresh-facts.yml"]);
   });
 
-  it("deploys the hq-stats Worker with the same wrangler version", () => {
-    for (const file of ["deploy.yml", "rollback.yml"]) expect(read(path.join(dir, file))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
+  it("deploys the hq-stats Worker with the wrangler version package.json pins (so a Dependabot bump needs no workflow edit)", () => {
+    for (const [file, pkgPath] of [["deploy.yml", "./package.json"], ["rollback.yml", "./target/package.json"]]) {
+      const text = read(path.join(dir, file));
+      expect(text, file).toContain("wranglerVersion: ${{ steps.wrangler.outputs.version }}");
+      expect(text, file).toContain(`require("${pkgPath}").devDependencies.wrangler`);
+      expect(text, file).not.toMatch(/wranglerVersion:\s*"/);
+    }
   });
 });
 

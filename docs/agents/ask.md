@@ -438,6 +438,6 @@ Security S3, H1 (owner decision).
 - `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).
 - `content-gap.yml` puts counts and topics only in its public issue and artifact, never question text (security S8, owner decision), including the Over-refused counts by reason. The owner reads questions locally with `bun scripts/content-gap.ts --questions` (unanswered, over-refused candidates and declined).
 - Action pinning (owner decision): every workflow and the setup action pin each action by full commit SHA with a `# vX.Y.Z` comment; Dependabot updates both.
-- `wrangler` is an exact devDependency, so workflows and docs call `bunx wrangler` from the lockfile, never `bunx wrangler@<range>`, and the hq-stats `wranglerVersion` matches it (`tests/unit/workflows.test.ts`).
+- `wrangler` is an exact devDependency, so workflows and docs call `bunx wrangler` from the lockfile, never `bunx wrangler@<range>`, and the hq-stats deploy reads its `wranglerVersion` from `package.json` (`tests/unit/workflows.test.ts`).
 - Workflows request only the permissions they use.
 - More CI and deploy rules: [ci-and-deploy.md](ci-and-deploy.md).
