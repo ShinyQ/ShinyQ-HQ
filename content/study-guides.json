@@ -231,6 +231,59 @@
       ]
     },
     {
+      "slug": "ab-100",
+      "certId": "ab-100",
+      "code": "AB-100",
+      "spine": "AB-100",
+      "issuer": "Microsoft",
+      "title": {
+        "en": "Agentic AI Business Solutions Architect",
+        "id": "Agentic AI Business Solutions Architect"
+      },
+      "summary": {
+        "en": "Planning, designing and deploying agentic AI business solutions across Microsoft 365 Copilot, Copilot Studio, Microsoft Foundry, Power Platform and Dynamics 365, with architecture case studies and original practice questions.",
+        "id": "Merencanakan, mendesain, dan men-deploy solusi bisnis agentic AI di Microsoft 365 Copilot, Copilot Studio, Microsoft Foundry, Power Platform, dan Dynamics 365, disertai studi kasus arsitektur dan soal latihan orisinal."
+      },
+      "edition": "2026-10",
+      "file": "AB-100_Study_Guide.pdf",
+      "pages": 236,
+      "bytes": 5526384,
+      "version": "235edc5aa04f",
+      "cover": "/study-guides/ab-100.webp",
+      "domains": [
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Plan AI-powered business solutions",
+            "id": "Merencanakan solusi bisnis berbasis AI"
+          }
+        },
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Design AI-powered business solutions",
+            "id": "Mendesain solusi bisnis berbasis AI"
+          }
+        },
+        {
+          "weight": [
+            40,
+            45
+          ],
+          "label": {
+            "en": "Deploy AI-powered business solutions",
+            "id": "Men-deploy solusi bisnis berbasis AI"
+          }
+        }
+      ]
+    },
+    {
       "slug": "ai-103",
       "certId": "ai-103",
       "code": "AI-103",

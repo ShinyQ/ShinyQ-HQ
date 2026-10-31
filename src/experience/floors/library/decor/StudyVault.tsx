@@ -14,7 +14,7 @@ import type { GpuTier } from "../../../types";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryVault } from "../model";
 import { bookKit, kitBodies, kitBox, kitCovers, kitPools, type KitItem } from "./bookKit";
-import { bookMatrix, coverMatrix, coverOpen, issuerTone, plinthMatrix } from "./vault";
+import { bookMatrix, bookOpen, coverMatrix, issuerTone, plinthMatrix } from "./vault";
 
 /** Instance brightness: book rims, plinth rims, covers (shut, and added when open), floor pools and the track. */
 const LEVEL = { body: 1.15, plinth: 0.6, cover: 0.42, coverOpen: 0.6, pool: 0.3, center: 0.14, track: 0.42 };
@@ -38,13 +38,14 @@ const C = new Color();
  */
 export function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean) {
   const full = tier === "full";
-  const { books, stop, center } = vault;
+  const { books, stop, center, arc } = vault;
   const n = books.length;
   const V = NEWSROOM.end.vault;
+  const outer = arc + (vault.tiers - 1) * V.rowGap;
   const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / n, z: m.z + b.at.z / n }), { x: 0, z: 0 });
   const box = kitBox(n * 2);
-  // The arc the books stand on, around the stop (centered due east of it): in the ring's own plane, laid flat by the instance.
-  const span = ((n - 1) / 2) * (V.spacing / V.arc) + TRACK.margin;
+  // The arc (or both arcs) the books stand on, around the stop (centered due east of it): in the ring's own plane, laid flat by the instance.
+  const span = vault.span + TRACK.margin;
   const tones = books.map((b) => issuerTone(b.issuer));
   const parts = [
     kitBodies(box, [
@@ -54,7 +55,7 @@ export function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: b
     // Covers start shut; `useFrame` moves them.
     kitCovers(box, books.map((b, i): KitItem => [coverMatrix(b, 0, new Matrix4()), tones[i], LEVEL.cover]), tier),
     {
-      geometry: new RingGeometry(V.arc - TRACK.half, V.arc + TRACK.half, 40, 1, -span, span * 2),
+      geometry: new RingGeometry(arc - TRACK.half, outer + TRACK.half, 40, 1, -span, span * 2),
       material: createHoloMaterial({ mode: HOLO_MODE.ring, color: neonColor("#ffffff", 1.2, tier), opacity: full ? 0.8 : 0.6, additive: full, params: [TRACK.dashes, 0, 0, 0] }),
       items: [[new Matrix4().makeRotationX(-Math.PI / 2).setPosition(stop.x, 0.03, stop.z), TRACK_COLOR, LEVEL.track]] as KitItem[],
     },
@@ -71,8 +72,8 @@ export function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: b
 
 /**
  * The L4 Study Vault (owner request 2026-10-19): the certification study guides as tall holo books on low plinths
- * along an arc east of the stop, in their issuers' tones. Each book's cover (on its right as seen from the stop) slides
- * out and swings open, brightening, as the rover comes near (`coverOpen`) or while point-and-go hovers that book; the
+ * along an arc east of the stop (past five guides, a front arc and a raised back arc, staggered), in their issuers' tones. Each book's cover (on its right as seen from the stop) slides
+ * out and swings open, brightening, as the rover comes near (`bookOpen`) or while point-and-go hovers that book; the
  * spines and the "Study Vault" sign are words, so they ride the end plaza's `FloatingSigns` group. Draw calls: books
  * and plinths 1 (holo `plate`), covers 1 (holo `core`), the floor track 1 (holo `ring`) and, on full only, the light
  * pools 1 (holo `dot`): shared holo program. Lite drops the pools and additive blending; reduced motion snaps the
@@ -107,7 +108,7 @@ export function StudyVault({ vault, tier, reducedMotion }: { vault: LibraryVault
     let changed = false;
     for (let i = 0; i < books.length; i++) {
       const book = books[i];
-      const target = state.floor !== "L4" ? 0 : state.hover?.item.id === kit.ids[i] ? 1 : coverOpen(Math.hypot(roverRuntime.x - book.at.x, roverRuntime.z - book.at.z));
+      const target = state.floor !== "L4" ? 0 : state.hover?.item.id === kit.ids[i] ? 1 : bookOpen(book, vault.stop, roverRuntime.x, roverRuntime.z);
       const next = reducedMotion ? target : o[i] + MathUtils.clamp(target - o[i], -step, step);
       if (Math.abs(next - o[i]) < 1e-5) continue;
       o[i] = sceneProbes.vault.open[i] = next;

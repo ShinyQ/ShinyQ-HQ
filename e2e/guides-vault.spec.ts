@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import guides from "../content/study-guides.json";
 import { yawLooking } from "../src/experience/camera/look";
-import { coverOpen } from "../src/experience/floors/library/decor/vault";
+import { bookOpen } from "../src/experience/floors/library/decor/vault";
 import { routeGuides } from "./fixtures/guide-pdf";
 import {
   chooseMotion,
@@ -27,7 +27,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * The L4 Study Vault (study guides PR 2): the certification study guides stand as holo books off the end plaza. At the
- * vault stop the covers stand open as far as the rover's distance says (`coverOpen`), and the pointed book opens
+ * vault stop the covers stand open as far as the rover's distance says (`bookOpen`), and the pointed book opens
  * fully (snapped under reduced motion); clicking (or tapping, then Go) a book opens its guide in the in-site reader
  * over `/api/guides/*` (the PR 1 fixture PDF), in this tab; Esc closes it and the keyboard drives the rover again.
  * From the constellation stop a click on a book drives to the vault stop first. Lite tier, like the other L4 specs:
@@ -59,13 +59,12 @@ async function bookCenters(page: Page): Promise<Map<string, Vec2>> {
   return new Map(items.map((i) => [i.id.slice("L4:vault:".length), { x: (i.bounds.minX + i.bounds.maxX) / 2, z: (i.bounds.minZ + i.bounds.maxZ) / 2 }]));
 }
 
-/** Largest gap between each cover and where the rover's distance puts it (`coverOpen`), plus the smallest cover. */
-async function coverGap(page: Page, centers: Map<string, Vec2>) {
+/** Largest gap between each cover and where the rover's distance puts it (`bookOpen`), plus the smallest cover. */
+async function coverGap(page: Page, centers: Map<string, Vec2>, stop: Vec2) {
   const [probe, rover] = await Promise.all([vaultProbe(page), roverAt(page)]);
   let gap = 0;
   probe.books.forEach((slug, i) => {
-    const c = centers.get(slug)!;
-    gap = Math.max(gap, Math.abs(probe.open[i] - coverOpen(Math.hypot(rover.x - c.x, rover.z - c.z))));
+    gap = Math.max(gap, Math.abs(probe.open[i] - bookOpen({ at: centers.get(slug)! }, stop, rover.x, rover.z)));
   });
   return { gap, min: Math.min(...probe.open), books: probe.books.length };
 }
@@ -124,7 +123,8 @@ for (const device of [
       // Far from the vault (the arrival) every cover is shut.
       expect((await vaultProbe(page)).open.every((o) => o === 0)).toBe(true);
 
-      await driveTo(page, await stopOf(page, "L4:vault"));
+      const vaultStop = await stopOf(page, "L4:vault");
+      await driveTo(page, vaultStop);
       await waitForCameraSettle(page);
       // Under reduced motion no view zone turns the camera, so it keeps the arrival's elevator diagonal (owner 2026-10-23):
       // turn it east at the books by hand, as a visitor would (the vault zone's own view with motion on).
@@ -132,7 +132,7 @@ for (const device of [
       // Every cover stands where the rover's distance puts it: half open or more from the stop.
       await expect
         .poll(async () => {
-          const c = await coverGap(page, centers);
+          const c = await coverGap(page, centers, vaultStop);
           return { ...c, settled: c.gap < 0.02 && c.min > 0.4 };
         }, { message: `${device.id}: covers at the stop` })
         .toMatchObject({ settled: true, books: guides.guides.length });

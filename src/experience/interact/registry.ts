@@ -353,7 +353,7 @@ function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] 
       label: data.labels.studyGuide(book.code ?? book.spine),
       at: { ...vault.stop },
       bounds: bare(book.rect),
-      height: NEWSROOM.end.vault.book.h,
+      height: book.rise + NEWSROOM.end.vault.book.h,
       action: { type: "command", command: `guide:${book.slug}` },
       group: { id: VAULT_ROOM, label: data.labels.studyVault },
     }),

@@ -184,38 +184,43 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
 | Constant | Value | Meaning |
 |---|---|---|
 | `entryVertex` | 6 | ring road vertex (of 16) the vault road starts on: 135 degrees, south-east |
-| `distance` | 22 | vault plaza center from the end plaza center along that diagonal (the two rims stay 1 u apart) |
-| `plaza` | 16 | round plaza diameter (`ROAD.minPlaza`); `LibraryVault.radius` 8 |
-| `stopInset` | 0.5 | the stop, from the vault plaza center toward the ring, on the road (close to the center, so five books stay inside the plaza and clear of the road's end) |
-| `arc`, `spacing` | 8, 3 | the books on an arc of radius 8 around the stop, centered due east, 3 u apart along it |
+| `distance`, `distanceTiers` | 22, 26 | vault plaza center from the end plaza center along that diagonal, one arc and two tiers (the two rims stay 1 u apart) |
+| `plaza`, `plazaTiers` | 16, 24 | round plaza diameter (`ROAD.minPlaza` on one arc); `LibraryVault.radius` 8 or 12 |
+| `stopInset` | 0.5 | the stop, from the vault plaza center toward the ring, on the road (close to the center, so the books stay inside the plaza and clear of the road's end) |
+| `arc`, `spacing` | 8, 3 | one arc: the books on an arc of radius 8 around the stop, centered due east, 3 u apart along it |
+| `oneRow`, `max` | 5, 10 | up to 5 guides stand on one arc; 6 to 10 stand as two tiers; the schema caps `content/study-guides.json` at `MAX_GUIDES` 10 |
+| `arcTiers`, `rowGap`, `rise` | 9, 2.6, 0.9 | two tiers: the books alternate in file order between a front arc of radius 9 and a back arc 2.6 u farther out on a 0.9 u riser, half the one-arc angle apart (each row about 3.4 u and 4.3 u apart along it), so every back book stands between two front ones |
 | `book` | w 1.2, d 2.6, h 4.2 | spine thickness along the arc, depth toward the stop, height |
-| `zone`, `zoom`, `zoomPhone` | 2.5, 1.15, 1.15 | camera zone half size around the stop and its zooms |
+| `zone`, `zoom`, `zoomPhone`, `zoomPhoneStep` | 2.5, 1.15, 1.15, 0.08 | camera zone half size around the stop and its zooms; a portrait phone zooms out 0.08 more per guide past six (1.47 at ten) |
+| `pitchPhoneTiers`, `zoomLandscapeTiers`, `upLandscapeTiers` | -0.25, 1.25, 1.5 | two tiers only: phones (portrait and landscape) look from lower; a landscape phone zooms 1.25 and aims 1.5 u higher |
 
 - Road `vault` (width `LIBRARY_FLOOR.road`, 8) from the ring vertex to the vault plaza center; plaza `vault`, round, no core.
 - Stop `stops["L4:vault"]` (`VAULT_ROOM`): a stop with a view, no catalog room and no drawer.
-- Books in file order north to south (left to right on screen), each turned with its spine toward the stop (`VaultBook.facing`).
-- Real content (end plaza center (79, 0), five books): stop (94.2, 15.2), vault plaza center (94.6, 15.6), book centers x 100.1 to 102.2, z 9.7 to 20.7. The end plaza moves east as the bays grow, and the vault moves with it.
-- Obstacle: one `LibraryVault.shelf`, the bounds of the book rects (a thin strip, about 4.8 x 13.6 u, x 98.7 to 103.5). One obstacle per book cannot pass the space rules: books 3 u apart leave gaps under the 6 u clear floor.
-- Each `VaultBook.rect` (the axis-aligned bound of the turned footprint; rects never overlap) is a tall camera column (h 4.2) and the book's pick bounds.
-- The slab grows east and south only: floor bounds x -24 to 109.5, z -23.5 to 29.6 with real content.
-- `tests/unit/library-vault.test.ts` (real content, crowded with 60 posts on 6 tracks, no metrics): the space and pad rules, the road and stop on the diagonal, the stop reachable, books 8 u from the stop and inside the plaza, the shelf and every book rect at least 3 u from the Return pad, the monument, the pedestal, the ring road edge and the slab edge.
+- Books in file order north to south (left to right on screen), each turned with its spine toward the stop (`VaultBook.facing`). `VaultBook.tier` is 0 (front, or the one arc) or 1 (back); `VaultBook.rise` is its riser (0 or 0.9). `LibraryVault.tiers`, `arc` (the front radius) and `span` (the outer books' angle) describe the arrangement.
+- Real content (end plaza center (79, 0), six books, two tiers): stop (97.0, 18.0), vault plaza center (97.4, 18.4), book centers x 105.1 to 108.6, z 14.0 to 23.3. The end plaza moves east as the bays grow, and the vault moves with it.
+- Obstacle: one `LibraryVault.shelf`, the bounds of the book rects (about 6.3 x 11.6 u with real content, x 103.6 to 109.9). One obstacle per book cannot pass the space rules: books 3 u apart leave gaps under the 6 u clear floor.
+- Each `VaultBook.rect` (the axis-aligned bound of the turned footprint; rects never overlap) is a tall camera column (h `rise` + 4.2) and the book's pick bounds.
+- The slab grows east and south only: floor bounds x -24 to 115.9, z -23.5 to 36.4 with real content.
+- `tests/unit/library-vault.test.ts` (real content, crowded with 60 posts on 6 tracks, no metrics, and every count from 1 to 10 guides): the space and pad rules, the road and stop on the diagonal, the stop reachable, books on their arc and inside the plaza, the shelf and every book rect at least 3 u from the Return pad, the monument, the pedestal, the ring road edge and the slab edge.
 
 ### Camera
 
-- Zone `L4:vault`: 2.5 u around the stop at any heading, yaw `lookEast` (like the arrival and constellation views), zoom 1.15, phones (`classView.mobile`) 1.15; no other zone overlaps it.
-- Phone view (zoom 1.15): the five books and the sign above them sit mid-screen with the rover below, clear of the corner controls and the joystick.
-- The framing test settles the follow camera (look-ahead, offset scale, `clampCamera`; `tests/helpers/follow-frame.ts`) at 1440x900, 1194x834, 834x1194 and 390x844: the rover and all 8 corners of every book (floor and 4.2 u) stay inside the HUD-safe box.
+- Zone `L4:vault`: 2.5 u around the stop at any heading, zoom 1.15; no other zone overlaps it.
+  - Yaw (`vaultYaw`): `lookEast` on one arc (like the arrival and constellation views); on two tiers toward the shelf's middle (about 3.4 degrees off with six books), so an even count, a front book at one end and a farther back book at the other, sits centered.
+  - Phones (`vaultClassView`): portrait zoom 1.15 plus 0.08 per guide past six; on two tiers, portrait pitch -0.25 and a landscape view (zoom 1.25, pitch -0.25, aimed 1.5 u up).
+- Phone view: the books and the sign above them sit mid-screen with the rover below, clear of the corner controls and the joystick.
+- The framing test settles the follow camera (look-ahead, offset scale, `clampCamera`; `tests/helpers/follow-frame.ts`) at 1440x900, 1194x834, 834x1194 and 390x844, on the real content and on every count from 1 to 10: the rover and all 8 corners of every book (floor and its top) stay inside the HUD-safe box.
 
 ### Scene (`decor/StudyVault.tsx`, pure helpers in `decor/vault.ts`)
 
 - `Library.tsx` mounts it when `layout.end.vault` exists. Group `library-vault` at the vault plaza center (so transparent sorting sees the vault where it is).
 - `vaultMeshes` builds every `InstancedMesh` once on the shared book kit (`decor/bookKit.ts`, also behind the track shelves; rendered as primitives, disposed through one `useDispose(kit)`). One draw call each, all on the shared instanced holo program (no new shader program):
-  - books and plinths: 2 per book (10 with five guides), holo `plate` with depth write, `renderOrder` -2; issuer tones `ISSUER_TONE` (Microsoft `#22d3ee`, GitHub `#a78bfa`, Google `#fbbf24`, the Classic shelf's dots);
+  - books and plinths: 2 instances per book (12 with six guides; a back book's plinth runs down to the floor as its riser), holo `plate` with depth write, `renderOrder` -2; issuer tones `ISSUER_TONE` (Microsoft `#22d3ee`, GitHub `#a78bfa`, Google `#fbbf24`, the Classic shelf's dots);
   - covers: 1 per book, holo `core` (sharing the books' box), `renderOrder` -1, so the spine plates draw over the covers in front of them;
-  - the floor track: a dashed `RingGeometry` arc around the stop under the plinths, holo `ring` (the outer books' backs stand about 1 u past the plaza rim, on the track);
+  - the floor track: a dashed `RingGeometry` arc around the stop under the plinths (on two tiers wide enough for both arcs), holo `ring` (the outer books' backs stand past the plaza rim, on the track);
   - full tier only: light pools, holo `dot`, one under each book and a wide dim one under the middle of the arc.
 - Culling: one bounding sphere, the union of every instance of every mesh (open covers included), shared by all meshes (`bookKit`), so the vault culls as one at any book count.
-- Covers: `coverOpen(distance)` is 1 minus smoothstep between `VAULT_SCENE.near` 4 u and `far` 12 u from the rover to the book's center. From the stop (8 u from every book) each cover stands half open; it opens fully as the rover drives up to its book and is shut from the ring road. A book hovered through point-and-go opens fully; off L4 every cover shuts.
+- Covers: `coverOpen(distance)` is 1 minus smoothstep between `VAULT_SCENE.near` 4 u and `far` 12 u; `bookOpen` feeds it the rover's distance to the book's center less how much farther than `arc` (8 u) the book stands from the stop. So from the stop each cover stands half open on either tier; it opens fully as the rover drives up to its book and is shut from the ring road. A book hovered through point-and-go opens fully; off L4 every cover shuts.
   - Each cover lies on the book's right as seen from the stop, hinged on the spine edge; open, it slides out 0.6 u, swings its far edge 35 degrees outward and brightens.
   - `useFrame` moves each cover toward its target at 1.6 of the travel a second and writes instance matrices and colors only on change (module scratch objects).
 - Reduced motion snaps the covers to their target and holds the bands, the dashes and the pool pulse (`useUniformTime`). Lite drops the pools and additive blending.
@@ -224,19 +229,22 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
 ### Signs and placement
 
 - The words ride the end plaza's `FloatingSigns` group (`endPlazaSigns` in `EndPlaza.tsx`), so they cost no new draw call; that group's 2 calls draw at the vault only because its signs show there.
-  - One spine sign per book: `wrapSign(spine, 8)`, issuer tone, `FONTS.monoBold` 0.36, 3.1 u up (every other book `SPINE_STAGGER` 0.5 u higher: the arc's outer neighbors close up on screen), 0.6 u in front of the spine face (`EndSignMeta.kind` `guide`, with the slug).
-  - A `STUDY VAULT` sign (`hud.interact.studyVault`, upper case, 0.5): 5.9 u up, 1.2 u behind the middle of the arc (`kind` `vault`).
+  - One spine sign per book: `wrapSign(spine, 8)`, issuer tone, `FONTS.monoBold` 0.36, 0.6 u in front of the spine face (`EndSignMeta.kind` `guide`, with the slug).
+    - One arc: 3.1 u up, every other book `SPINE_STAGGER` 0.5 u higher (the arc's outer neighbors close up on screen); phones 2.0 and 4.6.
+    - Two tiers: four heights in file order (front low, back low, front high, back high), so no two of any four neighbors share one: `SPINE.tiers` 2.4, 4.0, 3.4, 5.0; phones (portrait and landscape) `SPINE.phoneTiers` 0.4, 5.2, 3.4, 8.0 (the back row's high plates float over the back books).
+  - A `STUDY VAULT` sign (`hud.interact.studyVault`, upper case, 0.5): 5.9 u up (9.6 over two tiers), 1.2 u behind the middle of the arc (plus the row gap over two tiers) (`kind` `vault`).
+  - `tests/unit/library-vault.test.ts` places the signs from the stop for 6 to 10 guides at every framing size and on landscape phones up to nine: every spine and the sign show. At ten, a landscape phone may drop one spine behind a neighbor's plate.
 - `vaultZone(rover, vault)` (`signFrame.ts`): `inside` the vault plaza, `near` on its road or within 2 u past its start on the ring, else `far`. `useEndSignPlacement` passes it to `endPlazaFrame` (`vault`):
   - inside: the spines, then the vault sign, outrank every topic label (`VAULT_PRIORITY`);
   - near: they come after the topics;
   - far: they never show, so the constellation view stays as it was.
-- `END_SIGN_NEAR.guide` and `vault` are 0. Inside the vault the cap is `END_LABEL_MAX` or the number of vault signs, whichever is larger, so a phone (cap 5) still shows all 5 spines plus the sign. No label covers another.
+- `END_SIGN_NEAR.guide` and `vault` are 0. Inside the vault the cap is `END_LABEL_MAX` or the number of vault signs, whichever is larger, so a phone (cap 5) still shows every spine plus the sign. No label covers another.
 
 ### Targets, hint and probe
 
 - `vaultItems` (`interact/registry.ts`), one per book after the end items (the last L4 targets):
   - id `L4:vault:<slug>`, kind `station`, label `hud.interact.studyGuide` ("Read the {code} study guide", the spine when there is no code);
-  - `at` the vault stop, `bounds` the book rect, height 4.2;
+  - `at` the vault stop, `bounds` the book rect, height its riser plus 4.2;
   - action command `guide:<slug>`, never `open-room` (the vault has no catalog room);
   - `group` `{ id: "L4:vault", label: studyVault }`.
 - `guide:<slug>` (`parseCommand`, `/^guide:([a-z0-9-]{2,40})$/`): the rover drives to the vault stop, then `Director` sends `sendHudCommand({ type: "guide", slug })` and `DialogHost` opens the reader. The hint Go label for it is "Open".
@@ -252,9 +260,9 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
   - Each pose is checked at 8 orbit angles of the end plaza's topic labels.
   - A change to the camera rig, the view zones or the placement that the sweep does not follow shows as a gap between the two; the rendered spec stays the reference.
 - Study Vault:
-  - `tests/unit/library-vault.test.ts` (layout, space rules, framing) and `tests/unit/library-vault-scene.test.ts` (`coverOpen`, the book, plinth and cover matrices, tones, sign positions, `vaultZone` and priorities);
+  - `tests/unit/library-vault.test.ts` (layout, space rules, framing) and `tests/unit/library-vault-scene.test.ts` (`coverOpen` and `bookOpen`, the book, plinth and cover matrices, tones, sign positions, `vaultZone` and priorities);
   - the label sweep's `vault` pose: all 4 spines and the `STUDY VAULT` sign show at each of the 8 orbit angles, desktop and phone, with no overlap;
-  - `e2e/guides-vault.spec.ts` (lite, the fixture PDF from `e2e/fixtures/guide-pdf.ts`; desktop with full motion and a phone with reduced motion): covers follow `coverOpen` at the stop, the pointed book opens fully (snapped under reduced motion), a click (desktop) or tap then Go (phone) opens the reader in this tab, Esc gives the 3D view back; a book clicked from the constellation stop drives to the vault first;
+  - `e2e/guides-vault.spec.ts` (lite, the fixture PDF from `e2e/fixtures/guide-pdf.ts`; desktop with full motion and a phone with reduced motion): covers follow `bookOpen` at the stop, the pointed book opens fully (snapped under reduced motion), a click (desktop) or tap then Go (phone) opens the reader in this tab, Esc gives the 3D view back; a book clicked from the constellation stop drives to the vault first;
   - `vault` poses in `tests/unit/end-plaza-label-sweep.test.ts` (every PR) and `e2e/library-labels.spec.ts` (`@nightly`);
   - `e2e/perf/floors.spec.ts`: L4 per tier at the vault stop (peak `settled-L4-vault`), same caps and program baseline.
 - `e2e/library-labels.spec.ts`:

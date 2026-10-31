@@ -38,8 +38,8 @@ const MONUMENT_COLOR = "#fbbf24";
  */
 const SPINE_AHEAD = NEWSROOM.end.vault.book.d / 2 + 0.6;
 const SPINE_STAGGER = 0.5;
-/** The "Study Vault" sign: its height (u) over the middle of the arc and how far behind the books. */
-const VAULT_TITLE = { y: 5.9, behind: 1.2, phone: 0.6 };
+/** The "Study Vault" sign: its height (u) over the middle of the arc (`yTiers` over two tiers) and how far behind the books. */
+const VAULT_TITLE = { y: 5.9, yTiers: 9.6, behind: 1.2, phone: 0.6 };
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
 export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
@@ -77,7 +77,12 @@ const LABEL = { font: 0.34, picked: 0.44, phone: 0.5, phonePicked: 0.6 } as cons
  * Study Vault spines: type size and middle height; on a portrait phone a larger size, with the spines standing alternately
  * low and high (`phoneY`) so the wider plates of neighbouring books clear each other.
  */
-const SPINE = { font: 0.36, y: 3.1, phone: 0.68, phoneY: [2.0, 4.6] } as const;
+/**
+ * `tiers`, `phoneTiers`: with two tiers the spines take four heights in file order (front low, back low, front high,
+ * back high), so no two of any four neighbors share one: on screen, any four neighbors stand closer than a plate is
+ * wide. On a phone (its camera lower over two tiers) the back row's two float over the back books.
+ */
+const SPINE = { font: 0.36, y: 3.1, phone: 0.68, phoneY: [2.0, 4.6], tiers: [2.4, 4.0, 3.4, 5.0], phoneTiers: [0.4, 5.2, 3.4, 8.0] } as const;
 /** Gap between the monument's stacked plates (u). */
 const MONUMENT_GAP = 0.5;
 
@@ -154,7 +159,7 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
       signs.push({
         text: wrapSign(book.spine, 8),
         x: book.at.x + book.facing.x * SPINE_AHEAD - end.center.x,
-        y: phone ? SPINE.phoneY[i % 2] : SPINE.y + (i % 2) * SPINE_STAGGER,
+        y: vault.tiers === 2 ? (phone ? SPINE.phoneTiers : SPINE.tiers)[i % 4] : phone ? SPINE.phoneY[i % 2] : SPINE.y + (i % 2) * SPINE_STAGGER,
         z: book.at.z + book.facing.z * SPINE_AHEAD - end.center.z,
         color: issuerTone(book.issuer),
         fontSize: phone ? SPINE.phone : SPINE.font,
@@ -164,8 +169,9 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
     });
     // Over the middle of the arc, a little behind the books (away from the stop, which is the arc's center).
     const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / books.length, z: m.z + b.at.z / books.length }), { x: 0, z: 0 });
-    const k = 1 + VAULT_TITLE.behind / NEWSROOM.end.vault.arc;
-    signs.push({ text: labels.vault.toUpperCase(), x: stop.x + (mid.x - stop.x) * k - end.center.x, y: VAULT_TITLE.y, z: stop.z + (mid.z - stop.z) * k - end.center.z, color: "#e0f2fe", fontSize: phone ? VAULT_TITLE.phone : 0.5, font: FONTS.monoBold });
+    const back = (vault.tiers - 1) * NEWSROOM.end.vault.rowGap;
+    const k = 1 + (VAULT_TITLE.behind + back) / vault.arc;
+    signs.push({ text: labels.vault.toUpperCase(), x: stop.x + (mid.x - stop.x) * k - end.center.x, y: vault.tiers === 2 ? VAULT_TITLE.yTiers : VAULT_TITLE.y, z: stop.z + (mid.z - stop.z) * k - end.center.z, color: "#e0f2fe", fontSize: phone ? VAULT_TITLE.phone : 0.5, font: FONTS.monoBold });
     meta.push({ kind: "vault" });
   }
   return { signs, meta };

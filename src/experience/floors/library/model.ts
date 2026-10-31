@@ -161,6 +161,10 @@ export interface VaultBook extends LibraryGuideInput {
   facing: Vec2;
   /** Axis-aligned bounds of the turned footprint: a tall camera column and the pick bounds (the books' rects never overlap). */
   rect: Rect;
+  /** 0 on the front arc, 1 on the back arc (an amphitheater, past `NEWSROOM.end.vault.oneRow` guides). */
+  tier: number;
+  /** Height of the riser under the book's plinth (0 on the front arc). */
+  rise: number;
 }
 
 /** The Study Vault (owner request 2026-10-19): a round plaza at the end of a short road off the ring road. */
@@ -177,6 +181,12 @@ export interface LibraryVault {
   shelf: Rect;
   /** Vault plaza radius. */
   radius: number;
+  /** 1 (one arc) or 2 (front and back arcs). */
+  tiers: number;
+  /** Front arc radius around the stop. */
+  arc: number;
+  /** Angle (rad) of the outermost books from the arc's middle. */
+  span: number;
 }
 
 export const roomOfPost = (slug: string): RoomId => `L4:${slug}` as RoomId;

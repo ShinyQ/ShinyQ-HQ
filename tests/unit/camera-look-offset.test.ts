@@ -263,10 +263,10 @@ const OFFSET_ZONES: Record<CameraClass, readonly string[]> = {
   desktop: ["L1:office", "L3:overview"],
   tablet: ["L3:overview"],
   mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival", ...PHONE_READING_AIMS],
-  landscape: ["L1:kiosk", "L1:office", "L2:skyline", "L3:overview", "L3:reactor", "L4:topics", "L4:topics"],
+  landscape: ["L1:kiosk", "L1:office", "L2:skyline", "L3:overview", "L3:reactor", "L4:topics", "L4:topics", "L4:vault"],
 };
-/** Landscape phone aims (spec 2026-10-29): the L1 kiosk view and the repo skyline's rail view (landscape only, `ViewZone.only`). */
-const LANDSCAPE_AIMS = ["L1:kiosk", "L2:skyline"];
+/** Landscape phone aims (spec 2026-10-29): the L1 kiosk view, the repo skyline's rail view (landscape only, `ViewZone.only`) and the two-tier L4 Study Vault. */
+const LANDSCAPE_AIMS = ["L1:kiosk", "L2:skyline", "L4:vault"];
 const ARRIVAL_AIMS = ["L1:arrival", "L2:arrival", "L3:overview", "RF:arrival"];
 /**
  * The zones with a view only for priming on each class (`ViewZone.primeView`): the L1 phone landing view (owner decision

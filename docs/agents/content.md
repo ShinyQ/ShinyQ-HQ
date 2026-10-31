@@ -67,9 +67,9 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 
 Workflow: [../content.md](../content.md#study-guides) and [../study-guides-runbook.md](../study-guides-runbook.md).
 
-- Data: `content/study-guides.json`, its own file, parsed by `StudyGuidesFileSchema` (`@/content/schema`; unique `slug` and `certId`, at most 8 domains, `version` 12 hex, `cover` `/study-guides/<slug>.webp`). Read it on the server through `getStudyGuides()` (`@/content/load`); invalid data fails `next build`.
+- Data: `content/study-guides.json`, its own file, parsed by `StudyGuidesFileSchema` (`@/content/schema`; at most `MAX_GUIDES` 10 guides, the L4 Study Vault's two tiers; unique `slug` and `certId`, at most 8 domains, `version` 12 hex, `cover` `/study-guides/<slug>.webp`). Read it on the server through `getStudyGuides()` (`@/content/load`); invalid data fails `next build`.
 - Views: `guideViews(locale)` and `guideForCert(certId)` in `@/content/guide-views` (server only) build `GuideView` (locale-resolved title, summary and domain labels, `editionLabel`, `sizeLabel`, `url` and `downloadUrl`).
-- Client-safe helpers in `@/content/guides` (no zod, React or three): the `GuideView` type, `GUIDE_SLUG`, `guideUrl(slug, version)` (`/api/guides/<slug>?v=<version>`), `guideDownloadUrl` (adds `&download=1`), `GUIDE_PAGE_KEY`, `weightLabel`, `sizeLabel`. Never build a guide URL by hand: the `?v=` version is what makes the immutable cache safe.
+- Client-safe helpers in `@/content/guides` (no zod, React or three): the `GuideView` type, `GUIDE_SLUG`, `MAX_GUIDES`, `guideUrl(slug, version)` (`/api/guides/<slug>?v=<version>`), `guideDownloadUrl` (adds `&download=1`), `GUIDE_PAGE_KEY`, `weightLabel`, `sizeLabel`. Never build a guide URL by hand: the `?v=` version is what makes the immutable cache safe.
 - Consumers:
   - the Classic shelf `GuideShelf` on `/library` (server, labels resolved; its Read and Download controls are plain server markup, no client island);
   - `CertView.guide` (see [Certifications](#certifications));
