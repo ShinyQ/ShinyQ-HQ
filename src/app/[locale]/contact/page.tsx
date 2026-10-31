@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { ContactPanel } from "@/components/page/About";
-import { Marker, SectionSplit } from "@/components/page/Layout";
+import { SectionSplit } from "@/components/page/Layout";
 import { Certifications } from "@/components/certs/Certifications";
 import { PrincipleGrid, SkillsWall } from "@/components/ProfileBlocks";
 import { Portrait } from "@/components/page/Portrait";
@@ -36,7 +36,6 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const th = await getTranslations({ locale, namespace: "home" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const tq = await getTranslations({ locale, namespace: "quick" });
-  const tf = await getTranslations({ locale, namespace: "floors" });
   const tn = await getTranslations({ locale, namespace: "nav" });
   const roof = getRoof();
   const profile = getProfile();
@@ -46,11 +45,8 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/contact")} />
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="RF" />
-      <header className="pv-wrap grid gap-10 pt-8 sm:pt-12 lg:grid-cols-12 lg:gap-6 lg:pt-16">
+      <header className="pv-wrap grid gap-10 pt-10 sm:pt-16 lg:grid-cols-12 lg:gap-8 lg:pt-24">
         <div className="min-w-0 lg:col-span-7">
-          <p className="pv-data mb-5">
-            <Marker accent="blue">RF · {tf("RF")}</Marker>
-          </p>
           <div className="flex items-center gap-4 sm:gap-5">
             <Portrait name={profile.name} size={112} sizes="(min-width: 640px) 112px, 80px" className="size-20 sm:size-28" />
             <h1 className="pv-d-l">{ta("title")}</h1>

@@ -267,7 +267,10 @@ const firstCert = [...data.certifications].filter((c) => c.status === "earned" &
 test("certifications open the in-site preview card (no frame), keyboard first", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const section = page.locator("#certifications");
-  await expect(section.locator("[data-cert-open]")).toHaveCount(data.certifications.length);
+  // Home lists 3 featured cards and 6 rows (`limit={6}`), then links to the full list on Contact.
+  const total = data.certifications.length;
+  await expect(section.locator("[data-cert-open]")).toHaveCount(Math.min(total, 9));
+  if (total > 9) await expect(section.getByRole("link", { name: `All ${total} certifications` })).toHaveAttribute("href", /\/contact#certifications$/);
   await expect(section).not.toContainText(/verified/i);
   const card = section.locator(`[data-cert-open="${firstCert.id}"]`);
   await card.focus();
@@ -434,7 +437,7 @@ for (const v of [
   });
 }
 
-test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
+test("landing: three featured projects with their screenshots, the stats ledger, and no 3D offer on the static tier", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const cards = page.locator("#work [data-feature-pod]");
   await expect(cards).toHaveCount(3);
@@ -471,7 +474,6 @@ test("landing: View CV is the primary hero action and the sections follow the re
   expect(order.filter((id) => expected.includes(id))).toEqual(expected);
 });
 
-const columnsFor = (width: number) => (width >= 1024 ? 3 : width >= 768 ? 2 : 1);
 
 /**
  * Cards in a grid: same top and bottom within each row, same width, and with two or more columns the same
@@ -510,7 +512,8 @@ for (const viewport of [
     await openPage(page, staticTier("/en"));
     // Below the first screen, so lazy images never compete with the hero for LCP.
     expect(await page.locator("#work").evaluate((el) => el.getBoundingClientRect().top >= window.innerHeight - 1)).toBe(true);
-    await expectAlignedGrid(page, "#work [data-feature-pod]", columnsFor(viewport.width));
+    // Selected work is a Feature Stack (Hallmark redesign 2026-10-27): one project a row, every row the same width.
+    await expectAlignedGrid(page, "#work [data-feature-pod]", 1);
     for (const card of await page.locator("#work [data-feature-pod]").all()) {
       const cover = card.locator(".pv-shot img");
       await cover.scrollIntoViewIfNeeded();
@@ -529,7 +532,8 @@ for (const viewport of [
     const placeholders = page.locator("#all-projects [data-row-placeholder] [data-project-placeholder]");
     expect(await placeholders.count()).toBeGreaterThan(0);
     await expect(placeholders.first()).toHaveAttribute("aria-hidden", "true");
-    await expectAlignedGrid(page, "#key-projects li[data-pod]", columnsFor(viewport.width));
+    // Key projects are a Feature Stack too (Hallmark redesign 2026-10-27): one project a row.
+    await expectAlignedGrid(page, "#key-projects li[data-pod]", 1);
     await context.close();
   });
 }
@@ -695,6 +699,21 @@ test("the Page View stays silent: clicks and the CV dialog create no AudioContex
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
+});
+
+test("a post's Markdown table renders as a table that scrolls in its own region on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPage(page, staticTier("/en/blog/aria-acs-to-livekit"));
+  const region = page.getByRole("region", { name: en.blog.tableLabel });
+  await expect(region).toHaveCount(1);
+  const table = region.getByRole("table");
+  await expect(table).toBeVisible();
+  await expect(table.getByRole("columnheader")).toHaveText(["Exercise", "Recorded Result", "Limit"]);
+  await expect(page.locator("article")).not.toContainText("|---|");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const box = await region.boundingBox();
+  expect(box && box.x >= 0 && box.x + box.width <= 390).toBe(true);
+  await expectNoSeriousViolations(page);
 });
 
 test.describe("architecture diagrams", () => {

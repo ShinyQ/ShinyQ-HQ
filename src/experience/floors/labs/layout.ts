@@ -420,8 +420,9 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       travel: EAST,
     },
     // Tech Reactor stop on the ring road's east point: the camera stands east of the rover and looks west
-    // over the core, so the lit pods and roads of every wing fill the frame beside it.
-    { id: REACTOR_ROOM, area: { minX: reactorStop(loopEnd).x - 2, maxX: reactorStop(loopEnd).x + 2, minZ: -2, maxZ: 2 }, yaw: LOOK_WEST, zoom: REACTOR_ZOOM },
+    // over the core, so the lit pods and roads of every wing fill the frame beside it. A portrait phone's camera is lower
+    // and aims 4 u higher, so the stacked ring names (larger on phones, `RING_LABEL.phone`) read and the count sign stays in frame.
+    { id: REACTOR_ROOM, area: { minX: reactorStop(loopEnd).x - 2, maxX: reactorStop(loopEnd).x + 2, minZ: -2, maxZ: 2 }, yaw: LOOK_WEST, zoom: REACTOR_ZOOM, classView: { mobile: { pitch: -0.2, lookOffset: { up: 4 } }, landscape: { zoom: REACTOR_ZOOM * 1.15, pitch: -0.3, lookOffset: { up: 2 } } } },
     // At a door the camera looks at the pod front at 45 degrees: from the south-east (the default) for
     // pods facing south, from the north-east for pods facing north, so a pod never sits between the
     // camera and the rover.
@@ -432,7 +433,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     })),
     // The Ops Control Room faces the AI wing road like the inner pods: the same 45 degree look at its screens.
     // Zoomed in a little, so the screens and the live panel read.
-    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM },
+    // A portrait phone aims 4 u to the right, so the room sign over the screens stays whole (the phone reading rule).
+    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM, classView: { mobile: { lookOffset: { right: 4 } }, landscape: { zoom: OPS_ZOOM * 1.15, pitch: -0.15 } } },
   ];
   const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), ...wallPosts().map((p) => p.rect), core, ops.rect];
   const extentZ = Math.max(wingZ + half, ...placed.map((p) => Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))));

@@ -60,14 +60,14 @@ export function OfficeLazy({ locale, labels, load = loadPanel }: { locale: Local
   }, [failed, onStatus]);
   if (failed)
     return (
-      <p data-testid="office-live" className="pv-date">
+      <p data-testid="office-live" className="pv-meta">
         <span role="status">{labels.offlineEmpty}</span>
       </p>
     );
   if (!Panel)
     return (
       <div ref={anchor} className={OFFICE_RESERVE[locale]}>
-        <p className="pv-date">{labels.loading}</p>
+        <p className="pv-meta">{labels.loading}</p>
         <p className="mt-3 text-sm text-ink-2">{labels.loadingNote}</p>
       </div>
     );

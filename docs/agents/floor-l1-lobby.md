@@ -12,7 +12,7 @@ Related: floor rules shared by every floor live in [floors.md](floors.md); the V
 - Code: `floors/lobby/CertWall.tsx`; pure layout `CERT_WALL`, `certSlots`, `certPage`, `tabAngles`, `certPanelHalf` in `floors/lobby/layout.ts`.
 - Shape: a curved holo-wall on an arc of radius 23.5 (`LOBBY.certWall.radius`) around the hologram, inside the `LOBBY.certWall` footprint. Badges keep their size at any radius (angles scale with it).
   - A layout test keeps the widest panel inside the footprint.
-- Tabs come from `issuerTabs`: All, up to 3 issuers with 2 or more certifications, Other.
+- Tabs come from `issuerTabs`: All, up to 3 issuers with 2 or more certifications, Other. Real content: All 10, Microsoft 4 (the in-progress AB-100 among them), GitHub 2 (GH-600 and GH-300), Other 4. An in-progress badge reads "In progress" in amber where an earned one shows its month.
 - Paging: 12 badges per page in two rows sized to content, a pager past 12.
 - Draw calls:
   - badge bodies and glows: two instanced meshes;
@@ -257,6 +257,7 @@ Code: `floors/lobby/kiosk.ts`. The kiosk lines up straight, radially into the ho
 - Body, stand and screen are one group turned by one yaw (`KIOSK.yaw`) that faces the hologram.
 - The screen is centered on the body and only tilts back.
 - Lines never wrap: `kioskFontSize` fits the longest line, `fitLine` ends longer ones in "...".
+- The screen shows five of the Rover menu's entries and scrolls one line every 2.2 s (static under reduced motion). `kioskLines` puts the other entries after the hint, and the text's `clipRect` ends it after the hint (11.6 em: 8 screen lines of `KIOSK.screen.lineHeight`, checked in `tests/unit/kiosk.test.ts`), so every offset holds the same glyphs and troika updates the text in place. A new glyph count made troika dispose the text geometry, which an unseen kiosk never uploaded again: `renderer.info` geometries one lower at random (a flaky L1 replay memory gate). `e2e/gpu.spec.ts` ("the kiosk menu scrolls without reallocating its text geometry") checks it from the office stop.
 - Placement: on the kiosk axis (`LOBBY.kioskAxis`: the unit direction from the hologram to the Visitor Observatory), 22.5 u from the hologram (its front about 6 u past the lane ring, its box 6 u from the observatory).
 - Lane spoke (`Lanes.tsx`): one straight radial segment ending 0.4 u in front of its front (`kioskLaneEnd`).
 - Obstacle and pick volume: the axis-aligned box of the turned footprint (`kioskRect` in config.ts, `kioskBounds`).
@@ -270,13 +271,14 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 | Zone | Where | Camera |
 |---|---|---|
-| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
+| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView`; primed at the session start on a portrait screen (camera class `mobile`, phones and portrait tablets), the phone landing view through `ViewZone.primeView` |
 | `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0), just inside the lane ring's west point | behind the rover and 35 degrees to its right (the elevator diagonal, owner decision 2026-10-23), looking at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 1.03 aimed 4.75 u right (`arrivalAimPhone`, the whole name in frame), the camera east of the glass shaft |
 | `L1:visits` | the observatory door | |
 | `L1:office` | the office stop in the south wing | looking south at the console and the screen wall; per class zoom and pitch in [Agent Office](#agent-office) |
 
 - `CameraDirector` primes the zone under the rover when it is marked `prime` (only `L1:kiosk`; `primeZone`), on the first frame and through the boot and the intro.
 - The intro's end pose is that follow pose (yaw, zoom, look-ahead, offset scale), so the intro lands on the spawn view with no jump.
+- Spawn view on phones (owner decision 2026-10-25): on camera class `mobile` the primed kiosk zone takes `OBSERVATORY_VIEW.landingPhone` (zoom 2.1, pitch 0.1, look offset forward -13.75 u, toward the camera), so Rover, the full name over the hologram and the stats ring sit in the safe frame between the top bar and the bottom band, with no sky above the slab (`tests/unit/landing-view.test.ts` at 390 x 844 and 375 x 667). It applies at every L1 session start: after the intro and for a returning visitor who opens at the spawn; a drive back to the kiosk later uses the ordinary `classView`. The first drive away eases back to the follow view (the `pitch` turn-back); under reduced motion it applies at once and a rotation to landscape re-primes the landscape view. Desktop and landscape tablet poses are unchanged.
 - `resetView` returns to the default north-west look.
 - The elevator rolls the rover on east from the shaft to `LOBBY.arrival`; the camera glides out of the car into the arrival zone ([Elevator arrival](3d-experience.md#elevator-arrival)). Under reduced motion the rover and the camera cut to it.
 - The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The session still spawns at the kiosk stop in `L1:kiosk` (a `prime` zone), not on the arrival point.

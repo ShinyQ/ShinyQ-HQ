@@ -27,7 +27,7 @@ import { buildFloorLayouts, FLOOR_IDS, floorY, LOBBY } from "@/experience/config
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
-import type { FloorLayout, ViewportClass } from "@/experience/types";
+import type { CameraClass, FloorLayout } from "@/experience/types";
 
 /**
  * The follow rig's per-zone look-target offset (owner decision 2026-10-20: opt-in data, the office zone only). Every
@@ -51,7 +51,7 @@ function oldOrbitOffset(offset: Vec3, yaw: number, pitch: number): Vec3 {
   return [(ox * c + oz * s) * horizontal, vertical, (-ox * s + oz * c) * horizontal];
 }
 
-function oldFollowPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
+function oldFollowPose(cls: CameraClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
   const { fov, offset } = FOLLOW[cls];
   const [rx, ry, rz] = oldOrbitOffset(offset, yaw, pitch);
   return { position: [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom], target, fov };
@@ -89,13 +89,13 @@ const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const nearestAngle = (target: number, current: number) => current + wrapPi(target - current);
 const EASE_HALF_LIFE = 0.14;
 
-function oldZoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zoom: number | undefined; pitch?: number } {
+function oldZoneView(zone: ViewZone, cls?: CameraClass): { yaw: number; zoom: number | undefined; pitch?: number } {
   const own = cls ? zone.classView?.[cls] : undefined;
   return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom, pitch: own?.pitch };
 }
 const oldTurnOf = (zone: ViewZone, view: ReturnType<typeof oldZoneView>) => (view.pitch !== undefined ? zone.yaw : null);
 
-function oldPrimeZone(s: OldState, zone: ViewZone | null, cls?: ViewportClass, rail = false): void {
+function oldPrimeZone(s: OldState, zone: ViewZone | null, cls?: CameraClass, rail = false): void {
   const view = zone ? oldZoneView(zone, cls) : { yaw: 0, zoom: undefined, pitch: undefined };
   s.zone = zone?.id ?? null;
   s.suppressedZone = null;
@@ -126,7 +126,7 @@ function oldReleaseTurn(s: OldState): void {
   s.easing = true;
 }
 
-function oldUpdateZone(s: OldState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass, rail = false): void {
+function oldUpdateZone(s: OldState, zone: ViewZone | null, reduced: boolean, cls?: CameraClass, rail = false): void {
   const id = zone?.id ?? null;
   if (id === s.zone) return;
   s.zone = id;
@@ -230,9 +230,9 @@ function oldStepOrbit(s: OldState, dt: number, reduced: boolean, hold = false, i
 }
 // ---- End of the frozen copy. ----
 
-const CLASSES: readonly ViewportClass[] = ["desktop", "tablet", "mobile"];
+const CLASSES: readonly CameraClass[] = ["desktop", "tablet", "mobile"];
 /** Screens per class (offset scale differs off the class's own aspect): the tuned sizes plus a square one. */
-const ASPECTS: Record<ViewportClass, number[]> = { desktop: [1440 / 900, 1280 / 720, 1], tablet: [844 / 390, 1], mobile: [390 / 844, 820 / 1180] };
+const ASPECTS: Record<CameraClass, number[]> = { desktop: [1440 / 900, 1280 / 720, 1], tablet: [844 / 390, 1], mobile: [390 / 844, 820 / 1180], landscape: [844 / 390, 667 / 375, 932 / 430] };
 
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const layouts: Record<FloorId, FloorLayout> = buildFloorLayouts(data.years.length, {
@@ -248,20 +248,35 @@ const zones: { floor: FloorId; zone: ViewZone }[] = FLOOR_IDS.flatMap((floor) =>
 ]);
 const hasOffset = (zone: ViewZone) => zone.lookOffset !== undefined || Object.values(zone.classView ?? {}).some((v) => v?.lookOffset !== undefined);
 /** The (zone, class) pairs without a look offset: every zone but the office and the elevator arrival views that aim sideways. */
-const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone, cls).lookOffset === undefined);
+const plainOn = (cls: CameraClass) => zones.filter(({ zone }) => zoneView(zone, cls).lookOffset === undefined);
 /**
  * The zones with a look offset on each class: the office (not on tablets), the L3 overview everywhere and, on portrait
  * screens, the arrivals whose main sight sits right of the elevator diagonal's view (owner 2026-10-23).
  */
-const OFFSET_ZONES: Record<ViewportClass, readonly string[]> = {
+/**
+ * Portrait phone views that aim at what a visitor reads at a stop (the phone reading rule, `tests/unit/phone-reading.test.ts`):
+ * the L3 Ops Control Room and Tech Reactor, and the L4 Topic Constellation (its stop and its approach on the timeline
+ * share the id). On phones only.
+ */
+const PHONE_READING_AIMS = ["L3:ops", "L3:reactor", "L4:topics", "L4:topics"];
+const OFFSET_ZONES: Record<CameraClass, readonly string[]> = {
   desktop: ["L1:office", "L3:overview"],
   tablet: ["L3:overview"],
-  mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival"],
+  mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival", ...PHONE_READING_AIMS],
+  landscape: ["L1:kiosk", "L1:office", "L2:skyline", "L3:overview", "L3:reactor", "L4:topics", "L4:topics", "L4:vault"],
 };
+/** Landscape phone aims (spec 2026-10-29): the L1 kiosk view, the repo skyline's rail view (landscape only, `ViewZone.only`) and the two-tier L4 Study Vault. */
+const LANDSCAPE_AIMS = ["L1:kiosk", "L2:skyline", "L4:vault"];
 const ARRIVAL_AIMS = ["L1:arrival", "L2:arrival", "L3:overview", "RF:arrival"];
+/**
+ * The zones with a view only for priming on each class (`ViewZone.primeView`): the L1 phone landing view (owner decision
+ * 2026-10-25, `tests/unit/landing-view.test.ts`). Their primed pose is new; driving into them stays frozen.
+ */
+const PRIME_VIEW_ZONES: Record<CameraClass, readonly string[]> = { desktop: [], tablet: [], mobile: ["L1:kiosk"], landscape: [] };
+const hasPrimeView = (zone: ViewZone, cls: CameraClass) => zone.primeView?.[cls] !== undefined;
 
 /** The settled follow pose as CameraDirector builds it (look-ahead, offset scale, look offset, camera collision), new code path. */
-function newPose(floor: FloorId, s: OrbitState, cls: ViewportClass, aspect: number, at: { x: number; z: number }): CameraPose {
+function newPose(floor: FloorId, s: OrbitState, cls: CameraClass, aspect: number, at: { x: number; z: number }): CameraPose {
   const f = followForward(cls, s.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const rover: Vec3 = [at.x, floorY(floor) + 1, at.z];
@@ -269,7 +284,7 @@ function newPose(floor: FloorId, s: OrbitState, cls: ViewportClass, aspect: numb
   return { ...pose, position: clampCamera(pose.target, pose.position, cameraWorld(layouts[floor], floorY(floor)), rover, pose.fov) };
 }
 
-function oldPose(floor: FloorId, s: OldState, cls: ViewportClass, aspect: number, at: { x: number; z: number }): CameraPose {
+function oldPose(floor: FloorId, s: OldState, cls: CameraClass, aspect: number, at: { x: number; z: number }): CameraPose {
   const f = followForward(cls, s.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const rover: Vec3 = [at.x, floorY(floor) + 1, at.z];
@@ -285,7 +300,10 @@ const centre = (zone: ViewZone) => ({ x: (zone.area.minX + zone.area.maxX) / 2, 
 describe("the follow rig's look offset", () => {
   it("is opt-in data on the office zone and the sideways-aimed elevator arrivals only", () => {
     expect(zones.length).toBeGreaterThan(20);
-    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id).sort()).toEqual(["L1:office", ...ARRIVAL_AIMS].sort());
+    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id).sort()).toEqual(["L1:office", ...ARRIVAL_AIMS, ...PHONE_READING_AIMS, ...LANDSCAPE_AIMS].sort());
+    // The phone reading aims never touch a desktop or tablet view.
+    for (const { zone } of zones.filter(({ zone }) => PHONE_READING_AIMS.includes(zone.id)))
+      for (const cls of ["desktop", "tablet"] as const) expect(zoneView(zone, cls).lookOffset, `${zone.id} ${cls}`).toBeUndefined();
     // The arrivals only aim sideways: no forward or up offset, never held through a hand zoom.
     for (const { zone } of zones.filter(({ zone }) => ARRIVAL_AIMS.includes(zone.id)))
       for (const cls of CLASSES) {
@@ -333,17 +351,21 @@ describe("the follow rig's look offset", () => {
       // The office stop's view has a look offset on desktops and portrait screens; the tablet camera's aims plain.
       expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(cls === "tablet");
       expect(zones.filter((z) => !plain.includes(z)).map(({ zone }) => zone.id).sort()).toEqual([...OFFSET_ZONES[cls]].sort());
+      expect(zones.filter(({ zone }) => hasPrimeView(zone, cls)).map(({ zone }) => zone.id)).toEqual(PRIME_VIEW_ZONES[cls]);
       for (const { floor, zone } of plain) {
         const rail = floor === "L2";
         const at = centre(zone);
         for (const aspect of ASPECTS[cls]) {
-          // Primed (the spawn, an arrival, a deep link), then the pose every frame.
+          // Primed (the spawn, an arrival, a deep link), then the pose every frame. A zone with its own primed view on this
+          // class (the phone landing view) starts unprimed instead: its drive-in view stays frozen.
           const s = createOrbitState();
           const o: OldState = createOrbitState();
           setPitchRange(s, pitchRange(cls, rail ? "rail" : "follow"));
           setPitchRange(o as OrbitState, pitchRange(cls, rail ? "rail" : "follow"));
-          primeZone(s, zone, cls, rail);
-          oldPrimeZone(o, zone, cls, rail);
+          if (!hasPrimeView(zone, cls)) {
+            primeZone(s, zone, cls, rail);
+            oldPrimeZone(o, zone, cls, rail);
+          }
           expect(pick(s), `${zone.id} primed`).toEqual(pick(o));
           expect(newPose(floor, s, cls, aspect, at), `${zone.id} primed pose`).toEqual(oldPose(floor, o, cls, aspect, at));
           const got: unknown[] = [];
@@ -404,11 +426,11 @@ describe("the follow rig's look offset", () => {
     it("under reduced motion", () => run(true), 30_000);
   });
 
-  it("keeps the intro's end pose and timeline at the spawn on every class (the pinned intro poses use the same path)", () => {
+  it("keeps the intro's end pose and timeline at the spawn on desktops and tablets (phones land on their own view)", () => {
     const L1 = layouts.L1;
     const zone = zoneAt("L1", LOBBY.spawn, L1.viewZones);
     expect(zone?.prime).toBe(true);
-    for (const cls of CLASSES) {
+    for (const cls of CLASSES.filter((c) => !hasPrimeView(zone!, c))) {
       const s = createOrbitState();
       const o: OldState = createOrbitState();
       setPitchRange(s, pitchRange(cls, "follow"));
@@ -584,7 +606,7 @@ describe("a device rotation in a zone (the camera class changes) re-applies the 
     for (let i = 0; i < 300 && s.easing; i++) stepOrbit(s, 1 / 60, reduced);
   };
   /** The orbit at the office stop on `cls`, settled, then `then`'s class reported to `updateZone` as `CameraDirector` does (its pitch range first). */
-  const rotateAtStop = (cls: ViewportClass, then: ViewportClass, before?: (s: OrbitState) => void, reduced = false) => {
+  const rotateAtStop = (cls: CameraClass, then: CameraClass, before?: (s: OrbitState) => void, reduced = false) => {
     const s = createOrbitState();
     setPitchRange(s, pitchRange(cls, "follow"));
     updateZone(s, office, reduced, cls);
@@ -596,7 +618,7 @@ describe("a device rotation in a zone (the camera class changes) re-applies the 
     settle(s, reduced);
     return s;
   };
-  const landed = (s: OrbitState, cls: ViewportClass) => {
+  const landed = (s: OrbitState, cls: CameraClass) => {
     const view = zoneView(office, cls);
     expect(s.zone).toBe("L1:office");
     expect(s.zoneCls).toBe(cls);
@@ -618,6 +640,13 @@ describe("a device rotation in a zone (the camera class changes) re-applies the 
       landed(s, "mobile");
     }
     landed(rotateAtStop("desktop", "tablet"), "tablet");
+    // A phone turned sideways (spec 2026-10-29): portrait to the landscape class and back.
+    const sideways = rotateAtStop("mobile", "landscape");
+    landed(sideways, "landscape");
+    setPitchRange(sideways, pitchRange("mobile", "follow"));
+    updateZone(sideways, office, false, "mobile");
+    settle(sideways);
+    landed(sideways, "mobile");
   });
 
   it("eases the change (no snap)", () => {

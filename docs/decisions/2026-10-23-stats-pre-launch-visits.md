@@ -1,4 +1,4 @@
-# Public visit stats: visits before the launch
+# Stats: visits before the launch
 
 - Date: 2026-10-23
 

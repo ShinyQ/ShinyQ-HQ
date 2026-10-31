@@ -32,3 +32,15 @@ describe("directional view zones (Round 7 G)", () => {
     expect(zoneAt("L3", { x: 25, z: 0, heading: -Math.PI / 2 }, [plain])?.id).toBe("L3:plain");
   });
 });
+
+describe("class-limited view zones (`ViewZone.only`, spec 2026-10-29)", () => {
+  const only: ViewZone = { id: "L2:only", area: { minX: 0, maxX: 10, minZ: -2, maxZ: 2 }, yaw: 0, only: ["landscape"] };
+  const open: ViewZone = { id: "L2:open", area: only.area, yaw: 0 };
+
+  it("applies only to the listed classes; others (and callers without a class) fall through as open floor", () => {
+    expect(zoneAt("L2", { x: 5, z: 0 }, [only], "landscape")?.id).toBe("L2:only");
+    for (const cls of ["desktop", "tablet", "mobile"] as const) expect(zoneAt("L2", { x: 5, z: 0 }, [only], cls)).toBeNull();
+    expect(zoneAt("L2", { x: 5, z: 0 }, [only])).toBeNull();
+    expect(zoneAt("L2", { x: 5, z: 0 }, [only, open], "mobile")?.id).toBe("L2:open");
+  });
+});

@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 /**
- * A double tap on the joystick's center: two 50 ms still taps, 120 ms apart (inside the 300 ms window).
+ * A double tap on the joystick's center (on a phone, the floating stick's resting ring: the world's drive zone under it): two 50 ms still taps, 120 ms apart (inside the 300 ms window).
  * The four touch events go out at once with their own input times, as a real finger's would: the
  * joystick times the gesture from them, so a slow SwiftShader frame between handlers cannot stretch it
  * (`page.touchscreen.tap` waits for each tap to be handled, which can take a second under load).

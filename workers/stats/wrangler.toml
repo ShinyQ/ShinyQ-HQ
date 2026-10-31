@@ -42,7 +42,7 @@ new_sqlite_classes = ["LiveGate"]
 # Web Analytics site of the production site (not the public beacon token; useless without an API token).
 WA_SITE_TAG = "4134db56168b4eb58d19fc1ead78b131"
 # Production hosts only: local dev and e2e traffic (127.0.0.1) and previews share the siteTag.
-WA_HOSTS = "kurniadi.pages.dev,kurniadi.dev"
+WA_HOSTS = "kurniadi.pages.dev,kurniadi.my.id,www.kurniadi.my.id,kurniadi.dev"
 
 [observability]
 enabled = true

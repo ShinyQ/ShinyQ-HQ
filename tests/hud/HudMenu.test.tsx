@@ -88,6 +88,8 @@ function mount(layout: HudLayout = "phone", onExit = vi.fn()) {
 async function openMenu(layout: HudLayout = "phone") {
   const result = mount(layout);
   await userEvent.click(result.button);
+  // The sheet body is a lazy chunk: wait for its actions.
+  await screen.findByTestId("menu-actions");
   return { ...result, sheet: screen.getByTestId("menu-sheet") };
 }
 
@@ -151,9 +153,26 @@ describe("HudMenu", () => {
     expect(openPalette).toHaveBeenCalledTimes(1);
     expect(button).toHaveFocus();
     await userEvent.click(button);
-    await userEvent.click(within(screen.getByTestId("menu-sheet")).getByRole("button", { name: "Rover menu" }));
+    await userEvent.click(await within(screen.getByTestId("menu-sheet")).findByRole("button", { name: "Rover menu" }));
     expect(screen.queryByTestId("menu-sheet")).toBeNull();
     expect(openTerminal).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the rotate and map keys for keyboards only: aria-keyshortcuts, and a key cap only with a fine pointer", async () => {
+    const device = getHQStore().getState().device;
+    const { sheet } = await openMenu();
+    for (const [name, key] of [[/^Rotate left/, "Q"], [/^Rotate right/, "E"], ["Map", "N"]] as const) {
+      const action = within(sheet).getByRole("button", { name });
+      expect(action).toHaveAttribute("aria-keyshortcuts", key);
+      const cap = action.querySelector("kbd");
+      expect(cap).toHaveTextContent(key);
+      expect(cap).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(within(sheet).getByRole("button", { name: /^Rotate left/ })).toHaveAccessibleName(en.hud.view.rotateLeft);
+    act(() => getHQStore().setState({ device: { ...device, coarse: true } }));
+    expect(sheet.querySelector("kbd")).toBeNull();
+    expect(within(sheet).getByRole("button", { name: /^Rotate left/ })).toHaveAttribute("aria-keyshortcuts", "Q");
+    act(() => getHQStore().setState({ device }));
   });
 
   it("rotate emits the view controls' orbit intents and keeps the menu open", async () => {
@@ -188,6 +207,17 @@ describe("HudMenu", () => {
     expect(emitted).toEqual([]);
     await userEvent.click(toggle);
     expect(within(sheet).queryByRole("region", { name: en.hud.controls })).toBeNull();
+    getHQStore().setState({ device });
+  });
+
+  it("a phone's controls help names the floating stick's drive zone (spec 2026-10-29), not a joystick", async () => {
+    const device = getHQStore().getState().device;
+    getHQStore().setState({ device: { ...device, viewport: "mobile", coarse: true } });
+    const { sheet } = await openMenu();
+    await userEvent.click(within(sheet).getByRole("button", { name: en.hud.controls }));
+    const card = await within(sheet).findByRole("region", { name: en.hud.controls });
+    expect(within(card).getAllByRole("definition").map((el) => el.textContent)).toEqual(en.hud.hintPhone.split(" · ").map((part) => part.split(": ")[1]));
+    expect(card).not.toHaveTextContent(/joystick/i);
     getHQStore().setState({ device });
   });
 
@@ -244,7 +274,7 @@ describe("HudMenu", () => {
     await userEvent.click(screen.getByTestId("hud-menu"));
     const sheet = screen.getByTestId("menu-sheet");
     expect(sheet).toHaveAccessibleName(id.hud.menuTitle);
-    expect(within(sheet).getByRole("button", { name: id.hud.map.open })).toBeInTheDocument();
+    expect(await within(sheet).findByRole("button", { name: id.hud.map.open })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: id.hud.launcher.roverMenu })).toBeInTheDocument();
   });
 });

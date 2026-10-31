@@ -66,7 +66,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (`useHudLayout`); the pixel layout is in [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
 
 - Owner decision 2026-10-17 (layout A "Corners"): phones and tablets keep the corners for controls, so the canvas stays clear.
-  - Phone: at most 6 controls plus the minimap (floor chip, Ask AI, menu, joystick, Boost, Reset view).
+  - Phone: at most 6 controls plus the minimap (floor chip, Ask AI, menu, the floating stick's resting ring, Boost, Reset view).
   - Tablet (any coarse pointer): at most 10 (the phone set plus search; the chip also shows the floor name).
   - Owner decision 2026-10-24 raised both caps by one for the visible Boost button.
   - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
@@ -75,9 +75,22 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - During the unlock moment the unlocked row pulses, except under reduced motion.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, the controls help, settings) lives there; keep new phone actions in the sheet.
-  - The Controls action (`menu-controls`, `aria-expanded`) expands the controls card in place (`menu-controls-card`, `MenuControls` in `src/hud/menu/MenuControls.tsx`; it rides in the lazy settings chunk, rendered first by `SettingsPanel` when the menu passes `controls`, so it stays off the first-frame 3D path): one row per control from `hud.hintCoarse` (`hud.hintFine` with a fine pointer) split by `controlRows`, plus `hud.career.scrubHint` on L2 with touch. It stays open until toggled or the sheet closes.
+  - The sheet's body is a lazy chunk (owner decision 2026-10-28): `MenuSheet.tsx`, loaded by `menuChunk.ts` (`loadMenu()`, the only `import()` of it) from the button's `pointerdown` or the first open; `HudMenu` keeps the button, the `Modal` frame and its header, and a placeholder holds the body's height while it loads. A failed load shows the load note, Retry and the Classic site button (`menu-failed`). `MenuSheet` imports no module the main path hoists: `HudMenu` passes the profile photo, the Classic site icon, the floor's accent class, the rotate icons and step and the settings host in as props (a shared module would leave the main path's hoisted scope and cost wrapper bytes). `tests/unit/menu-chunk-graph.test.ts` guards the boundary.
+  - The Controls action (`menu-controls`, `aria-expanded`) expands the controls card in place (`menu-controls-card`, `MenuControls` in `src/hud/menu/MenuControls.tsx`; it rides in the lazy settings chunk, rendered first by `SettingsPanel` when the menu passes `controls`, so it stays off the first-frame 3D path): one row per control from `hud.hintCoarse` (`hud.hintFine` with a fine pointer, `hud.hintPhone` on a phone with touch: the drive zone, not a joystick) split by `controlRows`, plus `hud.career.scrubHint` on L2 with touch. It stays open until toggled or the sheet closes.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
-- Boost on touch is the Boost button next to the joystick (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, a toggle) or a joystick double tap, one shared state (`useBoostToggle` in `src/hud/boost.ts`). See [Boost](3d-experience.md#boost).
+- The bottom band (joystick, Boost, Reset view) steps aside while a phone's Rover line with choices docks at the bottom ([Dialog box](#dialog-box)).
+- Boost on touch is the Boost button (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, a toggle) or a double tap on the stick, one shared state (`useBoostToggle` in `src/hud/boost.ts`). Tablets: the button sits next to the fixed joystick. Phones: `PhoneBoost` stacks it above Reset view in the right column, and the floating stick's double tap toggles it (the stick's `toggleBoost`). See [Boost](3d-experience.md#boost).
+
+### Floating stick
+
+Phones (Corners phone layout with touch) drive with a floating stick (spec 2026-10-29, owner decisions 3.2 to 3.5); tablets and desktops keep the fixed `Joystick`.
+
+- The touch controls are a lazy chunk (spec 2026-10-29, decision 3.8): `Joystick.tsx` (the tablet joystick, `FloatingStick`, `PhoneBoost`, `TouchLeft`) and `floatingStick.ts`, loaded by `touchChunk.ts` (`loadTouch()`, its only `import()`) when `Hud` first mounts them on a coarse pointer, so a mouse session never loads them; `BYTES_3D_BUDGET.touch`, outside both session totals. The chunk imports no main-path value: `Hud` passes `stickInput`, `setJoystick` and `setBoost` (`input/joystick.ts`) in once through `bindTouch`, which creates the stick (`createStick`) and registers it in `stickInput.handler`; until then touches only look. A failed load shows no stick (point-and-go still drives) and the next mount retries. `tests/unit/touch-chunk-graph.test.ts` guards the boundary.
+- The gesture: `src/experience/input/floatingStick.ts` (pure, DOM-free), fed by `useInputSources` through `stickInput.handler`. A touch that starts in the drive zone (`driveZone(w, h)`: portrait, the left half of the bottom 40%; landscape, the left 40% below the floor chip row at 72 px) is the stick's: it never looks, pinches or twists. Past the 12 px tap slop it drives through `setJoystick`, centered where the thumb came down (60 px radius, the 12% dead zone). HUD controls sit above the world, so the zone never takes a button.
+- A still tap there is left to point-and-go (`isDragClick` already ignores moved presses). A second press within 300 ms of a still tap's release toggles Boost, unless that tap selected a target (`hover.via === "tap"`: point-and-go's second tap drives there). Gestures are timed with the input events' own times.
+- `FloatingStick` (`Joystick.tsx`) draws a faint resting ring where the fixed stick sat (`data-testid="joystick"`, `data-floating="rest"` or `"live"`) and, while a thumb drives, the base and knob under it (`joystick-live`, inline transforms, no new classes). Neither takes a touch.
+- Policy: `Hud` passes `aside={docked}`; `FloatingStick` sets the stick's `enabled` and lets go of a held stick (`release`) when a docked Rover line covers the bottom or on unmount.
+- Tests: `tests/unit/floating-stick.test.ts`, `tests/hud/HudCorners.test.tsx`, `e2e/phone-first.spec.ts` (phone part 3), `e2e/boost.spec.ts`.
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
 - The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
 
@@ -143,6 +156,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 |---|---|
 | `hq:terminal-seen` | set when the terminal first opens; nothing opens it on its own |
 | `hq:onboarded` | `done` or `skipped`: the first-session tutorial ran |
+| `hq:tilt-hint` | `1`: the one-time tilt hint showed on this device ([Onboarding](#onboarding)) |
 | `hq:hints` | `off` hides the hint bubbles |
 | `hq:recent` | recent rooms on the static tier |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
@@ -219,10 +233,10 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `setMotion` and the head script set `html[data-motion="full|reduced"]` (`full` by default, removed under System).
 - `globals.css` redefines Tailwind's `motion-reduce` and `motion-safe` variants on top of it (`@custom-variant`).
-  - Every `motion-reduce:` / `motion-safe:` utility and every `@variant motion-reduce { ... }` block (boot log, landing hero and ticker, Page View screenshots) applies under the OS setting unless `full`, and always under `reduced`.
+  - Every `motion-reduce:` / `motion-safe:` utility and every `@variant motion-reduce { ... }` block (boot log and the Classic pages) applies under the OS setting unless `full`, and always under `reduced`.
 - Write new reduce rules as `.x { @variant motion-reduce { ... } }`, never as a bare `@media (prefers-reduced-motion: reduce)`.
   - Top-level `@variant` blocks compile wrong, and `:is()` drops `::before` / `::after`, so the global duration rule is written out.
-- The landing ticker has no pause switch (owner decision); its duplicate track hides and the stats wrap under the effective reduced motion.
+- The Classic site is still: colour transitions only, no loops (the stats marquee became a still ledger, decision 2026-10-27), so it needs no pause control.
 
 ### UI
 
@@ -272,33 +286,40 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - A soft `blip` (`audio.play("blip")`, shares the click rate limit).
 - It pauses and hides during boot, intro, a room drawer, the hologram, the pad picker, the Ask panel and any `aria-modal` dialog.
 - The modal check (`useModalOpen`) is synchronous, from the first render on, and choices never take focus from a text field or another dialog, so typing in Cmd-K is never stolen when a floor line finishes.
-- Placement (`placement.ts`), always above the bottom band's center column (point-and-go's `InteractStatus` Go chip and one-time hint, and the controls hint):
+- Placement (`placement.ts`): on fine pointers and touch tablets above the bottom band's center column (point-and-go's `InteractStatus` Go chip and one-time hint, and the controls hint); on phones at the top (owner decision 2026-10-28), so a Rover line never covers the rover, Boost or the joystick:
 
 | Device | Offset |
 |---|---|
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
-| Phones | 168 px, 12 px from both edges: a slim toast above the joystick (120 px plus the 24 px band padding and a 24 px gap) |
+| Phones, portrait | Top toast (`toastPlace(landscape)`, an inline style: no new utility in the Classic stylesheet; landscape is a phone whose `device.camera` is not `mobile`): 144 px from the top (below the minimap row: 64 px plus the 72 px minimap and a gap), 12 px from both edges |
+| Phones, landscape | Top toast: 16 px from the top, 188 px from the left (clear of the floor chip's widest name, B1 in Indonesian, and the L2 year chip) and 128 px from the right (clear of Ask, the menu and the minimap under them) |
+| Phones, a line with choices | Docked: 12 px above the bottom safe area, 12 px from both edges (`DOCK_PLACE`) |
 
 - The phone toast (`placement === "phone"`):
-  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
-  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the two rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
+  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to four rows (`line-clamp-2` with an inline `WebkitLineClamp` of `TOAST_ROWS` 4; every floor line fits at 375 px, EN and ID) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
+  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the four rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
   - choices and Skip still render (onboarding needs them).
+- The docked card (owner decision 2026-10-25, `docks(view)` in `placement.ts`): on placement `phone`, a shown line with choices (its own, or a try-it's Continue after the fallback) from any source (the tour, the B1 unlock offer) docks at the bottom in thumb reach (`DOCK_PLACE`, `data-docked="true"`), its choices stacked full width (`min-h-11`, 44 px). Lines without choices stay the top toast.
+- `e2e/phone-first.spec.ts` rides to L2, L3, L4 and RF at 390 x 844, 375 x 667 and 844 x 390 and checks the floor line's toast clears the rover's projected box and every Corners control and shows unclamped.
+- While a line docks (`Hud`: phone layout, coarse pointer, `docks`), the whole bottom band steps aside (`BottomBand` `aside`: `inert`, `data-aside="true"`, faded to `opacity-0`): the joystick, Boost, Reset view and point-and-go's status. A held joystick lets go (`setJoystick(0, 0, false)`), so the rover stops. The band comes back when the line ends.
 - The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 
 ### Onboarding
 
-- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro.
+- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro. `onboarding.ts` is a lazy chunk (only type imports; `tourChunk.ts` `loadTour()` is its only `import()`), loaded by a session that is not onboarded or by Replay tutorial; `firstName` lives in `names.ts`.
 - Full form, in order:
   1. welcome with Skip;
   2. moving, with a try-it wait that teaches [point-and-go](floors.md) (desktop: point and click a glowing object; touch: tap twice or use its Go chip; there is no click-the-floor driving);
   3. the camera (look around, zoom, first person; spotlight on the view controls, `data-onboard="view"`);
-  4. the Highlights Hall (registry extra `L1:station:highlights-about`, room `L1:highlights-about`) when it is registered;
-  5. elevator and call pads;
-  6. the Rover menu;
-  7. Ask AI when its pill shows;
-  8. closing.
-- After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
+  4. elevator and call pads;
+  5. the Rover menu;
+  6. Ask AI when its pill shows;
+  7. closing.
+- The tour never moves the rover by itself: no line offers to drive anywhere, and only the welcome has choices (owner decision 2026-10-27, [decision](../decisions/2026-10-27-tour-no-drive.md)). The Highlights Hall stays reachable through its station, hint bubble and `#highlights-<station>` links.
+- After a deep link: once the continuation ends and the drawer closes, the short form (no elevator).
+- Phone form (`OnboardingDeps.phone`: coarse pointer and the mobile viewport, the Corners phone HUD): welcome, tap-to-go try-it (`pointGoPhone`), `movedPhone`, the floor chip (`floorChip`, spotlight `elevator`), the Rover menu, Ask AI when shown, closing (`closingShort` after a deep link). No camera or elevator pad lines.
+- Tilt hint (spec 2026-10-29, owner decisions 3.6, 3.7, 3.9): after the closing line (every form, Replay tutorial too), a coarse pointer on a portrait screen that has no `hq:tilt-hint` hears one more line, key `tilt` ("Tip: turn your screen sideways for a wider view of the tower."), request id `tilt`, no choices (the top toast on phones, the raised line on tablets). It sets the key when it shows; a tap, the toast hold or a rotation (a `change` on `(orientation: portrait)`, which cancels the request through `OnboardingDeps.cancel`) ends it. A skipped or cancelled tour skips it. Never a lock or an overlay. The browser side is `browserTilt` in the tour chunk; the string is `dialog.onboarding.tilt` (`COPY_KEYS`). Tests: `tests/unit/onboarding.test.ts`, `tests/hud/tilt-hint.test.ts`, `e2e/phone-first.spec.ts`.
 - Onboarding replaces the Director's first-visit terminal auto-open.
 - Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 

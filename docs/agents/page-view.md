@@ -45,9 +45,14 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 ## Design
 
-- Spec: `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md` (editorial Neon Grid).
-- Mockups: `docs/design/pageview/`.
-- CSS layer and type scale: [styling-and-i18n.md](styling-and-i18n.md#page-view-layer).
+- System: the Hallmark redesign (decision 2026-10-27), locked in [`DESIGN.md`](../../DESIGN.md): the Neon Grid kept
+  as the brand, genre atmospheric, posture Restrained. Earlier spec (history):
+  `docs/superpowers/specs/2026-10-10-pageview-revamp-design.md`; mockups: `docs/design/pageview/`.
+- CSS layer, tokens and type scale: [styling-and-i18n.md](styling-and-i18n.md#page-view-layer).
+- The Hallmark stamp (shape, hero posture per route, nav, footer, waivers) heads `src/app/globals.css`; keep it true
+  when a page's composition changes.
+- Never on Classic surfaces: an eyebrow or tracked mono capitals over a heading, a middle-dot-joined meta string, an
+  arrow glued to a link, a decorative dot or square marker, a card inside a card, glass. Labels are `pv-meta`.
 
 ## Navigation
 
@@ -58,6 +63,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 | Writing | `/library` | L4 |
 | About | `/contact` | RF |
 
+- The header is a search-led bar: the brand (the rover mark `hq-header-mark` beside "ShinyQ HQ", `meta.siteName`,
+  linking home; never the owner's name, owner decision 2026-10-27), the four sections with their floor codes, then
+  the Rover menu and the visible ⌘K search pill (`HudLaunchers`, `pv-tool`) and the language switch. The current
+  section carries a bottom rule in its floor colour.
+- The footer is only links and the copyright line, no name (owner decision 2026-10-27): Pages (the sections, Quick
+  view, How this site was built and the CV dialog, `cv-open-footer`), Elsewhere (the email and the profiles), then
+  "© {year} ShinyQ HQ" under a hairline.
 - Quick view and CV live in the footer, the Home hero and About.
 - How this site was built (`/build`, key `nav.build`) is a footer link and a link under About's story; it is not in the primary nav. It is a Classic page without a 3D counterpart yet, with its own share card and TechArticle JSON-LD.
 - URLs and anchors never change (the room catalog and missions link to them).
@@ -69,18 +81,21 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 ## Layout
 
-- `pv-wrap` container (1240 px), 12 columns from `lg`.
-- A 4-column sticky sidehead plus 8 columns of content (`SectionSplit`).
-- Ruled rows (`pv-rows`) instead of card grids; counts and results are ruled facts too (the Work wing counts, the
-  case study Results ledger), never tiles.
-- Restraint (design refinement, spec `docs/superpowers/specs/2026-10-19-classic-design-refinement.md`):
-  - Dates and periods use `pv-date` (sentence case, tabular mono); `pv-data` capitals are for labels only.
-  - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
-    headline result is a `pv-result` block (value over label on a neutral hairline), under the title on landing cards (recruiters scan results first), pinned to the bottom elsewhere.
+- `pv-wrap` container: 1440 px with a 64 px gutter (24 px under 60rem, 16 px under 40rem), so the measure is 1312 px
+  and holds at 1920; 12 columns from `lg`.
+- Section heads: `SectionWide` (the head block above a full-width body, the link on the right) or `SectionSplit` (a
+  4-column sticky sidehead beside 8 columns). Section gaps come from `pv-sec`, `pv-sec-s` and `pv-sec-l`.
+- Ruled rows (`pv-rows`) instead of card grids for indexes and ledgers; counts and results are ruled facts too (the
+  Work wing counts, the case study Results ledger, the home stats ledger), never tiles.
+- Restraint:
+  - Dates and periods use `pv-date` (tabular mono); labels, captions and meta use `pv-meta` (body face, sentence
+    case). `pv-data` (mono capitals) is the 3D and dialog label, never a Classic label.
+  - A project's headline result is a `pv-result` block (value over label on a neutral hairline).
   - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
-  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's headline and motto opt out.
-  - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped either.
-- Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
+  - `pv-lead` keeps a measure near 52 characters in wide places (page intros); the hero's opt out.
+  - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the
+    column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped.
+- Floor and wing colors only mark wayfinding (the active nav rule); never fill surfaces with them.
 
 ### Case study (`/labs/<slug>`)
 
@@ -98,7 +113,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Placement: the `#time-travel` section sits between the intro and the year filter (`src/components/time-travel/`). It is Classic only: nothing in the 3D `Experience.tsx` closure imports it.
 - Server-rendered SVG skyline, one building per stop (`pre-2019`, then 2019 to 2026), each kind's blocks one `<path>`, plus the 9 year panels (2026 visible, the rest `hidden`) and the small `TimeTravelControls` island (range and Play). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick is "<2019", `timeTravel.prologueShort`).
 - DOM contract the island and the tests rely on: `data-tt-panel` (one per stop, in order), `data-tt-stop={index}` (the building `<g>`), `data-tt-outline={index}` (its outline `<rect>`) and `data-tt-link={index}` (the `<a>` around a building). Each building also has a transparent hit-area `<rect>` so the whole slot is clickable. The panels carry no other attribute for tests: read them by order or text.
-- The panel tally reads "+{count} new" / "+{count} baru" when a stop added items. Highlight links read "role, organization" for an entry, the title for a pod, publication or certification, and a stop's `highlights[].label` (`{ en, id }`) replaces either; no two highlights share link text (`tests/content/time-travel.test.ts`).
+- The panel tally reads "+{count} new" / "+{count} baru" when a stop added items; an `in-progress` certification is not counted (its `issued` is only the planned month). Highlight links read "role, organization" for an entry, the title for a pod, publication or certification, and a stop's `highlights[].label` (`{ en, id }`) replaces either; no two highlights share link text (`tests/content/time-travel.test.ts`).
 - The announcement is a separate `sr-only` `aria-live="polite"` paragraph owned by the island, not a panel heading.
 - The labels come as props from the server-only `timeTravel` namespace, which is in neither namespace list. The island imports locale values only from `@/content/locales`.
 - Colors use the `ACCENT_TEXT` classes with `currentColor`, so the section adds almost no CSS.
@@ -107,6 +122,20 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Without JS, building links go to `#yYYYY` (the prologue to `#y2019`) and the controls do not render.
 - Budgets: 0 3D bytes, CSS +34 B gzip, island about 727 B gzip. The journey HTML grew about 8.6 KB gzip (`/en/journey` 47,564 to 56,157 B, `/id/journey` 48,428 to 57,266 B, cap 83,968 B) because the RSC flight payload carries the section a second time; the parent session accepted it (option A, 2026-10-25), and no cap rises. What it buys: every stop's caption, tally and highlights ship in the server HTML (crawlers, reader modes and no-JS link targets). Without JS the visitor sees now (2026) plus building links to every year's rows below; the other 8 panels carry `hidden`. `/en/quick` is unchanged.
 - Tests: `e2e/time-travel.spec.ts`, `tests/hud/TimeTravelControls.test.tsx`, `tests/unit/time-travel.test.ts`, `tests/content/time-travel.test.ts`.
+
+### Other Classic pages (Hallmark redesign, part 3)
+
+- Page intros (`PageIntro`): no floor eyebrow; the title on seven columns, an aside on four.
+- Journey entries (`/journey/<slug>`) and posts (`/blog/<slug>`) are Long Documents: a breadcrumb (`case.breadcrumb`,
+  Journey / the entry's type) instead of the eyebrow, the 3D room (`L2:<slug>`, `case.room`) in the facts row, chapter
+  gaps at the section scale, Previous and Next without arrows. Post prose holds about 70 characters a line
+  (`.prose-hq > p` capped at 36rem); the date is a `<time>` under the title.
+- `/cv`: the title, the intro, then page 1 beside "2 pages, PDF" and the two actions at the top of their column, so View
+  CV is in the 1280 x 800 first screen (`cv-card`, `cv-read`, `cv-download`, `cv-cover-image` kept).
+- `/library` research: the paper title is text with its button laid over it (named by the title, so it never wraps
+  inside a control label); Preview (`paper-cite`) and Read the paper sit below it.
+- The Time Travel skyline is named as a chart (`tt-chart` on its SVG).
+- Guide cards and repo rows join their meta with commas, never middle dots.
 
 ## Filters
 
@@ -128,37 +157,43 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 ## Landing (home hero)
 
 - Section order after the hero (`src/app/[locale]/page.tsx`, the recruiter path, owner decision 2026-10-25): Selected
-  work (`#work`), the intro (`#intro`: bio and status), Journey, Certifications, Skills, the Live Agent Office
-  (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Writing, Contact.
+  work (`#work`), the intro (`#intro`: bio, status and the `#stats` ledger), Journey, Certifications and Skills (one
+  `paper-2` band, both anchors), the Live Agent Office (`#office`, lazy, [office.md](office.md#classic-card-and-ask)),
+  Writing, Contact.
 
 ### Hero
 
-- `HomeHero` (`src/components/page/Hero.tsx`) starts with the owner portrait and the name.
+- `HomeHero` (`src/components/page/Hero.tsx`), Hallmark posture Ledge: it fills the first screen, the static Neon Grid
+  is the field above and the content rests at its base, so `#work` (and its lazy screenshots) starts below the fold.
+- First the owner portrait beside the name (`.pv-d-xl`, no eyebrow).
 - Portrait: `Portrait` (`src/components/page/Portrait.tsx`):
   - round, cyan ring with one quiet cyan glow, 72/96/128 px
   - `loading="lazy"` with `fetchpriority="low"`, so it never loads under the boot cover (`content-visibility: hidden` keeps lazy images idle) and never becomes the LCP element
   - About shows it at 80/112 px beside its title
-- Name: no eyebrow, `.hx-name` up to 112 px.
-- Then the headline and the motto (`profile.subheadline`).
-- Then the proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25, style B):
+- Then a 7/5 split: the headline and the motto (`profile.subheadline`), the proof strip and the actions on the left,
+  the Ask bar (`AskHeroBar`, visible "Ask AI about my work" label, outlined send button) on the right.
+- The proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25):
   - the three stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`, in that order), each with its `data-stat` id;
-  - one quiet bordered row (hairline dividers, `bg-surface`), the value in the display face (`pv-num`) beside the stat's `short` label; on phones three equal cells with the value above the label;
+  - each value in the display face over its `short` label, parted by vertical hairlines, no box;
   - a list named "Key numbers" (`home.proofLabel`), server-rendered, no motion;
-  - the ticker skips these ids, so no number shows twice in the first screen.
-- Then the actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button (full width on phones), then See the work (`/labs`), then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
-- Then it composes:
-  - the CSS-only backdrop: a slow two-tone glow and a low, faint Neon Grid floor (no data packets, no glow on the name)
-  - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
-  - `AskHeroBar` (visible "Ask AI about my work" label) across the full width; no illustration beside the name (owner decision)
-  - the `StatTicker` band
-- First paint waits for the whole hero: `<link rel="expect" href="#hero-end" blocking="render">` (hoisted into the head by React) targets `#hero-end`, an empty hidden span after the ticker. Chrome unblocks on the target's start tag, so the target is the hero's last node. Without it a busy device can paint a half-parsed hero, and the ticker arriving grows `.hx`, which moves the percentage-sized backdrop (glow, ground) and the centered column: a layout shift.
+  - the stats ledger skips these ids, so no number shows twice.
+- The actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button, solid cyan (full width on phones), then
+  See the work (`/labs`), then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
+- `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link
+  path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`.
+- The backdrop is the body's static Neon Grid plus one fixed indigo bloom (`hx-bloom`, the `--color-bloom` vignette
+  token); nothing in the hero moves.
+- First paint waits for the whole hero: `<link rel="expect" href="#hero-end" blocking="render">` (hoisted into the
+  head by React) targets `#hero-end`, an empty hidden span, the hero's last node. Chrome unblocks on the target's
+  start tag. Without it a busy device can paint a half-parsed hero and shift it.
 
-### Stat ticker
+### Stats ledger
 
-- `#stats`: a plain marquee with live stats from `DYNAMIC_STATS` marked.
-- No "Updated" stamp and no "Pause motion" switch (owner decision); hover or focus holds it.
-- From sm the ticker bar keeps the floating "Ask AI" and "Back to 3D" columns free.
-- On phones the hero fills the first screen and the ticker starts below it.
+- `#stats` (`StatTicker`, `src/components/page/StatTicker.tsx`, the L1:stats room): a still, ruled ledger in two
+  columns under "In short", headed "At a glance" (`home.statsTitle`), the stats from `DYNAMIC_STATS` marked Live, and
+  the visits item (`TickerVisits`) appended.
+- It replaced the marquee (decision 2026-10-27): nothing on the Classic site moves on its own, so there is no pause
+  control, no duplicate track and no date stamp.
 
 ### Selected work (featured projects)
 
@@ -166,13 +201,16 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - the pods with `Pod.selected`, rank 1 first
   - then the first other pods with a gallery, in `orderPods` order
   - independent of `tier`, so a hero such as AI Fraud Document Review stays a key project with its hologram without a landing slot
-- Rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as equal-height cards in one grid:
-  - 3 columns from 1024 px, 2 from 768 px, 1 on phones
-  - screenshot, three filmstrip slots, wing, period and client, the title, the headline result right under the title
-    (`pod.results[0]` as a `pv-result`, `data-testid="feature-result"`; recruiters scan results first), the tagline,
-    then the live link pinned to the bottom
-- Never stagger or span cards (owner decision).
-- `/labs` Key projects use the same grid.
+- Rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as a Feature Stack (decision 2026-10-27, it
+  replaced the 3/2/1 card grid): one project a row (`ul.hx-stack`, `data-testid="featured-grid"`), parted by a
+  hairline:
+  - from 1024 px the text holds sticky on six columns beside the screenshots on six (640 px, so a 1440 px capture stays sharp at 2x); below, the text comes first
+  - the text: the title (the row's link), the headline result (`pod.results[0]` as a `pv-result` in the display face,
+    `data-testid="feature-result"`; recruiters scan results first), the tagline, the facts (wing, period, client) as a
+    `dl`, on `/labs` the stack logos, and the live link
+  - the screenshots: the cover (also a hidden link to the case study, since the sticky column holds the title's
+    stretched link), three filmstrip slots and the screenshot count as a caption
+- `/labs` Key projects use the same rows.
 
 ### Other key projects
 
@@ -192,17 +230,16 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 ### Landing styles
 
 - Styles live in `src/app/landing.css` (`hx-` classes).
-- Animate only `transform` and `opacity`, starting after 0.5 s.
-- Stop under reduced motion (the ticker then wraps, no scroll region).
-- Hold still under automation and for crawlers (`html[data-hq-still]`).
-- Never animate the `h1` (LCP).
-- Mockup and captures: `docs/design/landing/` (`bun docs/design/landing/gen-landing.ts`; built captures in `built/` from `bun run screenshots:pages`).
+- Nothing animates: no loops, no entrance; never animate the `h1` (LCP).
+- Mockup and captures: `docs/design/landing/` (history); Hallmark before and after captures: `.hallmark/` (git-ignored).
 
 ## Not found (404)
 
 - `src/app/global-not-found.tsx` (owner decision 2026-10-25): "Rover took a wrong turn", in English with one
   Indonesian line (`lang="id"`), because the bad URL may carry no locale. Strings: the `notFound` namespace, read
   straight from `messages/*.json`; `robots` is `noindex, follow`.
+- Hallmark posture Corridor: the rover, the status code as a large muted numeral (aria-hidden, in place of the old
+  "404 · Off the map" eyebrow; `notFound.kicker` stays in the messages), the title, the body and the Indonesian line.
 - Three ways out in a `nav` named "Ways back" (`notFound.waysBack`): View the CV first (primary, `/en/cv`,
   `not-found-cv`), See the work (`/en/labs`, `not-found-work`), and Home with English and Bahasa Indonesia links.
 - "Did you mean": `DidYouMean` (`src/components/DidYouMean.tsx`, a client island) fetches

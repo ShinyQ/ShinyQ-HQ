@@ -199,7 +199,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
   - Client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state).
-- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home ticker item).
+- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home stats ledger item).
 
 ### src/content/
 
@@ -405,7 +405,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/hud/ask/`: Ask the HQ dock: AskDock (launcher, teaser, mounted in the layout), AskChat (lazy panel), AskPill (3D), useAskThread, availability (status, tower, layout).
 - `src/hud/dialog/`: Rover's dialog.
   - Pure engine.ts (say, queue, typewriter), store.ts (singleton, useDialog).
-  - onboarding.ts, floorIntro.ts, hintLines.ts, storage.ts, tutorial.ts, placement.ts.
+  - onboarding.ts (lazy chunk, loaded by tourChunk.ts), names.ts, floorIntro.ts, hintLines.ts, storage.ts, tutorial.ts, placement.ts.
   - DialogBox, DialogLayer (3D chunk only), Spotlight, OnboardingLayer, HintLayer, EngineUnlockLayer (the B1 unlock moment and offer) and engineRoomAction.ts (Cmd-K "Go to B1 Engine Room").
 - `src/hud/pads/`: floor pad pickers: PadPicker (floor and year lists on the shared Modal, a bottom sheet on phones), BeamFade; pure picker.ts (options, roving focus, floorThumb).
 - `src/hud/drawer/`: Glass Drawer: RoomDrawer (UI), DrawerHost (store, data, audio), bodies (EngineBody for the B1 station drawers), layout, urlSync, data, `data-path.ts` (room data file per locale and floor, B1 as `b1-{locale}.json`), ascii (README).
@@ -472,6 +472,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### e2e/ support and perf lane
 
 - `e2e/budgets.ts`: every 3D CI threshold (render, bytes, programs, memory).
+- `e2e/heap.ts`: `readRetainedJsBytes`, the retained JS of a heap snapshot (objects, closures, arrays, strings; no V8 code or Blink memory) that `e2e/memory.spec.ts` gates.
 - `e2e/office-fixtures.ts`: Agent Office snapshots for `office.spec.ts`, `office-classic.spec.ts` and `scripts/office-shots.ts` (the nine states over two snapshots, one private desk without a title, one off-duty slot).
 - `e2e/durations.json`: median seconds per test of both lanes from CI logs (`bun run e2e:durations`), for the CI shard split.
 - `e2e/perf/`: perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`).

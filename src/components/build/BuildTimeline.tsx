@@ -20,7 +20,7 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
           const dates = roundDates({ first, last }, locale, t("dateTo"));
           return (
             <li key={round.id} id={`round-${round.number}`} className="py-6">
-              <p className="pv-data flex flex-wrap gap-x-4 gap-y-1">
+              <p className="pv-meta flex flex-wrap gap-x-4 gap-y-1">
                 <span>{t("round", { n: round.number })}</span>
                 {dates && <span>{dates}</span>}
                 {open && <span className="text-cyan">{t("inProgress")}</span>}
@@ -50,7 +50,7 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
                       const shot = round.shots![key];
                       return (
                         <div key={key}>
-                          <p className="pv-data mb-2">{t(key)}</p>
+                          <p className="pv-meta mb-2">{t(key)}</p>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={shot.src}

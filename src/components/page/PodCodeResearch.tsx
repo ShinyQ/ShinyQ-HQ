@@ -24,7 +24,7 @@ export async function PodCodeResearch({ pod, locale }: { pod: Pick<Pod, "repos" 
     <div className="grid gap-8" data-testid="pod-code-research">
       {repos.length > 0 && (
         <div>
-          <h3 className="pv-data">{t("repositories")}</h3>
+          <h3 className="font-semibold text-ink">{t("repositories")}</h3>
           <ul className="mt-2 grid gap-1">
             {repos.map((url) => (
               <li key={url} className="min-w-0 break-words">
@@ -38,11 +38,11 @@ export async function PodCodeResearch({ pod, locale }: { pod: Pick<Pod, "repos" 
       )}
       {pubs.length > 0 && (
         <div>
-          <h3 className="pv-data">{t("research")}</h3>
+          <h3 className="font-semibold text-ink">{t("research")}</h3>
           <ul className="pv-rows pv-rows-closed mt-2">
             {pubs.map((pub) => (
               <li key={pub.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[110px_minmax(0,1fr)]" data-testid="pod-publication">
-                <p className="pv-data md:pt-1">
+                <p className="pv-meta md:pt-1">
                   {tl(`kind.${pub.kind}`)}
                   <span className="mt-1 block">{publicationDate(pub, locale)}</span>
                 </p>

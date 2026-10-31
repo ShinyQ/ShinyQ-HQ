@@ -7,10 +7,11 @@ import { CertificationSchema } from "@/content/schema";
 import { CERT_FIXTURE, certFixture } from "@/experience/prototype/certs/fixture";
 
 describe("certification helpers", () => {
-  it("keeps the scale fixture valid against the schema, with the live 8 first", () => {
+  it("keeps the scale fixture valid against the schema, with the live ones first", () => {
     expect(CERT_FIXTURE).toHaveLength(30);
     for (const cert of CERT_FIXTURE) expect(CertificationSchema.safeParse(cert).success, cert.id).toBe(true);
-    expect(certFixture(8).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
+    const live = getCertifications();
+    expect(certFixture(live.length).map((c) => c.id)).toEqual(live.map((c) => c.id));
   });
 
   it("sorts earned newest first, then in progress, then expired", () => {
@@ -21,14 +22,14 @@ describe("certification helpers", () => {
       expect(rank[a.status] <= rank[b.status], `${a.id} before ${b.id}`).toBe(true);
       if (a.status === b.status) expect(a.issued >= b.issued, `${a.id} before ${b.id}`).toBe(true);
     }
-    expect(sorted[0].id).toBe("gh-600");
+    expect(sorted[0].id).toBe("gh-300");
     expect(sorted.at(-1)?.status).toBe("expired");
   });
 
   it("features pinned certs first, then the newest earned with an exam code", () => {
-    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-600", "ai-103"]);
+    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-300", "gh-600"]);
     const pinned = CERT_FIXTURE.map((c) => (c.id === "gh-900" ? { ...c, featured: true } : c));
-    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-900", "gh-600"]);
+    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-900", "gh-300"]);
     expect(featuredCertifications(CERT_FIXTURE.filter((c) => !c.code))).toHaveLength(3);
     expect(featuredCertifications(CERT_FIXTURE).every((c) => c.status === "earned")).toBe(true);
   });
@@ -39,15 +40,16 @@ describe("certification helpers", () => {
       { issuer: "GitHub", count: 6 },
       { issuer: "AWS", count: 5 },
     ]);
-    expect(issuerCounts(getCertifications())[0]).toEqual({ issuer: "Microsoft", count: 3 });
+    expect(issuerCounts(getCertifications())[0]).toEqual({ issuer: "Microsoft", count: 4 });
     expect(issuerCounts(getCertifications())[1].issuer).toBe("GitHub");
   });
 
   it("builds wall tabs: All, issuers with 2 or more, then Other", () => {
     expect(issuerTabs(getCertifications()).map((t) => [t.key, t.count])).toEqual([
-      ["all", 8],
-      ["Microsoft", 3],
-      ["other", 5],
+      ["all", 10],
+      ["Microsoft", 4],
+      ["GitHub", 2],
+      ["other", 4],
     ]);
     const tabs = issuerTabs(CERT_FIXTURE);
     expect(tabs.map((t) => t.key)).toEqual(["all", "Microsoft", "GitHub", "AWS", "other"]);
@@ -94,7 +96,8 @@ describe("certification helpers", () => {
   it("builds locale-resolved views without confidence or verified labels", () => {
     const en = toCertViews(CERT_FIXTURE, "en");
     const id = toCertViews(CERT_FIXTURE, "id");
-    expect(en[0]).toMatchObject({ id: "gh-600", short: "Agentic AI Developer", logo: "/tech/github.svg", issuedLabel: "Oct 2026", expiresLabel: "Oct 2027" });
+    expect(en[0]).toMatchObject({ id: "gh-300", short: "GitHub Copilot", logo: "/tech/github.svg", issuedLabel: "Oct 2026", expiresLabel: "Oct 2028" });
+    expect(en.find((c) => c.id === "gh-600")).toMatchObject({ short: "Agentic AI Developer", expiresLabel: "Oct 2027" });
     expect(en.find((c) => c.id === "ai-103")).toMatchObject({ short: "Azure AI Apps and Agents Developer Associate", logo: "/tech/microsoft.svg", issuedLabel: "Sep 2026" });
     expect(id.find((c) => c.id === "az-305")?.issuedLabel).toBe("Okt 2026");
     expect(en.find((c) => c.id === "google-gen-ai-leader")).toMatchObject({ code: null, shortLabel: "Gen AI Leader", short: "Generative AI Leader", logo: "/tech/google.svg" });

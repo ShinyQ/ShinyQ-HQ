@@ -1,4 +1,4 @@
-# HUD naming
+# HUD: naming
 
 - Date: 2026-10-17
 - PR: [#191](https://github.com/ShinyQ/ShinyQ-HQ/pull/191)

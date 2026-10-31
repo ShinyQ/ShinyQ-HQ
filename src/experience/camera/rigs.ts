@@ -1,5 +1,5 @@
 import type { FloorId } from "@/content/schema";
-import type { Vec2, ViewportClass } from "../types";
+import type { CameraClass, Vec2 } from "../types";
 
 export type Vec3 = [number, number, number];
 /** `first` is only a fog key (first person); `selectRig` never returns it. */
@@ -12,23 +12,26 @@ export interface CameraPose {
 }
 
 /** Follow rig per camera class (appendix 03 section 2). */
-export const FOLLOW: Record<ViewportClass, { fov: number; offset: Vec3 }> = {
+/** `lift` (u, scaled by the zoom like a zone's `lookOffset.up`): raises the look target, so a short landscape frame keeps tall signs in view. */
+export const FOLLOW: Record<CameraClass, { fov: number; offset: Vec3; lift?: number }> = {
   desktop: { fov: 40, offset: [16, 18, 16] },
   tablet: { fov: 42, offset: [16, 18, 16] },
   mobile: { fov: 50, offset: [18, 24, 18] },
+  landscape: { fov: 42, offset: [11.2, 12.6, 11.2], lift: 2 },
 };
 
 /** How far ahead of the rover (along the camera's forward) the follow camera looks, per camera class. */
-export const FOLLOW_LOOK_AHEAD: Record<ViewportClass, number> = { desktop: 6, tablet: 6, mobile: 5 };
+export const FOLLOW_LOOK_AHEAD: Record<CameraClass, number> = { desktop: 6, tablet: 6, mobile: 5, landscape: 6 };
 
 /**
  * Rail rig for the L2 Career Road: camera at (x, y, z) looking at (x + 4, 0, 0). High and far
  * enough that both room rows of a year plaza (about 20 u either side of the road) stay in frame.
  */
-export const RAIL: Record<ViewportClass, { fov: number; y: number; z: number }> = {
+export const RAIL: Record<CameraClass, { fov: number; y: number; z: number; lift?: number }> = {
   desktop: { fov: 40, y: 22, z: 30 },
   tablet: { fov: 45, y: 24, z: 34 },
   mobile: { fov: 55, y: 26, z: 38 },
+  landscape: { fov: 45, y: 15.8, z: 22.4, lift: 2 },
 };
 export const RAIL_LOOK_AHEAD = 4;
 
@@ -69,10 +72,11 @@ export function orbitOffset(offset: Vec3, yaw: number, pitch: number): Vec3 {
  * view turns by the same angle at any distance. Without one (all 0) the pose is exactly the plain orbit, the `target`
  * array itself included.
  */
-export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0, lookForward = 0, lookUp = 0, lookRight = 0): CameraPose {
-  const { fov, offset } = FOLLOW[cls];
+export function followPose(cls: CameraClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0, lookForward = 0, lookUp = 0, lookRight = 0): CameraPose {
+  const { fov, offset, lift = 0 } = FOLLOW[cls];
   const [rx, ry, rz] = orbitOffset(offset, yaw, pitch);
   const position: Vec3 = [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom];
+  lookUp += lift;
   if (lookForward === 0 && lookUp === 0 && lookRight === 0) return { position, target, fov };
   const f = followForward(cls, yaw);
   // The camera's horizontal right of forward (x, z) is (-z, x).
@@ -86,20 +90,20 @@ export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, 
 }
 
 /** Default elevation of a rig's camera above its target, radians. */
-export function baseElevation(cls: ViewportClass, rig: "follow" | "rail"): number {
+export function baseElevation(cls: CameraClass, rig: "follow" | "rail"): number {
   if (rig === "rail") return Math.atan2(RAIL[cls].y, RAIL[cls].z);
   const [ox, oy, oz] = FOLLOW[cls].offset;
   return Math.atan2(oy, Math.hypot(ox, oz));
 }
 
 /** Pitch offsets (from the rig's default elevation) that keep its camera inside PITCH_LIMITS. */
-export function pitchRange(cls: ViewportClass, rig: "follow" | "rail"): [number, number] {
+export function pitchRange(cls: CameraClass, rig: "follow" | "rail"): [number, number] {
   const base = baseElevation(cls, rig);
   return [PITCH_LIMITS[0] - base, PITCH_LIMITS[1] - base];
 }
 
 /** Horizontal forward of the follow camera at `yaw` (the same as `forwardOf(followPose(...))`). */
-export function followForward(cls: ViewportClass, yaw: number): Vec2 {
+export function followForward(cls: CameraClass, yaw: number): Vec2 {
   const [ox, , oz] = FOLLOW[cls].offset;
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
@@ -124,11 +128,12 @@ export function railShift(roverZ: number): number {
  * `pitch` tilts it within PITCH_LIMITS. `axisZ` is the road's z at the rover (the Career Road
  * meanders), so the camera follows the road's curves. The look-ahead runs to the screen's right;
  * `aheadAlongView` runs it into the screen instead (`railForward`), which centers the rover when the rail
- * looks down the road (the arrival view behind the rover). `lookRight` (u, scaled by `zoom`) then moves only the look
- * target along the camera's horizontal right, like a follow zone's `LookOffset.right`.
+ * looks down the road (the arrival view behind the rover). `lookRight` and `lookUp` (u, scaled by `zoom`) then move only the
+ * look target along the camera's horizontal right and up, like a follow zone's `LookOffset.right` and `.up`; the class's rig
+ * `lift` adds to the up.
  */
 export function railPose(
-  cls: ViewportClass,
+  cls: CameraClass,
   roverX: number,
   floorY: number,
   zoom = 1,
@@ -138,8 +143,9 @@ export function railPose(
   pitch = 0,
   aheadAlongView = false,
   lookRight = 0,
+  lookUp = 0,
 ): CameraPose {
-  const { fov, y, z } = RAIL[cls];
+  const { fov, y, z, lift = 0 } = RAIL[cls];
   const shift = axisZ + railShift(roverZ - axisZ);
   const [ox, oy, oz] = orbitOffset([0, y, z], yaw, pitch);
   const ahead = aheadAlongView ? railForward(yaw) : { x: Math.cos(yaw), z: -Math.sin(yaw) };
@@ -147,7 +153,7 @@ export function railPose(
   const side = lookRight * zoom;
   return {
     position: [roverX + ox * zoom, floorY + oy * zoom, shift + oz * zoom],
-    target: [roverX + RAIL_LOOK_AHEAD * ahead.x + Math.cos(yaw) * side, floorY, shift + RAIL_LOOK_AHEAD * ahead.z - Math.sin(yaw) * side],
+    target: [roverX + RAIL_LOOK_AHEAD * ahead.x + Math.cos(yaw) * side, floorY + (lift + lookUp) * zoom, shift + RAIL_LOOK_AHEAD * ahead.z - Math.sin(yaw) * side],
     fov,
   };
 }
@@ -176,10 +182,11 @@ export function forwardOf(pose: CameraPose): Vec2 {
 }
 
 /** Hologram fly-in (appendix 03 section 2): eye height 4 u, at least 9 u in front of the stage. */
-export const HOLOGRAM_RIG: Record<ViewportClass, { fov: number; distance: number; eye: number }> = {
+export const HOLOGRAM_RIG: Record<CameraClass, { fov: number; distance: number; eye: number }> = {
   desktop: { fov: 35, distance: 9, eye: 4 },
   tablet: { fov: 42, distance: 9, eye: 4 },
   mobile: { fov: 50, distance: 9, eye: 4 },
+  landscape: { fov: 42, distance: 9, eye: 4 },
 };
 /** Share of the view width the diagram may use (the result cards take the rest). */
 export const HOLOGRAM_FILL = { landscape: 0.62, portrait: 0.9 } as const;
@@ -188,7 +195,7 @@ export const HOLOGRAM_FILL = { landscape: 0.62, portrait: 0.9 } as const;
  * Camera pose for the hologram view: in front of the board along `facing` (unit vector from the
  * board toward the viewer), pulled back until a board of `boardWidth` fits the view.
  */
-export function hologramPose(cls: ViewportClass, board: Vec3, facing: Vec2, aspect: number, boardWidth: number, floorY: number): CameraPose {
+export function hologramPose(cls: CameraClass, board: Vec3, facing: Vec2, aspect: number, boardWidth: number, floorY: number): CameraPose {
   const { fov, distance, eye } = HOLOGRAM_RIG[cls];
   const fill = aspect >= 1 ? HOLOGRAM_FILL.landscape : HOLOGRAM_FILL.portrait;
   const halfH = Math.tan(((fov / 2) * Math.PI) / 180);

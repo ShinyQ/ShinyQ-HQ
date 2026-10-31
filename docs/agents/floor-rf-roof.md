@@ -16,6 +16,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md).
 - The layout feeds the navgrid, the door triggers, `roomTarget` and the R3F components, so scene and autopilot never disagree.
 - Deep links spawn on the arrival point and elevator arrivals roll on to it (`ROOF_DECK.spawn`, (-8, 0): the end of the lead road at the plaza rim; `FloorLayout.arrival` is the same point).
 - Zone `RF:arrival` (`arrivalOnly`, `travel` east): the camera stands behind the rover and 35 degrees to its right and looks over the plaza at the centerpiece mast and its availability sign (asserted at four sizes in `tests/unit/arrivals.test.ts`); zoom 0.95, phones 0.88 aimed 4.25 u right (`arrivalAimPhone`), the camera east of the glass shaft.
+- Zones `RF:contact` and `RF:cv` look at their stations; on portrait phones they come in to zoom 0.9 and 0.65, 0.3 lower, and the channel names take `CHANNEL_FONT.phone` 0.41 (`SignalGarden.tsx`), so the names read ([phone reading rule](floors.md#arrival)).
 - In-world targets are point-and-go registry entries (see [Point-and-go](floors.md#point-and-go)); floors add no click handlers of their own.
 
 ## Scenery: Signal Garden

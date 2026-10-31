@@ -55,6 +55,7 @@ export const ALL_SPECS = [
   "pads",
   "pageview",
   "perf-probes",
+  "phone-first",
   "production",
   "reactor",
   "ride",
@@ -242,7 +243,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
-  { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
+  { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "gpu"] },
   // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
   { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
   // The prebuilt L1 wall logo atlas (scripts/logo-atlas.ts) draws on the Lobby walls only.
@@ -274,7 +275,7 @@ export const RULES: Rule[] = [
   // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
   { test: /^src\/experience\/rover\/idle\.ts$/, specs: ["rover-idle", "idle-cadence"] },
   { test: /^src\/experience\/rover\/activity\.ts$/, specs: ["rover-idle"] },
-  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "idle-cadence", "camera", "experience"] },
+  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "idle-cadence", "camera", "experience", "gpu"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/fade\.ts$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
@@ -304,6 +305,8 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience", "arrivals"] },
   // The shared joystick double-tap helper (the boost toggle test).
   { test: /^e2e\/touch\.ts$/, specs: ["boost"] },
+  // The retained JS heap read of the memory gates.
+  { test: /^e2e\/heap\.ts$/, specs: ["memory"] },
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
@@ -403,6 +406,11 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // The phone-first 3D design (e2e/phone-first.spec.ts): the bottom boot card, the docked Rover line and the band stepping aside, the phone tour, the L1 landing view and the camera it primes.
+  {
+    test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared)\.css$/,
+    specs: ["phone-first"],
+  },
   // Time Travel on /journey: the section, its selector and island, the page that mounts it, the captions it reads, the Motion setting it follows and its UI strings.
   {
     test: /^src\/components\/time-travel\/|^src\/content\/time-travel\.ts$|^src\/app\/\[locale\]\/journey\/page\.tsx$|^content\/site-content\.json$|^src\/lib\/(motion|reduced-motion)\.ts$|^messages\//,

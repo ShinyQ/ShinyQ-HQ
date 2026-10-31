@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { createElement, Suspense, useEffect, useLayoutEffect, useRef, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { READY_FLOORS } from "@/experience/floorOrder";
 import { floorChunks } from "@/experience/floors/floorChunks";
+import { setBoost, setJoystick, stickInput } from "@/experience/input/joystick";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -15,7 +16,8 @@ import { EngineUnlockLayer } from "./dialog/EngineUnlockLayer";
 import { FloorIntroLayer } from "./dialog/FloorIntroLayer";
 import { HintLayer } from "./dialog/HintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
-import { firstName } from "./dialog/onboarding";
+import { firstName } from "./dialog/names";
+import { docks } from "./dialog/placement";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { InteractStatus } from "./InteractStatus";
@@ -31,8 +33,8 @@ import { HudMenu } from "./menu/HudMenu";
 import { Minimap } from "./minimap/Minimap";
 import { SettingsLauncher } from "./menu/SettingsSheet";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
-import { Joystick } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
+import { loadTouch } from "./touchChunk";
 import { ResetView, ViewControls } from "./ViewControls";
 import { YearChip } from "./YearChip";
 
@@ -47,6 +49,25 @@ function HologramUnavailable() {
 }
 
 // The hologram view only opens on L3, whose chunk carries the overlay (Round 7 B); a failed import is retried on the next open.
+/** No touch controls this time (a failed chunk): point-and-go still drives, and the next mount retries the import. */
+const NoTouch = () => null;
+/** The touch controls chunk (`touchChunk.ts`, coarse pointers only): the bottom band's left column and the phone's Boost. */
+const TOUCH = { input: stickInput, setJoystick, setBoost };
+const touch = () =>
+  loadTouch().then((m) => {
+    if (!m) throw new Error("touch chunk");
+    m.bindTouch(TOUCH);
+    return m;
+  });
+const lazyTouchLeft = lazyFromChunk<{ phone: boolean; aside: boolean }>(() => touch().then((m) => m.TouchLeft), NoTouch);
+const lazyPhoneBoost = lazyFromChunk<object>(() => touch().then((m) => m.PhoneBoost), NoTouch);
+function LazyTouchLeft(props: { phone: boolean; aside: boolean }) {
+  return <Suspense fallback={null}>{createElement(lazyTouchLeft(), props)}</Suspense>;
+}
+function LazyPhoneBoost() {
+  return <Suspense fallback={null}>{createElement(lazyPhoneBoost())}</Suspense>;
+}
+
 const lazyHologramOverlay = lazyFromChunk<HologramOverlayProps>(() => floorChunks.load("L3").then((m) => m.HologramOverlay), HologramUnavailable);
 
 function HologramView({ locale }: { locale: HologramOverlayProps["locale"] }) {
@@ -117,11 +138,17 @@ function CutFade() {
  * joystick toggles boost too).
  * Center: point-and-go's status above the controls hint. Right: on desktops the settings gear above
  * the view controls, in Corners one reset button. It hugs the bottom edge above the iOS home
- * indicator (safe area).
+ * indicator (safe area). With `aside` (a phone's docked Rover line covers the bottom) the whole band, status
+ * included, is inert and faded.
  */
-function BottomBand({ left, right, children }: { left: ReactNode; right: ReactNode; children: ReactNode }) {
+function BottomBand({ left, right, aside = false, children }: { left: ReactNode; right: ReactNode; aside?: boolean; children: ReactNode }) {
   return (
-    <div data-testid="hud-bottom" className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 pr-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-5 md:pr-4">
+    <div
+      data-testid="hud-bottom"
+      data-aside={aside ? "true" : undefined}
+      inert={aside}
+      className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 pr-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-5 transition-opacity motion-reduce:transition-none md:pr-4 ${aside ? "opacity-0" : ""}`}
+    >
       <div className="flex shrink-0 flex-col-reverse items-end gap-3 sm:flex-1 sm:flex-row sm:items-center">{left}</div>
       <div data-testid="hud-bottom-center" className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2 sm:flex-initial">
         {children}
@@ -208,6 +235,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
   const desktop = layout === "desktop";
   const phone = layout === "phone";
   const speaking = useDialog((v) => v.line !== null);
+  const docked = useDialog((v) => phone && coarse && docks(v));
   const explorable = phase !== "intro" && phase !== "room";
   const drive = coarse && phase !== "intro";
   const root = useRef<HTMLDivElement>(null);
@@ -262,9 +290,22 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
           <FloorNotice data={data} layout={layout} />
           {phase !== "intro" && <YearChip career={data.career} layout={layout} hidden={phone && phase === "room"} />}
           <BottomBand
-            // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost.
-            left={drive ? <Joystick boost /> : null}
-            right={desktop ? <DesktopCorner data={data} layouts={layouts} explorable={explorable} /> : explorable ? <ResetView /> : null}
+            aside={docked}
+            // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost. Phones
+            // drive with the floating stick (a drag in the lower-left drive zone) and keep Boost above Reset view.
+            left={drive ? <LazyTouchLeft phone={phone} aside={docked} /> : null}
+            right={
+              desktop ? (
+                <DesktopCorner data={data} layouts={layouts} explorable={explorable} />
+              ) : phone && drive ? (
+                <div className="flex flex-col items-end gap-3">
+                  <LazyPhoneBoost />
+                  {explorable && <ResetView />}
+                </div>
+              ) : explorable ? (
+                <ResetView />
+              ) : null
+            }
           >
             <InteractStatus coarse={coarse} />
             {explorable && !speaking && !phone && <HintBar coarse={coarse} />}

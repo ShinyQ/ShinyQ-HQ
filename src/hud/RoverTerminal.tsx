@@ -75,6 +75,8 @@ interface PanelProps extends Omit<RoverTerminalProps, "open" | "reducedMotion"> 
 
 function TerminalPanel({ locale, missions, onRun, onClose, now, className, animate }: PanelProps) {
   const t = useTranslations("hud.terminal");
+  // Touch screens never see keyboard keys (owner decision 2026-10-28).
+  const coarse = useHQStore((s) => s.device.coarse);
   const id = useId();
   const [time] = useState(() => now ?? new Date());
   const lines = [t("prompt"), `${t(`greeting.${greetingKey(time.getHours(), locale)}`)}.`, t("question")];
@@ -263,9 +265,11 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
             );
           })}
         </ul>
-        <p className="hidden shrink-0 border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block">
-          {t("hint", { last: missions.length })}
-        </p>
+        {!coarse && (
+          <p className="hidden shrink-0 border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block">
+            {t("hint", { last: missions.length })}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import { buildFloorRoomViews } from "@/content/room-views";
 import { markFirstFrame, resetFirstFrame } from "@/experience/boot-signals";
@@ -87,6 +87,7 @@ describe("DrawerHost", () => {
 });
 
 describe("DrawerHost room data per floor", () => {
+  beforeAll(() => import("@/experience/floors/chunks/engine"), 60_000);
   const requested: string[] = [];
   const rooms = () => requested.filter((url) => url.startsWith("/data/rooms/"));
   const FLOORS = ["L1", "L2", "L3", "L4", "RF", "B1"] as const;
@@ -130,8 +131,10 @@ describe("DrawerHost room data per floor", () => {
     expect(rooms()).toEqual(["/data/rooms/en-L3.json?v=v3"]);
   });
 
-  // The station body is the lazy B1 floor chunk (React reveals a Suspense boundary after about 300 ms): its first,
-  // cold import takes 0.3 to 1.2 s under a parallel suite, past vi.waitFor's 1 s default.
+  // The station body is the lazy B1 floor chunk (React reveals a Suspense boundary after about 300 ms). Its first, cold
+  // import (EngineRoom, the reactor, three) took past 10 s now and then under the full parallel suite, so the module is
+  // warmed in `beforeAll` (its own timeout): the test checks which room file the drawer reads, not how fast Vitest
+  // transforms the chunk.
   it("opens a B1 station from the separate file alone", { timeout: 15_000 }, async () => {
     getHQStore().setState({ b1Unlocked: true, floor: "B1" });
     renderHost();

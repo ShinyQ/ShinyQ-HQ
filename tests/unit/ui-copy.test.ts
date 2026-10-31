@@ -6,6 +6,7 @@ import id from "../../messages/id.json";
 import { getContent } from "@/content/load";
 import { collectStrings } from "@/content/safety";
 import { SESSION_SECONDS } from "../../functions/_lib/security";
+import { ASK_HISTORY_TURNS } from "@/ask/protocol";
 
 const placeholders = (text: string) =>
   [...new Set([...text.matchAll(/\{([a-zA-Z]\w*)(?:\}|,)/g)].map((match) => match[1]))].sort();
@@ -17,9 +18,11 @@ describe("bilingual UI copy", () => {
   });
 
   it("distinguishes local New chat clearing from retained service logs and signed follow-up context", () => {
-    expect(en.ask.privacy).toMatch(/three earlier exchanges/i);
+    // The notice names the real memory length (ASK_HISTORY_TURNS), so changing the constant fails here first.
+    const count = { en: ["", "one", "two", "three", "four", "five", "six"], id: ["", "satu", "dua", "tiga", "empat", "lima", "enam"] };
+    expect(en.ask.privacy).toMatch(new RegExp(`Up to ${count.en[ASK_HISTORY_TURNS]} earlier exchanges`, "i"));
     expect(en.ask.privacy).toMatch(/New chat clears.*not.*service logs/i);
-    expect(id.ask.privacy).toMatch(/tiga tanya-jawab sebelumnya/i);
+    expect(id.ask.privacy).toMatch(new RegExp(`Hingga ${count.id[ASK_HISTORY_TURNS]} tanya-jawab sebelumnya`, "i"));
     expect(id.ask.privacy).toMatch(/Obrolan baru mengosongkan.*bukan.*log layanan/i);
   });
 

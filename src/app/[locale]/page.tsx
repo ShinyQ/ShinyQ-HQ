@@ -53,7 +53,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     {
       label: t("currentRole"),
       value: profile.currentRole.title[locale],
-      detail: `${profile.currentRole.org} · ${t("since", { date: formatYearMonth(profile.currentRole.since, locale) })}`,
+      detail: `${profile.currentRole.org}, ${t("since", { date: formatYearMonth(profile.currentRole.since, locale) })}`,
     },
     { label: t("location"), value: profile.location[locale], detail: profile.timezone },
     { label: t("openTo"), value: roof.availability[locale] },
@@ -62,23 +62,10 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   return (
     <ClientMessages>
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} />
-      <HomeHero
-        locale={locale}
-        proof={<ProofStrip stats={proof} locale={locale} label={t("proofLabel")} />}
-        ticker={
-          <StatTicker
-            stats={tickerStats}
-            locale={locale}
-            liveIds={Object.keys(DYNAMIC_STATS)}
-            title={t("statsTitle")}
-            live={t("ticker.live")}
-            extra={(copy) => <TickerVisits locale={locale} label={ts("tile")} live={t("ticker.live")} scope={visitsScope} copy={copy} />}
-          />
-        }
-      />
+      <HomeHero locale={locale} proof={<ProofStrip stats={proof} locale={locale} label={t("proofLabel")} />} />
 
       <SectionWide id="work" title={t("selectedWork")} more={{ href: "/labs", label: t("allProjects", { count: pods.length }) }}>
-        <ul className="grid gap-x-6 gap-y-10 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3" data-testid="featured-grid">
+        <ul className="hx-stack" data-testid="featured-grid">
           {featured.map((pod) => (
             <li key={pod.id} className="min-w-0">
               <FeaturedProject pod={pod} locale={locale} />
@@ -87,8 +74,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         </ul>
         {more.length > 0 && (
           <>
-            <h3 className="pv-data mt-16">{t("moreWork")}</h3>
-            <ul className="pv-rows pv-rows-closed mt-4">
+            <h3 className="pv-h3 mt-24">{t("moreWork")}</h3>
+            <ul className="pv-rows pv-rows-closed mt-6">
               {more.map((pod) => (
                 <WorkRow key={pod.id} pod={pod} locale={locale} />
               ))}
@@ -97,59 +84,77 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         )}
       </SectionWide>
 
-      <SectionSplit id="intro" title={t("introTitle")}>
-        <p className="pv-lead">{profile.bio[locale]}</p>
-        <dl className="mt-8 divide-y divide-line border-y border-line">
-          {status.map((row) => (
-            <div key={row.label} className="grid grid-cols-[120px_1fr] gap-3 py-4">
-              <dt className="pv-data pt-1">{row.label}</dt>
-              <dd className="text-[15px] leading-[22px] text-ink">
-                {row.value}
-                {row.detail && <span className="block text-sm text-ink-2">{row.detail}</span>}
-              </dd>
+      <section id="intro" aria-labelledby="intro-title" className="pv-wrap pv-sec-l">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
+          <div className="min-w-0 lg:col-span-7">
+            <h2 id="intro-title" className="pv-h2">
+              {t("introTitle")}
+            </h2>
+            <p className="pv-lead mt-8">{profile.bio[locale]}</p>
+          </div>
+          <div className="min-w-0 lg:col-span-5 lg:self-end">
+            <dl className="divide-y divide-line border-y border-line">
+              {status.map((row) => (
+                <div key={row.label} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 py-4">
+                  <dt className="pv-meta pt-0.5">{row.label}</dt>
+                  <dd className="text-ink">
+                    {row.value}
+                    {row.detail && <span className="pv-small block">{row.detail}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-8">
+              <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-intro">
+                {tc("viewCv")}
+              </CvButton>
             </div>
-          ))}
-        </dl>
-        <div className="mt-8">
-          <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-intro">
-            {tc("viewCv")}
-          </CvButton>
+          </div>
         </div>
-      </SectionSplit>
+        <StatTicker
+          stats={tickerStats}
+          locale={locale}
+          liveIds={Object.keys(DYNAMIC_STATS)}
+          title={t("statsTitle")}
+          live={t("ticker.live")}
+          extra={<TickerVisits locale={locale} label={ts("tile")} live={t("ticker.live")} scope={visitsScope} />}
+        />
+      </section>
 
-      <SectionSplit id="journey" title={t("journeyTitle")} intro={tj("intro")} more={{ href: "/journey", label: t("fullJourney") }}>
+      <SectionWide id="journey" title={t("journeyTitle")} intro={tj("intro")} more={{ href: "/journey", label: t("fullJourney") }}>
         <ul className="pv-rows pv-rows-closed">
           {latest.map((entry) => (
             <TimelineRow key={entry.id} entry={entry} locale={locale} />
           ))}
         </ul>
-      </SectionSplit>
+      </SectionWide>
 
-      <SectionSplit id="certifications" title={t("certsTitle")}>
-        <Certifications locale={locale} limit={6} />
-      </SectionSplit>
-
-      <SectionSplit id="skills" title={t("skillsTitle")}>
-        <SkillsWall skills={getSkills()} locale={locale} />
-      </SectionSplit>
+      <div className="hx-band">
+        <SectionWide id="certifications" title={t("certsTitle")} className="pv-sec-s">
+          <Certifications locale={locale} limit={6} />
+        </SectionWide>
+        <SectionSplit id="skills" title={t("skillsTitle")} className="pv-sec-s">
+          <SkillsWall skills={getSkills()} locale={locale} />
+        </SectionSplit>
+      </div>
 
       <OfficeSection locale={locale} />
 
-      <SectionSplit id="writing" title={t("writingTitle")} intro={tl("intro")} more={{ href: "/library", label: t("allWriting") }}>
+      <SectionWide id="writing" title={t("writingTitle")} intro={tl("intro")} more={{ href: "/library", label: t("allWriting") }}>
         <PostList posts={getPosts().slice(0, 3)} locale={locale} />
-      </SectionSplit>
+      </SectionWide>
 
-      <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec">
-        <h2 id="closing-title" className="pv-d-l max-w-[22ch] text-[clamp(30px,3.2vw,44px)] leading-[1.02]">
+      <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec-l">
+        <h2 id="closing-title" className="pv-d-l max-w-[24ch] text-[length:var(--text-display-s)]">
           {roof.availability[locale]}
         </h2>
         <a
           href={`mailto:${roof.contact.email}`}
-          className="mt-7 inline-block font-display text-[clamp(20px,2.2vw,30px)] font-semibold text-ink underline decoration-line-2 decoration-1 underline-offset-8 transition [overflow-wrap:anywhere] [font-stretch:90%] hover:text-cyan hover:decoration-cyan"
+          className="pv-uline mt-8 inline-flex min-h-11 items-center font-display text-lg font-extrabold sm:text-2xl text-ink transition-colors [overflow-wrap:anywhere] [font-stretch:90%] hover:text-cyan"
         >
           {roof.contact.email}
         </a>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-10 flex flex-wrap gap-3">
           <Link href="/contact" className="pv-btn pv-btn-ghost">
             {t("aboutContact")}
           </Link>

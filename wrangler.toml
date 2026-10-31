@@ -104,13 +104,13 @@ ASK_BACKUP_MODELS = "qwen/qwen3.8-27b,openai/gpt-oss-120b"
 # AI Gateway ID (cache TTL 7 days, logs on, 600 requests per day). Its Workers AI billing mode is
 # "postpaid": calls count against the account's own Workers AI quota (10k free neurons per day).
 ASK_GATEWAY_ID = "shinyq-hq"
-# Public Turnstile site key of the invisible widget "shinyq-hq-ask" (kurniadi.pages.dev,
+# Public Turnstile site key of the invisible widget "shinyq-hq-ask" (kurniadi.pages.dev, kurniadi.my.id,
 # kurniadi.dev), written by scripts/provision-ask.ts. Empty means Turnstile is off.
 TURNSTILE_SITE_KEY = "0x4AAAAAAFTVgnlNQl3EZH4k"
 # Allowed Origin values, comma separated; `https://*.example.dev` matches one subdomain label.
 # Previews are not listed: they get no production secrets, so the Function stays off there
 # (a Turnstile site key without its secret fails closed).
-ASK_ALLOWED_ORIGINS = "https://kurniadi.pages.dev,https://kurniadi.dev"
+ASK_ALLOWED_ORIGINS = "https://kurniadi.pages.dev,https://kurniadi.my.id,https://www.kurniadi.my.id,https://kurniadi.dev"
 # Global model calls per day (second layer under the AI Gateway rate limit).
 ASK_DAILY_CAP = "600"
 # Knowledge pack source: "kv" reads the pack:current pointer and its value from ASK_KV (memory, KV, the bundle's

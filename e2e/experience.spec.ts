@@ -578,19 +578,7 @@ test.describe("tiers and views", () => {
     await expect(page.getByTestId("hq")).toHaveCount(0, { timeout: 20_000 });
     const enter = page.getByRole("link", { name: en.home.hero.enter3d });
     await expect(enter).toBeVisible();
-    // With the stats ticker in the bottom band, the floating Back to 3D button keeps clear of its contents.
-    const back = page.getByTestId("back-to-3d");
-    await expect(back).toBeVisible();
-    const overlaps = await page.evaluate(() => {
-      const ticker = document.querySelector<HTMLElement>("#stats")!;
-      window.scrollBy(0, ticker.getBoundingClientRect().bottom - window.innerHeight + 8);
-      const button = document.querySelector<HTMLElement>("[data-testid=back-to-3d]")!.getBoundingClientRect();
-      return Array.from(ticker.querySelectorAll<HTMLElement>(".hx-tick-view"))
-        .map((el) => el.getBoundingClientRect())
-        .filter((r) => r.left < button.right && r.right > button.left && r.top < button.bottom && r.bottom > button.top).length;
-    });
-    expect(overlaps).toBe(0);
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.getByTestId("back-to-3d")).toBeVisible();
     await enter.click();
     await waitForHQ(page);
     expect(await page.evaluate(() => sessionStorage.getItem("hq:view"))).toBe("3d");
@@ -795,7 +783,7 @@ test.describe("free orbit camera", () => {
     expect(await currentYaw(page)).toBeLessThan(afterE - 0.3);
 
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
-    await page.getByRole("button", { name: "Reset view (0)" }).click();
+    await page.getByRole("button", { name: en.hud.view.reset, exact: true }).click();
     await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
 
     await page.keyboard.press("q");
@@ -823,8 +811,8 @@ test.describe("free orbit on touch", () => {
     await page.touchscreen.tap(empty.x, empty.y);
     await expect(page.getByTestId("interact-go")).toHaveCount(0);
     const before = await snapshot(page);
-    // A slow horizontal drag across empty floor (not a swipe).
-    const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
+    // A slow horizontal drag across empty floor (not a swipe), above the floating stick's drive zone (the bottom 40%).
+    const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 440 }));
     const cdp = await page.context().newCDPSession(page);
     let timestamp = Date.now() / 1000;
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [points[0]], timestamp });

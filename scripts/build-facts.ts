@@ -17,7 +17,14 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { BYTES_3D_BUDGET, RENDER_BUDGET } from "../e2e/budgets";
+import { PER_DAY, PER_MINUTE } from "../functions/_lib/limits";
+import { PROMPT_VERSION } from "../functions/_lib/prompt";
+import { PACK_MAX_BYTES } from "../src/ask/pack";
+import { ASK_HISTORY_TURNS } from "../src/ask/protocol";
 import { BuildFactsSchema, getBuildStory, type BuildFacts } from "../src/content/build-story";
+import { broadArea, listDecisions, listPlans, type Decision, type Plan } from "./docs-index";
+
+export { broadArea };
 
 export const FACTS_FILE = path.join(process.cwd(), "content", "generated", "build-facts.json");
 
@@ -128,6 +135,108 @@ function playwrightTests(cwd: string): number | undefined {
 
 const kb = (bytes: number) => Math.round((bytes / 1024) * 10) / 10;
 
+/** Decisions and plans shown on B1, newest first. */
+export const LOG_LATEST = { decisions: 8, plans: 5, areas: 8 };
+const SENTENCE_MAX = 240;
+
+/** Markdown to plain text: links to their text, no code ticks or emphasis, one line. */
+export function plainText(markdown: string): string {
+  return markdown
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[`*_]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Drops asides a visitor cannot use: parentheses quoting the owner's chat or pointing at a docs file. */
+export function withoutAsides(text: string): string {
+  return text
+    .replace(/\s*\([^()]*(?:"|\u201c|docs\/)[^()]*\)/g, "")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** The first sentence of `markdown` as plain text without asides, cut at a word (with an ellipsis) past `max` characters. */
+export function firstSentence(markdown: string, max = SENTENCE_MAX): string {
+  const text = withoutAsides(plainText(markdown));
+  const end = /[.!?](?=\s+[A-Z("])/.exec(text);
+  const sentence = end ? text.slice(0, end.index + 1) : text;
+  if (sentence.length <= max) return sentence;
+  const cut = sentence.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)).replace(/[,;:]$/, "")}\u2026`;
+}
+
+
+/**
+ * The owner decision log: the total, the busiest broad areas (most first, then by name, `LOG_LATEST.areas` of them)
+ * and the latest decisions with their own headings.
+ */
+export function decisionLog(decisions: Decision[]): NonNullable<BuildFacts["log"]>["decisions"] {
+  const counts = new Map<string, number>();
+  for (const d of decisions) counts.set(broadArea(d.area), (counts.get(broadArea(d.area)) ?? 0) + 1);
+  const areas = [...counts]
+    .map(([area, count]) => ({ area, count }))
+    .sort((a, b) => b.count - a.count || a.area.localeCompare(b.area))
+    .slice(0, LOG_LATEST.areas);
+  const latest = decisions
+    .slice(-LOG_LATEST.decisions)
+    .reverse()
+    .map((d) => ({ date: d.date, area: d.area, file: d.file, text: firstSentence(d.text) }));
+  return { total: decisions.length, areas, latest };
+}
+
+/** A plan heading without its "Implementation Plan" suffix. */
+export const planTitle = (title: string) => plainText(title).replace(/\s+Implementation Plan$/i, "");
+
+/** What a dropped plan's status says after "dropped by owner <date>", as a sentence. */
+export function droppedReason(status: string): string {
+  const rest = withoutAsides(plainText(status)).replace(/^dropped(?: by owner)?(?: \d{4}-\d{2}-\d{2})?\s*[:,]?\s*/i, "");
+  const reason = firstSentence(rest || status);
+  return reason.charAt(0).toUpperCase() + reason.slice(1);
+}
+
+/** The plan ledger: counts per state, the latest shipped plans by their pull request and the plans the owner dropped. */
+export function planLedger(plans: Plan[]): NonNullable<BuildFacts["log"]>["plans"] {
+  const shipped = plans.filter((p) => p.category === "shipped" || p.category === "shipped, later changed");
+  const dropped = plans.filter((p) => p.category === "dropped");
+  const latest = shipped
+    .filter((p) => p.prs.length > 0)
+    .map((p) => ({ file: p.file, title: planTitle(p.title), pr: Math.max(...p.prs) }))
+    .sort((a, b) => b.pr - a.pr || a.file.localeCompare(b.file))
+    .slice(0, LOG_LATEST.plans);
+  return {
+    shipped: shipped.length,
+    inProgress: plans.filter((p) => p.category === "in progress").length,
+    dropped: dropped.length,
+    latest,
+    droppedPlans: dropped.map((p) => ({ file: p.file, title: planTitle(p.title), reason: droppedReason(p.status) })),
+  };
+}
+
+/** Merged pull requests in the 7 days up to `day` (inclusive) and the busiest merge day (earliest on a tie). */
+export function activityFacts(prs: PrDate[], day: string): NonNullable<BuildFacts["activity"]> | undefined {
+  if (!prs.length) return undefined;
+  const from = new Date(`${day}T00:00:00Z`);
+  from.setUTCDate(from.getUTCDate() - 6);
+  const since = from.toISOString().slice(0, 10);
+  const perDay = new Map<string, number>();
+  for (const pr of prs) perDay.set(pr.date, (perDay.get(pr.date) ?? 0) + 1);
+  const [date, count] = [...perDay].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+  return { last7Days: prs.filter((pr) => pr.date >= since && pr.date <= day).length, busiestDay: { date, prs: count } };
+}
+
+/** Ask's numbers from its code and its golden set (`tests/ask/golden.json`). */
+export function askFacts(cwd: string): NonNullable<BuildFacts["ask"]> | undefined {
+  const file = path.join(cwd, "tests", "ask", "golden.json");
+  const date = /^(\d{4}-\d{2}-\d{2})/.exec(PROMPT_VERSION)?.[1];
+  if (!existsSync(file) || !date) return undefined;
+  const golden = JSON.parse(readFileSync(file, "utf8")) as { items: unknown[]; passThreshold: number };
+  return { golden: golden.items.length, passMark: golden.passThreshold, promptDate: date, packKb: PACK_MAX_BYTES / 1024, historyTurns: ASK_HISTORY_TURNS, perMinute: PER_MINUTE, perDay: PER_DAY };
+}
+
+const withDefined = <K extends string, V>(key: K, value: V | undefined) => (value === undefined ? {} : ({ [key]: value } as Record<K, V>));
+
 /** Throws when git history is unavailable (shallow, not a repository): callers keep the committed snapshot. */
 export function collectFacts(cwd: string, opts: { runners: boolean; rounds?: Rounds; git?: GitFacts }): BuildFacts {
   const git = opts.git ?? gitFacts(cwd);
@@ -151,12 +260,16 @@ export function collectFacts(cwd: string, opts: { runners: boolean; rounds?: Rou
       unitFiles: walk(path.join(cwd, "tests"), (name) => /\.test\.tsx?$/.test(name)),
       ...(e2e === undefined ? {} : { e2e }),
       e2eFiles: walk(path.join(cwd, "e2e"), (name, rel) => name.endsWith(".spec.ts") && !rel.startsWith("perf/") && !PLAYWRIGHT_ONLY_WHEN_FLAGGED.has(name)),
+      perfFiles: walk(path.join(cwd, "e2e", "perf"), (name) => name.endsWith(".spec.ts")),
     },
     docs: {
       specs: walk(path.join(cwd, "docs", "superpowers", "specs"), (name) => name.endsWith(".md")),
       plans: walk(path.join(cwd, "docs", "superpowers", "plans"), (name, rel) => name.endsWith(".md") && !rel.includes("/")),
     },
     ...(jobs.length ? { ci: { jobs, workflows: workflowCount } } : {}),
+    ...(existsSync(path.join(cwd, "docs", "decisions")) ? { log: { decisions: decisionLog(listDecisions(cwd)), plans: planLedger(listPlans(cwd)) } } : {}),
+    ...withDefined("ask", askFacts(cwd)),
+    ...withDefined("activity", activityFacts(prs, gitPart.generatedAt)),
     budgets: {
       js3dKb: kb(BYTES_3D_BUDGET.failAt),
       sessionFullKb: kb(BYTES_3D_BUDGET.session.full),

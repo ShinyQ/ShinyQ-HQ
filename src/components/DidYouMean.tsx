@@ -28,9 +28,9 @@ export function DidYouMean({
     <div className={className} role="status" aria-live="polite">
       {match && (
         <p data-testid="did-you-mean">
-          <span className="pv-data">{label}</span>{" "}
+          <span className="pv-meta">{label}</span>{" "}
           <a href={match.p} className="font-semibold text-cyan">
-            {match.t} →
+            {match.t}
           </a>
         </p>
       )}

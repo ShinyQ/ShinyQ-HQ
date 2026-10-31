@@ -152,9 +152,6 @@
       "specs": "Spec documents",
       "plans": "Written plans",
       "floors": "Floors in the 3D tower",
-      "js3dKb": "3D JavaScript ceiling before the first frame (gzip)",
-      "sceneCalls": "Draw call ceiling per frame",
-      "triangles": "Triangle ceiling per frame",
       "uptime": "Uptime check on the live site",
       "visits": "Visits since launch"
     },
@@ -164,6 +161,34 @@
     "tried": "Tried",
     "whyDropped": "Why it was dropped",
     "prLink": "Pull request #{n}",
+    "b1": {
+      "quoted": "Titles and quotes here come straight from the repository, in English.",
+      "decisions": "Decision Log",
+      "decisionsLead": "{count, plural, one {# owner decision so far} other {# owner decisions so far}}, one file each in the repository. The busiest areas, then the latest:",
+      "areaCount": "{area} ({count})",
+      "decisionMeta": "{area}, {date}",
+      "plans": "Plans and Specs",
+      "plansLead": "Every change starts as a written plan in the repository. The ones that shipped last:",
+      "planMeta": "Pull request #{n}",
+      "dropped": "Dropped Plans",
+      "tiles": {
+        "plansShipped": "Plans shipped",
+        "plansInProgress": "Plans in progress",
+        "plansDropped": "Plans dropped by the owner",
+        "golden": "Questions in the Ask golden set",
+        "passMark": "Golden answers that must pass",
+        "promptDate": "Prompt revision",
+        "packKb": "Knowledge pack cap",
+        "last7Days": "Pull requests merged in the 7 days to {date}",
+        "busiestDay": "Pull requests merged on the busiest day, {date}",
+        "decisions": "Owner decisions",
+        "projects": "Projects on the Labs floor",
+        "posts": "Pieces of writing",
+        "certifications": "Certifications earned",
+        "guides": "Study guides",
+        "perfFiles": "3D performance spec files"
+      }
+    },
     "reactor": {
       "title": "The Reactor",
       "subtitle": "The live heart of the build: CI, deploys, agents and visits in one machine.",
@@ -364,6 +389,7 @@
   },
   "blog": {
     "back": "Back to Writing",
+    "tableLabel": "Scrollable table",
     "translationMissing": "This post is available in {language}. The original version is shown here.",
     "languageName": {
       "en": "English",
@@ -520,7 +546,7 @@
         "lite": "Lite"
       },
       "minimap": { "label": "Minimap" },
-      "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
+      "sound": { "label": "Sound", "hint": "Off mutes everything." },
       "effects": { "label": "Sound effects" },
       "music": { "label": "Background music" },
       "ambience": { "label": "Floor ambience", "hint": "Replaces the background music with each floor's soundtrack. Controlled separately from Background music." },
@@ -544,6 +570,7 @@
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
     "hintCoarse": "Drive: joystick · Boost: the bolt button or double-tap the joystick · Go: tap a glowing object twice · Look: drag · Zoom: pinch · Floors: the floor chip or the elevator",
+    "hintPhone": "Drive: drag on the lower left · Boost: the bolt button or double-tap the lower left · Go: tap a glowing object twice · Look: drag elsewhere · Zoom: pinch · Floors: the floor chip or the elevator",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "bootEyebrow": "Agent HQ · booting",
@@ -663,9 +690,9 @@
     },
     "view": {
       "label": "View controls",
-      "rotateLeft": "Rotate left (Q)",
-      "rotateRight": "Rotate right (E)",
-      "reset": "Reset view (0)"
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "reset": "Reset view"
     },
     "floorLabel": {
       "L1": "Home",
@@ -677,8 +704,10 @@
     "pads": {
       "floorTitle": "Take the elevator",
       "floorHint": "Pick a floor: arrows to move, Enter to ride, Esc to close.",
+      "floorHintTouch": "Tap a floor to ride there.",
       "yearTitle": "Teleport to a year",
       "yearHint": "Pick a year: arrows to move, Enter to beam there, Esc to close.",
+      "yearHintTouch": "Tap a year to beam there.",
       "close": "Close",
       "here": "You are here",
       "floorDesc": {
@@ -690,6 +719,7 @@
       },
       "consoleTitle": "Time console",
       "consoleHint": "Pick a year to beam there, or go back to the elevator. Esc closes.",
+      "consoleHintTouch": "Tap a year to beam there, or go back to the elevator.",
       "back": "Back to elevator",
       "backDetail": "Beam to the elevator call pad at the start of the road"
     },
@@ -767,6 +797,7 @@
       "prev": "Previous project",
       "next": "Next project",
       "hint": "Projects: left or right · Back: Esc",
+      "hintTouch": "Projects: Previous or Next · Back: the Back button",
       "results": "Results",
       "label": "{title}, architecture"
     },
@@ -833,7 +864,10 @@
   },
   "case": {
     "onThisPage": "On this page",
-    "more": "More {wing} projects"
+    "more": "More {wing} projects",
+    "breadcrumb": "Breadcrumb",
+    "kind": "Project type",
+    "room": "Room in the 3D HQ"
   },
   "writing": {
     "title": "Writing",
@@ -849,7 +883,7 @@
     "thinking": "Rover is thinking . . .",
     "asOf": "Rover's AI answer from this site, as of {date}",
     "privacyTitle": "Privacy",
-    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to three earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
+    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to five earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
       "offline": "Rover is resting. The CV and the work pages answer most questions.",
@@ -989,14 +1023,15 @@
       "moved": "Nice driving!",
       "cameraFine": "Drag or use Q and E to look around. Scroll to zoom, all the way in to see through my eyes!",
       "cameraCoarse": "Drag or twist two fingers to look around. Pinch to zoom, all the way in to see through my eyes!",
-      "highlights": "The Highlights Hall on the east side shows {name}'s selected work. Want to see it?",
-      "showMe": "Take me there",
-      "later": "Later",
       "elevator": "Stop on the glowing pad in front of the elevator, then choose a floor.",
       "roverMenu": "Not sure where to go? Open the Rover menu for shortcuts around HQ.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
-      "closingShort": "That's the basics! Replay the full tutorial from Settings anytime."
+      "closingShort": "That's the basics! Replay the full tutorial from Settings anytime.",
+      "pointGoPhone": "Tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
+      "movedPhone": "Nice driving! Drag on the lower left to steer yourself, and tap the Boost button to speed up.",
+      "floorChip": "Tap the floor chip up here to ride the elevator to another floor.",
+      "tilt": "Tip: turn your screen sideways for a wider view of the tower."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",

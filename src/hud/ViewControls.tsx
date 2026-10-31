@@ -49,13 +49,13 @@ export function ViewControls() {
       data-onboard="view"
       className="glass glass-solid pointer-events-auto flex flex-col items-center gap-0.5 rounded-full p-0.5 sm:flex-row"
     >
-      <button type="button" className={button} aria-label={t("rotateLeft")} title={t("rotateLeft")} onClick={() => rotateView(-1)}>
+      <button type="button" className={button} aria-label={t("rotateLeft")} aria-keyshortcuts="Q" title={`${t("rotateLeft")} (Q)`} onClick={() => rotateView(-1)}>
         <RotateLeftIcon />
       </button>
-      <button type="button" className={`${button} label`} aria-label={t("reset")} title={t("reset")} onClick={resetView}>
+      <button type="button" className={`${button} label`} aria-label={t("reset")} aria-keyshortcuts="0" title={`${t("reset")} (0)`} onClick={resetView}>
         <ResetIcon />
       </button>
-      <button type="button" className={button} aria-label={t("rotateRight")} title={t("rotateRight")} onClick={() => rotateView(1)}>
+      <button type="button" className={button} aria-label={t("rotateRight")} aria-keyshortcuts="E" title={`${t("rotateRight")} (E)`} onClick={() => rotateView(1)}>
         <RotateRightIcon />
       </button>
     </div>
@@ -71,6 +71,7 @@ export function ResetView() {
         type="button"
         data-testid="view-reset"
         aria-label={t("reset")}
+        aria-keyshortcuts="0"
         title={t("reset")}
         onClick={resetView}
         className="glass glass-solid grid size-12 place-items-center rounded-full text-ink-2 transition hover:text-ink focus-visible:text-ink"

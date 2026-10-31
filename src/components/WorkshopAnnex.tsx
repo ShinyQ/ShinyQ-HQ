@@ -46,8 +46,8 @@ export async function RepoWall({ repos, locale }: { repos: readonly RepoRef[]; l
             </ExternalLink>
             <p className="pv-small mt-1">{repo.description[locale]}</p>
           </div>
-          <p className="pv-data shrink-0">
-            {repo.language} · {t("stars", { count: repo.stars })}
+          <p className="pv-meta shrink-0">
+            {repo.language}, {t("stars", { count: repo.stars })}
           </p>
         </li>
       ))}

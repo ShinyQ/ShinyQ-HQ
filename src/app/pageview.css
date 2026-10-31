@@ -1,30 +1,55 @@
 /*
-  Page View layer: editorial Neon Grid (docs/superpowers/specs/2026-10-10-pageview-revamp-design.md).
-  Type, rows and composite pieces live here; grid spans use Tailwind utilities in the components.
-  Floor and wing colors are wayfinding only (markers, active rules); body copy stays neutral.
+  Classic site system (Hallmark redesign 2026-10-27, kept Neon Grid brand; DESIGN.md is the locked system).
+  Type, rows, controls and composite pieces live here on the tokens in tokens.css; grid spans use Tailwind utilities.
+  Labels are the body face a step smaller in sentence case; mono is for dates and code only. Floor and wing colours
+  mark wayfinding only (the active nav rule); body copy stays neutral.
 */
 @layer components {
   .pv-wrap {
     width: 100%;
-    max-width: 1240px;
+    max-width: var(--container);
     margin-inline: auto;
-    padding-inline: clamp(20px, 4vw, 48px);
+    padding-inline: var(--gutter);
   }
 
   .pv-sec {
-    padding-top: clamp(80px, 10vw, 136px);
+    padding-top: var(--section-gap);
+  }
+
+  .pv-sec-s {
+    padding-top: var(--section-gap-s);
+  }
+
+  .pv-sec-l {
+    padding-top: var(--section-gap-l);
+  }
+
+  /* A section head: the h2 with its one line and its link, above the body (never a sticky sidehead on the landing). */
+  .pv-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-md) var(--space-xl);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .pv-head > div > p {
+    margin-top: var(--space-md);
+    max-width: 52ch;
+    color: var(--color-ink-2);
   }
 
   .pv-sidehead > p {
-    margin-top: 12px;
+    margin-top: var(--space-sm);
     color: var(--color-ink-2);
-    max-width: 36ch;
+    max-width: 45ch;
   }
 
   @media (min-width: 64rem) {
     .pv-sidehead {
       position: sticky;
-      top: 96px;
+      top: calc(var(--nav-h) + var(--space-lg));
       align-self: start;
     }
   }
@@ -43,44 +68,38 @@
   .pv-d-xl {
     font-weight: 800;
     font-stretch: 78%;
-    font-size: clamp(52px, 8vw, 96px);
+    font-size: clamp(2.75rem, 8vw, 7rem);
     line-height: 0.92;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--tracking-display);
   }
 
   .pv-d-l {
     font-weight: 800;
     font-stretch: 82%;
-    font-size: clamp(42px, 5.6vw, 76px);
+    font-size: var(--text-display);
     line-height: 0.96;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--tracking-display);
   }
 
   .pv-h2 {
-    font-weight: 750;
-    font-stretch: 88%;
-    font-size: clamp(28px, 2.8vw, 40px);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    font-weight: 800;
+    font-stretch: 86%;
+    font-size: clamp(2rem, 2.5vw + 1rem, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: var(--tracking-display);
   }
 
   .pv-h3 {
-    font-weight: 700;
-    font-stretch: 92%;
-    font-size: 21px;
-    line-height: 1.22;
+    font-weight: 800;
+    font-stretch: 90%;
+    font-size: var(--text-title);
+    line-height: 1.15;
     letter-spacing: -0.01em;
   }
 
   .pv-h3-l {
-    font-size: clamp(26px, 2.4vw, 34px);
-    line-height: 1.08;
-  }
-
-  /* Project cards share one title size on the landing and on Work. */
-  .pv-h3-card {
-    font-size: clamp(21px, 1.6vw, 23px);
-    line-height: 1.18;
+    font-size: clamp(1.75rem, 2vw + 0.75rem, 2.5rem);
+    line-height: 1.04;
   }
 
   .pv-num {
@@ -92,44 +111,38 @@
   }
 
   .pv-lead {
-    font-size: clamp(18px, 1.45vw, 21px);
-    line-height: 1.55;
+    font-size: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+    line-height: 1.5;
     color: var(--color-ink);
-    max-width: 30em;
-    text-wrap: pretty;
+    max-width: 52ch;
   }
 
-  /* A reading column (the 8 of 12 columns of a case study or a Journey entry) is already the measure, so its lead
-     runs the column's full width and lines up with the ruled lists below it. */
+  /* A reading column (the 8 of 12 columns of a case study or a Journey entry) is already the measure. */
   .pv-col .pv-lead {
     max-width: none;
   }
 
   .pv-body {
     color: var(--color-ink-2);
-    max-width: 68ch;
-    text-wrap: pretty;
+    max-width: 65ch;
   }
 
-  /* Card copy: scanned, not read, so it is set tighter than body text. */
   .pv-card-text {
-    font-size: 15px;
-    line-height: 24px;
+    font-size: var(--text-body);
+    line-height: 26px;
     color: var(--color-ink-2);
     max-width: 60ch;
-    text-wrap: pretty;
   }
 
-  /* A headline result at the foot of a card: the value over its label, on a neutral hairline. */
   .pv-result {
     border-top: 1px solid var(--color-line);
-    padding-top: 14px;
+    padding-top: var(--space-sm);
   }
 
   .pv-result-label {
-    margin-top: 4px;
-    font-size: 13px;
-    line-height: 19px;
+    margin-top: var(--space-2xs);
+    font-size: var(--text-meta);
+    line-height: 20px;
     color: var(--color-ink-2);
   }
 
@@ -139,66 +152,48 @@
     color: var(--color-ink-2);
   }
 
-  .pv-data {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-ink-3);
+  /* Labels, captions and meta: the body face a step smaller, sentence case, untracked. */
+  .pv-meta {
+    font-size: var(--text-meta);
+    line-height: 20px;
+    color: var(--color-muted);
   }
 
-  /* Dates and periods: the data mono as a value, not a label (sentence case, tabular figures, no extra tracking). */
+  /* Dates and periods: tabular mono figures. */
   .pv-date {
     font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: 0;
-    text-transform: none;
+    font-size: 13px;
+    line-height: 20px;
     font-variant-numeric: tabular-nums;
-    color: var(--color-ink-3);
+    color: var(--color-muted);
   }
 
-  /* Wayfinding marker: a 7 px square in the text color, set with an accent text class. */
-  .pv-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .pv-mark::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 1px;
-    background: currentColor;
-    flex: none;
-  }
-
-  /* Actions */
+  /* Actions: one filled primary a page (cyan, the brand signal), outlined secondaries. */
   .pv-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: var(--space-xs);
     min-height: 48px;
-    padding: 0 20px;
-    border-radius: 10px;
-    font-size: 15px;
+    padding: 0 var(--space-lg);
+    border-radius: var(--radius-control);
+    font-size: var(--text-body);
     font-weight: 600;
     text-align: center;
+    white-space: nowrap;
     transition:
-      background 150ms var(--ease-standard),
-      border-color 150ms var(--ease-standard);
+      background-color var(--dur-micro) var(--ease-standard),
+      border-color var(--dur-micro) var(--ease-standard),
+      color var(--dur-micro) var(--ease-standard);
   }
 
   .pv-btn-primary {
-    background: var(--color-ink);
-    color: var(--color-void);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
   }
 
   .pv-btn-primary:hover {
-    background: #fff;
+    background: var(--color-accent-hover);
   }
 
   .pv-btn-ghost {
@@ -207,30 +202,27 @@
   }
 
   .pv-btn-ghost:hover {
-    border-color: var(--color-ink-2);
+    border-color: var(--color-muted);
     background: var(--color-surface-2);
   }
 
+  .pv-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* A link that leads on: a verb or a destination as the label, never an arrow glued to it. */
   .pv-go {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
     min-height: 44px;
     font-weight: 600;
     color: var(--color-ink);
-  }
-
-  .pv-go::after {
-    content: "\2192";
-    transition: transform 150ms var(--ease-standard);
+    transition: color var(--dur-micro) var(--ease-standard);
   }
 
   .pv-go:hover {
-    color: var(--color-cyan);
-  }
-
-  .pv-go:hover::after {
-    transform: translateX(3px);
+    color: var(--color-accent);
   }
 
   .pv-uline {
@@ -240,7 +232,7 @@
   }
 
   .pv-uline:hover {
-    text-decoration-color: var(--color-cyan);
+    text-decoration-color: var(--color-accent);
   }
 
   /* Ruled rows: ledgers, indexes and lists share one rhythm. */
@@ -254,11 +246,11 @@
   }
 
   .pv-row-title {
-    transition: color 150ms var(--ease-standard);
+    transition: color var(--dur-micro) var(--ease-standard);
   }
 
   .pv-rows > li:hover .pv-row-title {
-    color: var(--pv-hover, var(--color-cyan));
+    color: var(--pv-hover, var(--color-accent));
   }
 
   /* A row or card whose title link covers it; the focus ring stays on the title. */
@@ -275,29 +267,34 @@
   .pv-stretch:focus-visible::after {
     outline: 2px solid var(--color-cyan);
     outline-offset: 4px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
   }
 
-  /* Work features */
+  /* Screenshots: still imagery in a hairline frame; the container, not the image, answers hover. */
   .pv-shot {
     overflow: hidden;
-    border-radius: 12px;
+    border-radius: var(--radius-card);
     border: 1px solid var(--color-line);
-    background: #0b0b14;
+    background: var(--color-paper-2);
   }
 
   .pv-shot img {
     width: 100%;
     object-fit: cover;
     object-position: top;
-    transition: transform 400ms var(--ease-standard);
   }
 
-  .pv-feature:hover .pv-shot img {
-    transform: scale(1.015);
+  .pv-feature:hover .pv-shot {
+    border-color: var(--color-line-2);
   }
 
-  /* Placeholder for a project without screenshots: wing tint, rover glyph, initials, a faint full-surface grid. */
+  .pv-feature:hover .pv-feature-title {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 6px;
+  }
+
+  /* Placeholder for a project without screenshots: one wing tint, the rover glyph and the initials. */
   .pv-ph {
     --ph: var(--color-cyan);
     position: relative;
@@ -306,14 +303,11 @@
     width: 100%;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-xs);
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     border: 1px solid var(--color-line);
-    background:
-      radial-gradient(120% 90% at 85% 0%, color-mix(in oklab, var(--ph) 30%, transparent), transparent 60%),
-      radial-gradient(90% 80% at 0% 100%, color-mix(in oklab, var(--color-violet) 16%, transparent), transparent 70%),
-      linear-gradient(160deg, #10101c, #0b0b14);
+    background: radial-gradient(120% 90% at 85% 0%, color-mix(in oklab, var(--ph) 24%, transparent), transparent 60%) var(--color-paper-2);
   }
 
   .pv-ph[data-wing="ai"] {
@@ -324,40 +318,22 @@
     --ph: var(--color-amber);
   }
 
-  .pv-ph::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(color-mix(in oklab, var(--ph) 10%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklab, var(--ph) 10%, transparent) 1px, transparent 1px);
-    background-size: 14px 14px;
-    mask-image: radial-gradient(closest-side, black, transparent);
-  }
-
   .pv-ph-mark {
     position: relative;
-    z-index: 1;
     opacity: 0.9;
   }
 
   .pv-ph-initials {
     position: relative;
-    z-index: 1;
     font-family: var(--font-display);
     font-weight: 800;
     font-stretch: 80%;
     font-size: clamp(16px, 2.2vw, 26px);
-    letter-spacing: 0.02em;
-    color: color-mix(in oklab, var(--ph) 55%, white);
+    color: color-mix(in oklab, var(--ph) 55%, var(--color-ink));
   }
 
   .pv-ph-card .pv-ph-initials {
     font-size: 40px;
-  }
-
-  .pv-ph-film {
-    border-radius: 8px;
   }
 
   .pv-shot .pv-ph {
@@ -365,38 +341,32 @@
     border-radius: 0;
   }
 
-  .pv-feature:hover .pv-feature-title {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 5px;
-  }
-
-  /* Owner portrait: round, near-black behind transparent edges, a cyan ring with one quiet glow. */
+  /* Owner portrait: round, a cyan ring with one quiet glow. */
   .pv-portrait {
     flex: none;
-    border-radius: 9999px;
+    border-radius: var(--radius-pill);
     object-fit: cover;
-    background: #0b0b14;
-    border: 2px solid rgb(34 211 238 / 0.6);
+    background: var(--color-paper-2);
+    border: 2px solid var(--color-cyan-ring);
     box-shadow:
-      0 0 0 4px rgb(5 5 12 / 0.9),
-      0 0 32px -10px rgb(34 211 238 / 0.5);
+      0 0 0 4px var(--color-paper),
+      0 0 32px -10px var(--color-cyan-glow);
   }
 
-  /* Header */
+  /* Header: a search-led bar; the current section carries a bottom rule in its floor colour. */
   .pv-nav-link {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-xs);
     min-height: 44px;
-    padding: 0 12px;
-    border-radius: 8px;
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-control);
     font-size: 15px;
     color: var(--color-ink-2);
     transition:
-      color 150ms var(--ease-standard),
-      background 150ms var(--ease-standard);
+      color var(--dur-micro) var(--ease-standard),
+      background-color var(--dur-micro) var(--ease-standard);
   }
 
   .pv-nav-link:hover {
@@ -408,11 +378,12 @@
     color: var(--color-ink);
   }
 
-  .pv-nav-link[aria-current="page"]::after {
+  .pv-nav-link[aria-current="page"]::after,
+  .pv-tab[aria-current="page"]::after {
     content: "";
     position: absolute;
-    left: 12px;
-    right: 12px;
+    left: var(--space-sm);
+    right: var(--space-sm);
     bottom: -12px;
     height: 2px;
     background: var(--pv-accent, var(--color-ink));
@@ -432,30 +403,26 @@
   }
 
   .pv-tab[aria-current="page"]::after {
-    content: "";
-    position: absolute;
     left: 18%;
     right: 18%;
     bottom: 0;
-    height: 2px;
-    background: var(--pv-accent, var(--color-ink));
   }
 
   .pv-tool {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-xs);
     min-width: 44px;
     min-height: 44px;
-    padding: 0 10px;
-    border-radius: 8px;
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-control);
     border: 1px solid var(--color-line);
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-ink-2);
     transition:
-      color 150ms var(--ease-standard),
-      border-color 150ms var(--ease-standard);
+      color var(--dur-micro) var(--ease-standard),
+      border-color var(--dur-micro) var(--ease-standard);
   }
 
   .pv-tool:hover {
@@ -463,16 +430,14 @@
     border-color: var(--color-line-2);
   }
 
-  /* Sticky filter bar under the header (68 px on desktop, 60 px plus the 49 px tab row below lg). */
-  /* A flat bar (no frosted glass or drop shadow): the hairline and a near-opaque fill that keeps it legible when sticky. */
+  /* Sticky filter bar under the header: a hairline and a near-opaque fill, no glass. */
   .pv-filters {
     z-index: 20;
     border: 1px solid var(--color-line);
-    border-radius: 12px;
-    background: color-mix(in oklab, var(--color-void) 94%, transparent);
+    border-radius: var(--radius-card);
+    background: color-mix(in oklab, var(--color-paper) 94%, transparent);
   }
 
-  /* Phones keep the bar in flow: sticky, it would cover a sixth of the screen. */
   @media (min-width: 48rem) {
     .pv-filters {
       position: sticky;
@@ -482,61 +447,49 @@
 
   @media (min-width: 64rem) {
     .pv-filters {
-      top: 80px;
+      top: calc(var(--nav-h) + var(--space-sm));
     }
   }
 
   .pv-select {
-    min-height: 36px;
-    padding: 0 34px 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--color-line);
-    background-color: rgb(255 255 255 / 0.04);
+    min-height: 44px;
+    padding: 0 var(--space-xl) 0 var(--space-sm);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-muted);
+    background-color: var(--color-surface);
     background-image:
       linear-gradient(45deg, transparent 50%, var(--color-ink-2) 50%),
       linear-gradient(135deg, var(--color-ink-2) 50%, transparent 50%);
     background-position:
-      calc(100% - 17px) 15px,
-      calc(100% - 12px) 15px;
+      calc(100% - 17px) 19px,
+      calc(100% - 12px) 19px;
     background-size: 5px 5px;
     background-repeat: no-repeat;
     color: var(--color-ink);
-    font-size: 13px;
+    font-size: 14px;
     appearance: none;
     max-width: 100%;
   }
 
   .pv-select option {
-    background: var(--color-void);
+    background: var(--color-paper);
   }
 
-  /* Case study table of contents: a dot per section; the current one glows violet inside a full hairline (R5 P10, no edge rule). */
+  /* Case study contents: the current chapter lights the whole hairline with the violet glow (never an edge rule). */
   .pv-toc a {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--space-sm);
     min-height: 36px;
-    padding: 0 10px;
+    padding: 0 var(--space-sm);
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     font-size: 14px;
-    color: var(--color-ink-3);
+    color: var(--color-muted);
     transition:
-      color 150ms var(--ease-standard),
-      border-color 150ms var(--ease-standard),
-      box-shadow 150ms var(--ease-standard);
-  }
-
-  .pv-toc a::before {
-    content: "";
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: var(--color-line-2);
-    transition:
-      background-color 150ms var(--ease-standard),
-      box-shadow 150ms var(--ease-standard);
+      color var(--dur-micro) var(--ease-standard),
+      border-color var(--dur-micro) var(--ease-standard),
+      box-shadow var(--dur-micro) var(--ease-standard);
   }
 
   .pv-toc a:hover {
@@ -545,37 +498,23 @@
 
   .pv-toc a[aria-current="true"] {
     color: var(--color-ink);
-    border-color: rgb(167 139 250 / 0.45);
+    border-color: var(--color-violet-soft);
     box-shadow: 0 0 20px -8px var(--color-violet);
-  }
-
-  .pv-toc a[aria-current="true"]::before {
-    background: var(--color-violet);
-    box-shadow: 0 0 8px var(--color-violet);
   }
 
   .pv-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--space-xs);
   }
 
   .pv-tags > li {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 16px;
-    padding: 2px 7px;
+    font-size: 13px;
+    line-height: 20px;
+    padding: 0 var(--space-xs);
     border-radius: 6px;
     border: 1px solid var(--color-line);
     color: var(--color-ink-2);
-  }
-
-  .pv-shot img,
-  .pv-feature:hover .pv-shot img {
-    @variant motion-reduce {
-      transform: none;
-      transition: none;
-    }
   }
 }
 

@@ -15,14 +15,13 @@ import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case
 import { CaseToc } from "@/components/page/CaseToc";
 import { PodCodeResearch } from "@/components/page/PodCodeResearch";
 import { DecisionList, Lesson } from "@/components/page/Story";
-import { CrumbLink, Marker } from "@/components/page/Layout";
+import { CrumbLink } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
 import { adjacent, clientLabel, headlineResults, podLiveLink } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
 import { pageJsonLd } from "@/lib/jsonld";
 import { seoMetadata } from "@/lib/seo";
@@ -87,14 +86,20 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
       <JsonLd data={pageJsonLd(locale, `/labs/${pod.slug}`)} />
       <article>
         <header className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
-          <CrumbLink crumb={{ href: "/labs", label: tw("title") }} />
-          <div className="mt-5 lg:w-3/4">
-            <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Marker accent={WING_ACCENT[pod.wing]}>{tw(`wingShort.${pod.wing}`)}</Marker>
-              <span>{tc(`tier.${pod.tier}`)}</span>
-              <span className="hidden sm:inline">L3:{pod.slug}</span>
-            </p>
-            <h1 className="pv-d-l mt-5">{pod.title[locale]}</h1>
+          {/* A breadcrumb in place of the old eyebrow (Hallmark Floor 54): Work, then the wing. */}
+          <nav aria-label={tcase("breadcrumb")}>
+            <ol className="flex flex-wrap items-center gap-x-3 text-sm text-ink-2">
+              <li>
+                <CrumbLink crumb={{ href: "/labs", label: tw("title") }} />
+              </li>
+              <li aria-hidden="true" className="text-ink-3">
+                /
+              </li>
+              <li>{tw(`wingShort.${pod.wing}`)}</li>
+            </ol>
+          </nav>
+          <div className="mt-6 lg:w-3/4">
+            <h1 className="pv-d-l text-[length:var(--text-display-s)]">{pod.title[locale]}</h1>
             <p className="pv-lead mt-6">{pod.tagline[locale]}</p>
             {/* Without a results chapter the strip keeps the `#results` anchor (3D drawer tabs link to it). */}
             <section id={detail || story ? undefined : "results"} aria-labelledby="key-results-title" className="mt-8">
@@ -117,6 +122,8 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               { label: t("role"), value: pod.role[locale] },
               { label: t("period"), value: formatPeriod(pod.period.start, pod.period.end, locale) },
               { label: t("client"), value: clientLabel(pod.client, locale) },
+              { label: tcase("kind"), value: tc(`tier.${pod.tier}`) },
+              { label: tcase("room"), value: `L3:${pod.slug}` },
             ]}
           />
         </header>
@@ -174,41 +181,39 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <ChipList items={pod.stack} label={tc("stack")} logos />
             </Chapter>
           </div>
-          <aside className="hidden lg:col-span-3 lg:col-start-10 lg:block">
-            <div className="sticky top-24 pt-16 lg:pt-20">
+          <aside className="hidden xl:col-span-3 xl:col-start-10 xl:block">
+            <div className="sticky top-24 pt-24">
               <CaseToc items={toc} label={tcase("onThisPage")} />
             </div>
           </aside>
         </div>
 
-        <section aria-labelledby="related-title" className="pv-wrap pv-sec">
-          <h2 id="related-title" className="pv-h2 mb-8">
+        <section aria-labelledby="related-title" className="pv-wrap pv-sec-l">
+          <h2 id="related-title" className="pv-h2 mb-10">
             {tcase("more", { wing: tc(`wing.${pod.wing}`) })}
           </h2>
           <nav aria-labelledby="related-title" className="grid gap-4 md:grid-cols-2 md:gap-6">
             {prev ? (
-              <Link href={`/labs/${prev.slug}`} className="card block p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6">
-                <span className="pv-data">← {tc("previous")}</span>
+              <Link href={`/labs/${prev.slug}`} className="card block p-6 transition-colors hover:border-line-2 hover:bg-surface-2 sm:p-8">
+                <span className="pv-meta">{tc("previous")}</span>
                 <span className="pv-h3 mt-2 block">{prev.title[locale]}</span>
               </Link>
             ) : (
               <span className="hidden md:block" />
             )}
             {next && (
-              <Link href={`/labs/${next.slug}`} className="card block p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6 md:text-right">
-                <span className="pv-data">{tc("next")} →</span>
+              <Link href={`/labs/${next.slug}`} className="card block p-6 transition-colors hover:border-line-2 hover:bg-surface-2 sm:p-8 md:text-right">
+                <span className="pv-meta">{tc("next")}</span>
                 <span className="pv-h3 mt-2 block">{next.title[locale]}</span>
               </Link>
             )}
           </nav>
           {entry && (
             <p className="mt-4 md:mt-6">
-              <Link href={`/journey/${entry.slug}`} className="card flex flex-wrap items-center gap-x-4 gap-y-1 p-5 transition hover:border-line-2 hover:bg-surface-2 sm:p-6">
-                <span className="pv-data">
-                  <Marker accent="amber">L2 · {t("timeline")}</Marker>
-                </span>
+              <Link href={`/journey/${entry.slug}`} className="card flex flex-wrap items-baseline gap-x-4 gap-y-1 p-6 transition-colors hover:border-line-2 hover:bg-surface-2 sm:p-8">
+                <span className="pv-meta">{t("timeline")}</span>
                 <span className="font-semibold text-ink">
-                  {entry.role[locale]} · {entry.org}
+                  {entry.role[locale]}, {entry.org}
                 </span>
               </Link>
             </p>

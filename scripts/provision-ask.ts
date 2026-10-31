@@ -16,7 +16,7 @@ import path from "node:path";
 export const GATEWAY_ID = "shinyq-hq";
 export const KV_TITLE = "shinyq-hq-ask";
 export const TURNSTILE_NAME = "shinyq-hq-ask";
-export const TURNSTILE_DOMAINS = ["kurniadi.pages.dev", "kurniadi.dev"];
+export const TURNSTILE_DOMAINS = ["kurniadi.pages.dev", "kurniadi.my.id", "kurniadi.dev"];
 export const DEFAULT_PROJECT = "kurniadi";
 export const KV_PLACEHOLDER = "REPLACE_WITH_ASK_KV_NAMESPACE_ID";
 

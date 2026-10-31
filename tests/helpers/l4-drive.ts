@@ -13,7 +13,7 @@ import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { buildNavGrid } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
-import type { Vec2, ViewportClass } from "@/experience/types";
+import type { CameraClass, Vec2 } from "@/experience/types";
 import { formatYearMonth } from "@/lib/format";
 import { cameraClass } from "@/lib/viewport";
 import en from "../../messages/en.json";
@@ -53,7 +53,7 @@ export const l4EndLabels: EndPlazaLabels = {
 /** The rover and the follow camera, driven like the rendered sweeps (`driveTo`) and settled like `CameraDirector`. */
 export class L4Drive {
   readonly orbit: OrbitState = createOrbitState();
-  readonly cls: ViewportClass;
+  readonly cls: CameraClass;
   pos: Vec2 & { heading: number };
 
   constructor(readonly size: { width: number; height: number }) {

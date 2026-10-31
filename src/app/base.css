@@ -1,0 +1,27 @@
+/*
+ * Hallmark base for the Classic site. Element rules are scoped to the page shell (#site-shell), so the HUD, the
+ * room drawer, the dialogs and the Ask dock (all outside it) keep their own look. Imported into the base layer.
+ */
+html,
+body {
+  overflow-x: clip;
+}
+
+html {
+  scrollbar-color: var(--color-muted) var(--color-paper);
+}
+
+:where(#site-shell) :is(h1, h2, h3) {
+  font-synthesis: none;
+  overflow-wrap: break-word;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+:where(#site-shell) p {
+  text-wrap: pretty;
+}
+
+:where(#site-shell) :is(button, a):active {
+  opacity: 0.85;
+}

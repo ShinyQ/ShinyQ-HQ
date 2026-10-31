@@ -1,4 +1,4 @@
-# Public visit stats
+# Stats
 
 - Date: 2026-10-23
 

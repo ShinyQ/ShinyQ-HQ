@@ -237,6 +237,12 @@ describe("output checks", () => {
     expect(unknownEmployers("He worked at Metrodata and at MNC.", pack.entities)).toEqual([]);
     expect(unknownEmployers("He works with Azure OpenAI daily.", pack.entities)).toEqual([]);
     expect(check("Kurniadi worked at Google as an engineer.", "Did he work at Google?")).toMatchObject({ ok: false, reason: "employer" });
+    // A denial names no employer (content-gap replay 2026-10-31); "not only worked at" is still a claim.
+    expect(unknownEmployers("Kurniadi has not worked at Google, but he earned a Google certification.", pack.entities)).toEqual([]);
+    expect(unknownEmployers("He never worked at Google. He didn't work for Meta either.", pack.entities)).toEqual([]);
+    expect(unknownEmployers("Kurniadi belum pernah bekerja di Google.", pack.entities)).toEqual([]);
+    expect(unknownEmployers("He not only worked at Google but also at Meta.", pack.entities)).toEqual(["Google"]);
+    expect(unknownEmployers("He has not stopped since he worked at Google.", pack.entities)).toHaveLength(1);
     expect(unknownNames("Kurniadi met Elon Musk in Jakarta.", vocabulary)).toEqual(["Elon", "Musk"]);
     expect(check("I have no information about Elon Musk on this site.", "Does Elon Musk know him?")).toMatchObject({ ok: true, outcome: "unknown" });
   });
@@ -278,7 +284,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-25.approach.1");
+    expect(PROMPT_VERSION).toBe("2026-10-27.indonesian.1");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
@@ -434,7 +440,7 @@ describe("perspective checks", () => {
     const q = "What are his engineering principles?";
     expect(relevantClosest(pack, q, retrieve(pack, q, "en").chunks, "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
     expect(noViewMessage("en", { title: en.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.en} The closest written source is "${en.home.howTitle}", on the About page.`);
-    expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Tulisan yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
+    expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Sumber tertulis yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
     expect(noViewMessage("en", { title: "Spec-Driven Development with AI Coding Agents", url: "/blog/spec-driven-development-with-ai-coding-agents" })).toContain(
       '"Spec-Driven Development with AI Coding Agents", on his blog.',
     );

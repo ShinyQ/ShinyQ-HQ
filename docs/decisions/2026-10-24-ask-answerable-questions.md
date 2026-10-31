@@ -1,4 +1,4 @@
-# Ask the HQ
+# Ask
 
 - Date: 2026-10-24
 

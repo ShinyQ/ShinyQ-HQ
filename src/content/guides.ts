@@ -3,6 +3,9 @@
  * No zod, React or three imports, so client bundles and Vitest can use them.
  */
 
+/** Most study guides the L4 Study Vault stands (its two tiers, `NEWSROOM.end.vault.max`); the schema rejects more. */
+export const MAX_GUIDES = 10;
+
 export interface GuideDomainView {
   label: string;
   weight: readonly [number, number];

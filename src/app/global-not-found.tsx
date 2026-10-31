@@ -20,8 +20,8 @@ export const metadata: Metadata = {
  */
 export default function GlobalNotFound() {
   return (
-    <html lang="en" className={`${fontClassName} antialiased`}>
-      <body className="flex min-h-screen items-center">
+    <html lang="en" className={`${fontClassName} antialiased overflow-x-clip`}>
+      <body className="flex min-h-screen items-center overflow-x-clip">
         <main className="pv-wrap py-16 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -31,8 +31,10 @@ export default function GlobalNotFound() {
             width={88}
             height={88}
           />
-          <p className="pv-data mt-5 text-cyan">{en.notFound.kicker}</p>
-          <h1 className="pv-d-l mt-3">{en.notFound.title}</h1>
+          <p aria-hidden="true" className="pv-num mt-6 text-[length:var(--text-display)] text-ink-3">
+            404
+          </p>
+          <h1 className="pv-d-l mt-2">{en.notFound.title}</h1>
           <p className="pv-lead mx-auto mt-4 text-ink-2">{en.notFound.body}</p>
           <p lang="id" className="mt-2 text-sm text-ink-3">
             {id.notFound.title}. {id.notFound.body}

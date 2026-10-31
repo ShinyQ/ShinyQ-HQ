@@ -37,10 +37,10 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
 
   return (
     <>
-      <div className="pv-wrap mt-10 lg:mt-14">
+      <div className="pv-wrap mt-16 lg:mt-24">
         <div role="search" aria-label={t("filters")} className="pv-filters flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
           <div role="group" aria-labelledby="filter-wing" className="flex flex-wrap items-center gap-1.5">
-            <span id="filter-wing" className="pv-data mr-1">
+            <span id="filter-wing" className="pv-meta mr-1">
               {t("wing")}
             </span>
             {WING_ORDER.map((w) => (
@@ -58,7 +58,7 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
           </div>
           <span aria-hidden="true" className="hidden h-6 w-px bg-line md:block" />
           <label className="flex min-h-11 items-center gap-2">
-            <span className="pv-data">{t("stack")}</span>
+            <span className="pv-meta">{t("stack")}</span>
             <select className="pv-select" value={stack ?? ""} onChange={(e) => setSearchParams({ stack: e.target.value || null })}>
               <option value="">{t("anyStack")}</option>
               {stacks.map((s) => (
@@ -68,7 +68,7 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
               ))}
             </select>
           </label>
-          <p role="status" className="pv-data w-full pb-1 md:ml-auto md:w-auto md:pb-0">
+          <p role="status" className="pv-meta w-full pb-1 md:ml-auto md:w-auto md:pb-0">
             {t("showing", { shown, total: pods.length })}
           </p>
         </div>

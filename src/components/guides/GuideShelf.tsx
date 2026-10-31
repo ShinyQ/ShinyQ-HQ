@@ -33,20 +33,22 @@ export function GuideCard({ view, labels }: { view: GuideView; labels: GuideCard
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={view.cover} width={240} height={340} loading="lazy" decoding="async" alt="" className="h-auto w-full rounded-md border border-line" />
         <div className="min-w-0">
-          <p className="pv-data flex flex-wrap items-center gap-x-2">
+          <p className="pv-meta flex flex-wrap items-center gap-x-2">
             <AccentDot tone={tone.dot} />
-            <span>{view.issuer}</span>
-            {view.code && <span>· {view.code}</span>}
+            <span>
+              {view.issuer}
+              {view.code && `, ${view.code}`}
+            </span>
           </p>
           <h3 className="pv-h3 mt-3">{view.title}</h3>
-          <p className="pv-data mt-3">
-            {labels.pages} · {view.sizeLabel} · {labels.edition}
+          <p className="pv-meta mt-3">
+            {labels.pages}, {view.sizeLabel}, {labels.edition}
           </p>
         </div>
       </div>
       <p className="pv-small mt-4">{view.summary}</p>
       <div className="mt-4">
-        <p id={domainsId} className="label text-ink-3">
+        <p id={domainsId} className="pv-meta">
           {labels.domains}
         </p>
         <div aria-hidden="true" className="mt-2 flex h-1.5 gap-0.5 overflow-hidden rounded-full">

@@ -13,7 +13,7 @@
       },
       "summary": {
         "en": "Operating, supervising, evaluating and governing AI agents across the software development lifecycle, with GitHub as the system of record and control plane.",
-        "id": "Mengoperasikan, mengawasi, mengevaluasi dan mengatur AI agent di seluruh siklus pengembangan perangkat lunak, dengan GitHub sebagai system of record dan control plane."
+        "id": "Mengoperasikan, mengawasi, mengevaluasi, dan menerapkan tata kelola AI agent sepanjang siklus pengembangan software, dengan GitHub sebagai system of record dan control plane."
       },
       "edition": "2026-10",
       "file": "GH-600_Study_Guide.pdf",
@@ -85,6 +85,89 @@
       ]
     },
     {
+      "slug": "gh-300",
+      "certId": "gh-300",
+      "code": "GH-300",
+      "spine": "GH-300",
+      "issuer": "GitHub",
+      "title": {
+        "en": "GitHub Copilot",
+        "id": "GitHub Copilot"
+      },
+      "summary": {
+        "en": "Using GitHub Copilot responsibly and productively: plans and features, Copilot Chat, agent mode and the CLI, data flow, prompt engineering, testing and the privacy controls administrators configure.",
+        "id": "Menggunakan GitHub Copilot secara bertanggung jawab dan produktif: paket dan fitur, Copilot Chat, agent mode dan CLI, alur data, prompt engineering, testing, serta kontrol privasi yang dikonfigurasi administrator."
+      },
+      "edition": "2026-10",
+      "file": "GH-300_Study_Guide.pdf",
+      "pages": 222,
+      "bytes": 7024991,
+      "version": "51f3d2d8e908",
+      "cover": "/study-guides/gh-300.webp",
+      "domains": [
+        {
+          "weight": [
+            15,
+            20
+          ],
+          "label": {
+            "en": "Use Copilot responsibly",
+            "id": "Menggunakan Copilot secara bertanggung jawab"
+          }
+        },
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Use Copilot features",
+            "id": "Menggunakan fitur Copilot"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Data and architecture",
+            "id": "Data dan arsitektur"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Prompt engineering and context",
+            "id": "Prompt engineering dan konteks"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Developer productivity",
+            "id": "Produktivitas developer"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Privacy, exclusions and safeguards",
+            "id": "Privasi, pengecualian dan safeguard"
+          }
+        }
+      ]
+    },
+    {
       "slug": "google-gen-ai-leader",
       "certId": "google-gen-ai-leader",
       "code": null,
@@ -96,7 +179,7 @@
       },
       "summary": {
         "en": "Gen AI fundamentals, Google Cloud's gen AI offerings, techniques to improve model output and the business strategy for secure, responsible adoption.",
-        "id": "Dasar gen AI, layanan gen AI Google Cloud, teknik meningkatkan output model dan strategi bisnis untuk adopsi yang aman dan bertanggung jawab."
+        "id": "Dasar gen AI, layanan gen AI Google Cloud, teknik untuk meningkatkan kualitas output model, dan strategi bisnis untuk adopsi yang aman dan bertanggung jawab."
       },
       "edition": "2026-10",
       "file": "Google_Generative_AI_Leader_Study_Guide.pdf",
@@ -148,6 +231,59 @@
       ]
     },
     {
+      "slug": "ab-100",
+      "certId": "ab-100",
+      "code": "AB-100",
+      "spine": "AB-100",
+      "issuer": "Microsoft",
+      "title": {
+        "en": "Agentic AI Business Solutions Architect",
+        "id": "Agentic AI Business Solutions Architect"
+      },
+      "summary": {
+        "en": "Planning, designing and deploying agentic AI business solutions across Microsoft 365 Copilot, Copilot Studio, Microsoft Foundry, Power Platform and Dynamics 365, with architecture case studies and original practice questions.",
+        "id": "Merencanakan, mendesain, dan men-deploy solusi bisnis agentic AI di Microsoft 365 Copilot, Copilot Studio, Microsoft Foundry, Power Platform, dan Dynamics 365, disertai studi kasus arsitektur dan soal latihan orisinal."
+      },
+      "edition": "2026-10",
+      "file": "AB-100_Study_Guide.pdf",
+      "pages": 236,
+      "bytes": 5526384,
+      "version": "235edc5aa04f",
+      "cover": "/study-guides/ab-100.webp",
+      "domains": [
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Plan AI-powered business solutions",
+            "id": "Merencanakan solusi bisnis berbasis AI"
+          }
+        },
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Design AI-powered business solutions",
+            "id": "Mendesain solusi bisnis berbasis AI"
+          }
+        },
+        {
+          "weight": [
+            40,
+            45
+          ],
+          "label": {
+            "en": "Deploy AI-powered business solutions",
+            "id": "Men-deploy solusi bisnis berbasis AI"
+          }
+        }
+      ]
+    },
+    {
       "slug": "ai-103",
       "certId": "ai-103",
       "code": "AI-103",
@@ -159,7 +295,7 @@
       },
       "summary": {
         "en": "Microsoft Foundry, agents, vision, text analysis and information extraction, with decision tables, verified code and original practice questions.",
-        "id": "Microsoft Foundry, agent, vision, analisis teks dan ekstraksi informasi, lengkap dengan tabel keputusan, kode yang sudah diverifikasi dan soal latihan orisinal."
+        "id": "Microsoft Foundry, agent, vision, analisis teks, dan ekstraksi informasi, disertai tabel keputusan, kode yang sudah diverifikasi, dan soal latihan orisinal."
       },
       "edition": "2026-10",
       "file": "AI-103_Study_Guide.pdf",
@@ -232,7 +368,7 @@
       },
       "summary": {
         "en": "A beginner-friendly path through responsible AI, how generative models work, AI workloads and hands-on Python with Microsoft Foundry.",
-        "id": "Jalur yang ramah pemula: responsible AI, cara kerja model generatif, AI workload dan praktik Python dengan Microsoft Foundry."
+        "id": "Panduan untuk pemula yang membahas responsible AI, cara kerja model generatif, AI workload, dan praktik Python dengan Microsoft Foundry."
       },
       "edition": "2026-10",
       "file": "AI-901_Study_Guide.pdf",

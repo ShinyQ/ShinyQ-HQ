@@ -1,3 +1,4 @@
+import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { guideViews } from "@/content/guide-views";
@@ -5,8 +6,12 @@ import { ZOOM_RANGE, zoneAt } from "@/experience/camera/orbit";
 import type { Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
+import { endPlazaSigns, PEDESTAL_OBSTACLE } from "@/experience/floors/library/decor/EndPlaza";
+import { endPlazaFrame, vaultZone } from "@/experience/floors/library/decor/signFrame";
+import { orbSlots } from "@/experience/floors/library/topics";
+import { signPlate } from "@/experience/fx/signLayout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { LIBRARY_FLOOR, libraryLayoutInput, type LibraryLayoutInput, type VaultBook } from "@/experience/floors/library/model";
+import { LIBRARY_FLOOR, libraryLayoutInput, type LibraryGuideInput, type LibraryLayoutInput, type VaultBook } from "@/experience/floors/library/model";
 import { ringRoadPoints } from "@/experience/nav/ringRoad";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import { PAD } from "@/experience/nav/pads";
@@ -14,12 +19,14 @@ import { pathBetween, projectOnRoad } from "@/experience/nav/road";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
 import { expectFramed, FRAME_SIZES, settleFollow } from "../helpers/follow-frame";
+import { l4EndLabels } from "../helpers/l4-drive";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
 
 /**
  * The L4 Study Vault (PR2): an alcove off the end plaza's ring road (south-east) with the certification study guides
- * as four tall books on an arc east of the stop `L4:vault`, each facing it. Pure layout checks; the scene and the spine
- * signs are tested with the end plaza (Task 3).
+ * as tall books on an arc east of the stop `L4:vault`, each facing it; past `oneRow` guides (up to `max`) the books
+ * alternate between a front arc and a raised back arc. Pure layout checks, on the real content and on every count from
+ * one guide to `max`; the scene and the spine signs are tested with the end plaza (Task 3).
  */
 
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
@@ -34,6 +41,12 @@ const crowded: LibraryLayoutInput = {
 };
 const V = NEWSROOM.end.vault;
 const VAULT = "L4:vault";
+const ISSUERS = ["GitHub", "Microsoft", "Google", "Other"];
+/** `n` guides: the real ones first (one two-line spine among them), then made-up ones with exam-code spines. */
+const guidesOf = (n: number): LibraryGuideInput[] =>
+  Array.from({ length: n }, (_, i) => real.guides?.[i] ?? { slug: `guide-${i}`, spine: `XX-${100 + i}`, issuer: ISSUERS[i % ISSUERS.length], code: `XX-${100 + i}` });
+const COUNTS = Array.from({ length: V.max }, (_, i) => i + 1);
+const BY_COUNT = COUNTS.map((n): [string, LibraryLayoutInput] => [`${n} guides`, { ...real, guides: guidesOf(n) }]);
 const inside = (p: Vec2, r: Rect) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
 const dist = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.z - b.z);
 const around = (p: Vec2, r: number): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
@@ -70,10 +83,11 @@ function quadsOverlap(a: Vec2[], b: Vec2[]): boolean {
   return true;
 }
 
-describe.each([
+describe.each<[string, LibraryLayoutInput]>([
   ["real content", real],
   ["crowded (60 posts on 6 tracks)", crowded],
   ["no research metrics", { ...real, metrics: false }],
+  ...BY_COUNT,
 ])("L4 Study Vault with %s", (_, input) => {
   const layout = buildLibraryLayout(input);
   const end = layout.end!;
@@ -82,10 +96,10 @@ describe.each([
   const net = L4.road!;
   const grid = buildNavGrid(L4, ROVER.radius);
 
-  it("stands the guides as four books in file order, with their spine, issuer and code", () => {
+  it("stands every guide as a book in file order, with their spine, issuer and code", () => {
     expect(vault).not.toBeNull();
-    const guides = guideViews("en");
-    expect(vault.books).toHaveLength(4);
+    const guides = input.guides ?? guideViews("en");
+    expect(vault.books).toHaveLength(guides.length);
     expect(vault.books.map((b) => b.slug)).toEqual(guides.map((g) => g.slug));
     for (const [i, b] of vault.books.entries()) expect({ spine: b.spine, issuer: b.issuer, code: b.code }).toEqual({ spine: guides[i].spine, issuer: guides[i].issuer, code: guides[i].code });
   });
@@ -105,8 +119,13 @@ describe.each([
     expect(road.points[0]).toEqual(vault.entry);
     expect(road.points.at(-1)).toEqual(vault.center);
     const plaza = net.plazas.find((p) => p.id === "vault")!;
-    expect(plaza).toMatchObject({ center: vault.center, w: V.plaza, d: V.plaza, round: true });
-    expect(vault.radius).toBe(V.plaza / 2);
+    // Two tiers stand on a wider plaza, farther out: the rims stay 1 u apart.
+    const two = vault.books.length > V.oneRow;
+    expect(vault.tiers).toBe(two ? 2 : 1);
+    const width = two ? V.plazaTiers : V.plaza;
+    expect(plaza).toMatchObject({ center: vault.center, w: width, d: width, round: true });
+    expect(vault.radius).toBe(width / 2);
+    expect((two ? V.distanceTiers : V.distance) - width / 2).toBe(V.distance - V.plaza / 2);
     // The diagonal from the end plaza center: entry, stop and vault center line up.
     const dir = { x: Math.SQRT1_2, z: Math.SQRT1_2 };
     for (const p of [vault.entry, vault.stop, vault.center]) {
@@ -114,7 +133,7 @@ describe.each([
       const dz = p.z - end.center.z;
       expect(Math.abs(dx * dir.z - dz * dir.x)).toBeLessThan(1e-6);
     }
-    expect(dist(vault.center, end.center)).toBeCloseTo(V.distance, 6);
+    expect(dist(vault.center, end.center)).toBeCloseTo(two ? V.distanceTiers : V.distance, 6);
     // The stop is on the ring side of the plaza center, on the road.
     expect(dist(vault.stop, end.center)).toBeLessThan(dist(vault.center, end.center));
     expect(projectOnRoad(road, vault.stop).distance).toBeLessThan(1e-6);
@@ -129,33 +148,43 @@ describe.each([
     expect(findPath(grid, L4.approach, vault.stop)?.length).toBeGreaterThan(0);
   });
 
-  it("arcs the books on the far side of the vault plaza, north to south about 3 u apart, each facing the stop", () => {
-    for (const b of vault.books) {
+  it("arcs the books on the far side of the vault plaza, north to south about 3 u apart in each row, each facing the stop", () => {
+    const tiers = vault.tiers;
+    expect(vault.arc).toBe(tiers === 2 ? V.arcTiers : V.arc);
+    for (const [i, b] of vault.books.entries()) {
+      // Two tiers alternate rows in file order; the back row stands farther out on its riser.
+      expect(b.tier).toBe(tiers === 2 ? i % 2 : 0);
+      expect(b.rise).toBe(b.tier * V.rise);
       const to = { x: vault.stop.x - b.at.x, z: vault.stop.z - b.at.z };
       const len = Math.hypot(to.x, to.z);
       expect(b.facing.x).toBeCloseTo(to.x / len, 6);
       expect(b.facing.z).toBeCloseTo(to.z / len, 6);
-      expect(len).toBeCloseTo(V.arc, 6);
+      expect(len).toBeCloseTo(vault.arc + b.tier * V.rowGap, 6);
       // On the plaza's east side, past its center as seen from the stop, and inside the plaza.
       expect(b.at.x).toBeGreaterThan(vault.center.x);
       expect(b.facing.x).toBeLessThan(0);
       expect(dist(b.at, vault.center)).toBeLessThan(vault.radius);
     }
-    // Centered due east of the stop.
-    const mid = vault.books.reduce((z, b) => z + b.at.z, 0) / vault.books.length;
-    expect(mid).toBeCloseTo(vault.stop.z, 6);
-    for (let i = 1; i < vault.books.length; i++) {
-      expect(vault.books[i].at.z).toBeGreaterThan(vault.books[i - 1].at.z);
-      const gap = dist(vault.books[i - 1].at, vault.books[i].at);
+    // Centered due east of the stop: the outer books' angles mirror each other.
+    const ang = (b: VaultBook) => Math.atan2(b.at.z - vault.stop.z, b.at.x - vault.stop.x);
+    expect(ang(vault.books[0]) + ang(vault.books.at(-1)!)).toBeCloseTo(0, 9);
+    // North to south (left to right from the stop): the angle around the stop grows in file order.
+    const angle = (b: VaultBook) => Math.atan2(b.at.z - vault.stop.z, b.at.x - vault.stop.x);
+    for (let i = 1; i < vault.books.length; i++) expect(angle(vault.books[i])).toBeGreaterThan(angle(vault.books[i - 1]));
+    // Neighbors in a row: 3 u apart on one arc; on two tiers the front row about 3.4 u and the back row wider.
+    const row = tiers === 2 ? 2 : 1;
+    for (let i = row; i < vault.books.length; i++) {
+      const gap = dist(vault.books[i - row].at, vault.books[i].at);
       expect(gap).toBeGreaterThan(2.8);
-      expect(gap).toBeLessThan(3.2);
+      expect(gap).toBeLessThan(tiers === 2 ? 4.5 : 3.2);
     }
+    expect(vault.span).toBeCloseTo(Math.abs(angle(vault.books[0])), 6);
   });
 
   it("bounds each book's footprint with its rect (a tall camera column), no two overlapping, and blocks the shelf they share", () => {
     for (const b of vault.books) {
       for (const c of footprint(b)) expect(inside(c, { minX: b.rect.minX - 1e-9, maxX: b.rect.maxX + 1e-9, minZ: b.rect.minZ - 1e-9, maxZ: b.rect.maxZ + 1e-9 })).toBe(true);
-      expect(L4.tall).toContainEqual({ ...b.rect, h: V.book.h });
+      expect(L4.tall).toContainEqual({ ...b.rect, h: b.rise + V.book.h });
       expect(inside(b.at, L4.bounds)).toBe(true);
     }
     for (let i = 0; i < vault.books.length; i++)
@@ -173,9 +202,9 @@ describe.each([
       maxZ: Math.max(...rects.map((r) => r.maxZ)),
     });
     expect(L4.obstacles).toContainEqual(vault.shelf);
-    for (const r of rects) expect(L4.obstacles).not.toContainEqual(r);
-    // A thin strip on the plaza's east side, clear of the stop by more than the rover.
-    expect(vault.shelf.maxX - vault.shelf.minX).toBeLessThan(4);
+    if (rects.length > 1) for (const r of rects) expect(L4.obstacles).not.toContainEqual(r);
+    // A thin strip on the plaza's east side (five books curve it to about 4.8 u, two tiers about 8 u), clear of the stop by more than the rover.
+    expect(vault.shelf.maxX - vault.shelf.minX).toBeLessThan(vault.tiers === 2 ? 9 : 5);
     expect(vault.shelf.minX - vault.stop.x).toBeGreaterThan(ROVER.radius + 3);
   });
 
@@ -206,8 +235,13 @@ describe.each([
     expect(inside(vault.stop, zone.area)).toBe(true);
     for (const heading of [0, Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2]) expect(zoneAt("L4", { ...vault.stop, heading }, L4.viewZones)?.id).toBe(VAULT);
     expect(zone.zoom).toBe(V.zoom);
-    expect(zone.classView?.mobile?.zoom).toBe(V.zoomPhone);
-    for (const z of [V.zoom, V.zoomPhone]) {
+    const phoneZoom = V.zoomPhone + Math.max(0, vault.books.length - 6) * V.zoomPhoneStep;
+    expect(zone.classView?.mobile?.zoom).toBeCloseTo(phoneZoom, 9);
+    expect(zone.classView?.mobile?.pitch).toBe(vault.tiers === 2 ? V.pitchPhoneTiers : undefined);
+    expect(zone.classView?.landscape).toEqual(vault.tiers === 2 ? { zoom: V.zoomLandscapeTiers, pitch: V.pitchPhoneTiers, lookOffset: { up: V.upLandscapeTiers } } : undefined);
+    // One arc: due east; two tiers: toward the shelf's middle (an even count leans toward its back book).
+    if (vault.tiers === 1) expect(zone.yaw).toBe(NEWSROOM.end.lookEast);
+    for (const z of [V.zoom, phoneZoom]) {
       expect(z).toBeGreaterThanOrEqual(ZOOM_RANGE[0]);
       expect(z).toBeLessThanOrEqual(ZOOM_RANGE[1]);
     }
@@ -246,24 +280,46 @@ describe.each([
   });
 });
 
-describe("L4 Study Vault camera (real content)", () => {
-  const input = real;
+describe.each<[string, LibraryLayoutInput]>([
+  ["real content", real],
+  ...BY_COUNT,
+])("L4 Study Vault camera (%s)", (_, input) => {
   const L4 = buildFloorLayouts(data.years.length, { library: input }).L4;
   const vault = buildLibraryLayout(input).end!.vault!;
   const zone = zoneAt("L4", vault.stop, L4.viewZones)!;
   for (const [w, h] of FRAME_SIZES) {
-    it(`frames all four books whole with the rover on the stop at ${w}x${h}`, () => {
+    it(`frames every book whole with the rover on the stop at ${w}x${h}`, () => {
       const settled = settleFollow(L4, zone, vault.stop, w, h);
       // The camera looks from the ring side toward the books.
       const { target, position, rover } = settled;
       const look = { x: target[0] - position[0], z: target[2] - position[2] };
-      const toBooks = { x: vault.books[1].at.x - vault.stop.x, z: 0 };
+      const toBooks = { x: vault.books[0].at.x - vault.stop.x, z: 0 };
       expect(look.x * toBooks.x + look.z * toBooks.z).toBeGreaterThan(0);
       const points: { label: string; at: Vec3 }[] = [
         { label: "rover", at: rover },
-        ...vault.books.flatMap((b) => footprint(b).flatMap((c, k) => [0, V.book.h].map((y) => ({ label: `${b.slug} corner ${k} at ${y}`, at: [c.x, y, c.z] as Vec3 })))),
+        ...vault.books.flatMap((b) => footprint(b).flatMap((c, k) => [0, b.rise + V.book.h].map((y) => ({ label: `${b.slug} corner ${k} at ${y}`, at: [c.x, y, c.z] as Vec3 })))),
       ];
       expectFramed(settled, points, w, h);
+    });
+  }
+});
+
+describe.each(COUNTS.filter((n) => n > V.oneRow))("L4 Study Vault spines with %i guides", (n) => {
+  const input = { ...real, guides: guidesOf(n) };
+  const L4 = buildFloorLayouts(data.years.length, { library: input }).L4;
+  const layout = buildLibraryLayout(input);
+  const vault = layout.end!.vault!;
+  const zone = zoneAt("L4", vault.stop, L4.viewZones)!;
+  const topics = data.library.topics;
+  // Landscape phones up to nine: at `max` one spine may hide behind a neighbor's plate (newsroom.ts, `upLandscapeTiers`).
+  const sizes = n < V.max ? [...FRAME_SIZES, [844, 390] as const, [667, 375] as const] : FRAME_SIZES;
+  for (const [w, h] of sizes) {
+    it(`shows every spine and the vault sign from the stop at ${w}x${h}`, () => {
+      const { camera, cls } = settleFollow(L4, zone, vault.stop, w, h);
+      const { signs, meta } = endPlazaSigns(layout, topics, orbSlots(topics), l4EndLabels, null, cls === "mobile" || cls === "landscape");
+      const frame = endPlazaFrame({ camera, signs, sizes: signs.map(signPlate), meta, origin: { x: layout.end!.center.x, y: 0, z: layout.end!.center.z }, angle: 0, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: { width: w, height: h }, v: new Vector3(), vault: vaultZone(vault.stop, vault) });
+      const hidden = meta.flatMap((m, i) => ((m.kind === "guide" || m.kind === "vault") && !frame.shown[i] ? [signs[i].text.replace(/\s+/g, " ")] : []));
+      expect(hidden).toEqual([]);
     });
   }
 });

@@ -28,23 +28,20 @@ export interface Crumb {
 
 export function CrumbLink({ crumb }: { crumb: Crumb }) {
   return (
-    <QuietLink href={crumb.href} className="inline-flex min-h-11 items-center gap-2 text-sm text-ink-2 transition hover:text-ink">
-      <span aria-hidden="true">←</span>
+    <QuietLink href={crumb.href} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink-2 transition-colors hover:text-ink">
       {crumb.label}
     </QuietLink>
   );
 }
 
-/** Page title block: optional crumb and floor locator, the h1, a lead and an aside column. */
+/** Page title block: optional crumb, the h1, a lead and an aside column (no eyebrow over the title: Hallmark Floor). */
 export function PageIntro({
-  marker,
   title,
   lead,
   aside,
   crumb,
   children,
 }: {
-  marker?: ReactNode;
   title: string;
   lead?: string;
   aside?: ReactNode;
@@ -52,20 +49,19 @@ export function PageIntro({
   children?: ReactNode;
 }) {
   return (
-    <header className="pv-wrap pt-8 sm:pt-12 lg:pt-16">
+    <header className="pv-wrap pt-10 sm:pt-16 lg:pt-24">
       {crumb && (
         <p className="mb-4">
           <CrumbLink crumb={crumb} />
         </p>
       )}
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-6">
-        <div className="min-w-0 lg:col-span-8">
-          {marker && <p className="pv-data mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">{marker}</p>}
+        <div className="min-w-0 lg:col-span-7">
           <h1 className="pv-d-l">{title}</h1>
           {lead && <p className="pv-lead mt-6">{lead}</p>}
           {children}
         </div>
-        {aside && <div className="min-w-0 lg:col-span-4 lg:self-end">{aside}</div>}
+        {aside && <div className="min-w-0 lg:col-span-4 lg:col-start-9 lg:self-end">{aside}</div>}
       </div>
     </header>
   );
@@ -78,7 +74,7 @@ export function SectionSplit({
   intro,
   more,
   children,
-  className = "",
+  className = "pv-sec",
 }: {
   id: string;
   title: string;
@@ -88,7 +84,7 @@ export function SectionSplit({
   className?: string;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className={`pv-wrap pv-sec grid gap-8 lg:grid-cols-12 lg:gap-6 ${className}`}>
+    <section id={id} aria-labelledby={`${id}-title`} className={`pv-wrap grid gap-10 lg:grid-cols-12 lg:gap-8 ${className}`}>
       <div className="pv-sidehead lg:col-span-4">
         <h2 id={`${id}-title`} className="pv-h2">
           {title}
@@ -107,34 +103,42 @@ export function SectionSplit({
   );
 }
 
-/** Full-width section with its heading on the left and an optional link on the right. */
+/**
+ * Full-width section: the head block (the h2 and its one line on the left, the link or a note on the right, bottoms
+ * aligned) above a body that runs the whole measure.
+ */
 export function SectionWide({
   id,
   title,
+  intro,
   more,
   note,
   children,
-  className = "",
+  className = "pv-sec",
 }: {
   id: string;
   title: string;
+  intro?: string;
   more?: { href: string; label: string };
   note?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className={`pv-wrap pv-sec ${className}`}>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 sm:mb-10">
-        <h2 id={`${id}-title`} className="pv-h2">
-          {title}
-        </h2>
+    <section id={id} aria-labelledby={`${id}-title`} className={`pv-wrap ${className}`}>
+      <div className="pv-head">
+        <div className="min-w-0">
+          <h2 id={`${id}-title`} className="pv-h2">
+            {title}
+          </h2>
+          {intro && <p>{intro}</p>}
+        </div>
         {more && (
           <QuietLink href={more.href} className="pv-go">
             {more.label}
           </QuietLink>
         )}
-        {note && <p className="pv-data">{note}</p>}
+        {note && <p className="pv-meta">{note}</p>}
       </div>
       {children}
     </section>

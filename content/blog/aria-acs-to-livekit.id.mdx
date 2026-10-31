@@ -1,0 +1,110 @@
+---
+title: "Migrasi ARIA dari ACS ke LiveKit"
+date: "2026-10-27"
+excerpt: "ARIA pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur secara sebanding."
+tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
+readingTime: "9 min"
+---
+
+Saya memimpin migrasi ARIA dari Azure Communication Services (ACS) ke LiveKit self-hosted di Metrodata. Dalam drill pada lingkungan proof-of-concept yang aktif, pengembalian panggilan dari operator ke AI mencatat median 425 ms dari 20 putaran. Hasil itu mengukur jalur baru. Saya belum punya perbandingan ACS dan LiveKit dengan kondisi setara yang dapat memisahkan pengaruh migrasi terhadap latensi.
+
+Pekerjaan ini berawal dari batas dukungan layanan dan keputusan produk. ARIA membutuhkan panggilan lewat browser, jawaban AI, serta pengalihan ke operator manusia. Sambungan ke jaringan telepon dan ketergantungan pada Teams tidak masuk kebutuhan tersebut. Karena itu, saya ingin mengganti jalur audio tanpa memindahkan orkestrasi agent yang sudah ada.
+
+## Batas Dukungan untuk Skenario Panggilan ARIA
+
+Microsoft mengumumkan penghentian ACS sebagai layanan standalone pada 23 September 2026, efektif 30 September 2028. Dalam [panduan retirement dan breaking changes resminya](https://learn.microsoft.com/en-us/azure/communication-services/acs-retirement-and-breaking-changes-guide), Microsoft membedakan cakupannya: Calling SDK, Call Automation, dan Audio Streaming masuk kategori breaking changes, sedangkan ACS Email dihentikan.
+
+Setelah tanggal tersebut, dukungan untuk layanan panggilan yang terdampak hanya berlaku pada skenario tertentu yang terintegrasi dengan Teams. Menghubungkan layanan AI saja tidak membuat workload standalone memenuhi syarat. Jalur yang dipakai ARIA juga disebut secara eksplisit: streaming audio dua arah dari server lewat WebSocket pada Call Automation.
+
+API panggilan ACS tidak seluruhnya dihapus, tetapi voice agent standalone kami akan berada di luar cakupan dukungan setelah batas waktu tersebut. Saya juga perlu memeriksa setiap pilihan integrasi Teams sampai ke kapabilitasnya, karena dukungan mengirim audio keluar dari panggilan belum otomatis mencakup pengiriman audio kembali ke dalamnya.
+
+ARIA masih dalam pengembangan, sehingga saya memilih pindah sebelum batas tersebut menjadi tenggat bagi pelanggan. Cakupan produknya tetap panggilan web, dengan layanan media yang kami kelola sendiri di Azure. LiveKit memenuhi kebutuhan itu tanpa menambah ketergantungan pada Teams. Untuk room yang kami butuhkan, Azure VM juga cukup tanpa harus mengoperasikan control plane Kubernetes.
+
+## Mengganti Jalur Media, Mempertahankan Agent
+
+Pemisahan antara transport panggilan dan perilaku agent menentukan seberapa jauh kode perlu berubah. Saya memperkenalkan `CallChannel` untuk bergabung dan mengendalikan panggilan, serta `MediaLink` untuk menerima, mengirim, dan menghentikan audio. Implementasi ACS lebih dulu ditempatkan di balik kontrak tersebut. Setelah itu, LiveKit dapat memakai kontrak yang sama sebelum transport lama dihapus.
+
+<Architecture diagram="migration" caption="Jalur media sebelum dan sesudah migrasi. Setiap baris menunjukkan jalur tersendiri. Orkestrasi agent dan Azure OpenAI tetap dipakai, sementara transport panggilan beserta adapternya diganti." />
+
+Alurnya dapat dibaca dari browser menuju model:
+
+1. Sebelum migrasi, browser memakai ACS Calling SDK. Call Automation menghubungkan AI ke panggilan dan bertukar audio dengan backend Python lewat media WebSocket.
+2. Setelah migrasi, penelepon dan operator bergabung ke room LiveKit. Media plane self-hosted berjalan pada dua Azure VM di availability zone berbeda, dengan TURN bawaan untuk jaringan yang tidak dapat terhubung langsung.
+3. Adapter worker bergabung sebagai peserta AI dan meneruskan audio lewat `MediaLink`. Bridge Python tetap menangani tool, pencarian knowledge, eskalasi, dan state percakapan.
+4. Azure OpenAI Realtime tetap menghasilkan jawaban suara. Orkestrasi ARIA tidak dipindahkan ke framework LiveKit Agents.
+
+Dengan batas itu, saya dapat mengganti kredensial untuk join, format pesan media, callback, serta dependency khusus channel tanpa menulis ulang perilaku pencarian knowledge atau eskalasi.
+
+Perilaku saat gagal juga dibuat jelas. Setelah ACS dihapus, panggilan baru ditolak jika channel media production tidak tersedia. Sistem tidak diam-diam memilih transport lain.
+
+## Room yang Terhubung Belum Cukup
+
+### Relay Harus Lolos dari Jaringan yang Membatasi Koneksi
+
+Panggilan yang berhasil di jaringan terbuka belum membuktikan browser di jaringan kantor dapat terhubung.
+
+Dalam drill infrastruktur, Chromium berhasil memakai TURN lewat TLS pada port 443 saat UDP keluar diblokir. Sebelumnya, matcher HTTP di depan layanan media menunggu klien TURN sampai timeout. Saya mengganti pembedaan jalurnya dengan pemeriksaan awalan byte, lalu mengeluarkan alamat bridge Docker dari kandidat ICE yang diumumkan.
+
+Drill browser itu membuktikan jalur relay tersebut bekerja. Kondisi UDP diblokir dengan relay TLS yang sama tidak diulang pada jendela validasi live yang dipersingkat, sehingga hasil kedua pengujian itu tetap saya bedakan.
+
+### Backend Sudah Pulih, Penelepon Belum Mendengar Apa-Apa
+
+Pada uji pertama dengan mematikan paksa node media, penelepon terus berada dalam keadaan reconnecting dan tidak pulih.
+
+Walaupun backend sudah dapat membuat room di node yang masih sehat, browser tetap mencoba node lama karena belum mengetahui bahwa session panggilan sudah dipindahkan. Pada salah satu perbaikan berikutnya, AI juga sempat membacakan kalimat resume sebelum penelepon masuk ke room pengganti. Log server menunjukkan proses resume berhasil, sementara kalimatnya tidak terdengar oleh penelepon.
+
+Saya menghubungkan proses rejoin browser dengan perubahan node media pada session dan membuat audio resume menunggu track penelepon. Pada dua drill terakhir, suara AI kembali terdengar setelah 11,5 detik dan 13,0 detik sejak node dimatikan. Konteks percakapan tetap tersimpan.
+
+Pemulihannya membaik dalam drill tersebut, tetapi jedanya masih terdengar. Failover ini belum mulus.
+
+### Gangguan di Mobile Berbeda dari Test Mobile yang Gagal
+
+Kegagalan join awal pada perangkat mobile menunjukkan bahwa retry kami hanya menangani satu jenis negotiation error. Saya memperluasnya menjadi retry koneksi yang dibatasi, dengan join token baru pada setiap percobaan. Error izin mikrofon dan error dari permintaan backend tetap tidak diulang lewat jalur itu.
+
+Commit terpisah memperbaiki test mobile untuk skenario "drop 30 detik". Test tersebut memicu reconnecting sebelum join awal selesai, lalu penyelesaian join menimpa state yang sedang ditunggu oleh test. Saya membuat test menunggu state listening dan memeriksa publikasi mikrofon dengan polling. Pengulangan test yang kemudian lulus membuktikan kestabilan test itu, bukan penurunan call drop pada perangkat mobile.
+
+Ada pula kegagalan koneksi akibat navigasi client-side. Browser mempertahankan Content Security Policy dari dokumen yang pertama kali dimuat. Jika policy yang mengenali host LiveKit hanya diberikan pada halaman panggilan, pengunjung bisa gagal terhubung sampai melakukan reload. Policy runtime itu akhirnya perlu diterapkan pada setiap dokumen halaman.
+
+## Pembaruan Lain di Sekitar Cutover
+
+Penghapusan ACS ikut menyentuh email, secrets, observability, dan test. Sebagian mengganti layanan yang dihentikan secara langsung. Sebagian lagi memperbaiki jalur baru setelah cutover.
+
+**Pengiriman email dipisahkan dari transport panggilan.** Email ringkasan memakai interface provider dengan pilihan Microsoft Graph dan SMTP, serta outbox untuk menangani pengiriman. Kami tidak perlu mempertahankan ACS Email hanya karena sebelumnya dipakai bersama layanan suara. Kegagalan pengiriman dapat dicatat dan ditangani terpisah dari panggilan.
+
+**Setiap environment memakai satu vault.** Integrasi media dan email sempat menambah vault tersendiri. Saya menyatukannya ke vault environment dan menambahkan skrip migrasi yang secara default hanya menampilkan rencana perubahan. Saat dijalankan, skrip melakukan drain workload, memperbarui referensi, lalu me-restart dan memeriksa node media satu per satu. Perbaikan berikutnya melengkapi dependency Azure pada helper dan membedakan helper yang crash dari drain yang melewati batas waktu.
+
+Konfigurasi yang perlu dipelihara berkurang, tetapi cakupan akses juga berubah karena identity node media pada deployment yang memakai access policy dapat membaca lebih banyak secret di vault bersama. Keputusan ini memudahkan operasi dengan konsekuensi pada isolasi akses.
+
+**Metric relay akhirnya benar-benar dikirim.** Alert untuk porsi koneksi TURN tidak berguna jika tidak ada komponen yang melaporkan koneksi terpilih. Saya menambahkan `aria.livekit.ice.relay` dari pasangan kandidat ICE yang dipilih browser saat connect, reconnect, dan rejoin. Metric ini membedakan koneksi langsung dan relay agar tim operasional dapat memeriksa transport yang dipakai. Pengirimannya bersifat best-effort dan dihitung per koneksi, sehingga tidak mewakili durasi media atau membuktikan pemakaian relay berkurang.
+
+**Takeover perlu membatalkan pekerjaan yang belum selesai.** Prompt tunggu bisa masih dirender ketika operator mengambil panggilan. Pembatalan tidak menemukan prompt yang sedang diputar, lalu hasil render yang terlambat justru terdengar saat operator berbicara. Guard berdasarkan generasi prompt kini membuang render yang selesai setelah pembatalan. Saya juga menambahkan retry pembuatan kalimat resume selama AI masih muted, agar hand-back tidak harus meminta jawaban model baru ketika terjadi throttling.
+
+Drill tersebut menemukan masalah kapasitas model di samping bug media. Response yang gagal mulai dicatat dan diberi retry. Trace frame pada pengujian berikutnya juga mengoreksi diagnosis awal: frame penelepon tetap masuk, sementara deteksi akhir giliran berbasis model terhenti saat throttling. Kebutuhan kapasitas model tetap harus dihitung setelah transport diganti.
+
+**Test memeriksa perilaku yang dijalankan.** Pada backend, pemeriksaan string source diganti dengan menjalankan startup guard, memeriksa izin token, membaca telemetry yang diekspor, dan memastikan event tersimpan. Test frontend yang hanya mengulang nilai konstanta dihapus atau diganti pemeriksaan kontrak. Penghapusan ACS juga membuang dependency SDK-nya serta backend Bun yang sudah tidak dipakai, sehingga jalur runtime tetap memakai layanan realtime Python dan LiveKit.
+
+## Hasil yang Memang Terukur
+
+Jendela validasi live ini merupakan pengujian PoC yang dipersingkat. Angkanya belum dapat dipakai sebagai ukuran tingkat layanan production.
+
+| Pengujian | Hasil yang Dicatat | Batas Pengukuran |
+|---|---|---|
+| Beban stabil dengan 10 panggilan bersamaan, empat giliran per panggilan | Latensi giliran P50 1286 sampai 1324 ms; barge-in P50 100 sampai 191 ms | Tiga panggilan beralih ke eskalasi setelah pencarian knowledge melewati batas 2,5 detik |
+| Takeover operator dan hand-back, empat panggilan dengan lima putaran per panggilan | 20 putaran berhasil; hand-back yang terdengar oleh penelepon P50 425 ms, P95 2,4 detik; kalimat resume tersedia di cache dalam 19 putaran | Sebagian hand-back masih jauh lebih lambat, dan drill alur persetujuan berikutnya menemukan kegagalan lain |
+| Setup panggilan selama jendela validasi | 70 dari 74 setup berhasil, 94,6%, dengan target 99% | Gate setup gagal; penyebabnya antara lain deployment yang tumpang tindih, cold start, dan kegagalan publikasi track lewat relay |
+
+Referensi harness ACS sebelumnya mencatat P50 2701 ms dan P95 4325 ms dari 30 giliran, tetapi emulator pada pengujian itu memasukkan audio langsung ke backend tanpa melewati media plane ACS. Konfigurasi agent dan kondisi pengujiannya juga berbeda dari panggilan LiveKit.
+
+Karena itu, angka ACS tersebut belum dapat dipakai untuk menghitung persentase percepatan akibat penggantian transport. Jalur LiveKit sudah diukur dan memenuhi beberapa sasaran drill, tetapi perbandingan sebelum dan sesudah dengan kondisi setara belum tersedia.
+
+Perubahan yang paling terasa pada alur panggilan adalah hand-back dalam session yang sama dengan kalimat resume dari cache, disertai kemampuan drain node dan pemulihan panggilan ke node lain. Hasilnya berasal dari perubahan pada keseluruhan alur, bukan dari pemilihan media server saja.
+
+Struktur biaya juga berubah. Komponen layanan panggilan bermeter diganti dengan infrastruktur yang kami operasikan sendiri. Repositori memuat estimasi perencanaan, tetapi belum ada perbandingan tagihan sebelum dan sesudah yang setara untuk disebut sebagai penghematan. Pengelolaan sertifikat, patch, kapasitas, serta penanganan insiden tetap membutuhkan penanggung jawab.
+
+## Hal yang Masih Perlu Diuji
+
+Sasaran latensi giliran P50 sebesar 900 ms masih belum tercapai. Validasi dengan mikrofon sungguhan dan cakupan jaringan yang lebih luas juga ditunda.
+
+Turn-taking pun belum selesai. Pada eksperimen start-hold live berikutnya, cut-off tercatat pada 8 dari 15 ujaran sebelum perubahan dan 9 dari 15 sesudahnya. Sampel kecil itu tidak menunjukkan perbaikan. Mekanisme interupsi dan hasil negatif tersebut sudah saya bahas dalam [Cara Kami Membuat Voice Agent Bisa Diinterupsi](/id/blog/making-a-voice-agent-interruptible), sehingga tidak saya hitung lagi sebagai hasil migrasi.
+
+Saya mengarahkan AI coding agent untuk sebagian besar implementasi, lalu meninjau dan menggabungkan pekerjaannya. ARIA kini memiliki jalur media self-hosted, hand-back dari cache yang terukur dalam drill, serta kontrol pemulihan dan operasional yang eksplisit. Keunggulan latensi atau biaya terhadap ACS di production belum terbukti, sehingga pemeriksaan setup dan mikrofon sungguhan masih membutuhkan jendela validasi yang lebih besar.

@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
 export default function RootRedirectLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${fontClassName} antialiased`}>
-      <body className="flex min-h-screen items-center justify-center">{children}</body>
+    <html lang="en" className={`${fontClassName} antialiased overflow-x-clip`}>
+      <body className="flex min-h-screen items-center justify-center overflow-x-clip">{children}</body>
     </html>
   );
 }

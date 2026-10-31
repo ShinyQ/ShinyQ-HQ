@@ -8,6 +8,7 @@ export const soundSetting = defineSetting({
   order: 10,
   labelKey: "sound.label",
   hintKey: "sound.hint",
+  hintKbd: "M",
   control: { kind: "toggle", get: () => !audio.isMuted(), set: (on) => audio.setMuted(!on) },
   subscribe: (listener) => audio.subscribe(listener),
 });

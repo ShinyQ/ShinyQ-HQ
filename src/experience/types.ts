@@ -162,6 +162,8 @@ export interface LayoutExtras {
 
 export type GpuTier = "full" | "lite" | "static";
 export type ViewportClass = "desktop" | "tablet" | "mobile";
+/** Camera value set (appendix 03 section 2): the HUD classes plus `landscape`, phones held sideways (spec 2026-10-29). */
+export type CameraClass = ViewportClass | "landscape";
 export type RoverFace = "idle" | "blink" | "driving" | "autopilot" | "thinking" | "arrived" | "blocked" | "up" | "down" | "off" | "boot";
 
 /** Serializable, locale-resolved data the 3D chunk needs (built on the server). */

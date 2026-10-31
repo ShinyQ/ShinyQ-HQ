@@ -34,7 +34,7 @@ const ICON_TONE: Record<OfficeGithubStatus, string> = {
 };
 /**
  * Keeps an empty line's height (the card draws every slot in every state, so its height never changes). Below `md`
- * the status line and today's line may wrap, so they hold two lines there (`min-h-8`, `min-h-10`).
+ * the status line and today's line may wrap, so they hold two lines there (`min-h-10` each).
  */
 const EMPTY = "\u00a0";
 /** Input that resets the poller's 10 min idle stop (and restarts it after one). */
@@ -74,7 +74,7 @@ function DeskRow({ desk, labels, locale }: { desk: OfficeDeskV2; labels: OfficeC
           {deskTitle(desk) ?? labels.clientProject}
         </span>
       </span>
-      <span className="pv-data">{labels.states[desk.state]}</span>
+      <span className="pv-meta">{labels.states[desk.state]}</span>
     </li>
   );
 }
@@ -230,7 +230,7 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
 
   return (
     <div ref={root} data-testid="office-panel" data-feed={feed.status} className={`flex flex-col ${OFFICE_RESERVE[locale]}`}>
-      <p data-testid="office-live" className="pv-date flex min-h-8 items-start gap-2 md:min-h-0">
+      <p data-testid="office-live" className="pv-meta flex min-h-10 items-start gap-2 md:min-h-0">
         <Dot tone={live ? STATE_TONE.done : STATE_TONE.asleep} className="mt-1" />
         <span>
           {/* Only the state is announced: the minute clock would re-announce the line on every poll. */}
@@ -245,13 +245,13 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
           <dl className="mt-6 grid grid-cols-2 border-y border-line md:grid-cols-4">
             {COUNTS.map((key, i) => (
               <div key={key} data-testid={`office-count-${key}`} className={`flex flex-col-reverse gap-2.5 border-line py-4 ${COUNT_RULES[i]}`}>
-                <dt className="pv-data">{labels.counts[key]}</dt>
+                <dt className="pv-meta">{labels.counts[key]}</dt>
                 <dd className="pv-num text-[28px] leading-none">{counts[key]}</dd>
               </div>
             ))}
           </dl>
 
-          <h3 className="pv-data mt-8">{labels.agents}</h3>
+          <h3 className="pv-meta mt-8 font-semibold text-ink">{labels.agents}</h3>
           <ul data-testid="office-desks" className="pv-rows pv-rows-closed mt-3">
             {shown.map((desk) => (
               <DeskRow key={desk.slot} desk={desk} labels={labels} locale={locale} />
@@ -262,11 +262,11 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
               <QuietRow key={i} testId="office-desk-empty" />
             ))}
           </ul>
-          <p data-testid="office-extra" aria-hidden={extra ? undefined : true} className="pv-date mt-2 truncate">
+          <p data-testid="office-extra" aria-hidden={extra ? undefined : true} className="pv-meta mt-2 truncate">
             {extra ?? EMPTY}
           </p>
 
-          <h3 className="pv-data mt-8">{labels.github}</h3>
+          <h3 className="pv-meta mt-8 font-semibold text-ink">{labels.github}</h3>
           <ul className="pv-rows pv-rows-closed mt-3">
             {github.map((g) => (
               <GithubRow key={`${g.kind}-${g.url}-${g.at}`} item={g} locale={locale} labels={labels} t={t} />

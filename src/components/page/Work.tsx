@@ -1,14 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
-import { CARD_SIZES, coverImage, imageSrcSet } from "@/content/media";
+import { coverImage } from "@/content/media";
 import { podAttrs } from "@/content/pageview";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
-import { WING_ACCENT } from "@/lib/accent";
-import { formatPeriod, formatYearMonth } from "@/lib/format";
+import { formatYearMonth } from "@/lib/format";
 import { TechLogoRow } from "../Chip";
 import { LiveSiteLink } from "../LiveSiteLink";
-import { Marker } from "./Layout";
 import { ProjectPlaceholder } from "./ProjectPlaceholder";
 
 /**
@@ -26,71 +24,6 @@ export async function PodLiveCta({ pod, locale, className = "" }: { pod: Pod; lo
       srHint={tc("external")}
       className={`pv-uline relative z-10 inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-ink hover:text-cyan ${className}`}
     />
-  );
-}
-
-/**
- * A project with its cover (or a designed placeholder when it has no images).
- * `lead`: full image and two outcomes; `pair`: wide thumb and one outcome; `grid`: thumb and stack logos.
- */
-export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Locale; size: "lead" | "pair" | "grid" }) {
-  const t = await getTranslations({ locale, namespace: "work" });
-  const cover = coverImage(pod.assets, locale);
-  const [first, second] = pod.results;
-  return (
-    <article className="pv-feature relative flex h-full flex-col gap-4">
-      {cover ? (
-        <div className="pv-shot">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cover.src}
-            srcSet={imageSrcSet(cover)}
-            sizes={size === "lead" ? "(min-width: 1024px) 760px, 100vw" : size === "pair" ? "(min-width: 768px) 50vw, 100vw" : CARD_SIZES}
-            alt={cover.alt}
-            width={cover.width}
-            height={cover.height}
-            loading={size === "lead" ? "eager" : "lazy"}
-            decoding="async"
-            className={size === "pair" ? "aspect-[16/8]" : "aspect-[16/10]"}
-          />
-        </div>
-      ) : (
-        <div className={`pv-shot ${size === "pair" ? "[&_.pv-ph]:aspect-[16/8]" : ""}`}>
-          <ProjectPlaceholder id={`ph-card-${pod.slug}`} title={pod.title[locale]} wing={pod.wing} size="card" />
-        </div>
-      )}
-      <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
-        <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-        <span className="pv-date">{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
-        {pod.client && <span>{clientLabel(pod.client, locale)}</span>}
-      </p>
-      <h3 className={`pv-h3 pv-feature-title ${size === "lead" ? "pv-h3-l" : "pv-h3-card"}`}>
-        <Link href={`/labs/${pod.slug}`} className="pv-stretch">
-          {pod.title[locale]}
-        </Link>
-      </h3>
-      <p className={size === "lead" ? "pv-body" : "pv-card-text"}>{pod.tagline[locale]}</p>
-      <div className="mt-auto flex flex-col gap-4 empty:hidden">
-        <PodLiveCta pod={pod} locale={locale} />
-        {size === "lead" && first && (
-          <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
-            {[first, second].filter(Boolean).map((r) => (
-              <div key={r!.value}>
-                <dt className="pv-num text-[28px]">{r!.value}</dt>
-                <dd className="mt-1 text-sm leading-5 text-ink-2">{r!.label[locale]}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {size === "pair" && first && (
-          <div className="pv-result">
-            <p className="pv-num text-[22px]">{first.value}</p>
-            <p className="pv-result-label">{first.label[locale]}</p>
-          </div>
-        )}
-        {size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}
-      </div>
-    </article>
   );
 }
 
@@ -126,16 +59,16 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="pv-data mb-2 flex flex-wrap gap-x-4">
-          <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-          <span className="md:hidden">{[clientLabel(pod.client, locale), start].filter(Boolean).join(" · ")}</span>
-        </p>
-        <h3 className="pv-h3 pv-row-title text-[20px]">
+        <h3 className="pv-h3 pv-row-title">
           <Link href={`/labs/${pod.slug}`} className="pv-stretch">
             {pod.title[locale]}
           </Link>
         </h3>
-        <p className="pv-small mt-1.5 max-w-[60ch]">{pod.tagline[locale]}</p>
+        <p className="pv-meta mt-1">
+          {t(`wingShort.${pod.wing}`)}
+          <span className="md:hidden">{[clientLabel(pod.client, locale), start].filter(Boolean).map((v) => `, ${v}`)}</span>
+        </p>
+        <p className="pv-small mt-2 max-w-[60ch]">{pod.tagline[locale]}</p>
         <div className="mt-3">
           <TechLogoRow items={pod.stack} max={8} />
         </div>

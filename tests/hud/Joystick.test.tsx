@@ -2,11 +2,16 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setBoost } from "@/experience/input/joystick";
-import { DOUBLE_TAP_MS, Joystick } from "@/hud/Joystick";
+import { setBoost, setJoystick } from "@/experience/input/joystick";
+import { stickInput } from "@/experience/input/joystick";
+import { STICK } from "@/experience/input/floatingStick";
+import { bindTouch, DOUBLE_TAP_MS, Joystick, TAP_MAX_MS, TAP_SLOP_PX } from "@/hud/Joystick";
 import { getHQStore } from "@/store/useHQStore";
 
-vi.mock("@/experience/input/joystick", () => ({ setBoost: vi.fn(), setJoystick: vi.fn() }));
+vi.mock("@/experience/input/joystick", () => ({ setBoost: vi.fn(), setJoystick: vi.fn(), stickInput: { handler: null } }));
+
+// The touch chunk binds its main-path values once it loads (`Hud`); here, the mocked ones.
+bindTouch({ input: stickInput, setJoystick, setBoost });
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 
 const stick = () => screen.getByTestId("joystick");
@@ -29,6 +34,7 @@ function pressAt(ms: number, hold: number, dx = 0) {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.mocked(setBoost).mockClear();
+  vi.mocked(setJoystick).mockClear();
   getHQStore().setState({ floor: "L1", ride: null, phase: "explore" });
 });
 
@@ -40,6 +46,9 @@ afterEach(() => {
 describe("Joystick double-tap boost", () => {
   it("exports a 300 ms double-tap window", () => {
     expect(DOUBLE_TAP_MS).toBe(300);
+    // The fixed stick and the floating stick share their gesture constants.
+    expect([DOUBLE_TAP_MS, TAP_MAX_MS, TAP_SLOP_PX]).toEqual([STICK.doubleTapMs, STICK.tapMs, STICK.slop]);
+    expect(stickInput.handler).not.toBeNull();
   });
 
   it("toggles boost on with two taps 100 ms apart, and off with the next double tap", () => {
@@ -209,5 +218,24 @@ describe("Boost button", () => {
     fireEvent.click(button());
     act(() => getHQStore().getState().arriveFloor("L2"));
     expect(button()).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("Joystick stepping aside", () => {
+  it("lets go of a held stick when the band steps aside", () => {
+    const { rerender } = render(<Joystick boost aside={false} />);
+    fireEvent.pointerDown(stick(), { pointerId: 1, clientX: 0, clientY: 0 });
+    fireEvent.pointerMove(stick(), { pointerId: 1, clientX: 40, clientY: 0 });
+    expect(vi.mocked(setJoystick)).toHaveBeenLastCalledWith(expect.any(Number), expect.any(Number), true);
+    expect(stick().firstElementChild).not.toHaveStyle({ transform: "translate(calc(-50% + 0px), calc(-50% + 0px))" });
+    rerender(<Joystick boost aside />);
+    expect(vi.mocked(setJoystick)).toHaveBeenLastCalledWith(0, 0, false);
+    expect(stick().firstElementChild).toHaveStyle({ transform: "translate(calc(-50% + 0px), calc(-50% + 0px))" });
+  });
+
+  it("does nothing when nothing is held", () => {
+    const { rerender } = render(<Joystick boost aside={false} />);
+    rerender(<Joystick boost aside />);
+    expect(setJoystick).not.toHaveBeenCalled();
   });
 });

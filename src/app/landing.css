@@ -1,78 +1,76 @@
 /*
-  Landing layer: the cinematic first screen of the Page View home (src/components/page/Hero.tsx).
-  Motion is CSS only and compositor only (transform, opacity): no JavaScript, and the backdrop holds no
-  image or text, so it is never an LCP candidate. Every animation starts after 0.5 s with its first
-  keyframe as the still frame. Reduced motion (the OS setting or the Motion override) stops it.
+  Landing layer (src/components/page/Hero.tsx and the home sections). The hero fills the first screen (Ledge): the
+  static Neon Grid is the field above, and the name, the role, the motto, the proof and the actions rest at its base
+  beside the Ask bar, under one fixed indigo bloom. Nothing moves: no loops, no entrance, so the h1 (the LCP) paints
+  at once.
 */
 @layer components {
-  /* First screen: the header is 60 px plus the 49 px tab row below lg, 68 px from lg. */
   .hx {
     position: relative;
     isolation: isolate;
     display: flex;
     flex-direction: column;
-    min-height: calc(100svh - 109px);
-    overflow: hidden;
+    justify-content: flex-end;
+    padding-block: var(--space-2xl) var(--space-3xl);
   }
 
-  @media (min-width: 64rem) {
+  /* Phones take the content's height (Hallmark: under 60rem a posture collapses to its content). */
+  @media (min-width: 40rem) {
     .hx {
-      min-height: calc(100svh - 68px);
-    }
-  }
-
-  /* Phones: the hero alone fills the first screen, so the ticker starts below the fold and never sits
-     under the floating "Ask AI" (bottom left) and "Back to 3D" (bottom right) buttons. */
-  @media (max-width: 39.99rem) {
-    .hx-main {
       min-height: calc(100svh - 109px);
     }
   }
 
-  .hx-bg {
+  @media (min-width: 64rem) {
+    .hx {
+      min-height: calc(100svh - var(--nav-h));
+    }
+  }
+
+  .hx-bloom {
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    background: radial-gradient(30% 40% at 78% 38%, var(--color-bloom), transparent 70%);
   }
 
-  .hx-glow {
-    position: absolute;
-    inset: -20% -10% 0;
-    background:
-      radial-gradient(40% 45% at 78% 32%, rgb(167 139 250 / 0.14), transparent 70%),
-      radial-gradient(36% 42% at 16% 18%, rgb(34 211 238 / 0.09), transparent 70%);
-    animation: hx-drift 18s ease-in-out 0.5s infinite alternate both;
+  .hx-grid {
+    display: grid;
+    gap: var(--space-xl) var(--gap-columns);
+    margin-top: var(--space-xl);
   }
 
-  /* Neon Grid floor in perspective, rolling toward the visitor one cell per loop. It stays low and faint, so its
-     horizon sits under the hero's content instead of through the Ask bar. */
-  .hx-ground {
-    position: absolute;
-    left: -50%;
-    right: -50%;
-    bottom: 0;
-    height: 42%;
-    perspective: 520px;
-    mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+  @media (min-width: 64rem) {
+    .hx-grid {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: end;
+    }
   }
 
-  .hx-ground-grid {
-    position: absolute;
-    inset: -100% 0 0;
-    transform-origin: 50% 100%;
-    transform: rotateX(64deg);
-    background-image:
-      linear-gradient(rgb(99 102 241 / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(99 102 241 / 0.3) 1px, transparent 1px);
-    background-size: 56px 56px;
-    animation: hx-run 3.2s linear 0.5s infinite both;
+  /* Proof: three figures parted by vertical hairlines, no box. */
+  .hx-proof {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: var(--space-xl);
+    max-width: 640px;
   }
 
-  /* The LCP element: static, solid color (no gradient text, no entrance animation). */
-  .hx-name {
-    font-size: clamp(44px, 8vw, 112px);
-    line-height: 0.9;
+  .hx-proof > li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    padding-right: var(--space-sm);
+  }
+
+  .hx-proof > li + li {
+    padding-left: var(--space-lg);
+    border-left: 1px solid var(--color-line-2);
+  }
+
+  .hx-proof-value {
+    font-size: clamp(1.75rem, 2vw + 0.5rem, 2.5rem);
+    line-height: 1;
   }
 
   /* Shown only where 3D can run; the head script sets html[data-hq-3d] before first paint. */
@@ -84,97 +82,49 @@
     display: inline-flex;
   }
 
-  .hx-tick-track,
-  .hx-film {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  /* Selected work as a Feature Stack: one project a row, its text held beside its screenshots. */
+  .hx-stack > li + li {
+    margin-top: var(--space-3xl);
+    padding-top: var(--space-3xl);
+    border-top: 1px solid var(--color-line);
   }
 
-  /* Stats ticker band at the bottom of the first screen (#stats). */
-  .hx-tick {
+  .hx-feature {
     position: relative;
-    border-block: 1px solid var(--color-line);
-    background: rgb(5 5 12 / 0.72);
+    display: grid;
+    gap: var(--space-xl) var(--gap-columns);
   }
 
-  .hx-tick-bar {
-    padding-block: 6px;
-  }
-
-  /* From sm the ticker can share the bottom of the first screen with the floating buttons, so the bar
-     keeps their columns free: "Ask AI" (left 24 px, about 128 px wide) and, where 3D is offered,
-     "Back to 3D" (right 24 px, about 206 px wide), each plus a 12 px gap. --hx-out is the margin
-     outside the 1240 px container. */
-  @media (min-width: 40rem) {
-    .hx-tick-bar {
-      --hx-out: max(0px, (100vw - 1240px) / 2);
-      padding-left: max(clamp(20px, 4vw, 48px), 164px - var(--hx-out));
+  @media (min-width: 64rem) {
+    .hx-feature {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    html[data-hq-3d] .hx-tick-bar {
-      padding-right: max(clamp(20px, 4vw, 48px), 242px - var(--hx-out));
+    .hx-feature-text {
+      position: sticky;
+      top: calc(var(--nav-h) + var(--space-xl));
+      align-self: start;
     }
   }
 
-  .hx-tick-view {
+  .hx-feature-text {
     display: flex;
-    gap: 48px;
-    overflow: hidden;
-    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    flex-direction: column;
+    gap: var(--space-lg);
   }
 
-  .hx-tick-track {
-    display: flex;
-    flex: none;
-    gap: 48px;
-    min-width: max-content;
-    animation: hx-marquee 70s linear 0.5s infinite;
-  }
-
-  .hx-tick-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    white-space: nowrap;
-  }
-
-  .hx-tick-value {
-    font-size: 28px;
-    line-height: 1;
-  }
-
-  .hx-tick-label {
-    font-size: 14px;
-    color: var(--color-ink-2);
-  }
-
-  .hx-tick-live {
-    color: var(--color-green);
-  }
-
-  /* Featured project cards. */
-  .hx-shot {
-    position: relative;
-  }
-
-  /* Screenshot count: a small quiet plate in the cover's corner. */
-  .hx-shots {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
-    padding: 2px 7px;
-    border-radius: 5px;
-    background: rgb(5 5 12 / 0.72);
-    font: 500 11px/16px var(--font-mono);
-    color: var(--color-ink-2);
+  .hx-feature-result {
+    font-size: var(--text-display-s);
+    line-height: 0.95;
   }
 
   .hx-film {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: var(--space-sm);
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+    list-style: none;
   }
 
   .hx-film img {
@@ -182,70 +132,46 @@
     aspect-ratio: 16 / 10;
     object-fit: cover;
     object-position: top;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     border: 1px solid var(--color-line);
   }
 
-  .hx-card:hover .pv-shot {
-    border-color: rgb(167 139 250 / 0.5);
-    box-shadow: 0 0 40px -12px var(--color-violet);
+  /* The stats (#stats): a still, ruled ledger in two columns. */
+  .hx-ledger {
+    display: grid;
+    column-gap: var(--gap-columns);
   }
 
-  @keyframes hx-drift {
-    to {
-      transform: translate3d(-4%, 3%, 0) scale(1.06);
+  @media (min-width: 48rem) {
+    .hx-ledger {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @keyframes hx-run {
-    to {
-      transform: rotateX(64deg) translateY(56px);
-    }
+  .hx-ledger > li {
+    display: grid;
+    grid-template-columns: minmax(96px, 9rem) minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-md);
+    padding-block: var(--space-md);
+    border-top: 1px solid var(--color-line);
   }
 
-  @keyframes hx-marquee {
-    to {
-      transform: translateX(calc(-100% - 48px));
-    }
+  .hx-ledger-value {
+    font-size: 2rem;
+    line-height: 1;
   }
 
-  /* Automation and crawlers (html[data-hq-still], ambientStill in src/lib/boot-first.ts) get the still frame.
-     Hover or keyboard focus inside the marquee holds it, so a stat can be read in place. */
-  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-tick-track),
-  .hx-tick-view:is(:hover, :focus-within) .hx-tick-track {
-    animation-play-state: paused;
+  .hx-live {
+    margin-left: var(--space-xs);
+    color: var(--color-green);
   }
 
-  /* Reduced motion (the OS setting or the Motion override, see globals.css): a still frame and the stats wrapped in
-     rows (no scroll region). The global rule only shortens durations, which would make infinite loops jump, so the
-     names are removed here. */
-  .hx-glow,
-  .hx-ground-grid,
-  .hx-tick-track {
-    @variant motion-reduce {
-      animation: none;
-    }
-  }
-
-  .hx-tick-track[aria-hidden="true"] {
-    @variant motion-reduce {
-      display: none;
-    }
-  }
-
-  .hx-tick-view {
-    @variant motion-reduce {
-      overflow: visible;
-      mask-image: none;
-    }
-  }
-
-  .hx-tick-track {
-    @variant motion-reduce {
-      flex-wrap: wrap;
-      min-width: 0;
-      column-gap: 32px;
-      row-gap: 0;
-    }
+  /* Certifications and skills share one band of paper. */
+  .hx-band {
+    margin-top: var(--section-gap);
+    padding-bottom: var(--section-gap-s);
+    background: var(--color-paper-2);
+    color: var(--color-ink);
   }
 }

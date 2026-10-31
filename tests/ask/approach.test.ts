@@ -186,7 +186,7 @@ describe("approachMatches with a question vector", () => {
 });
 
 describe("rule 18 and the approach line", () => {
-  it("bumps the prompt version", () => expect(PROMPT_VERSION).toBe("2026-10-25.approach.1"));
+  it("bumps the prompt version", () => expect(PROMPT_VERSION).toBe("2026-10-27.indonesian.1"));
 
   it("adds rule 18 and points rule 11 to it", () => {
     const rules = RULES.join(" ");
@@ -370,8 +370,8 @@ describe("approach checks", () => {
   it.each([
     "A similar problem would likely start the same way.",
     "A similar problem would likely start the same way [S2].",
-    "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
-    "Masalah serupa kemungkinan besar dimulai dengan cara yang sama [S3].",
+    "Masalah serupa kemungkinan besar akan ditangani dengan pendekatan awal yang sama.",
+    "Masalah serupa kemungkinan besar akan ditangani dengan pendekatan awal yang sama [S3].",
   ])("passes the exact bridging sentence: %s", (bridge) => {
     expect(prescribes(bridge, bridge, "")).toBe(false);
   });

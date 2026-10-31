@@ -3,6 +3,7 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { MESSAGES, PARTISAN_NOTE, partialDecline } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
 import { packVocabulary, planRoute, runPipeline, strongMatch, type RoutePlan } from "../../functions/_lib/pipeline";
+import { leadMatches } from "../../functions/_lib/retrieve";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import redteam from "./redteam.json";
 
@@ -185,7 +186,7 @@ const EDGES: [string, string, string][] = [
   ["problem", "Call center kami kewalahan. Pendekatannya?", "approach"],
   ["problem", "How would he speed up slow document review?", "approach"],
   ["problem", "Our team struggles with flaky tests", "lead"],
-  ["problem", "Kami kesulitan menyaring CV pelamar", "lead"],
+  ["problem", "Kami kesulitan menyaring CV pelamar", "approach"],
   ["problem", "Can he build us a chatbot?", "lead"],
   ["problem", "Our fraud checks are manual. His approach? And is he married?", "approach+partial(family)"],
   ["problem", "Our fraud checks are manual. Write the Python code for us.", "decline"],
@@ -202,6 +203,11 @@ const EDGES: [string, string, string][] = [
 describe("routing matrix", () => {
   it.each([...PROBE, ...EDGES])("%s: %s routes to %s", (_cat, q, expected) => {
     expect(label(planRoute({ question: q, pack }))).toBe(expected);
+  });
+
+  it("grounds the Indonesian CV problem in the screening project, not the migration post", () => {
+    const matches = leadMatches(pack, "Kami kesulitan menyaring CV pelamar");
+    expect(matches.map((chunk) => chunk.id)).toEqual(["project-ai-cv-screening-platform"]);
   });
 
   it("keeps every refusing red-team item declined without a model call or with only its safe part answered", () => {

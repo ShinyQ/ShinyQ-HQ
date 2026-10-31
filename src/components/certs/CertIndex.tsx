@@ -97,7 +97,7 @@ export function CertIndex({ certs, filters, children }: { certs: CertView[]; fil
               </select>
             )}
           </div>
-          <p className="pv-data" aria-live="polite">
+          <p className="pv-meta" aria-live="polite">
             {active ? t("showing", { shown: shown?.size ?? 0, total: certs.length }) : t("summary", { count: certs.length, issuers: filters.issuers.length })}
           </p>
         </div>

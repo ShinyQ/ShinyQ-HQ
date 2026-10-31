@@ -55,7 +55,8 @@ function datedItems(content: SiteContent): DatedItem[] {
   for (const p of library.publications) items.push({ year: yearOf(p.year), kind: "writing", tally: isResearch(p.kind) ? "papers" : undefined });
   for (const t of library.talks) items.push({ year: yearOf(t.date), kind: "writing" });
   for (const p of library.posts) items.push({ year: yearOf(p.date), kind: "writing" });
-  for (const c of content.certifications) items.push({ year: yearOf(c.issued), kind: "certs", tally: "certs" });
+  // An in-progress certification is not earned yet: its `issued` is only the planned month.
+  for (const c of content.certifications) if (c.status !== "in-progress") items.push({ year: yearOf(c.issued), kind: "certs", tally: "certs" });
   return items;
 }
 

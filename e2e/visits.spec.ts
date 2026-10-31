@@ -12,7 +12,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
- * home ticker item, and the Visitor Observatory in the Lobby's south-west corner
+ * home stats ledger item, and the Visitor Observatory in the Lobby's south-west corner
  * (owner decision 2026-10-14: reached from the elevator arrival, drawer filters, deep links including the
  * old roof ones, Cmd-K, reduced motion, budget) plus the L1 ring tile. The 2026-10-17 arrival (owner, L3-style
  * arrivals) supersedes the arrival view toward the observatory: the camera now looks east at the hologram, so the
@@ -107,10 +107,10 @@ test.describe("Visits on the Classic site", () => {
     }
   });
 
-  test("the home ticker gets a visits item linking to the section; Indonesian copy", async ({ page }) => {
+  test("the home stats ledger gets a visits item linking to the section; Indonesian copy", async ({ page }) => {
     await mockStats(page);
     await openPage(page, "/id?tier=static");
-    const item = page.locator('#stats .hx-tick-track:not([aria-hidden]) [data-stat="visits"]');
+    const item = page.locator('#stats [data-stat="visits"]');
     await expect(item).toContainText("520");
     await expect(item).toContainText(id.stats.tile);
     await expect(item).toHaveAttribute("title", new RegExp(`^${id.stats.periods.all} · `));

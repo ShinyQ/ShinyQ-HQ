@@ -4,7 +4,7 @@ import { cameraWorld, clampCamera } from "@/experience/camera/collision";
 import { followOffsetScale } from "@/experience/camera/offset";
 import { zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, type Vec3 } from "@/experience/camera/rigs";
-import type { FloorLayout, Vec2, ViewportClass } from "@/experience/types";
+import type { CameraClass, FloorLayout, Vec2 } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
 
 /** HUD-free boxes (`DESKTOP_SAFE`, `PHONE_SAFE` in e2e/hq.ts), as in arrivals.test.ts; camera class "mobile" uses the phone box. */
@@ -20,7 +20,7 @@ export const FRAME_SIZES = [
 
 export interface SettledFollow {
   camera: PerspectiveCamera;
-  cls: ViewportClass;
+  cls: CameraClass;
   rover: Vec3;
   target: Vec3;
   position: Vec3;

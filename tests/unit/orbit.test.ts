@@ -59,6 +59,19 @@ describe("free orbit", () => {
     expect(s.firstPerson).toBe(false);
   });
 
+  it("never jumps a hand zoom past where it starts when a zone holds the zoom past the range (the L1 kiosk on a landscape phone)", () => {
+    const s = createOrbitState();
+    s.zoom = 3;
+    zoomBy(s, 0.8, false);
+    expect(s.zoom).toBeCloseTo(2.4, 9);
+    zoomBy(s, 1.25, false);
+    expect(s.zoom).toBeCloseTo(2.4, 9);
+    zoomBy(s, 0.5, false);
+    expect(s.zoom).toBeCloseTo(1.2, 9);
+    zoomBy(s, 10, false);
+    expect(s.zoom).toBe(ZOOM_RANGE[1]);
+  });
+
   it("eases button steps and accumulates quick presses", () => {
     const s = createOrbitState();
     rotateStep(s, 1);

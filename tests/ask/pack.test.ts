@@ -98,7 +98,7 @@ describe("knowledge pack", () => {
     for (const slug of ["solutions-marketing-site", "ai-solutions-assistant"]) {
       const chunk = pack.chunks.find((c) => c.id === `project-${slug}`)!;
       expect(chunk.text_en, slug).toContain("Live site: public");
-      expect(chunk.text_id, slug).toContain("Situs live: publik");
+      expect(chunk.text_id, slug).toContain("Situs aktif dapat diakses publik");
       expect(chunk.keywords, slug).toEqual(expect.arrayContaining(["website", "sites", "situs"]));
     }
     expect(pack.entities.filter((e) => /mii-microsoft/i.test(e))).toEqual([]);
@@ -387,7 +387,7 @@ describe("site-build chunk and the B1 Engine Room (2026-10-17)", () => {
     expect(chunk.text_id).toContain('"Proyek klien"');
     // Ten desks in two rows of five (2026-10-21), never the old five.
     expect(chunk.text_en).toContain("up to ten desks (two rows of five)");
-    expect(chunk.text_id).toContain("hingga sepuluh meja (dua baris berisi lima)");
+    expect(chunk.text_id).toContain("maksimal sepuluh meja (dua baris berisi lima)");
     expect(chunk.text_en).not.toMatch(/at five desks/);
     expect(chunk.text_id).not.toMatch(/di lima meja/);
   });

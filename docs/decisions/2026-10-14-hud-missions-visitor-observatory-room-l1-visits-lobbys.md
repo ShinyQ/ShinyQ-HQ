@@ -1,4 +1,4 @@
-# HUD missions
+# HUD: missions
 
 - Date: 2026-10-14
 - PR: [#104](https://github.com/ShinyQ/ShinyQ-HQ/pull/104)

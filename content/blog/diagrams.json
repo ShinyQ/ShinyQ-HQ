@@ -1,4 +1,139 @@
 {
+  "aria-acs-to-livekit": {
+    "migration": {
+      "nodes": [
+        {
+          "id": "before-browser",
+          "label": {
+            "en": "Browser Before Migration",
+            "id": "Browser Sebelum Migrasi"
+          },
+          "sublabel": {
+            "en": "ACS Calling SDK",
+            "id": "ACS Calling SDK"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "client"
+        },
+        {
+          "id": "before-room",
+          "label": {
+            "en": "ACS Group Call",
+            "id": "Panggilan Grup ACS"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "before-adapter",
+          "label": "Call Automation",
+          "sublabel": {
+            "en": "Bidirectional Media WebSocket",
+            "id": "Media WebSocket Dua Arah"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "before-bridge",
+          "label": {
+            "en": "Python Agent Bridge",
+            "id": "Bridge Agent Python"
+          },
+          "sublabel": {
+            "en": "Tools, Retrieval, Escalation",
+            "id": "Tool, Retrieval, Eskalasi"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "before-model",
+          "label": "Azure OpenAI Realtime",
+          "layer": 4,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "after-browser",
+          "label": {
+            "en": "Browser After Migration",
+            "id": "Browser Sesudah Migrasi"
+          },
+          "sublabel": {
+            "en": "Caller and Operator, livekit-client",
+            "id": "Penelepon dan Operator, livekit-client"
+          },
+          "layer": 0,
+          "row": 1,
+          "kind": "client"
+        },
+        {
+          "id": "after-room",
+          "label": {
+            "en": "Self-Hosted LiveKit",
+            "id": "LiveKit Self-Hosted"
+          },
+          "sublabel": {
+            "en": "Room, WebRTC and Embedded TURN",
+            "id": "Room, WebRTC dan TURN Bawaan"
+          },
+          "layer": 1,
+          "row": 1,
+          "kind": "service"
+        },
+        {
+          "id": "after-adapter",
+          "label": {
+            "en": "Adapter Workers",
+            "id": "Adapter Worker"
+          },
+          "sublabel": {
+            "en": "LiveKit RTC SDK, MediaLink",
+            "id": "LiveKit RTC SDK, MediaLink"
+          },
+          "layer": 2,
+          "row": 1,
+          "kind": "service"
+        },
+        {
+          "id": "after-bridge",
+          "label": {
+            "en": "Python Agent Bridge",
+            "id": "Bridge Agent Python"
+          },
+          "sublabel": {
+            "en": "Existing Orchestration",
+            "id": "Orkestrasi Tetap Dipakai"
+          },
+          "layer": 3,
+          "row": 1,
+          "kind": "service"
+        },
+        {
+          "id": "after-model",
+          "label": "Azure OpenAI Realtime",
+          "layer": 4,
+          "row": 1,
+          "kind": "ai"
+        }
+      ],
+      "edges": [
+        { "from": "before-browser", "to": "before-room" },
+        { "from": "before-room", "to": "before-adapter" },
+        { "from": "before-adapter", "to": "before-bridge" },
+        { "from": "before-bridge", "to": "before-model" },
+        { "from": "after-browser", "to": "after-room" },
+        { "from": "after-room", "to": "after-adapter" },
+        { "from": "after-adapter", "to": "after-bridge" },
+        { "from": "after-bridge", "to": "after-model" }
+      ]
+    }
+  },
   "spec-driven-development-with-ai-coding-agents": {
     "delivery-loop": {
       "nodes": [
@@ -77,7 +212,7 @@
           },
           "sublabel": {
             "en": "Reviews every pull request and decides what merges",
-            "id": "Meninjau setiap pull request dan memutuskan yang di-merge"
+            "id": "Meninjau tiap pull request dan menentukan mana yang di-merge"
           },
           "layer": 4,
           "row": 0,
@@ -98,7 +233,7 @@
           "label": "Azure App Service",
           "sublabel": {
             "en": "Deploys only after green CI",
-            "id": "Deploy hanya setelah CI hijau"
+            "id": "Deploy hanya setelah CI lolos"
           },
           "layer": 5,
           "row": 1,
@@ -344,7 +479,7 @@
           },
           "sublabel": {
             "en": "Set a ceiling: keep or archive at most",
-            "id": "Menetapkan batas: paling tinggi keep atau archive"
+            "id": "Membatasi tindakan: maksimal keep atau archive"
           },
           "layer": 2,
           "row": 0,
@@ -439,7 +574,7 @@
           },
           "sublabel": {
             "en": "Decisions update priors; conditional nightly calibration",
-            "id": "Keputusan memperbarui prior; kalibrasi malam bersyarat"
+            "id": "Keputusan memperbarui prior; kalibrasi malam jika syarat terpenuhi"
           },
           "layer": 8,
           "row": 1,
@@ -553,7 +688,7 @@
           "label": "Deployment scripts",
           "sublabel": {
             "en": "Verify the release, create secrets in place",
-            "id": "Memverifikasi rilis, membuat secret di tempat"
+            "id": "Memverifikasi rilis, membuat secret di lingkungan pelanggan"
           },
           "layer": 2,
           "row": 0,

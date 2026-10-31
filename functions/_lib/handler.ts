@@ -1,5 +1,6 @@
-import { ASK_MAX_QUESTION, cleanCites, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
+import { ASK_MAX_QUESTION, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag } from "../../src/ask/protocol";
 import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
+import { kvAnswerCache } from "./answer-cache";
 import { backupTiers } from "./groq";
 import { parseHistory, signTurn, verifyHistory } from "./history";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, modelBreaker, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
@@ -7,14 +8,11 @@ import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } fr
 import { scrubPII } from "./pii";
 import { bindingEmbedder, type Embedder } from "./vectors";
 import type { LoadedPack, PackSource } from "./pack-source";
-import { planRoute, runPipeline, type PipelineReason } from "./pipeline";
+import { runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
-import { retrieve } from "./retrieve";
-import { resolveNickname } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
-import { answerTags } from "./tags";
-import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
-import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./text";
+import { hasValidSession, issueSession, originAllowed, readCapped, verifyTurnstile, visitorHash, type Fetcher } from "./security";
+import { cleanText, detectLocale } from "./text";
 import type { AskEnv, PagesContext } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
@@ -33,7 +31,6 @@ export const EXPECTED_REASONS: ReadonlySet<string> = new Set([
 
 /** The question plus up to 5 signed earlier turns (multi-turn memory, owner decisions 2026-10-17 and 2026-10-24). */
 export const MAX_BODY_BYTES = 12288;
-export const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const STREAM_PIECE = 24;
 const STREAM_DELAY_MS = 15;
 
@@ -146,10 +143,6 @@ function streamResponse(text: string, done: Extract<AskFrame, { done: true }>, d
     },
   });
   return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream; charset=utf-8", ...SECURITY_HEADERS, ...headers } });
-}
-
-export async function cacheKey(packVersion: string, locale: AskLocale, question: string): Promise<string> {
-  return `ans:${await sha256Hex(`${packVersion}|${PROMPT_VERSION}|${locale}|${normalizeQuestion(question)}`)}`;
 }
 
 interface EventData {
@@ -269,36 +262,17 @@ export function createAskHandler(deps: HandlerDeps) {
     // Signs a model answer so the client can send it back as history.
     const sign = async (text: string) => (env.ASK_COOKIE_KEY ? { sig: await signTurn(env.ASK_COOKIE_KEY, turnScope, { q: question, a: text }) } : {});
 
-    // 6. Cache (answers that passed every check only). First turns only: a follow-up depends on its history.
-    const key = await cacheKey(pack.packVersion, locale, question);
-    try {
-      const hit = history.length === 0 ? await env.ASK_KV?.get(key) : null;
-      const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown; cites?: unknown }) : null;
-      if (cached && typeof cached.text === "string") {
-        const cachedText = normalizeDashes(cached.text);
-        const resolved = resolveNickname(question);
-        const tags = answerTags(retrieve(pack, resolved, locale).chunks);
-        logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, auto: body.auto, ...stats(tags), latencyMs: now() - started });
-        const cite = isAskCite(cached.cite) ? cached.cite : undefined;
-        const cites = cleanCites(cached.cites);
-        // Only first-turn model answers are cached and routing is deterministic, so the cache hit asks planRoute (the
-        // pipeline's own routing, same question, no history) whether this is a lead: project inquiries and problem questions alike.
-        const contact = planRoute({ question, pack }).lead ? pack.contact : undefined;
-        return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(cites.length > 1 ? { cites } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
-      }
-    } catch {
-      // A broken cache entry is treated as a miss.
-    }
-
-    // 7. Global daily cap, then retrieval and the model call through AI Gateway (one fallback max).
+    // 6. Global daily cap (cache hits included), then routing, retrieval, the answer cache and the model chain.
     const cap = Number(env.ASK_DAILY_CAP) || DEFAULT_DAILY_CAP;
     if ((await globalDayCount(env.ASK_KV, started)) >= cap) return fail(503, "paused", secondsToMidnight(started));
     const metadata = { packVersion: pack.packVersion, promptVersion: PROMPT_VERSION, locale };
     const client = deps.client ? deps.client(env, metadata) : env.AI ? bindingClient(env.AI, env.ASK_GATEWAY_ID || undefined, metadata) : undefined;
     if (!client) return fail(503, "disabled");
 
-    // 8. Output checks happen inside the pipeline.
+    // 7. The answer cache (first turns only) and the output checks happen inside the pipeline; KV writes run after the response.
     const backups = backupTiers(env, metadata, deps.groqFetch);
+    const background: Promise<unknown>[] = [];
+    const cache = env.ASK_KV ? kvAnswerCache(env.ASK_KV, (pending) => background.push(pending)) : undefined;
     const result = await runPipeline({
       question,
       locale,
@@ -311,21 +285,17 @@ export function createAskHandler(deps: HandlerDeps) {
       breaker: modelBreaker(env.ASK_KV),
       // Hybrid retrieval (owner decision 2026-10-24): one bge-m3 call, 300 ms at most, else BM25 alone.
       ...(env.AI ? { embed: deps.embed ? deps.embed(env) : bindingEmbedder(env.AI) } : {}),
+      ...(cache ? { cache } : {}),
     });
 
-    // 9. Count, cache passing answers, log, stream.
-    const background: Promise<unknown>[] = [];
+    // 8. Count model calls (never a cache hit), log, stream.
     if (result.calledModel) {
       background.push(countModelCall(env.ASK_KV, visitor, started));
       const bad = result.reason === "model_failed" || (result.reason !== undefined && !EXPECTED_REASONS.has(result.reason));
       background.push(recordSample(env.ASK_KV, bad, started));
     }
-    const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup");
-    // Same gate as the read (step 6): only a request that sent no verified history may write the shared entry, so a
-    // signed turn that usableHistory drops cannot skip the read and overwrite another visitor's answer (audit 2026-10-24).
-    if (modelAnswer && history.length === 0 && result.historyUsed === 0 && env.ASK_KV) {
-      background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}), ...(result.cites ? { cites: result.cites } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
-    }
+    // A model answer that passed every check, fresh or from the cache, is signed for multi-turn memory.
+    const signable = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup" || result.source === "cache");
     if (background.length) context.waitUntil(Promise.all(background));
     logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed, route: result.route, retrieval: result.retrieval, strongMatch: result.strongMatch });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
@@ -335,7 +305,7 @@ export function createAskHandler(deps: HandlerDeps) {
     const cites = shareable && result.cites ? result.cites : undefined;
     // Lead intent: the contact card values come from the dataset (the pack), never from the model.
     const contact = result.lead && shareable ? pack.contact : undefined;
-    const signature = modelAnswer ? await sign(result.text) : {};
+    const signature = signable ? await sign(result.text) : {};
     return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(cites ? { cites } : {}), ...(contact ? { contact } : {}), ...signature }, tags), delay, responseHeaders);
   }
 

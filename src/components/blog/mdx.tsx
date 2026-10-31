@@ -4,10 +4,16 @@ import type { Locale } from "@/content/schema";
 import { PostArchitecture } from "./PostArchitecture";
 
 /** MDX components for one post page; props are strings (next-mdx-remote blocks JS expressions). */
-export function postMdxComponents(post: string, locale: Locale) {
+export function postMdxComponents(post: string, locale: Locale, tableLabel: string) {
   return {
     Architecture: (props: ArchitectureRef & { caption: string }) => <PostArchitecture {...props} post={post} locale={locale} />,
     // Code blocks scroll sideways on phones, so keyboard users must be able to focus them (WCAG 2.1.1).
     pre: (props: ComponentProps<"pre">) => <pre {...props} tabIndex={0} />,
+    // Wide tables scroll inside their own labelled, focusable region; the page itself never scrolls sideways.
+    table: (props: ComponentProps<"table">) => (
+      <div className="prose-table" role="region" aria-label={tableLabel} tabIndex={0}>
+        <table {...props} />
+      </div>
+    ),
   };
 }

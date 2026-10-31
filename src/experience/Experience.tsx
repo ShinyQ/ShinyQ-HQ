@@ -65,6 +65,10 @@ import { isHighlightRoom } from "./floors/lobby/stations";
 import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { floorChunks, floorChunksHandle } from "./floors/floorChunks";
+import { loadTour } from "@/hud/dialog/tourChunk";
+import { loadMenu } from "@/hud/menu/menuChunk";
+import { loadTouch } from "@/hud/touchChunk";
+import { loadPicker } from "@/hud/pads/pickerChunk";
 import { officeHandle } from "./floors/lobby/office/chunk";
 import { loadOfficeBeacon, loadOfficeWatch, officeWatchNow } from "./floors/lobby/office/watchLoader";
 import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
@@ -193,6 +197,14 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // the office watch and beacon chunks: `watchNow` loads the watch chunk and runs one tick of its watch, `loadWatch` and
     // `loadBeacon` load a chunk and resolve with its module (the bytes gate).
     office: { ...officeHandle, watchNow: officeWatchNow, loadWatch: loadOfficeWatch, loadBeacon: loadOfficeBeacon },
+    // The lazy first-session tour chunk: `load` resolves with its module (the bytes gate).
+    tour: { load: loadTour },
+    // The lazy Corners menu sheet chunk: `load` resolves with its module (the bytes gate).
+    menu: { load: loadMenu },
+    // The lazy pad picker sheet chunk: `load` resolves with its module (the bytes gate).
+    picker: { load: loadPicker },
+    // The lazy touch controls chunk (coarse pointers): `load` resolves with its module (the bytes gate).
+    touch: { load: loadTouch },
     // B1's reactor test hook once its chunk loaded (the feed, a poll, a clock skew and `state()`).
     reactor: () => floorChunks.module("B1")?.reactorTest ?? null,
     ridePrep,

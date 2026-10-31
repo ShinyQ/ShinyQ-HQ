@@ -57,6 +57,16 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
     });
   });
 
+  it("lifts a track name on a portrait phone by `phoneLift`, at its phone size", () => {
+    const phone = librarySigns({ layout: library, zones, titles, tracks, phone: true });
+    const signs = phone.signs.filter((_, i) => phone.meta[i].kind === "track");
+    expect(signs).toHaveLength(library.bays.length);
+    for (const s of signs) {
+      expect(s.fontSize).toBe(ZONE_SIGN.phone);
+      expect(s.y - signPlate(s).h / 2).toBeCloseTo(L4_SIGN.bottom + L4_SIGN.phoneLift);
+    }
+  });
+
   it("titles each bay's lead over its cover, 1.6 u under the L4 height and above the cover", () => {
     const signs = ofKind("lead");
     expect(signs).toHaveLength(library.bays.length);

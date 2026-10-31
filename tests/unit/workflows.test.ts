@@ -34,8 +34,13 @@ describe("workflow pinning (S4)", () => {
     expect(keep).toEqual(["refresh-facts.yml"]);
   });
 
-  it("deploys the hq-stats Worker with the same wrangler version", () => {
-    for (const file of ["deploy.yml", "rollback.yml"]) expect(read(path.join(dir, file))).toContain(`wranglerVersion: "${pkg.devDependencies.wrangler}"`);
+  it("deploys the hq-stats Worker with the wrangler version package.json pins (so a Dependabot bump needs no workflow edit)", () => {
+    for (const [file, pkgPath] of [["deploy.yml", "./package.json"], ["rollback.yml", "./target/package.json"]]) {
+      const text = read(path.join(dir, file));
+      expect(text, file).toContain("wranglerVersion: ${{ steps.wrangler.outputs.version }}");
+      expect(text, file).toContain(`require("${pkgPath}").devDependencies.wrangler`);
+      expect(text, file).not.toMatch(/wranglerVersion:\s*"/);
+    }
   });
 });
 
@@ -336,5 +341,21 @@ describe("pinned Node (security release 2026-10-21)", () => {
           .map((job) => `${path.basename(f)}: ${job.split(":")[0]}`),
       );
     expect(missing).toEqual([]);
+  });
+});
+
+describe("weekly live facts (refresh-facts.yml)", () => {
+  const text = read(path.join(dir, "refresh-facts.yml"));
+
+  it("waits for the three required checks of the main ruleset", () => {
+    expect(text).toContain('REQUIRED_JOBS: "Typecheck, lint, unit tests|Build, CV and e2e|Lighthouse CI"');
+    expect(text).toContain('if [ "$passed" != "3" ]; then');
+  });
+
+  it("hands the PR to the owner when the ruleset refuses the bot's merge, and deploys only its own merge", () => {
+    expect(text).toContain("base branch policy prohibits the merge");
+    expect(text).toContain('gh pr edit "$NUMBER" --add-reviewer "$OWNER"');
+    expect(text).toContain('echo "merged=false" >> "$GITHUB_OUTPUT"');
+    expect(text).toMatch(/- name: Deploy production\n(?:\s+#.*\n)*\s+if: .*steps\.merge\.outputs\.merged == 'true'/);
   });
 });

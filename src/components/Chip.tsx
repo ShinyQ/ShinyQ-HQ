@@ -62,7 +62,7 @@ export function TechLogoRow({ items, max = 6 }: { items: readonly string[]; max?
           <img src={logo.src} alt={logo.label} width={20} height={20} loading="lazy" decoding="async" className="size-5 object-contain opacity-90" />
         </li>
       ))}
-      {logos.length > max && <li className="pv-data">+{logos.length - max}</li>}
+      {logos.length > max && <li className="pv-meta">+{logos.length - max}</li>}
     </ul>
   );
 }

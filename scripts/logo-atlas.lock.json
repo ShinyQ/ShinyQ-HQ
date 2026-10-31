@@ -1,5 +1,5 @@
 {
-  "file": "/atlas/logos.ce99b4e305.webp",
+  "file": "/atlas/logos.35641603c2.webp",
   "srcs": [
     "/tech/agent-framework.webp",
     "/tech/langgraph.svg",
@@ -41,8 +41,10 @@
     "/tech/gin.svg",
     "/tech/echo.webp",
     "/tech/laravel.webp",
+    "/tech/codeigniter.svg",
     "/tech/flask.webp",
     "/tech/django.webp",
+    "/tech/graphql.svg",
     "/tech/nextjs.svg",
     "/tech/react.webp",
     "/tech/vue.webp",
@@ -51,6 +53,7 @@
     "/tech/postgresql.svg",
     "/tech/mysql.webp",
     "/tech/mongodb.svg",
+    "/tech/firebase.svg",
     "/tech/redis.webp",
     "/tech/kafka.svg",
     "/tech/rabbitmq.svg",
@@ -68,5 +71,5 @@
     "/tech/google.svg",
     "/tech/microsoft.svg"
   ],
-  "sources": "0e638362fc2f"
+  "sources": "e6911eb0eb5d"
 }

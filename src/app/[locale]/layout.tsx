@@ -56,12 +56,12 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const messages = pickMessages(await getMessages(), LAYOUT_NAMESPACES);
   return (
     // The inline script sets data-hq-boot on <html> before hydration, hence suppressHydrationWarning.
-    <html lang={locale} className={`${fontClassName} antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${fontClassName} antialiased overflow-x-clip`} suppressHydrationWarning>
       <head>
         {/* Runs before first paint: on 3D-capable visits the boot cover hides the Page View. */}
         <script dangerouslySetInnerHTML={{ __html: bootFirstScript() }} />
       </head>
-      <body>
+      <body className="overflow-x-clip">
         <BootCover
           locale={locale}
           who={{ name: profile.name, headline: profile.headline[locale], motto: profile.subheadline[locale], role: roleLine(profile.currentRole, locale) }}

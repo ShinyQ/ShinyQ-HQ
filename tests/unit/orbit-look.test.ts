@@ -78,16 +78,23 @@ describe("per camera class views", () => {
   // camera eases back to the zone's yaw with a level pitch when the rover leaves, unless the visitor turned by hand.
   const turned: ViewZone = { ...zone, classView: { mobile: { yaw: 1.4, zoom: 1.75, pitch: -0.3 } } };
 
-  it("applies a class pitch and eases the turn back to the zone's own yaw on exit", () => {
-    expect(zoneView(turned, "mobile")).toEqual({ yaw: 1.4, zoom: 1.75, pitch: -0.3 });
+  it("applies a class pitch and eases the turn back to the view's yaw on exit (the zone's own without a class yaw)", () => {
+    const pitched: ViewZone = { ...zone, classView: { mobile: { zoom: 1.75, pitch: -0.3 } } };
+    expect(zoneView(pitched, "mobile")).toEqual({ yaw: 2, zoom: 1.75, pitch: -0.3 });
     const a = createOrbitState();
-    primeZone(a, turned, "mobile");
-    expect(a).toMatchObject({ yaw: 1.4, pitch: -0.3, pitchTarget: -0.3, zoneTurn: 2 });
+    primeZone(a, pitched, "mobile");
+    expect(a).toMatchObject({ yaw: 2, pitch: -0.3, pitchTarget: -0.3, zoneTurn: 2 });
     updateZone(a, null, false, "mobile");
     expect(a).toMatchObject({ yawTarget: 2, pitchTarget: 0, zoomTarget: 1, zoneTurn: null, easing: true });
+    expect(zoneView(turned, "mobile")).toEqual({ yaw: 1.4, zoom: 1.75, pitch: -0.3 });
+    const t = createOrbitState();
+    primeZone(t, turned, "mobile");
+    expect(t).toMatchObject({ yaw: 1.4, pitch: -0.3, pitchTarget: -0.3, zoneTurn: 1.4 });
+    updateZone(t, null, false, "mobile");
+    expect(t).toMatchObject({ yawTarget: 1.4, pitchTarget: 0, zoomTarget: 1, zoneTurn: null, easing: true });
     const b = createOrbitState();
     updateZone(b, turned, false, "mobile");
-    expect(b).toMatchObject({ yawTarget: 1.4, pitchTarget: -0.3, zoneTurn: 2 });
+    expect(b).toMatchObject({ yawTarget: 1.4, pitchTarget: -0.3, zoneTurn: 1.4 });
     const d = createOrbitState();
     primeZone(d, turned, "desktop");
     expect(d).toMatchObject({ yaw: 2, pitch: 0, zoneTurn: null });
@@ -113,17 +120,20 @@ describe("per camera class views", () => {
     expect(s.yawTarget).toBeCloseTo(1.4);
   });
 
-  it("never turns back for a class view without a pitch (the L1 kiosk on tablets and phones)", () => {
+  it("never turns back for a class view without a pitch (the L1 kiosk on tablets and phones, phones once driven in)", () => {
     const kiosk = lobbyObservatory({ rect: LOBBY.observatory, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis }).zones.find((z) => z.id === "L1:kiosk")!;
     for (const cls of ["tablet", "mobile"] as const) {
       expect(zoneView(kiosk, cls).yaw).not.toBe(kiosk.yaw);
-      const s = createOrbitState();
-      primeZone(s, kiosk, cls);
-      const { yaw, pitch } = s;
-      expect(s.zoneTurn).toBeNull();
-      updateZone(s, null, false, cls);
-      expect(s.yawTarget).toBe(yaw);
-      expect(s.pitchTarget).toBe(pitch);
+      // Primed on a phone, the kiosk lands on its own view (tests/unit/landing-view.test.ts).
+      if (cls === "tablet") {
+        const s = createOrbitState();
+        primeZone(s, kiosk, cls);
+        const { yaw, pitch } = s;
+        expect(s.zoneTurn).toBeNull();
+        updateZone(s, null, false, cls);
+        expect(s.yawTarget).toBe(yaw);
+        expect(s.pitchTarget).toBe(pitch);
+      }
       const e = createOrbitState();
       e.yaw = e.yawTarget = 0.3;
       updateZone(e, kiosk, false, cls);

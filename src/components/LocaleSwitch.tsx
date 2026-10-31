@@ -29,7 +29,7 @@ export function LocaleSwitch({ label }: { label: string }) {
                 // Storage can be unavailable (private mode); the link still works.
               }
             }}
-            className={`inline-flex min-h-[42px] min-w-10 items-center justify-center font-mono text-xs transition ${
+            className={`inline-flex min-h-[42px] min-w-10 items-center justify-center text-sm transition-colors ${
               active ? "bg-ink text-void" : "text-ink-2 hover:text-ink"
             }`}
           >

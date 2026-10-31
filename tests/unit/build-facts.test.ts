@@ -2,7 +2,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { assignRounds, collectFacts, gitFacts, parseCiJobs, parsePlaywrightList, parsePrNumbers, serialize } from "../../scripts/build-facts";
+import { activityFacts, askFacts, assignRounds, broadArea, collectFacts, decisionLog, droppedReason, firstSentence, gitFacts, LOG_LATEST, parseCiJobs, parsePlaywrightList, parsePrNumbers, planLedger, planTitle, serialize, withoutAsides } from "../../scripts/build-facts";
+import type { Decision, Plan } from "../../scripts/docs-index";
 
 const scratchRoot = path.join(process.cwd(), "test-results");
 mkdirSync(scratchRoot, { recursive: true });
@@ -129,7 +130,7 @@ describe("collectFacts", () => {
       { id: "r1", prs: [1, 2], first: "2026-10-02", last: "2026-10-03" },
       { id: "r2", prs: [] },
     ]);
-    expect(facts.tests).toEqual({ unitFiles: 3, e2eFiles: 1 });
+    expect(facts.tests).toEqual({ unitFiles: 3, e2eFiles: 1, perfFiles: 1 });
     expect(facts.docs).toEqual({ specs: 2, plans: 2 });
     expect(facts.ci).toEqual({ jobs: ["First job", "Second job"], workflows: 2 });
     expect(facts.budgets).toMatchObject({ js3dKb: 466.4, sessionFullKb: 531.8, sceneCalls: 150, triangles: 30000, floorChunkKb: { L3: 20, L4: 16, RF: 8 } });
@@ -140,7 +141,8 @@ describe("collectFacts", () => {
     const b = serialize(collectFacts(repo, { runners: false, rounds }));
     expect(a).toBe(b);
     expect(a.endsWith("}\n")).toBe(true);
-    expect(Object.keys(JSON.parse(a))).toEqual(["generatedAt", "commit", "git", "rounds", "tests", "docs", "ci", "budgets"]);
+    // No docs/decisions or Ask golden set in the fixture: no `log` or `ask`.
+    expect(Object.keys(JSON.parse(a))).toEqual(["generatedAt", "commit", "git", "rounds", "tests", "docs", "ci", "activity", "budgets"]);
   });
 
   it("uses a precomputed git result instead of reading history again", () => {
@@ -159,5 +161,57 @@ describe("CLI", () => {
     const result = spawnSync("bun", ["scripts/build-facts.ts", "--write", "--no-runners"], { cwd: process.cwd(), encoding: "utf8" });
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/cannot be combined/);
+  });
+});
+
+describe("B1-only facts: the decision log, the plan ledger, activity and Ask", () => {
+  const decision = (date: string, area: string, text: string): Decision => ({ file: `${date}-x.md`, date, area, pr: "", text });
+  const plan = (file: string, category: Plan["category"], prs: number[], status = "", title = "A Plan Implementation Plan"): Plan => ({ file, title, status, category, prs });
+
+  it("keeps one plain sentence without the owner's chat quotes or docs paths", () => {
+    expect(firstSentence("Owner request (\"Make it so\"): the `b1` floor gets [a log](https://x.test). More text.")).toBe("Owner request: the b1 floor gets a log.");
+    expect(withoutAsides("Part 3 (spec docs/superpowers/specs/x.md, decisions 2026-10-28): landscape")).toBe("Part 3: landscape");
+    const long = firstSentence(`${"word ".repeat(80)}end.`);
+    expect(long.length).toBeLessThanOrEqual(240);
+    expect(long.endsWith("\u2026")).toBe(true);
+  });
+
+  it("counts decisions by broad area and lists the latest first", () => {
+    expect(broadArea("Content: CV")).toBe("Content");
+    const decisions = [decision("2026-10-01", "Content: CV", "One."), decision("2026-10-02", "CI", "Two."), decision("2026-10-03", "Content", "Three."), ...Array.from({ length: 9 }, (_, i) => decision(`2026-10-1${i}`, "Ask", `Ask ${i}.`))];
+    const log = decisionLog(decisions);
+    expect(log.total).toBe(12);
+    expect(log.areas).toEqual([{ area: "Ask", count: 9 }, { area: "Content", count: 2 }, { area: "CI", count: 1 }]);
+    expect(log.latest).toHaveLength(LOG_LATEST.decisions);
+    expect(log.latest[0]).toEqual({ date: "2026-10-18", area: "Ask", file: "2026-10-18-x.md", text: "Ask 8." });
+  });
+
+  it("splits plans by state, lists the latest shipped by pull request and gives each dropped plan its reason", () => {
+    const ledger = planLedger([
+      plan("a.md", "shipped", [10]),
+      plan("b.md", "shipped, later changed", [30, 12]),
+      plan("c.md", "in progress", []),
+      plan("d.md", "dropped", [], 'dropped by owner 2026-10-23 ("Skip it"): no tour; nothing merged.', "Tour Implementation Plan"),
+      plan("e.md", null, []),
+    ]);
+    expect(ledger).toMatchObject({ shipped: 2, inProgress: 1, dropped: 1 });
+    expect(ledger.latest.map((p) => [p.file, p.pr])).toEqual([["b.md", 30], ["a.md", 10]]);
+    expect(ledger.droppedPlans).toEqual([{ file: "d.md", title: "Tour", reason: "No tour; nothing merged." }]);
+    expect(planTitle("B1-2: The Reactor Hall Implementation Plan")).toBe("B1-2: The Reactor Hall");
+    expect(droppedReason("dropped")).toBe("Dropped");
+  });
+
+  it("counts the merges of the last 7 days and the busiest day", () => {
+    const prs = [{ n: 1, date: "2026-10-01" }, { n: 2, date: "2026-10-01" }, { n: 3, date: "2026-10-09" }, { n: 4, date: "2026-10-10" }];
+    expect(activityFacts(prs, "2026-10-10")).toEqual({ last7Days: 2, busiestDay: { date: "2026-10-01", prs: 2 } });
+    expect(activityFacts([], "2026-10-10")).toBeUndefined();
+  });
+
+  it("reads Ask's numbers from its code and golden set", () => {
+    const ask = askFacts(process.cwd())!;
+    expect(ask.golden).toBeGreaterThan(50);
+    expect(ask.passMark).toBeLessThanOrEqual(ask.golden);
+    expect(ask).toMatchObject({ packKb: 384, historyTurns: 5, perMinute: 8, perDay: 40 });
+    expect(ask.promptDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

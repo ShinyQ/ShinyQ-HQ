@@ -32,11 +32,11 @@ export async function ProductionSection({ locale }: { locale: Locale }) {
       </ul>
       <p className="mt-6 max-w-[68ch] text-ink-2">{p.outro[locale]}</p>
 
-      <h3 className="pv-data mt-10 mb-4">{t("proof")}</h3>
+      <h3 className="mt-12 mb-4 font-semibold text-ink">{t("proof")}</h3>
       <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="production-tiles">
         {p.tiles.map((tile) => (
           <li key={tile.id} className="card p-4 sm:p-5">
-            <p className="pv-data">{tile.label[locale]}</p>
+            <p className="pv-meta">{tile.label[locale]}</p>
             <p className="pv-num mt-2 text-[32px] leading-none sm:text-[38px]">{tile.value[locale]}</p>
             <p className="pv-small mt-2 text-ink-2">{tile.detail[locale]}</p>
           </li>
@@ -63,7 +63,7 @@ export async function ProductionSection({ locale }: { locale: Locale }) {
 
       {p.alertExcerpt && <AlertExcerpt className="mt-10" label={t("excerpt")} caption={p.alertExcerpt.caption[locale]} code={p.alertExcerpt.code} />}
 
-      <h3 className="pv-data mt-10 mb-2">{t("cases")}</h3>
+      <h3 className="mt-12 mb-2 font-semibold text-ink">{t("cases")}</h3>
       <ul className="pv-rows pv-rows-closed" data-testid="production-cases">
         {cases.map((pod) => (
           <li key={pod.slug}>

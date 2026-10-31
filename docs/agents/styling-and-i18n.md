@@ -75,8 +75,23 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - Neon Grid tokens from appendix 05 live in `src/app/globals.css` (`@theme`):
   - `void`, `glass`, `glass-border`, `ink`, `ink-2`, `ink-3`
   - accents `cyan violet pink green amber blue white`
+  - Classic additions: `paper-2` (bands), `grid-line`, `bloom`, `cyan-soft`, `cyan-ring`, `cyan-glow`, `violet-soft`,
+    `accent-hover`, `mask-fade`, `print-paper`, `print-ink`. Every colour on a Classic surface is a token: no colour
+    literal in a rule (Hallmark Floor), and no `color-mix()` where a token will do (Lightning CSS adds an `@supports`
+    fallback for each, which costs the CSS budget).
 - `ink-3` is `#8b8b94` (not `#71717a`) to keep AA contrast on the void.
-- Utility classes: `.glass`, `.label` (mono uppercase metadata), `.link`, `.prose-hq` (MDX).
+- `src/app/tokens.css` (the Hallmark roles, locked in [`DESIGN.md`](../../DESIGN.md)): the spacing scale
+  `--space-2xs` to `--space-3xl`, type roles, `--container` 1440px, `--gutter`, `--gap-columns`, the section gaps,
+  `--nav-h`, `--dur-micro`, and the role aliases `--color-paper`, `--color-muted`, `--color-accent`. It never
+  redefines Tailwind's own `text-*` or `ease-*` names, so the 3D HUD's utilities keep their sizes.
+- `src/app/base.css` (base layer): `overflow-x: clip` on `html` and `body`, the scrollbar colours, and element rules
+  scoped to `#site-shell` (the HUD, the drawer, dialogs and the Ask dock sit outside it).
+- `src/app/hud-shared.css`: the classes shared with the 3D tower, the HUD, the boot cover and the dialogs (`.glass`,
+  `.glass-solid`, `.eyebrow`, `.chip`, `.card`, `.hq-dot`, `.label`, `.pv-data`, `.pv-mark`, the boot cover, the
+  `.hq-dialog` frame, `hq-glow`, `.office-cue`, the Ask keyframes), moved there byte for byte. Edit them only together
+  with the 3D experience; Classic markup reads only `.chip` and `hq-glow` from it.
+- The first lines of `globals.css` are the Hallmark stamp, the critique line and the waivers (29, 47c, 74).
+- Utility classes: `.link`, `.prose-hq` (MDX), `.prose-table` (the MDX table scroll region); Classic labels are `pv-meta`, never `.label` or `.eyebrow`.
 - Accent classes must come from the static maps in `src/lib/accent.ts` so Tailwind can see them.
 - Tailwind generates utilities only from shipped sources: `globals.css` excludes `docs`, `e2e`, `tests`, `scripts`, `workers`, `functions` and the root guides with `@source not` (their words, such as Playwright `:visible` selectors or edge-stripe examples, used to add dead utilities to the shared stylesheet). A class written only in those folders is never generated.
 - CSS modules (`*.module.css`, today only the shared PDF reader's `PdfReader.module.css`) skip the Tailwind loader (`turbopack.rules` in `next.config.ts`) and keep Next's scoped class names. They get no Tailwind processing: no `@apply`, `@variant`, `@theme` or `theme()`, and Tailwind utilities written inside them are not generated. Use plain CSS with the `var(--...)` tokens. The reader module has no motion today; motion in a CSS module must follow the Motion setting by hand, with the same two selectors the `motion-reduce` variant expands to in `globals.css` (`:root[data-motion="reduced"] .x` and `:root:not([data-motion="full"]) .x` inside `@media (prefers-reduced-motion: reduce)`), never a bare media query alone. A CSS module ships with the chunk that imports it, so styles used only by a lazy chunk stay out of the global stylesheet and its 20,480 B budget.
@@ -90,6 +105,9 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - a colored left or top border
   - a thin bar on an edge (an absolute `h-0.5`/`w-1` element or a `::before`/`::after` bar)
   - an inset edge shadow
+- On the Classic site there are no squares or decorative dots (Hallmark Floor): a label stands alone, a career
+  type keeps its line icon (`TypeMarker`), a live state keeps its dot, and the floor colour shows in the active nav
+  rule. In 3D and the dialogs:
 - Instead, put a dot or icon chip next to the label:
   - `AccentDot` from `src/components/AccentDot.tsx`: `tone` is an accent or `muted`/`line`; `size` `sm` 6 px or `md` 8 px; `glow` for the current or selected item.
   - CSS `.hq-dot`, `.hq-dot-md`, `.hq-dot-glow`.
@@ -126,9 +144,13 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 
 ### Page View layer
 
-- `src/app/pageview.css` (`pv-` classes):
-  - type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-h3-card pv-lead pv-body pv-card-text pv-small pv-data pv-date pv-num`
-  - `pv-mark`, `pv-btn`, `pv-go`, `pv-rows`, `pv-result`, `pv-stretch`, header, flat filter bar (`pv-filters`), ToC
+- `src/app/pageview.css` (`pv-` classes, the Classic system):
+  - type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-h3-l pv-lead pv-body pv-card-text pv-small pv-meta pv-date pv-num`
+  - `pv-btn` (`pv-btn-primary` solid cyan, one a page; `pv-btn-ghost`), `pv-go` (a link that leads on, no arrow),
+    `pv-uline`, `pv-rows`, `pv-result`, `pv-stretch`, `pv-shot`, `pv-head`, `pv-sec`/`-s`/`-l`, header, flat filter
+    bar (`pv-filters`), ToC
+  - `pv-small` and `pv-num` are also read by the room drawer: keep their metrics.
+- `src/app/landing.css` (`hx-` classes): the hero, the proof strip, the Feature Stack, the stats ledger, the band.
 - Grid spans use Tailwind utilities with the default `md`/`lg` breakpoints.
 - Page View structure: [page-view.md](page-view.md).
 
@@ -137,7 +159,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 | Font | Use | Range |
 |---|---|---|
 | Inter | body | wght 400 to 800 |
-| JetBrains Mono | data only | 400 to 700 |
+| JetBrains Mono | dates and code only (never labels) | 400 to 700 |
 | Archivo (`--font-display`) | condensed titles and numerals | wght 600 to 800, `font-stretch` 72% to 92% |
 
 - Self-hosted with `next/font/local` (`src/app/fonts.ts`) as cuts narrowed to:
@@ -158,6 +180,15 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - Context goes after it: `"L3 Work: go to floor (Labs)"`, `"⌘K, open search"`, `"Esc, close search"`.
 - axe joins adjacent elements' text without a space, so put a `{" "}` text node between visible spans (flex and grid collapse it).
 - `tests/unit/label-in-name.test.ts` guards the elevator, search and palette close names.
+
+### Key hints on touch (owner decision)
+
+- No text a touch visitor sees names a keyboard key (owner decision 2026-10-28). Labels carry no key ("Rotate left", "Reset view", "Off mutes everything."); the key goes in a `<kbd>` cap with `aria-hidden="true"` (the HUD's one key cap style: `label rounded border border-glass-border px-1.5 py-0.5 text-ink-3`), rendered only when `useHQStore((s) => s.device.coarse)` is false, and the control names it with `aria-keyshortcuts`.
+  - Write the cap inline: no shared component, so the lazy sheets stay off the main path's hoisted modules ([performance.md](performance.md#perf-lane-e2eperf)).
+  - Gate in JS, not with `pointer-coarse:` or `pointer-fine:` utilities: every utility under `src/` ships in the one global stylesheet, and the Classic pages sit at the Lighthouse CSS budget (20,480 B). `device` is set only by the 3D Experience, so on the Classic site the caps keep their pre-touch behavior.
+  - Desktop icon buttons keep the key in their `title` tooltip ("Rotate left (Q)").
+- A hint line made of keys gets a touch variant on a coarse pointer (`useHQStore((s) => s.device.coarse)`): `hud.pads.floorHintTouch`, `yearHintTouch`, `consoleHintTouch`, `drawer.hologram.hintTouch`. Keyboard-only footers (the Rover menu, search) and the search close button's `Esc` label do not render on a coarse pointer (and stay hidden below `sm`).
+- Strings that keep keys are only shown to fine pointers, as tooltips or to screen readers; `tests/unit/key-hints.test.ts` lists them, fails on any other string that names a key (EN and ID), and checks every HUD `<kbd>` renders behind `!coarse`.
 
 ### 3D HUD layout (owner decision)
 

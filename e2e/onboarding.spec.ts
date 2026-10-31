@@ -1,7 +1,5 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { stationOf } from "../src/experience/floors/lobby/hallLayout";
-import { highlightRoom } from "../src/experience/floors/lobby/stations";
 import {
   chooseMotion,
   asReturningVisitor,
@@ -18,7 +16,6 @@ import {
   waitForFloor,
   waitForHQ,
   waitForPhase,
-  waitForRoom,
   waitForRoverMove,
   waitForSceneLive,
   fastAnimations,
@@ -254,10 +251,6 @@ test.describe("every step of the tour", () => {
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "view");
     await next(page);
 
-    // The Highlights Hall on L1 east (its stations register once the hall mounts after the intro).
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
-
     await expectLine(page, "elevator");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "elevator");
     await next(page);
@@ -276,7 +269,7 @@ test.describe("every step of the tour", () => {
     expect(errors).toEqual([]);
   });
 
-  test("Take me there drives to the Highlights Hall's first station, then the tour goes on", async ({ page }) => {
+  test("the tour never drives the rover: after the camera line it goes straight to the elevator line (owner decision 2026-10-27)", async ({ page }) => {
     const errors = collectErrors(page);
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);
@@ -289,17 +282,13 @@ test.describe("every step of the tour", () => {
     await expectLine(page, "moved");
     await next(page);
     await expectLine(page, "camera");
+    const before = (await snapshot(page)).rover;
     await next(page);
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.showMe }).click();
-    // The drive ends on the first station's door pad, which opens its drawer; Rover waits behind it.
-    await waitForRoom(page, highlightRoom("about"), 60_000);
-    const hall = stationOf("about").pad;
-    const { rover } = await snapshot(page);
-    expect(Math.hypot(rover.x - hall.x, rover.z - hall.z)).toBeLessThan(1.5);
-    await expect(box(page)).toHaveCount(0);
-    await page.keyboard.press("Escape");
     await expectLine(page, "elevator");
+    await expect(choices(page)).toHaveCount(0);
+    const after = (await snapshot(page)).rover;
+    expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeLessThan(0.5);
+    expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState(): { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status ?? null)).not.toBe("running");
     expect(errors).toEqual([]);
   });
 
@@ -368,8 +357,6 @@ test.describe("reduced motion", () => {
     await page.keyboard.press("Enter");
     await expectLine(page, "camera");
     await page.keyboard.press("Enter");
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
     await expectLine(page, "elevator");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-motion", "still");
     await context.close();
@@ -377,38 +364,42 @@ test.describe("reduced motion", () => {
 });
 
 test.describe("phone layout", () => {
-  test("390x844: the toast sits above the joystick, clears the Corners controls and the Go chip; tap, Go and taps advance", async ({ browser }: { browser: Browser }) => {
+  test("390x844: the welcome docks over the stepped-aside band; a choiceless line is a top toast that clears the Corners controls; taps and Go advance", async ({ browser }: { browser: Browser }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);
     await expectLine(page, "welcome");
     await expect(page.getByTestId("minimap")).toBeVisible();
+    // A line with choices docks at the bottom (full width) and the bottom band (joystick, Boost, Reset view) steps aside.
+    await expect(box(page)).toHaveAttribute("data-docked", "true");
+    await expect(page.getByTestId("hud-bottom")).toHaveAttribute("data-aside", "true");
     const dialog = await rect(box(page));
     expect(dialog.x).toBeGreaterThanOrEqual(0);
     expect(dialog.x + dialog.width).toBeLessThanOrEqual(390);
+    expect(dialog.y).toBeGreaterThanOrEqual(0);
     expect(dialog.y + dialog.height).toBeLessThanOrEqual(844);
-    for (const id of ["joystick", "view-controls", "floor-chip", "hud-menu", "minimap"]) {
+    for (const id of ["floor-chip", "hud-menu", "minimap"]) {
       expect(overlaps(dialog, await rect(page.getByTestId(id))), id).toBe(false);
     }
-    // The phone toast sits above the joystick.
-    expect(dialog.y + dialog.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
+    // The point hint lives in the band that stepped aside: hidden while the line is docked.
     await showPointHint(page);
-    expect(overlaps(dialog, await rect(page.getByTestId("point-hint")))).toBe(false);
+    await expect(page.getByTestId("hud-bottom")).toHaveCSS("opacity", "0");
+    await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { setPointHint: (on: boolean) => void } } } }).__hq.store.getState().setPointHint(false));
 
     await choices(page).getByRole("button", { name: en.dialog.onboarding.start }).tap();
-    await expectLine(page, "move");
-    await expect(box(page)).toContainText(en.dialog.onboarding.moveCoarse);
-    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    // The phone toast clamps a long line to two rows: the first tap expands it, the next one moves on.
-    await tapText(page);
-    if ((await box(page).getAttribute("data-line")) === "move" && (await box(page).getAttribute("data-expanded")) === "true") await tapText(page);
+    // The phone script has no move line: tap-to-go comes first, and the band is back.
     await expectLine(page, "point-go");
-    await expect(box(page)).toContainText(en.dialog.onboarding.pointGoCoarse);
+    await expect(box(page)).toContainText(en.dialog.onboarding.pointGoPhone);
+    await expect(box(page)).not.toHaveAttribute("data-docked", "true");
+    await expect(page.getByTestId("hud-bottom")).not.toHaveAttribute("data-aside", "true");
+    await showPointHint(page);
+    expect(overlaps(await rect(box(page)), await rect(page.getByTestId("point-hint")))).toBe(false);
 
     // Point-and-go on touch, as the line teaches: the first tap selects (Go chip), the chip drives.
-    const top = (await rect(box(page))).y;
-    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, bottom: 844 - top + 8 }, minDistance: 4 });
+    // The choiceless line is a top toast: pick a target below it.
+    const tryIt = await rect(box(page));
+    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, top: tryIt.y + tryIt.height + 8 }, minDistance: 4 });
     const point = await targetPoint(page, target.id);
     await page.touchscreen.tap(point.x, point.y);
     const go = page.getByTestId("interact-go");
@@ -423,6 +414,27 @@ test.describe("phone layout", () => {
     // Stop the drive before it arrives (arrival would open a drawer, a picker or the Rover menu and pause the line).
     await page.keyboard.press("Escape");
     await expectLine(page, "moved");
+
+    // A choiceless line is the slim top toast, clear of the Corners controls.
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    const toast = await rect(box(page));
+    expect(toast.x).toBeGreaterThanOrEqual(0);
+    expect(toast.x + toast.width).toBeLessThanOrEqual(390);
+    expect(toast.y + toast.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
+    for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap"]) {
+      expect(overlaps(toast, await rect(page.getByTestId(id))), id).toBe(false);
+    }
+    await tapText(page);
+    // The toast clamps a long line to four rows: the first tap may expand it, the next one moves on.
+    if ((await box(page).getAttribute("data-line")) === "moved" && (await box(page).getAttribute("data-expanded")) === "true") await tapText(page);
+    await expectLine(page, "floor-chip");
+    await expect(box(page)).not.toHaveAttribute("data-docked", "true");
+    await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    const chipLine = await rect(box(page));
+    expect(chipLine.y + chipLine.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
+    for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap"]) {
+      expect(overlaps(chipLine, await rect(page.getByTestId(id))), id).toBe(false);
+    }
 
     await page.getByTestId("dialog-skip").tap();
     await expectLine(page, "skipped");

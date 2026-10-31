@@ -227,14 +227,24 @@ for (const viewport of L4_VIEWPORTS) {
   test(`3D hq-l4 @ ${viewport.width}x${viewport.height}`, async ({ browser }) => {
     test.setTimeout(300_000);
     const { context, page } = await open3DAt(browser, viewport, "/en/library");
-    // In-world text (troika) builds its glyphs slowly on SwiftShader.
-    await page.waitForTimeout(8000);
     const line = page.getByTestId("dialog-box");
-    await expect(line).toHaveAttribute("data-dialog", "floor:L4");
-    await expect(line).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
-    await page.screenshot({ path: shot("hq-l4-writing", viewport) });
-    await page.keyboard.press("Enter");
-    await expect(line).toHaveCount(0);
+    if (viewport.name === "mobile") {
+      // A phone shows the floor line as the top toast, which moves on by itself `TOAST_HOLD_MS` (4.5 s) after it has
+      // typed out (phone-first part 2): capture it while it holds, then let it go.
+      await expect(line).toHaveAttribute("data-dialog", "floor:L4", { timeout: 30_000 });
+      await expect(line).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+      await page.waitForTimeout(1500);
+      await page.screenshot({ path: shot("hq-l4-writing", viewport) });
+      await expect(line).toHaveCount(0, { timeout: 15_000 });
+    } else {
+      // In-world text (troika) builds its glyphs slowly on SwiftShader.
+      await page.waitForTimeout(8000);
+      await expect(line).toHaveAttribute("data-dialog", "floor:L4");
+      await expect(line).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+      await page.screenshot({ path: shot("hq-l4-writing", viewport) });
+      await page.keyboard.press("Enter");
+      await expect(line).toHaveCount(0);
+    }
     await openRoomFromPalette(page, "Research shelf", "L4:research");
     await page.waitForTimeout(3000);
     await page.screenshot({ path: shot("hq-l4-research", viewport) });
@@ -538,19 +548,22 @@ test.describe("Rover dialog", () => {
         await box.click();
       };
       await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.start }).click();
-      await expect(box).toHaveAttribute("data-line", "move");
-      await advance();
+      // Phones run the phone tour (owner decision 2026-10-25): point-go first, then the floor chip; no move, camera or
+      // elevator lines. Every other screen keeps the full tour.
+      const phone = viewport.name === "mobile";
+      if (!phone) {
+        await expect(box).toHaveAttribute("data-line", "move");
+        await advance();
+      }
       await expect(box).toHaveAttribute("data-line", "point-go");
       await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.continue }).click({ timeout: 20_000 });
       await expect(box).toHaveAttribute("data-line", "moved");
       await advance();
-      await expect(box).toHaveAttribute("data-line", "camera");
-      await advance();
-      await expect(box).toHaveAttribute("data-line", /^(highlights|elevator)$/, { timeout: 15_000 });
-      if ((await box.getAttribute("data-line")) === "highlights") {
-        await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.later }).click();
+      if (!phone) {
+        await expect(box).toHaveAttribute("data-line", "camera");
+        await advance();
       }
-      await expect(box).toHaveAttribute("data-line", "elevator");
+      await expect(box).toHaveAttribute("data-line", phone ? "floor-chip" : "elevator", { timeout: 15_000 });
       await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
       await page.waitForTimeout(800);
       await page.screenshot({ path: shot("hq-onboarding-spotlight", viewport) });

@@ -4,7 +4,8 @@ import { isAskContact, type AskFrame } from "@/ask/protocol";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { getContent } from "@/content/load";
 import { asksForPersonalData, claimsFit, consulting, containsCode, leaksPrompt } from "../../functions/_lib/checks";
-import { cacheKey, createAskHandler } from "../../functions/_lib/handler";
+import { CACHE_PREFIX } from "../../functions/_lib/answer-cache";
+import { createAskHandler } from "../../functions/_lib/handler";
 import { staticPackSource } from "../../functions/_lib/pack-source";
 import { resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
 import { MESSAGES } from "../../functions/_lib/messages";
@@ -380,7 +381,7 @@ describe("contact card through the Function", () => {
     const live = await call(q);
     expect(live.contact).toEqual({ email: contact.email, linkedin: contact.linkedin });
     expect(isAskContact(live.contact)).toBe(true);
-    expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
+    expect([...kv.store.keys()].filter((k) => k.startsWith(CACHE_PREFIX))).toHaveLength(1);
     const cached = await call(q);
     expect(cached).toMatchObject({ source: "cache", contact: { email: contact.email, linkedin: contact.linkedin } });
   });
@@ -392,7 +393,7 @@ describe("contact card through the Function", () => {
     const { call, kv } = setup("Kurniadi takes freelance work; get in touch through the contact card.");
     const live = await call(q);
     expect(live).toMatchObject({ outcome: "answer", contact: { email: contact.email, linkedin: contact.linkedin } });
-    expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
+    expect([...kv.store.keys()].filter((k) => k.startsWith(CACHE_PREFIX))).toHaveLength(1);
     const cached = await call(q);
     expect(cached).toMatchObject({ source: "cache", contact: { email: contact.email, linkedin: contact.linkedin } });
   });
@@ -408,7 +409,7 @@ describe("contact card through the Function", () => {
     const live = await call(q);
     expect(live).toMatchObject({ outcome: "answer" });
     expect(isAskContact(live.contact)).toBe(true);
-    expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
+    expect([...kv.store.keys()].filter((k) => k.startsWith(CACHE_PREFIX))).toHaveLength(1);
     const cached = await call(q);
     expect(cached).toMatchObject({ source: "cache" });
     expect(isAskContact(cached.contact)).toBe(true);

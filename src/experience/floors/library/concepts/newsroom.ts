@@ -1,7 +1,7 @@
 import type { RoomId } from "@/content/schema";
 import type { Plaza, Road, RoadNetwork } from "../../../nav/road";
 import { coreRect, ringRoadEntry, ringRoadPoints } from "../../../nav/ringRoad";
-import { ARRIVAL_YAW } from "../../../camera/look";
+import { ARRIVAL_YAW, yawLooking } from "../../../camera/look";
 import { TOPICS_ROOM } from "../topicHash";
 import type { Rect, Vec2 } from "../../../types";
 import {
@@ -81,7 +81,7 @@ export const NEWSROOM = {
      * around the stop on the plaza's east rim, each facing the stop; the camera at the stop looks east at them, like
      * the floor's other end plaza views. South-east, so it stays clear of the Return pad (south-west of it) and the
      * monument (north rim); `tests/unit/library-vault.test.ts` checks the space
-     * rules, a 3 u clearance from each of them and the framing of all four books on every screen class.
+     * rules, a 3 u clearance from each of them and the framing of every book on every screen class.
      *
      * The arc runs north to south, so the books' common footprint (`LibraryVault.shelf`, the one obstacle) is a thin
      * axis-aligned strip: one obstacle per book would leave gaps under the 6 u clear floor rule between them.
@@ -93,20 +93,44 @@ export const NEWSROOM = {
       distance: 22,
       /** Round plaza diameter (`ROAD.minPlaza`). */
       plaza: 16,
-      /** The stop stands this far from the vault plaza center, toward the ring, on the road. */
-      stopInset: 1.5,
+      /**
+       * The stop stands this far from the vault plaza center, toward the ring, on the road: close to the center, so five
+       * books on the arc stay inside the plaza and clear of the road's end.
+       */
+      stopInset: 0.5,
       /**
        * The books stand on an arc of this radius around the stop, centered due east of it, `spacing` apart along the
        * arc (file order north to south, left to right on screen); the road's end keeps its half width clear of them.
        */
       arc: 8,
       spacing: 3,
+      /**
+       * Up to `oneRow` guides stand on the one arc above. More (up to `max`) stand as an amphitheater: the books alternate
+       * between the front arc and a back arc `rowGap` farther out on a riser `rise` high, each row `spacing` apart and the
+       * rows staggered half the one-row angle, so every spine shows between its front neighbors. The front arc then has
+       * radius `arcTiers` (the outer front books clear the road's end), the plaza is `plazaTiers` wide at `distanceTiers`
+       * (the rims stay 1 u apart) and a phone camera pulls back `zoomPhoneStep` per guide past six, to `max`, and looks
+       * from `pitchPhoneTiers` lower, so the spines' four heights spread apart on screen; a landscape phone (the same phone
+       * signs) looks from that pitch at `zoomLandscapeTiers`, aimed `upLandscapeTiers` higher, so the back row's spines and the
+       * sign stay under its top bar (at `max` guides it may drop one spine behind a neighbor's plate).
+       */
+      oneRow: 5,
+      max: 10,
+      arcTiers: 9,
+      rowGap: 2.6,
+      rise: 0.9,
+      plazaTiers: 24,
+      distanceTiers: 26,
+      zoomPhoneStep: 0.08,
+      pitchPhoneTiers: -0.25,
+      zoomLandscapeTiers: 1.25,
+      upLandscapeTiers: 1.5,
       /** Book: thickness (the spine) along the arc, depth toward the stop, height (a tall camera column). */
       book: { w: 1.2, d: 2.6, h: 4.2 },
-      /** Camera zone half size around the stop, and its zooms: all four books in view, phones included. */
+      /** Camera zone half size around the stop, and its zooms: every book in view, phones included. */
       zone: 2.5,
       zoom: 1.15,
-      zoomPhone: 0.95,
+      zoomPhone: 1.15,
     },
   },
 } as const;
@@ -166,9 +190,9 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const vault = studyVault(end, input.guides ?? []);
   if (vault) {
     roads.push({ id: "vault", points: [vault.entry, vault.center], width: LIBRARY_FLOOR.road });
-    network.plazas.push({ id: "vault", center: vault.center, w: E.vault.plaza, d: E.vault.plaza, round: true });
+    network.plazas.push({ id: "vault", center: vault.center, w: vault.radius * 2, d: vault.radius * 2, round: true });
   }
-  const books = vault?.books.map((b) => b.rect) ?? [];
+  const books = vault?.books.map((b) => ({ ...b.rect, h: b.rise + E.vault.book.h })) ?? [];
 
   const extra: Rect[] = [wall, core, ...(monument ? [monument.rect] : []), ...(vault ? [vault.shelf] : [])];
   const points = [
@@ -183,6 +207,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   // Every post drives to its bay's door; the featured post's room keeps the stage door (doors win over stops).
   const postStops: Partial<Record<RoomId, Vec2>> = {};
   for (const bay of bays) for (const slug of bay.posts) if (slug !== newest?.slug) postStops[roomOfPost(slug)] = bay.stop;
+  const topicsPhone = { mobile: { zoom: 1, lookOffset: { up: 3 } }, landscape: { zoom: E.zoom * 1.05, pitch: -0.3, lookOffset: { up: 2 } } };
   const floor = libraryFloor({
     bounds,
     stations: docked,
@@ -201,9 +226,11 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         arrivalOnly: true,
       },
       // In front of the headline wall: look north at it, zoomed out so the whole wall fits.
-      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4 },
-      // The end plaza: look east over the constellation from where the timeline meets the ring road.
-      { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom },
+      // A portrait phone comes closer, so the ticker reads (the phone reading rule).
+      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4, classView: { mobile: { zoom: 0.95 }, landscape: { zoom: 1.3 } } },
+      // The end plaza: look east over the constellation from where the timeline meets the ring road. A portrait phone
+      // comes closer so the topic names read, aimed 3 u higher so the pieces count over the cloud stays in frame.
+      { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom, classView: topicsPhone },
       // Its approach on the timeline, same id and view: a rover heading east toward the plaza already sees the
       // whole cloud with the topic count above it. Eastbound only, so a drive back west from the plaza keeps its view.
       {
@@ -211,11 +238,12 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         area: { minX: ringStop.x - E.approach, maxX: ringStop.x - 2.5, minZ: ringStop.z - 2.5, maxZ: ringStop.z + 2.5 },
         yaw: E.lookEast,
         zoom: E.zoom,
+        classView: topicsPhone,
         travel: { x: 1, z: 0 },
       },
       ...(monument ? [{ id: "L4:metrics", area: around(monument.stop, 2.5), yaw: E.lookNorth, zoom: 1.2 }] : []),
       // The Study Vault: from the stop, look east at the books (any heading), zoomed out so all four fit.
-      ...(vault ? [{ id: VAULT_ROOM, area: around(vault.stop, E.vault.zone), yaw: E.lookEast, zoom: E.vault.zoom, classView: { mobile: { zoom: E.vault.zoomPhone } } }] : []),
+      ...(vault ? [{ id: VAULT_ROOM, area: around(vault.stop, E.vault.zone), yaw: vaultYaw(vault), zoom: E.vault.zoom, classView: vaultClassView(vault) }] : []),
     ],
     returnPad,
     stops: { ...postStops, [TOPICS_ROOM]: ringStop, ...(vault ? { [VAULT_ROOM]: vault.stop } : {}) },
@@ -223,7 +251,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     tall: [
       { ...core, h: E.coreHeight },
       ...(monument ? [{ ...monument.rect, h: E.monument.h }] : []),
-      ...books.map((r) => ({ ...r, h: E.vault.book.h })),
+      ...books,
     ],
   });
 
@@ -247,19 +275,25 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
 function studyVault(end: Vec2, guides: readonly LibraryGuideInput[]): LibraryVault | null {
   if (!guides.length) return null;
   const V = NEWSROOM.end.vault;
+  const tiers = guides.length > V.oneRow ? 2 : 1;
   const entry = ringRoadPoints(end, NEWSROOM.end.ring, NEWSROOM.end.segments)[V.entryVertex];
   const len = Math.hypot(entry.x - end.x, entry.z - end.z);
   const dir = { x: (entry.x - end.x) / len, z: (entry.z - end.z) / len };
-  const center = { x: end.x + dir.x * V.distance, z: end.z + dir.z * V.distance };
+  const distance = tiers === 2 ? V.distanceTiers : V.distance;
+  const center = { x: end.x + dir.x * distance, z: end.z + dir.z * distance };
   const stop = { x: center.x - dir.x * V.stopInset, z: center.z - dir.z * V.stopInset };
-  const step = V.spacing / V.arc;
+  const arc = tiers === 2 ? V.arcTiers : V.arc;
+  // Two tiers: neighbors in file order alternate rows, half the one-row angle apart (each row a little wider than `spacing`).
+  const step = (tiers === 2 ? V.spacing / 2 : V.spacing) / V.arc;
   const books = guides.map((g, i): VaultBook => {
+    const tier = tiers === 2 ? i % 2 : 0;
     const a = (i - (guides.length - 1) / 2) * step;
-    const at = { x: stop.x + Math.cos(a) * V.arc, z: stop.z + Math.sin(a) * V.arc };
+    const r = arc + tier * V.rowGap;
+    const at = { x: stop.x + Math.cos(a) * r, z: stop.z + Math.sin(a) * r };
     const facing = { x: -Math.cos(a), z: -Math.sin(a) };
     const hx = (Math.abs(facing.z) * V.book.w + Math.abs(facing.x) * V.book.d) / 2;
     const hz = (Math.abs(facing.x) * V.book.w + Math.abs(facing.z) * V.book.d) / 2;
-    return { ...g, at, facing, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
+    return { ...g, at, facing, tier, rise: tier * V.rise, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
   });
   const shelf: Rect = {
     minX: Math.min(...books.map((b) => b.rect.minX)),
@@ -267,7 +301,25 @@ function studyVault(end: Vec2, guides: readonly LibraryGuideInput[]): LibraryVau
     minZ: Math.min(...books.map((b) => b.rect.minZ)),
     maxZ: Math.max(...books.map((b) => b.rect.maxZ)),
   };
-  return { center, stop, entry, books, shelf, radius: V.plaza / 2 };
+  return { center, stop, entry, books, shelf, radius: (tiers === 2 ? V.plazaTiers : V.plaza) / 2, tiers, arc, span: ((guides.length - 1) / 2) * step };
+}
+
+/**
+ * The vault camera's yaw: due east on one arc; on two tiers toward the middle of the shelf (the books' bounds), so an
+ * even count (a front book at one end, a farther back book at the other) still sits centered on screen.
+ */
+function vaultYaw(vault: LibraryVault): number {
+  if (vault.tiers === 1) return NEWSROOM.end.lookEast;
+  const { shelf, stop } = vault;
+  return yawLooking({ x: (shelf.minX + shelf.maxX) / 2 - stop.x, z: (shelf.minZ + shelf.maxZ) / 2 - stop.z });
+}
+
+/** The vault camera on phones: portrait zoomed out further per guide past six; over two tiers both lower, landscape set apart. */
+function vaultClassView(vault: LibraryVault) {
+  const V = NEWSROOM.end.vault;
+  const zoom = V.zoomPhone + Math.max(0, vault.books.length - 6) * V.zoomPhoneStep;
+  if (vault.tiers === 1) return { mobile: { zoom } };
+  return { mobile: { zoom, pitch: V.pitchPhoneTiers }, landscape: { zoom: V.zoomLandscapeTiers, pitch: V.pitchPhoneTiers, lookOffset: { up: V.upLandscapeTiers } } };
 }
 
 const around = (p: Vec2, r: number): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });

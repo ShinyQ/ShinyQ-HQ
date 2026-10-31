@@ -4,7 +4,7 @@ import { LOBBY } from "@/experience/config";
 import { OFFICE, officeSlots, rowSlots } from "@/experience/floors/lobby/officeLayout";
 import { OFFICE_STATES } from "@/lib/office/protocol";
 import { cameraClass } from "@/lib/viewport";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 import { followCamera, SIZES } from "../helpers/office-cameras";
 import { backRowVisibility, everyRoverInFrame } from "../helpers/office-rows";
 
@@ -18,7 +18,7 @@ import { backRowVisibility, everyRoverInFrame } from "../helpers/office-rows";
  */
 const W = LOBBY.officeWing;
 const slots = officeSlots(W);
-const MIN: Record<ViewportClass, number> = { desktop: 0.8, tablet: 0.8, mobile: 0.6 };
+const MIN: Record<CameraClass, number> = { desktop: 0.8, tablet: 0.8, mobile: 0.6, landscape: 0.8 };
 
 // Heavy: ray-cast occlusion per state and pose; a loaded CI runner can pass the 5 s default.
 describe("the back console row seen from the office stop", { timeout: 30_000 }, () => {

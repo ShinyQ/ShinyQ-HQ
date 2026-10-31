@@ -6,7 +6,10 @@ import { LOCALES } from "@/content/schema";
 import enMessages from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
 import { DIAGRAM_PRESETS } from "@/components/diagram/layout";
-import { dashboardTiles, prUrl, timelineRows } from "@/lib/build-page";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { b1DashboardTiles } from "@/content/room-views/engine";
+import { dashboardTiles, prUrl, repoFileUrl, timelineRows } from "@/lib/build-page";
 
 const story = getBuildStory();
 const facts = getBuildFacts();
@@ -143,8 +146,36 @@ describe("B1 Engine Room drawers", () => {
     it(`shows every gate, the plan excerpt and only the numbers the snapshot carries (${locale})`, () => {
       expect(view("gates").engine?.gates?.map((g) => g.id)).toEqual(story.stations.gates.gates.map((g) => g.id));
       expect(view("agents").engine?.excerpt?.href.endsWith(story.stations.agents.excerpt.path)).toBe(true);
-      expect(view("dashboard").engine?.tiles?.map((t) => t.id)).toEqual(dashboardTiles(facts, 5).map((t) => t.id));
+      // B1's Dashboard: the shared numbers less specs and plans (the Blueprint's ledger), then B1's own.
+      const shared = dashboardTiles(facts, 5).map((t) => t.id).filter((id) => id !== "specs" && id !== "plans");
+      expect(view("dashboard").engine?.tiles?.map((t) => t.id)).toEqual([...shared, ...b1DashboardTiles(facts).map((t) => t.id)]);
       expect(view("dashboard").engine?.tiles?.find((t) => t.id === "floors")?.value).toBe("5");
     });
+
+    it(`adds B1's own layer: the decision log, the plan ledger, the dropped plans and Ask's numbers (${locale})`, () => {
+      const log = facts.log!;
+      const agents = view("agents").sections ?? [];
+      const decisions = agents.find((s) => s.chips && s.title === (locale === "en" ? "Decision Log" : "Log Keputusan"));
+      expect(decisions?.chips).toHaveLength(log.decisions.areas.length);
+      const latest = agents.find((s) => s.items?.length === log.decisions.latest.length)?.items ?? [];
+      expect(latest.map((i) => i.href)).toEqual(log.decisions.latest.map((d) => repoFileUrl(`docs/decisions/${d.file}`)));
+      expect(latest.every((i) => i.external && i.title.length > 0)).toBe(true);
+      expect(view("blueprint").engine?.tiles?.map((t) => t.id)).toEqual(["plansShipped", "plansInProgress", "plansDropped", "specs"]);
+      expect(view("blueprint").sections?.some((s) => s.items?.length === log.plans.latest.length)).toBe(true);
+      expect(view("rejected").sections?.[0]?.items?.map((i) => i.title)).toEqual(log.plans.droppedPlans.map((p) => p.title));
+      expect(view("brain").engine?.tiles?.map((t) => t.id)).toEqual(["golden", "passMark", "promptDate", "packKb"]);
+      expect(view("brain").engine?.tiles?.[0]?.value).toBe(String(facts.ask!.golden));
+    });
   }
+});
+
+describe("the B1-only layer stays off /build", () => {
+  it("never reads the decision log, the plan ledger, Ask's numbers or the activity from the Classic build page", () => {
+    const files = [
+      ...readdirSync("src/components/build").map((f) => path.join("src/components/build", f)),
+      ...readdirSync("src/app/[locale]/build").map((f) => path.join("src/app/[locale]/build", f)),
+      "src/lib/build-page.ts",
+    ].filter((f) => /\.tsx?$/.test(f));
+    for (const file of files) expect(readFileSync(file, "utf8"), file).not.toMatch(/\.(?:log|ask|activity)\b|b1DashboardTiles|perfFiles/);
+  });
 });

@@ -67,9 +67,9 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 
 Workflow: [../content.md](../content.md#study-guides) and [../study-guides-runbook.md](../study-guides-runbook.md).
 
-- Data: `content/study-guides.json`, its own file, parsed by `StudyGuidesFileSchema` (`@/content/schema`; unique `slug` and `certId`, at most 8 domains, `version` 12 hex, `cover` `/study-guides/<slug>.webp`). Read it on the server through `getStudyGuides()` (`@/content/load`); invalid data fails `next build`.
+- Data: `content/study-guides.json`, its own file, parsed by `StudyGuidesFileSchema` (`@/content/schema`; at most `MAX_GUIDES` 10 guides, the L4 Study Vault's two tiers; unique `slug` and `certId`, at most 8 domains, `version` 12 hex, `cover` `/study-guides/<slug>.webp`). Read it on the server through `getStudyGuides()` (`@/content/load`); invalid data fails `next build`.
 - Views: `guideViews(locale)` and `guideForCert(certId)` in `@/content/guide-views` (server only) build `GuideView` (locale-resolved title, summary and domain labels, `editionLabel`, `sizeLabel`, `url` and `downloadUrl`).
-- Client-safe helpers in `@/content/guides` (no zod, React or three): the `GuideView` type, `GUIDE_SLUG`, `guideUrl(slug, version)` (`/api/guides/<slug>?v=<version>`), `guideDownloadUrl` (adds `&download=1`), `GUIDE_PAGE_KEY`, `weightLabel`, `sizeLabel`. Never build a guide URL by hand: the `?v=` version is what makes the immutable cache safe.
+- Client-safe helpers in `@/content/guides` (no zod, React or three): the `GuideView` type, `GUIDE_SLUG`, `MAX_GUIDES`, `guideUrl(slug, version)` (`/api/guides/<slug>?v=<version>`), `guideDownloadUrl` (adds `&download=1`), `GUIDE_PAGE_KEY`, `weightLabel`, `sizeLabel`. Never build a guide URL by hand: the `?v=` version is what makes the immutable cache safe.
 - Consumers:
   - the Classic shelf `GuideShelf` on `/library` (server, labels resolved; its Read and Download controls are plain server markup, no client island);
   - `CertView.guide` (see [Certifications](#certifications));
@@ -96,7 +96,7 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 - `getTechLogo(name)` from `@/content/tech` returns `{ src, label } | null`. It normalizes case, versions like "Next.js 14", parentheticals, "A / B" compounds and kebab-case tags such as "azure-openai".
 - Unknown names render as text chips. Text-only is for names with no usable logo: generic concepts (RAG, SSO, REST APIs), research models, libraries that publish no logo, wordmark-only logos, and marks without published reuse terms. Search before adding a name to `TEXT_ONLY_TECH`.
 - Every stack and skill name in content must resolve or be listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`).
-- Skill group ids (`SkillGroupSchema`): `ai`, `ds` (Data science and ML, site-only, after `ai`), `azure`, `languages`, `backend`, `frontend`, `data` (Data and messaging), `devops`. The CV groups match the CV (`tests/content/cv-facts.test.ts`, `SITE_ONLY_SKILLS` for the rest).
+- Skill group ids (`SkillGroupSchema`): `ai`, `ds` (Data science and ML, site-only, after `ai`), `azure`, `languages`, `backend`, `frontend`, `data` (Data and messaging), `devops`. Skills may come from any source, not only the CV: the CV groups keep CV order and every CV skill, and a group may add more (`tests/content/cv-facts.test.ts`; `SITE_ONLY_SKILLS` for site-only groups). A new skill needs a logo in `src/content/tech.ts` or a `TEXT_ONLY_TECH` entry, then `bun run logo:atlas`.
 - Add a logo: drop the file in `public/tech/`, add an entry in `tech.ts` and a line in `public/tech/README.md`, then `bun run logo:atlas` (and `bun run engine:atlas` for a B1 halo name).
   - Sources, in order: Simple Icons (CC0; lighten dark brand colors for the dark theme), Microsoft's Azure, Entra or Fabric icon sets, then the project's own logo from its public repository under a permissive licence (MIT, BSD, Apache-2.0), noted in the README. No copyleft (GPL, LGPL) artwork; a mark Simple Icons removed stays usable from an older release (CC0). Never invent a mark.
   - Java uses the Simple Icons `openjdk` mark (Oracle's cup has no reuse terms).
@@ -109,6 +109,12 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 - Authored node and optional edge labels accept a nonempty shared string or strict `{ en, id }` text. Legacy strings render verbatim in either locale.
 - Resolve a raw graph once for the requested locale before layout, accessible summaries and room-view serialization. Layout and client DTO labels remain strings; never mutate cached source graphs.
 - Node IDs, edge endpoints, ordering and group strings are structural. Groups remain shared membership/display keys, not localized captions.
+
+### Blog MDX
+
+- Every post compiles through `compilePost` (`src/components/blog/compile.ts`): `next-mdx-remote` with `parseFrontmatter` and `remark-gfm`, build time only (no client JS). The page and `tests/content/blog-mdx.test.tsx` share it; never call `compileMDX` with other options.
+- `postMdxComponents` overrides `pre` (focusable) and `table`: each table sits in `div.prose-table`, a `role="region"` with `tabindex="0"` and the `blog.tableLabel` name, the only thing that scrolls sideways (`overflow-x: auto`); the page keeps `overflow-x: clip`.
+- Table styles live with `.prose-hq` in `src/app/globals.css`: tokens only, ruled rows (`--color-line`, header rule `--color-line-2`), the body face at `--text-meta`, left-aligned, `tabular-nums`.
 
 ### Blog architecture figures
 
@@ -308,7 +314,7 @@ Keep them documented here.
 ### `Profile` and `Stat` (landing proof strip)
 
 - `Profile.heroProof`: exactly 3 `stats` ids (owner decision 2026-10-25), the landing hero's proof strip in that order ([page-view.md](page-view.md#hero)). The schema rejects an unknown or repeated id.
-- `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (ticker, 3D stats ring, Ask).
+- `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (the home stats ledger, 3D stats ring, Ask).
   - Required on every `heroProof` stat, at most `STAT_SHORT_MAX` (28) characters per locale (schema check); no first person.
 - `stats` stays at exactly six entries: the 3D Lobby stats ring reads them (`tests/content/recruiter-pass.test.ts`).
 

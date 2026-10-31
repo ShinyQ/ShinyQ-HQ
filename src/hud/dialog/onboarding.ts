@@ -1,19 +1,13 @@
-import type { FloorId } from "@/content/schema";
-import type { Interactable } from "@/experience/hints/source";
-import type { Vec2 } from "@/experience/types";
 import type { HQStore } from "@/store/useHQStore";
 import type { DialogLine, SayInput, SayOptions, SayResult } from "./engine";
 
 /**
  * The first-session tour (owner request: "simple guidance at first, like old Pokemon games"). Plain
  * async code on top of `say()`, so it is tested with a fake `say`. OnboardingLayer runs it after the
- * intro (full) or after a deep link arrives (short), and from "Replay the tutorial" (full).
+ * intro (full) or after a deep link arrives (short), and from "Replay the tutorial" (full). It never moves the rover
+ * by itself (owner decision 2026-10-27: no "take me there" step).
  */
 export const ONBOARDING_ID = "onboarding";
-/** The Highlights Hall's first station on L1 east (r4-g, registered as an L1 extra); the step is skipped without it. */
-export const HIGHLIGHTS_ID = "L1:station:highlights-about";
-/** Its room, matched when the station id differs. */
-export const HIGHLIGHTS_ROOM = "L1:highlights-about";
 /** A try-it step offers Continue after this long. */
 export const TRY_IT_MS = 12_000;
 /** The moving step is done once the rover has driven this far (keys, joystick or point-and-go). */
@@ -21,11 +15,6 @@ export const MOVE_DONE_U = 2;
 
 export type OnboardingVariant = "full" | "short";
 export type OnboardingOutcome = "done" | "skipped" | "cancelled";
-
-export interface HighlightsTarget {
-  floor: FloorId;
-  at: Vec2;
-}
 
 export interface OnboardingCopy {
   welcome: string;
@@ -39,36 +28,98 @@ export interface OnboardingCopy {
   moved: string;
   cameraFine: string;
   cameraCoarse: string;
-  highlights: string;
-  showMe: string;
-  later: string;
   elevator: string;
   roverMenu: string;
   askAi: string;
   closing: string;
   closingShort: string;
+  pointGoPhone: string;
+  movedPhone: string;
+  floorChip: string;
+  tilt: string;
+}
+
+/** Every copy key, in `dialog.onboarding`; OnboardingLayer resolves them with its `t` once the chunk is in. */
+export const COPY_KEYS = [
+  "welcome", "start", "skip", "skipped", "moveFine", "moveCoarse", "pointGoFine", "pointGoCoarse", "moved",
+  "cameraFine", "cameraCoarse", "elevator", "roverMenu", "askAi", "closing", "closingShort",
+  "pointGoPhone", "movedPhone", "floorChip", "tilt",
+] as const satisfies readonly (keyof OnboardingCopy)[];
+
+/** A `t` of the `dialog.onboarding` namespace; every line gets `{ name }` (lines without the placeholder ignore it). */
+export type TourT = (key: string, values: { name: string }) => string;
+
+export function onboardingCopy(t: TourT, name: string): OnboardingCopy {
+  return Object.fromEntries(COPY_KEYS.map((key) => [key, t(key, { name })])) as unknown as OnboardingCopy;
 }
 
 export interface OnboardingDeps {
   say: (input: SayInput, options?: SayOptions) => Promise<SayResult>;
   copy: OnboardingCopy;
   coarse: boolean;
+  /** A phone (the Corners phone HUD with touch): the short phone script. */
+  phone: boolean;
   variant: OnboardingVariant;
   waitForMove: (signal: AbortSignal) => Promise<void>;
-  highlights: () => HighlightsTarget | null;
-  showMe: (target: HighlightsTarget) => Promise<void>;
   /** The Ask AI pill is on screen (Ask the HQ enabled). */
   askAi: () => boolean;
   tryItMs?: number;
+  /** Cancels a dialog request by id (the store's `cancelDialog`): a rotation ends the tilt hint. */
+  cancel?: (id: string) => void;
+  /** The tilt hint after the closing line; null for none. Omitted: the browser's (`browserTilt`). */
+  tilt?: TiltDeps | null;
 }
 
-export function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
+/**
+ * The one-time tilt hint (spec 2026-10-29, owner decisions 3.6, 3.7, 3.9): after the tour's closing line, a portrait touch
+ * screen (phone or tablet) hears once that sideways shows a wider view. A tap or the toast hold ends it, and so does a
+ * rotation. Never a lock or an overlay (iOS Safari cannot lock the orientation).
+ */
+export interface TiltDeps {
+  /** A coarse pointer on a portrait screen that has not had the hint. */
+  due: () => boolean;
+  /** Marks the hint as had (when it shows). */
+  seen: () => void;
+  /** Resolves when the screen turns (or the signal aborts). */
+  rotated: (signal: AbortSignal) => Promise<void>;
+  cancel: (id: string) => void;
 }
 
-export function highlightsTarget(items: readonly Interactable[]): HighlightsTarget | null {
-  const hall = items.find((i) => i.id === HIGHLIGHTS_ID) ?? items.find((i) => i.action.type === "open-room" && i.action.room === HIGHLIGHTS_ROOM);
-  return hall ? { floor: hall.floor, at: { x: hall.at.x, z: hall.at.z } } : null;
+/** localStorage: the tilt hint was shown on this device. */
+export const TILT_KEY = "hq:tilt-hint";
+export const TILT_ID = "tilt";
+const PORTRAIT = "(orientation: portrait)";
+
+export function browserTilt(coarse: boolean, cancel: (id: string) => void = () => {}): TiltDeps | null {
+  if (!coarse || typeof window === "undefined" || typeof window.matchMedia !== "function") return null;
+  const portrait = window.matchMedia(PORTRAIT);
+  return {
+    due: () => {
+      try {
+        return portrait.matches && !window.localStorage.getItem(TILT_KEY);
+      } catch {
+        return false;
+      }
+    },
+    seen: () => {
+      try {
+        window.localStorage.setItem(TILT_KEY, "1");
+      } catch {
+        // Storage off: the hint may show again next session, which is harmless.
+      }
+    },
+    rotated: (signal) =>
+      new Promise((resolve) => {
+        const done = () => {
+          portrait.removeEventListener("change", done);
+          signal.removeEventListener("abort", done);
+          resolve();
+        };
+        portrait.addEventListener("change", done);
+        signal.addEventListener("abort", done, { once: true });
+      }),
+    cancel,
+  };
 }
 
 /** Resolves once the rover has moved `distance` from where it stood, changed floor, or the line ended. */
@@ -121,55 +172,64 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
   let end = await ended(result);
   if (end) return end;
 
-  // 2. Moving: keys or joystick and boost, then point-and-go (there is no click-the-floor driving any
-  // more: desktop points and clicks a glowing object, touch taps it twice or uses its Go chip); waits
-  // until the rover moves, whichever way. Then the camera (round 5): look around, zoom, first person.
-  result = await d.say(
-    [
-      { key: "move", text: d.coarse ? copy.moveCoarse : copy.moveFine },
-      { key: "point-go", text: d.coarse ? copy.pointGoCoarse : copy.pointGoFine, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
-      { key: "moved", text: copy.moved, face: "arrived" },
-      { key: "camera", text: d.coarse ? copy.cameraCoarse : copy.cameraFine, spotlight: "view" },
-    ],
-    tour,
-  );
-  end = await ended(result);
-  if (end) return end;
-
-  if (d.variant === "full") {
-    // 3. The Highlights Hall on L1 east, when it exists.
-    const hall = d.highlights();
-    if (hall) {
-      result = await d.say(
-        {
-          key: "highlights",
-          text: copy.highlights,
-          choices: [
-            { id: "show", label: copy.showMe },
-            { id: "later", label: copy.later, cancel: true },
-          ],
-        },
-        tour,
-      );
-      end = await ended(result);
-      if (end) return end;
-      if (result.choice === "show") await d.showMe(hall);
-    }
-
-    // 4. Elevator and call pads.
-    result = await d.say({ key: "elevator", text: copy.elevator, spotlight: "elevator" }, tour);
+  if (d.phone) {
+    // Phones (owner decision 2026-10-25): tap-to-go first (the joystick and Boost are on screen and in the menu's
+    // Controls card), then the floor chip; no camera or elevator pad lines.
+    result = await d.say(
+      [
+        { key: "point-go", text: copy.pointGoPhone, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
+        { key: "moved", text: copy.movedPhone, face: "arrived" },
+        { key: "floor-chip", text: copy.floorChip, spotlight: "elevator" },
+      ],
+      tour,
+    );
     end = await ended(result);
     if (end) return end;
+  } else {
+    // 2. Moving: keys or joystick and boost, then point-and-go (there is no click-the-floor driving any
+    // more: desktop points and clicks a glowing object, touch taps it twice or uses its Go chip); waits
+    // until the rover moves, whichever way. Then the camera (round 5): look around, zoom, first person.
+    result = await d.say(
+      [
+        { key: "move", text: d.coarse ? copy.moveCoarse : copy.moveFine },
+        { key: "point-go", text: d.coarse ? copy.pointGoCoarse : copy.pointGoFine, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
+        { key: "moved", text: copy.moved, face: "arrived" },
+        { key: "camera", text: d.coarse ? copy.cameraCoarse : copy.cameraFine, spotlight: "view" },
+      ],
+      tour,
+    );
+    end = await ended(result);
+    if (end) return end;
+
+    if (d.variant === "full") {
+      // 3. Elevator and call pads.
+      result = await d.say({ key: "elevator", text: copy.elevator, spotlight: "elevator" }, tour);
+      end = await ended(result);
+      if (end) return end;
+    }
   }
 
-  // 5. The Rover menu and Ask AI, each ringed while Rover talks about it.
+  // 4. The Rover menu and Ask AI, each ringed while Rover talks about it.
   const ask: DialogLine[] = [{ key: "rover-menu", text: copy.roverMenu, spotlight: "rover-menu" }];
   if (d.askAi()) ask.push({ key: "ask-ai", text: copy.askAi, spotlight: "ask-ai" });
   result = await d.say(ask, tour);
   end = await ended(result);
   if (end) return end;
 
-  // 6. Closing.
+  // 5. Closing.
   result = await d.say({ key: "closing", text: d.variant === "full" ? copy.closing : copy.closingShort, face: "arrived" }, { id: ONBOARDING_ID });
-  return result.status === "cancelled" ? "cancelled" : "done";
+  if (result.status === "cancelled") return "cancelled";
+
+  // 6. The tilt hint, once per device on a portrait touch screen; a rotation ends it.
+  const tilt = d.tilt === undefined ? browserTilt(d.coarse, d.cancel) : d.tilt;
+  if (tilt?.due()) {
+    tilt.seen();
+    const stop = new AbortController();
+    void tilt.rotated(stop.signal).then(() => {
+      if (!stop.signal.aborted) tilt.cancel(TILT_ID);
+    });
+    await d.say({ key: "tilt", text: copy.tilt }, { id: TILT_ID });
+    stop.abort();
+  }
+  return "done";
 }
