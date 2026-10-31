@@ -267,7 +267,10 @@ const firstCert = [...data.certifications].filter((c) => c.status === "earned" &
 test("certifications open the in-site preview card (no frame), keyboard first", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const section = page.locator("#certifications");
-  await expect(section.locator("[data-cert-open]")).toHaveCount(data.certifications.length);
+  // Home lists 3 featured cards and 6 rows (`limit={6}`), then links to the full list on Contact.
+  const total = data.certifications.length;
+  await expect(section.locator("[data-cert-open]")).toHaveCount(Math.min(total, 9));
+  if (total > 9) await expect(section.getByRole("link", { name: `All ${total} certifications` })).toHaveAttribute("href", /\/contact#certifications$/);
   await expect(section).not.toContainText(/verified/i);
   const card = section.locator(`[data-cert-open="${firstCert.id}"]`);
   await card.focus();
