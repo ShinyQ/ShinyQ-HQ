@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render as rtlRender, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildEngineRoomViews } from "@/content/room-views";
 import { EngineBody } from "@/hud/drawer/EngineBody";
@@ -9,6 +11,8 @@ import { REACTOR_DRAWER_TICK_MS, REACTOR_STALE_MS } from "@/experience/floors/en
 import { STATS_FIXTURE } from "@/lib/stats/fixtures";
 import { __setStatsForTests } from "@/lib/visits/store";
 import { shipStep } from "../../e2e/office-fixtures";
+import en from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
@@ -20,6 +24,14 @@ vi.mock("@/experience/floors/engine/reactorLive", () => ({
   reactorLive: { now: () => feedBox.now, start: vi.fn(), stop: vi.fn() },
   useReactorFeed: () => feedBox.feed,
 }));
+
+/** The drawer always sits inside the app's intl provider (link items read their "new tab" label). */
+const render = (ui: ReactElement & { props: { locale?: string } }) =>
+  rtlRender(
+    <NextIntlClientProvider locale={ui.props.locale ?? "en"} messages={ui.props.locale === "id" ? idMessages : en}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
 
 const views = buildEngineRoomViews("en");
 const body = (id: string) => render(<EngineBody view={views[`B1:${id}`]!} locale="en" />).container;

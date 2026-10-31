@@ -140,9 +140,35 @@ export const BuildFactsSchema = z.strictObject({
       }),
     )
     .optional(),
-  tests: z.strictObject({ unitFiles: count, e2e: count.optional(), e2eFiles: count }).optional(),
+  tests: z.strictObject({ unitFiles: count, e2e: count.optional(), e2eFiles: count, perfFiles: count.optional() }).optional(),
   docs: z.strictObject({ specs: count, plans: count }).optional(),
   ci: z.strictObject({ jobs: z.array(z.string()).min(1), workflows: count }).optional(),
+  /**
+   * B1-only: the owner decision log (docs/decisions/) and the plan ledger (each plan's `Status:` line), parsed by
+   * `scripts/docs-index.ts`. Text is the repository's own (English), trimmed to one sentence.
+   */
+  log: z
+    .strictObject({
+      decisions: z.strictObject({
+        total: count,
+        areas: z.array(z.strictObject({ area: z.string().min(1), count })),
+        latest: z.array(z.strictObject({ date: z.string().regex(/^\d{4}-\d{2}(?:-\d{2})?$/), area: z.string().min(1), file: z.string().min(1), text: z.string().min(1).max(260) })),
+      }),
+      plans: z.strictObject({
+        shipped: count,
+        inProgress: count,
+        dropped: count,
+        latest: z.array(z.strictObject({ file: z.string().min(1), title: z.string().min(1), pr: z.number().int().min(1) })),
+        droppedPlans: z.array(z.strictObject({ file: z.string().min(1), title: z.string().min(1), reason: z.string().min(1).max(260) })),
+      }),
+    })
+    .optional(),
+  /** B1-only: Ask's own numbers, read from its code and golden set. */
+  ask: z
+    .strictObject({ golden: count, passMark: count, promptDate: IsoDateSchema, packKb: z.number(), historyTurns: count, perMinute: count, perDay: count })
+    .optional(),
+  /** B1-only: merged pull requests over the 7 days up to `generatedAt`, and the busiest merge day. */
+  activity: z.strictObject({ last7Days: count, busiestDay: z.strictObject({ date: IsoDateSchema, prs: count }) }).optional(),
   budgets: z
     .strictObject({
       js3dKb: z.number(),

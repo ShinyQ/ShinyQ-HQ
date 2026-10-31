@@ -21,7 +21,7 @@ export async function DashboardBody({ locale }: { locale: Locale }) {
         const value = number.format(tile.value);
         return (
           <li key={tile.id} className={TILE} data-tile={tile.id}>
-            <p className={TILE_VALUE}>{tile.unit === "kb" ? t("kb", { value }) : value}</p>
+            <p className={TILE_VALUE}>{value}</p>
             <p className={TILE_LABEL}>{t(`tiles.${tile.id}`, { date: tile.since ? formatDate(tile.since, locale) : "" })}</p>
           </li>
         );
