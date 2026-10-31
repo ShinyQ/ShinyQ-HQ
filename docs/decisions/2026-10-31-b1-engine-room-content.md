@@ -1,0 +1,5 @@
+# B1 Engine Room
+
+- Date: 2026-10-31
+
+Owner request: the B1 content felt redundant ("needs to be updated and more rich since its currently redundant"); the owner chose all three fixes. The build story now runs to round 17, with PRs 293 to 344 in three closed rounds and round 17 open from PR 345, and Rover's Brain says five remembered turns, as the code does. Each topic has one home, on `/build` too: deploy and rollback are told only in the main-run gate (now "Main Runs, Deploy and Rollback"), the Blueprint dropped its deploy step, the Agents loop ends at "Gates and Release" and the Dashboard no longer repeats the 3D budgets the Gates state. The B1 drawers gained a layer `/build` does not show, generated from the repository at every build by `scripts/build-facts.ts`: the owner decision log on Agents, the plan and spec ledger on the Blueprint, owner-dropped plans on Rejected Designs, Ask's own numbers on Rover's Brain, and activity and content tiles on the Dashboard. Repository text (decisions, plan titles) shows in English in both locales under a note that says so. No new drawer code: the B1 chunk and its cap are unchanged.

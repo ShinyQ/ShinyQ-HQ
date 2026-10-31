@@ -36,7 +36,8 @@ describe("B1 hologram data (RoomEngine.holo)", () => {
       }
     }
     expect(holoOf("gates").levels).toHaveLength(story.stations.gates.gates.length);
-    expect(holoOf("rejected").levels).toHaveLength(story.stations.rejected.ideas.length);
+    // The story's ideas and, on B1, the plans the owner dropped.
+    expect(holoOf("rejected").levels).toHaveLength(story.stations.rejected.ideas.length + (getBuildFacts().log?.plans.droppedPlans.length ?? 0));
     expect(holoOf("brain").levels).toHaveLength(story.stations.brain.steps.length);
     expect(holoOf("agents").levels).toHaveLength(story.stations.agents.tools.length);
   });
