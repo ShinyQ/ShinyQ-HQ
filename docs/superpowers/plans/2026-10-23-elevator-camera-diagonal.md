@@ -1,6 +1,6 @@
 # Elevator Camera Diagonal ("Serong Kanan") Plan
 
-Status: in review
+Status: shipped in #308 (7643e51), 2026-10-23
 
 **Goal:** going into the elevator and coming out of it, the camera stands behind the rover and 35 degrees to its right,
 like the owner's L2 screenshot, on every floor and camera class.

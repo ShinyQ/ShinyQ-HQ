@@ -1,4 +1,4 @@
-# 3D HUD
+# HUD: 3D
 
 - Date: 2026-10-21
 - PR: [#278](https://github.com/ShinyQ/ShinyQ-HQ/pull/278)

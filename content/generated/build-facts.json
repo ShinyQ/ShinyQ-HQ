@@ -1,11 +1,11 @@
 {
   "generatedAt": "2026-10-31",
-  "commit": "c8b5997",
+  "commit": "814d0cb",
   "git": {
     "commits": 297,
     "firstCommit": "2026-10-09",
-    "mergedPrs": 282,
-    "latestPr": 350
+    "mergedPrs": 283,
+    "latestPr": 351
   },
   "rounds": [
     {
@@ -404,7 +404,8 @@
         346,
         348,
         349,
-        350
+        350,
+        351
       ],
       "first": "2026-10-28",
       "last": "2026-10-31"
@@ -445,31 +446,31 @@
         },
         {
           "area": "3D experience",
-          "count": 22
+          "count": 28
+        },
+        {
+          "area": "Ask",
+          "count": 20
         },
         {
           "area": "L1 Agent Office",
           "count": 20
         },
         {
-          "area": "Ask",
-          "count": 15
-        },
-        {
           "area": "CI",
           "count": 13
         },
         {
-          "area": "L3 Labs",
-          "count": 10
+          "area": "Classic site",
+          "count": 13
         },
         {
-          "area": "Page View",
-          "count": 10
+          "area": "Stats",
+          "count": 11
         },
         {
-          "area": "B1 Engine Room",
-          "count": 9
+          "area": "HUD",
+          "count": 10
         }
       ],
       "latest": [
@@ -511,47 +512,47 @@
         },
         {
           "date": "2026-10-27",
-          "area": "Page View",
-          "file": "2026-10-27-page-view-hallmark-classic-redesign.md",
-          "text": "Hallmark redesign of the Classic site at full depth, keeping the Neon Grid brand (void paper, one cyan signal, Archivo condensed, Inter); the system is locked in DESIGN.md."
-        },
-        {
-          "date": "2026-10-27",
           "area": "HUD",
           "file": "2026-10-27-tour-no-drive.md",
           "text": "The first-session tour never moves the rover by itself."
+        },
+        {
+          "date": "2026-10-27",
+          "area": "Classic site",
+          "file": "2026-10-27-page-view-hallmark-classic-redesign.md",
+          "text": "Hallmark redesign of the Classic site at full depth, keeping the Neon Grid brand (void paper, one cyan signal, Archivo condensed, Inter); the system is locked in DESIGN.md."
         }
       ]
     },
     "plans": {
-      "shipped": 111,
-      "inProgress": 12,
+      "shipped": 123,
+      "inProgress": 0,
       "dropped": 1,
       "latest": [
         {
-          "file": "2026-10-25-classic-recruiter-pass.md",
-          "title": "Classic Recruiter Pass",
-          "pr": 320
+          "file": "2026-10-29-phone-first-3d-part-3.md",
+          "title": "Phone-First 3D, Part 3",
+          "pr": 348
         },
         {
-          "file": "2026-10-22-b1-2-reactor-hall.md",
-          "title": "B1 Living Machine, PR B1-2: The Reactor Hall",
-          "pr": 291
+          "file": "2026-10-28-phone-first-3d-part-2.md",
+          "title": "Phone-First 3D, Part 2",
+          "pr": 346
         },
         {
-          "file": "2026-10-22-b1-1-detailed-story.md",
-          "title": "B1 Living Machine, PR B1-1: The Detailed Story",
-          "pr": 290
+          "file": "2026-10-26-phone-first-3d.md",
+          "title": "Phone-First 3D",
+          "pr": 329
         },
         {
-          "file": "2026-10-20-agent-office-replay.md",
-          "title": "Agent Office revamp C: day replay",
-          "pr": 284
+          "file": "2026-10-25-l4-writing-revamp.md",
+          "title": "L4 Writing Revamp: Reader Tracks",
+          "pr": 327
         },
         {
-          "file": "2026-10-20-agent-office-pipeline.md",
-          "title": "Agent Office revamp B: ship-it pipeline",
-          "pr": 279
+          "file": "2026-10-25-b1-material-detail.md",
+          "title": "B1 Material Detail",
+          "pr": 324
         }
       ],
       "droppedPlans": [
@@ -573,7 +574,7 @@
     "perDay": 40
   },
   "activity": {
-    "last7Days": 22,
+    "last7Days": 23,
     "busiestDay": {
       "date": "2026-10-15",
       "prs": 25

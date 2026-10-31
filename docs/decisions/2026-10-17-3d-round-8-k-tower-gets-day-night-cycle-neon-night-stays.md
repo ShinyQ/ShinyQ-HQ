@@ -1,4 +1,4 @@
-# 3D
+# 3D experience
 
 - Date: 2026-10-17
 - PR: [#182](https://github.com/ShinyQ/ShinyQ-HQ/pull/182), [#185](https://github.com/ShinyQ/ShinyQ-HQ/pull/185)

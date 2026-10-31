@@ -27,7 +27,7 @@ the month is known), with a short kebab-case slug of the area and the gist:
 The decision, in one paragraph (what was decided and why; numbers before and after when it is a measured change).
 ```
 
-- The heading is the area (`3D experience`, `CI`, `Content: CV`, a floor name, ...), the same areas as before.
+- The heading is the area (`3D experience`, `CI`, `Content: CV`, a floor name, ...): its broad part (before any `:`) must be one of `DECISION_AREAS` in `scripts/docs-index.ts` (`tests/unit/docs-index.test.ts`); add a new area there with its first decision.
 - `- Date:` is when the decision was made and must equal the file name's date prefix.
 - `- PR:` links the PR that shipped it (comma separated when several); leave the line out until the PR number is
   known, and add it in a later PR if needed.

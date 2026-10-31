@@ -1,4 +1,4 @@
-# Glass Drawer
+# HUD: Glass Drawer
 
 - Date: 2026-10-09
 - PR: [#8](https://github.com/ShinyQ/ShinyQ-HQ/pull/8)
