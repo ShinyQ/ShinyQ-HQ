@@ -168,7 +168,7 @@ cf accounts tokens create --name "shinyq-hq AI Gateway log purge (CF_LOGS_TOKEN)
 rm /tmp/p.json
 ```
 
-The weekly facts PR needs no personal access token and no repository auto-merge setting: `refresh-facts.yml` runs CI itself and merges with `GITHUB_TOKEN` (section 9).
+The weekly facts PR needs no personal access token and no repository auto-merge setting: `refresh-facts.yml` runs CI itself and merges with `GITHUB_TOKEN` (section 9). The `main` ruleset's "require approval for unattributed changes" (on since 2026-10; the bot's commits are not attributed to a person) refuses that merge, so the job then hands the PR to the owner instead of failing: it requests the owner's review and comments with the green CI run. Approve and squash-merge it; the merge is a normal push to `main`, so `deploy.yml` deploys it. Turning that ruleset option off brings the self-merge and its dispatched deploy back (an owner security decision).
 
 Prerequisite for that workflow: Settings > Actions > General > Workflow permissions > "Allow GitHub Actions to create and approve pull requests" must be on (API: `can_approve_pull_request_reviews=true`; turned on 2026-10-11). Without it `gh pr create` fails with "GitHub Actions is not permitted to create or approve pull requests". The default workflow permissions stay read-only; the workflow asks for `contents`, `pull-requests` and `actions: write` itself.
 

@@ -6,10 +6,13 @@ name: Refresh live facts
 # (owner decision 3). PRs pushed with GITHUB_TOKEN do not trigger the pull_request CI run, so this
 # job dispatches ci.yml on the PR branch (GITHUB_TOKEN may trigger workflow_dispatch), waits for that
 # run on the exact pushed commit, and merges only when the required jobs succeeded. Otherwise the PR
-# stays open and this job fails. The `main` ruleset (require a PR and the required checks, security
-# S5) accepts this merge: the dispatched run reports the checks on the PR head commit. No personal
-# access token is needed (docs/ask-runbook.md). `actions: write` dispatches ci.yml and deploy.yml.
-# After the merge it dispatches deploy.yml for the merge commit (production deploy and smoke check).
+# stays open and this job fails. The dispatched run reports the checks on the PR head commit. When the
+# `main` ruleset still refuses the merge (it asks for an approval of commits not attributed to a person,
+# as this bot's are), the job hands the PR to the repository owner instead of failing: it requests their
+# review and comments with the green CI run; the owner's squash merge then deploys through deploy.yml's
+# push trigger. No personal access token is needed (docs/ask-runbook.md). `actions: write` dispatches
+# ci.yml and deploy.yml. After its own merge it dispatches deploy.yml for the merge commit (production
+# deploy and smoke check).
 
 on:
   schedule:
@@ -36,7 +39,8 @@ jobs:
     env:
       BRANCH: chore/refresh-live-facts
       CI_WORKFLOW: ci.yml
-      REQUIRED_JOBS: "Typecheck, lint, unit tests|Build, CV and e2e"
+      # The three required checks of the `main` ruleset.
+      REQUIRED_JOBS: "Typecheck, lint, unit tests|Build, CV and e2e|Lighthouse CI"
     steps:
       # The only checkout that keeps its credentials: this job pushes the facts branch.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,23 +105,39 @@ jobs:
             exit 1
           fi
           passed=$(gh run view "$run_id" --json jobs --jq "[.jobs[] | select(.name | test(\"^($REQUIRED_JOBS)\$\")) | select(.conclusion == \"success\")] | length")
-          if [ "$passed" != "2" ]; then
+          if [ "$passed" != "3" ]; then
             echo "::error::Required CI jobs did not all succeed on $SHA (run $run_id). The PR stays open for review."
             exit 1
           fi
-      - name: Merge the PR
+      - name: Merge the PR, or hand it to the owner
+        id: merge
         if: steps.facts.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ steps.pr.outputs.number }}
           SHA: ${{ steps.pr.outputs.sha }}
+          RUN_ID: ${{ steps.ci.outputs.run_id }}
+          OWNER: ${{ github.repository_owner }}
         # --match-head-commit refuses to merge if the branch moved after CI ran.
-        run: gh pr merge "$NUMBER" --squash --delete-branch --match-head-commit "$SHA"
+        run: |
+          if gh pr merge "$NUMBER" --squash --delete-branch --match-head-commit "$SHA" 2> merge.err; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cat merge.err
+          if ! grep -q "base branch policy prohibits the merge" merge.err; then
+            exit 1
+          fi
+          gh pr edit "$NUMBER" --add-reviewer "$OWNER" || true
+          gh pr comment "$NUMBER" --body "Required CI is green on $SHA ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$RUN_ID). The \`main\` ruleset asks for an approval of commits not attributed to a person, so this PR waits for @$OWNER: approve and squash-merge it; the merge deploys through deploy.yml."
+          echo "::notice::PR #$NUMBER waits for the owner's approval (main ruleset). CI is green on $SHA."
+          echo "PR #$NUMBER waits for the owner's approval; CI is green on $SHA." >> "$GITHUB_STEP_SUMMARY"
+          echo "merged=false" >> "$GITHUB_OUTPUT"
       - name: Deploy production
         # Its GITHUB_TOKEN merge starts no push run, so deploy.yml's merge trigger never sees it: this
         # dispatch deploys the facts (owner decision 2026-10-11). Set the repository variable
         # AUTO_DEPLOY_FACTS=false to stop it (docs/deploy.md).
-        if: steps.facts.outputs.changed == 'true' && vars.AUTO_DEPLOY_FACTS != 'false'
+        if: steps.facts.outputs.changed == 'true' && steps.merge.outputs.merged == 'true' && vars.AUTO_DEPLOY_FACTS != 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ steps.pr.outputs.number }}
