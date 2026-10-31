@@ -135,7 +135,16 @@ export const GPU_MEMORY_BUDGET = {
   geometries: 0,
   textures: 0,
   programs: 0,
+  /** `Runtime.getHeapUsage` growth (V8's code space included): `e2e/perf/memory-full.spec.ts`. */
   heapBytes: 2 * 1024 * 1024,
+  /**
+   * Retained JS growth (`readRetainedJsBytes` in `e2e/heap.ts`: objects, closures, arrays and strings of a heap
+   * snapshot, without V8's code or Blink memory): every `e2e/memory.spec.ts` gate. Measured locally (issue #298):
+   * 4 Page View toggles +57 KB (three's binding states keyed by its ever-rising program id, until it passes about
+   * 1024), 10 Lobby to Roof round trips +47 to 64 KB, while `getHeapUsage` grew about 1 and 2.1 MB, nearly all V8
+   * optimizing more of the page. A retained old canvas, scene or floor is megabytes.
+   */
+  retainedHeapBytes: 256 * 1024,
   roundTrips: 10,
   pageViewToggles: 5,
   /**

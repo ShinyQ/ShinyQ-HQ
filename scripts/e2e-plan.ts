@@ -305,6 +305,8 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["hud-corners", "hud", "onboarding", "experience", "arrivals"] },
   // The shared joystick double-tap helper (the boost toggle test).
   { test: /^e2e\/touch\.ts$/, specs: ["boost"] },
+  // The retained JS heap read of the memory gates.
+  { test: /^e2e\/heap\.ts$/, specs: ["memory"] },
   // HUD over the canvas.
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
