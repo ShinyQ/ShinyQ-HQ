@@ -146,6 +146,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/uptime.ts`: hourly production check (uptime.yml): / and /en with og tags, /api/ask status, /api/stats freshness, last deploy.yml; one retry, then one `uptime` issue opened, updated or closed.
 - `scripts/stats-token-check.ts`: CI probes before the hq-stats deploy: the analytics token (CF_STATS_TOKEN, else CF_EVAL_TOKEN) reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers (KV advisory; never prints a token).
 - `scripts/stats-dry-run.ts`: runs the hq-stats pipeline against production data into an in-memory KV and prints the snapshot (WA_TOKEN, WA_ACCOUNT_ID from the environment).
+- `scripts/rum-report.ts`: read-only field performance report, RUM beacon buckets per tier, the 3D vs Classic split and Web Vitals per device (same env as `stats-dry-run.ts`).
 
 ### Captures
 
