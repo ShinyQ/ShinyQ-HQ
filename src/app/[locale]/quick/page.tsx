@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CvButton } from "@/components/cv/CvButton";
-import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
+import { PostList } from "@/components/LibraryBlocks";
 import { PageIntro, SectionSplit, StatLedger } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
 import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { AwardList, SkillsWall } from "@/components/ProfileBlocks";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
-import { getAwards, getLibrary, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
-import { isResearch } from "@/content/selectors";
+import { getAwards, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
 import { seoMetadata } from "@/lib/seo";
@@ -22,17 +21,30 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/quick">)
 
 const TOC = ["profile", "stats", "software", "ai", "data", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"] as const;
 
+/**
+ * The 60-second brief (owner decision 2026-11-01): each list shows its first rows and links to the full page, so a
+ * recruiter on a phone reads the whole page and the contact line sits in the profile at the top.
+ */
+const WING_ROWS = 3;
+const ROLE_ROWS = 6;
+const SIDE_ROWS = 3;
+const POST_ROWS = 3;
+const CERT_ROWS = 3;
+
 export default async function QuickViewPage({ params }: PageProps<"/[locale]/quick">) {
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "quick" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const th = await getTranslations({ locale, namespace: "home" });
-  const tl = await getTranslations({ locale, namespace: "library" });
   const profile = getProfile();
   const roof = getRoof();
-  const library = getLibrary();
-  const timeline = getTimeline().reverse();
+  // The latest roles only (jobs and freelance), newest first; the rest of the timeline lives on Journey.
+  const roles = getTimeline()
+    .filter((e) => e.type === "job" || e.type === "freelance")
+    .reverse()
+    .slice(0, ROLE_ROWS);
+  const sideProjects = getSideProjects();
 
   const section = (id: (typeof TOC)[number]) => ({ id, title: t(id) });
 
@@ -63,6 +75,17 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <p className="pv-small mt-2">
           {th("currentRole")}: {profile.currentRole.title[locale]}, {profile.currentRole.org}, {formatYearMonth(profile.currentRole.since, locale)}
         </p>
+        <p className="pv-small mt-2 text-ink-2" data-testid="quick-contact">
+          {roof.availability[locale]}{" "}
+          <a href={`mailto:${roof.contact.email}`} className="pv-uline text-ink transition-colors [overflow-wrap:anywhere] hover:text-cyan">
+            {roof.contact.email}
+          </a>
+        </p>
+        <div className="mt-6">
+          <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-quick">
+            {tc("viewCv")}
+          </CvButton>
+        </div>
         <p className="pv-body mt-5">{profile.bio[locale]}</p>
         <p className="pv-body mt-4">{profile.howIWork[locale]}</p>
       </SectionSplit>
@@ -71,21 +94,22 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <StatLedger stats={getStats()} locale={locale} />
       </SectionSplit>
 
-      {(["software", "ai", "data"] as const).map((wing) => (
-        <SectionSplit key={wing} {...section(wing)} intro={tc(`wing.${wing}`)}>
-          <ul className="pv-rows pv-rows-closed">
-            {getPods(wing)
-              .filter((p) => p.tier !== "listed")
-              .map((pod) => (
+      {(["software", "ai", "data"] as const).map((wing) => {
+        const pods = getPods(wing);
+        return (
+          <SectionSplit key={wing} {...section(wing)} intro={tc(`wing.${wing}`)} more={{ href: `/labs?wing=${wing}`, label: t("allIn", { count: pods.length, wing: tc(`wing.${wing}`) }) }}>
+            <ul className="pv-rows pv-rows-closed">
+              {pods.slice(0, WING_ROWS).map((pod) => (
                 <WorkRow key={pod.id} pod={pod} locale={locale} />
               ))}
-          </ul>
-        </SectionSplit>
-      ))}
+            </ul>
+          </SectionSplit>
+        );
+      })}
 
-      <SectionSplit {...section("timeline")}>
+      <SectionSplit {...section("timeline")} more={{ href: "/journey", label: th("fullJourney") }}>
         <ul className="pv-rows pv-rows-closed">
-          {timeline.map((entry) => (
+          {roles.map((entry) => (
             <TimelineRow key={entry.id} entry={entry} locale={locale} />
           ))}
         </ul>
@@ -95,26 +119,20 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <SkillsWall skills={getSkills()} locale={locale} />
       </SectionSplit>
 
-      <SectionSplit {...section("projects")}>
-        <SideProjectGrid projects={getSideProjects()} locale={locale} />
+      <SectionSplit {...section("projects")} more={{ href: "/journey#workshop", label: t("allSide", { count: sideProjects.length }) }}>
+        <SideProjectGrid projects={sideProjects.slice(0, SIDE_ROWS)} locale={locale} />
       </SectionSplit>
 
       <SectionSplit {...section("certifications")}>
-        <Certifications locale={locale} />
+        <Certifications locale={locale} limit={CERT_ROWS} />
       </SectionSplit>
 
       <SectionSplit {...section("awards")}>
         <AwardList awards={getAwards()} locale={locale} />
       </SectionSplit>
 
-      <SectionSplit {...section("library")}>
-        <PostList posts={getPosts()} locale={locale} />
-        <h3 className="pv-h3 mt-14 mb-4">{tl("research")}</h3>
-        <ResearchList publications={library.publications} self={profile.name} contact={roof.contact} metrics={library.researchMetrics} locale={locale} />
-        <h3 className="pv-h3 mt-14 mb-4">{tl("publications")}</h3>
-        <PublicationList publications={library.publications.filter((p) => !isResearch(p.kind))} locale={locale} />
-        <h3 className="pv-h3 mt-14 mb-4">{tl("talks")}</h3>
-        <TalkList talks={library.talks} locale={locale} />
+      <SectionSplit {...section("library")} more={{ href: "/library", label: th("allWriting") }}>
+        <PostList posts={getPosts().slice(0, POST_ROWS)} locale={locale} />
       </SectionSplit>
 
       <SectionSplit {...section("contact")} intro={roof.availability[locale]}>
