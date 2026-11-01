@@ -120,6 +120,22 @@ export function pagePerfKeys(file: string): PerfKey[] {
   return GUIDE_READER_FILES.test(file) ? ["guides"] : [];
 }
 
+/**
+ * Perf tests whose title ends with this tag run in the nightly (owner decision 2026-11-01): the L1 poses past the arrival
+ * (the Needs Kurniadi beacon, the office in view, the Agent Office stop and the day replay, both tiers). A pull request
+ * that changes the Lobby or the office runs them too (`nightlyPerfFor`); other pull requests and `main` skip them.
+ */
+export const PERF_NIGHTLY_TAG = "@nightly";
+/** What every CI perf shard skips: the local look check and the nightly timeline (perf-nightly.yml); plus `@nightly` unless asked. */
+export const PERF_ALWAYS_SKIP = "@look|@timeline";
+
+const LOBBY_OR_OFFICE = /^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)|^src\/lib\/office\/(poll|model|protocol)\.ts$/;
+
+/** True when the changed files touch the Lobby or the office, so the nightly-only L1 poses run on the pull request. */
+export function nightlyPerfFor(files: readonly string[]): boolean {
+  return files.some((f) => LOBBY_OR_OFFICE.test(f));
+}
+
 /** Playwright `--grep` for the keys; `""` when the keys are every key (run the whole lane). Throws on no keys. */
 export function perfGrep(keys: readonly PerfKey[]): string {
   if (keys.length === 0) throw new Error("perfGrep: no perf keys (plan perf: false instead)");

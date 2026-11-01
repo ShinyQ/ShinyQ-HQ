@@ -868,7 +868,9 @@
     "more": "Proyek {wing} lainnya",
     "breadcrumb": "Jalur navigasi",
     "kind": "Jenis proyek",
-    "room": "Ruang di HQ 3D"
+    "room": "Ruang di HQ 3D",
+    "askAbout": "Apa yang Kurniadi bangun di {title}, dan apa hasilnya?",
+    "askAboutLabel": "Tanya Rover tentang proyek ini"
   },
   "writing": {
     "title": "Tulisan",

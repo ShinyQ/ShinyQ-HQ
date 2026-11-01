@@ -91,6 +91,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | Styling | No colored edge stripes; use `AccentDot` and `hq-glow` | [styling-and-i18n.md](docs/agents/styling-and-i18n.md) |
 | Motion | Write reduce rules as `@variant motion-reduce`, never a bare `prefers-reduced-motion` query | [hud-and-drawer.md](docs/agents/hud-and-drawer.md) |
 | 3D memory | `useDispose(value)` after every memoized geometry, texture or material | [3d-experience.md](docs/agents/3d-experience.md) |
+| 3D elements | A new three JSX element (`<torusGeometry>`) needs its class in `THREE_CATALOGUE` (`scene/threeCatalogue.ts`): R3F's whole-namespace catalogue is patched out | [3d-experience.md](docs/agents/3d-experience.md#three-catalogue) |
 | 3D loop | Animate with `useFrame` deltas; never start another rAF loop | [3d-experience.md](docs/agents/3d-experience.md) |
 | Floor chunks | Never import `Labs`, `Library`, `Roof`, `EngineRoom` or their HUD pieces statically from the `Experience.tsx` closure | [floors.md](docs/agents/floors.md) |
 | Floor text | No words painted on a floor: use `FloatingSigns` | [floors.md](docs/agents/floors.md) |
@@ -108,9 +109,12 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 - Package manager: Bun. Commits: conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`),
   in logical steps. Prefer the `rtk` git wrapper.
 - One PR per change. Do not merge without the owner; PRs land as squash merges.
-- At most 2 CI runs in flight, both pull request runs and at most one of them a full run; a `main` run stays alone
-  (Free plan cap 20 jobs: full PR 12 with 6 e2e and 4 perf shards, selective PR 5 to 7, `main` 14 plus Deploy). Before pushing, check
-  `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued` ([ci-and-deploy.md](docs/agents/ci-and-deploy.md#before-pushing-and-committing)).
+- At most 2 CI runs in flight, at most one of them a full run; a `main` run shares only with one selective PR run
+  (Free plan cap 20 jobs: any run at most 10 e2e plus perf shards, a full run 12 with 6 e2e and 4 perf, selective PR 5 to 8,
+  Deploy 1; at a rare joint peak one job waits in the queue). Before pushing, check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`
+  ([ci-and-deploy.md](docs/agents/ci-and-deploy.md#before-pushing-and-committing)).
+- Before handing a PR to the owner, bring it up to date with `main` (merge `main` in) and wait for its CI to pass, so
+  the merge takes the 4 min deploy fast path and `main` runs only the complement.
 - `main` is protected by a ruleset: changes land only through a PR whose head has the required checks
   (`Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`; no shard: the aggregate requires every job). Force
   pushes, deletion and direct pushes are rejected. In-progress runs on `main` are never cancelled; check main's CI after a merge.
@@ -120,8 +124,9 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 - Smart CI: every PR runs typecheck, lint, unit tests, the secret scan and the build, then only the e2e specs, perf
   tests and Lighthouse URLs its changed paths affect, plus a smoke set (`scripts/ci-plan.ts`; label `full-ci` for
   everything). A push to `main` runs only what its merged PR's green same-tree run did not (else everything);
-  dispatches and the nightly run everything on 8 e2e and 4 perf shards. Tests titled `@nightly` run only in the
-  nightly (PRs and `main` pass `--grep-invert @nightly`). Detail:
+  dispatches and the nightly run everything on 6 e2e and 4 perf shards. Tests titled `@nightly` run only in the
+  nightly (PRs and `main` pass `--grep-invert @nightly`; the nightly-only L1 perf poses also run on a PR that changes
+  the Lobby or the office). Detail:
   [ci-and-deploy.md](docs/agents/ci-and-deploy.md#ci).
 - Before pushing: `bun run verify:quick`, then `bun run e2e:changed`. Add the perf lane when you touch the
   render path, materials, floor mounting, the elevator or what the 3D chunk imports.
