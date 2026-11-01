@@ -28,7 +28,9 @@ async function stubBeacon(page: Page) {
 
 const allVisitBeacons = (page: Page) => page.evaluate(() => (window as unknown as { __beacons: { url: string; body: string }[] }).__beacons.filter((b) => b.url === "/api/visit"));
 /** Mode pings only. */
-const beacons = async (page: Page) => (await allVisitBeacons(page)).filter((b) => !b.body.includes('"kind"'));
+const beacons = async (page: Page) => (await allVisitBeacons(page)).filter((b) => b.body.includes('"mode"'));
+/** Intent pings only (private, owner decision 2026-11-01). */
+const intentPings = async (page: Page) => (await allVisitBeacons(page)).filter((b) => b.body.includes('"intent"')).map((b) => JSON.parse(b.body).intent as string);
 /** Visit pings only. */
 const visitPings = async (page: Page) => (await allVisitBeacons(page)).filter((b) => b.body.includes('"kind"'));
 const leave = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
@@ -170,4 +172,19 @@ test("an automated browser sends no visit or RUM beacon and never loads the Clou
   expect(await page.evaluate(() => sessionStorage.getItem("hq:rum"))).toBe("off");
   expect(await page.evaluate(() => (window as unknown as { __beacons: { url: string }[] }).__beacons)).toEqual([]);
   expect(counted).toEqual([]);
+});
+
+test("a tagged landing carries its channel, and CV, email and LinkedIn intents count once per tab session", async ({ page }) => {
+  await stubBeacon(page);
+  await openPage(page, "/en/contact?tier=static&visit=1&src=li");
+  await expect.poll(async () => (await visitPings(page)).map((b) => b.body)).toEqual(['{"v":1,"kind":"visit","src":"li"}']);
+  // Links that would leave the page are kept on it: only the intent matters here.
+  await page.evaluate(() => document.addEventListener("click", (e) => (e.target as Element).closest("a[href^='mailto:'], a[href*='linkedin.com']") && e.preventDefault()));
+  const email = page.locator("main a[href^='mailto:']").first();
+  await email.click();
+  await email.click();
+  await page.locator("main a[href*='linkedin.com']").first().click();
+  await page.getByTestId("cv-open-footer").click();
+  await expect(page.getByRole("dialog", { name: "CV", exact: true })).toBeVisible();
+  await expect.poll(() => intentPings(page)).toEqual(["email", "linkedin", "cv"]);
 });
