@@ -15,7 +15,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 465.7 KB, lite 450.0 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 426.9 KB, lite 411.2 KB since the three catalogue, [3d-experience.md](3d-experience.md#three-catalogue); 465.2 and 449.4 KB before) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
@@ -32,8 +32,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | Touch controls chunk (`BYTES_3D_BUDGET.touch`) | 2.91 KB gzip, coarse pointers only, outside both session totals (measured 2,368 B of 2,982 B: measured plus 614 B, [decision](../decisions/2026-10-29-phone-first-3d-part-3.md)) | `e2e/budgets.ts` |
 | Corners menu sheet chunk (`BYTES_3D_BUDGET.menu`) | 2.04 KB gzip, loaded on the menu button's first press, outside both session totals (measured 1,475 B of 2,084 B, set at 1,470 B plus 614 B, [decision](../decisions/2026-10-28-phone-first-3d-part-2.md)) | `e2e/budgets.ts` |
 | Pad picker sheet chunk (`BYTES_3D_BUDGET.picker`) | 2.45 KB gzip, loaded when a pad picker first opens, outside both session totals (measured 1,891 B of 2,505 B: measured plus 614 B, [decision](../decisions/2026-10-28-phone-first-3d-part-2.md)) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 530.9 KB, 543,572 B of 544,558 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 516.0 KB (measured 515.1 KB, 527,438 B of 528,424 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 492.5 KB, 504,366 B of 544,558 B since the three catalogue, 543,513 B before; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 516.0 KB (measured 476.8 KB, 488,231 B of 528,424 B since the three catalogue, 527,379 B before; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 142.9 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -92,12 +92,12 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 #### `bytes-3d`
 
 - Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 466.4 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 465.7 KB (476,877 B), lite 450.0 KB (460,743 B) (the full tier adds the lazy `Effects` chunk).
+  - It gates the critical path before the first frame. Measured: full 426.9 KB (437,196 B), lite 411.2 KB (421,061 B) since the three catalogue (full 476,341 B and lite 460,207 B before) (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 531.8 KB: measured 530.9 KB (main 465.7 KB plus floor chunks 30.5 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
-  - lite 516.0 KB: measured 515.1 KB (main 450.0 KB plus floor chunks 30.5 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
+  - full 531.8 KB: measured 492.5 KB (main 426.9 KB plus floor chunks 31.0 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
+  - lite 516.0 KB: measured 476.8 KB (main 411.2 KB plus floor chunks 31.0 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
   - Re-set for the L4 reader tracks (owner decision 2026-10-25, [decision](../decisions/2026-10-25-l4-reader-tracks.md)): measured + 614 B, +2,158 B on both tiers (from 526,266 B and 542,400 B).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md), applied for the office crew, [decision](../decisions/2026-10-21-office-crew-budgets.md), the always-live office, [decision](../decisions/2026-10-21-office-always-live-budgets.md), the ten desks, [decision](../decisions/2026-10-21-office-live-ten-budgets.md), the ship-it pipeline, [decision](../decisions/2026-10-21-office-pipeline-budgets.md), and last for the day replay, [decision](../decisions/2026-10-22-office-replay-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 13.2 KB (13,519 B), RF 3.3 KB, B1 16.5 KB (B1 only in unlocked sessions).

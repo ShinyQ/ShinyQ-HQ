@@ -251,6 +251,21 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - Config, elevator, rigs, orbit, camera collision, first person, movement, faces, navgrid, collision, intents, url-sync, gpu-tier and viewport must stay free of React and three side effects, so Vitest can run them in node.
 - `rover/fade.ts` only touches the three objects it is given.
 
+## Three catalogue
+
+- R3F knows a JSX element (`<mesh>`, `<boxGeometry>`) only when its three class is registered with `extend`. R3F's own
+  `Canvas` registers the whole three namespace, which keeps every three class (loaders, animation, audio, helpers, ...)
+  on the first-frame path; a `bun patch` of `@react-three/fiber` drops that call ([ci-and-deploy.md](ci-and-deploy.md#dependencies)).
+- `THREE_CATALOGUE` in `src/experience/scene/threeCatalogue.ts` lists the classes the 3D tree renders (drei's
+  `RoundedBox` adds `ExtrudeGeometry`); `registerThreeCatalogue()` runs at module scope in every file that renders a
+  `Canvas` (`Experience.tsx`, the dev certs prototype).
+- A new element needs its class in the catalogue, or R3F throws "is not part of the THREE namespace" at mount. Classes
+  used only from code (`new Vector3()`, `<primitive object={...}>`) need no entry.
+- Guard: `tests/unit/three-catalogue.test.ts` scans the 3D files (and the drei components they import) and fails on a
+  missing or an unused entry, a `Canvas` file that does not register it, or an unpatched R3F.
+- Measured (2026-11-01): the main path dropped from 476,341 to 437,196 B gzip (full) and from 460,207 to 421,061 B
+  (lite), the same 39.1 KB on both session totals.
+
 ## Disposal
 
 - A geometry, texture or material built in `useMemo` and passed as a prop or in `args` must be disposed: call `useDispose(value)` (`src/experience/fx/useDispose.ts`) right after the `useMemo`. R3F disposes only what it creates from JSX.

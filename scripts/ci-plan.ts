@@ -42,7 +42,7 @@ export const PLAN_MAPS = ["scripts/e2e-plan.ts", "scripts/perf-plan.ts"] as cons
  */
 const CLASSES: [RegExp, ChangeClass][] = [
   [/^scripts\/(e2e|perf)-plan\.ts$/, "planmap"],
-  [/^\.github\/(workflows\/ci\.yml$|actions\/)|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^\.github\/(workflows\/ci\.yml$|actions\/)|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^patches\/|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts|atlas)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
