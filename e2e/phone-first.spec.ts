@@ -581,3 +581,58 @@ test.describe("no tilt hint in landscape (844x390)", () => {
   });
 });
 
+/** The boot overlay of a new visit, once its card shows (View CV and Contact sit beside Boot rover and Classic site). */
+async function quickBootCard(page: Page, path = "/en") {
+  await page.goto(`${path}?tier=lite`);
+  await waitForHQ(page);
+  const overlay = page.getByTestId("boot");
+  await expect(overlay.locator(".hq-boot-card")).toBeVisible();
+  return overlay;
+}
+
+test.describe("boot card: View CV and Contact (owner decision 2026-11-01)", () => {
+  test("the server cover carries View CV and Contact as real links (they work before any JS)", async ({ page }) => {
+    const html = await (await page.request.get("/en")).text();
+    const cover = html.slice(html.indexOf('id="hq-boot-cover"'));
+    expect(cover).toContain('href="/en/cv?view=classic"');
+    expect(cover).toContain('href="/en/contact?view=classic#availability"');
+  });
+
+  test.describe("portrait phone", () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test("View CV and Contact sit in the docked card; View CV opens the CV reader over the boot", async ({ page }) => {
+      const overlay = await quickBootCard(page);
+      const card = overlay.locator(".hq-boot-card");
+      const cv = overlay.getByRole("link", { name: en.common.viewCv });
+      const contact = overlay.getByRole("link", { name: en.hud.bootContact });
+      await expect(contact).toHaveAttribute("href", "/en/contact?view=classic#availability");
+      const c = await rect(card);
+      expect(c.y, "the card stays in the lower half").toBeGreaterThanOrEqual(844 * 0.4);
+      for (const link of [cv, contact]) {
+        const b = await rect(link);
+        expect(b.height).toBeGreaterThanOrEqual(44);
+        expect(b.y + b.height).toBeLessThanOrEqual(844);
+      }
+      await cv.click();
+      await expect(page.getByRole("dialog", { name: "CV", exact: true })).toBeVisible();
+      await expect(page).toHaveURL(/\/en\?tier=lite$/);
+    });
+  });
+
+  test.describe("landscape phone", () => {
+    test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+
+    test("the owner block is never clipped and every action is on screen", async ({ page }) => {
+      const overlay = await quickBootCard(page);
+      const who = await rect(overlay.getByTestId("boot-who"));
+      expect(who.y, "the name is not cut off at the top").toBeGreaterThanOrEqual(0);
+      await expect(overlay.locator(".hq-boot-log")).toBeHidden();
+      for (const name of ["Boot rover", "Classic site", en.common.viewCv, en.hud.bootContact]) {
+        const action = overlay.getByRole(name === "Boot rover" ? "button" : "link", { name });
+        const b = await rect(action);
+        expect(b.y + b.height, name).toBeLessThanOrEqual(390);
+      }
+    });
+  });
+});

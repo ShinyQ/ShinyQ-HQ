@@ -90,7 +90,7 @@ interface Rule {
  */
 export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
-  { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
+  { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$|^patches\//, specs: "all" },
   { test: /^e2e\/(hq|routes|budgets)\.ts$/, specs: "all" },
   { test: /^e2e\/(screenshots|pageview-visual|camera-visual|visual-gate|delivery-visual)\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
   // CI shard timings (scripts/e2e-shard.ts): they change which shard runs a test, never what it checks.
@@ -101,9 +101,9 @@ export const RULES: Rule[] = [
   { test: /^e2e\/fixtures\/guide-pdf\.ts$/, specs: ["guides", "guides-vault"] },
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
-  // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
+  // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index, the field performance report): never part of the export.
   {
-    test: /^scripts\/(arrival-shots|ask-embed|ask-eval|ask-pack|ask-samples|ask-staleness|b1-reactor-shots|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|docs-index|intro-shots|media-sizes|office-shots|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|study-guides|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    test: /^scripts\/(arrival-shots|ask-embed|ask-eval|ask-pack|ask-samples|ask-staleness|b1-reactor-shots|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|docs-index|intro-shots|media-sizes|office-shots|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|rum-report|sky-shots|study-guides|subset-fonts|title-case|uptime|check-client-chunks)\./,
     specs: [],
   },
   // Build-time scans of the export: the script policy and the deploy rules.

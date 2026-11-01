@@ -18,6 +18,13 @@ export interface BootPageLink {
   hint: string;
 }
 
+/** The recruiter fast lane beside it: View CV (`cv`: `DialogHost` opens the reader on a plain click) and Contact. */
+export interface BootQuickLink {
+  href: string;
+  label: string;
+  cv?: boolean;
+}
+
 export interface BootCardProps {
   eyebrow: string;
   title: string;
@@ -36,17 +43,25 @@ export interface BootCardProps {
   placeholder?: boolean;
   who?: BootWho;
   pageView?: BootPageLink;
+  quick?: BootQuickLink[];
 }
 
 /**
  * The boot card shared by the SSR boot cover and the 3D boot overlay, so the handoff from one to
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
  * There is no skip: the boot and the intro always play in full (owner decision). "Classic site" leaves
- * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
+ * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated. View CV and Contact
+ * (`quick`, owner decision 2026-11-01) answer a recruiter in one tap without leaving the boot either.
  * On a portrait phone the card docks at the bottom and the log shows one rolling line (`data-last`, hud-shared.css).
  */
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
+
+/** View CV (the Classic CV page, the reader once hydrated) and Contact (About's availability and channels). */
+export const bootQuickLinks = (locale: string, cv: string, contact: string): BootQuickLink[] => [
+  { href: `/${locale}/cv?view=classic`, label: cv, cv: true },
+  { href: `/${locale}/contact?view=classic#availability`, label: contact },
+];
 
 /** The rover brand mark tile (public/brand, written by scripts/brand-marks.ts). */
 export const BOOT_MARK_SRC = "/brand/rover-mark.svg";
@@ -127,6 +142,15 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
             <PageViewIcon size={16} />
             {p.pageView.label}
           </a>
+        )}
+        {p.quick && (
+          <div className="flex w-full flex-wrap gap-x-5">
+            {p.quick.map((link) => (
+              <a key={link.href} href={link.href} data-hq-cv={link.cv ? "" : undefined} aria-haspopup={link.cv ? "dialog" : undefined} className="hq-boot-page">
+                {link.label}
+              </a>
+            ))}
+          </div>
         )}
       </div>
     </div>

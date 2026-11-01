@@ -15,7 +15,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 465.7 KB, lite 450.0 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 426.9 KB, lite 411.2 KB since the three catalogue, [3d-experience.md](3d-experience.md#three-catalogue); 465.2 and 449.4 KB before) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
@@ -32,8 +32,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | Touch controls chunk (`BYTES_3D_BUDGET.touch`) | 2.91 KB gzip, coarse pointers only, outside both session totals (measured 2,368 B of 2,982 B: measured plus 614 B, [decision](../decisions/2026-10-29-phone-first-3d-part-3.md)) | `e2e/budgets.ts` |
 | Corners menu sheet chunk (`BYTES_3D_BUDGET.menu`) | 2.04 KB gzip, loaded on the menu button's first press, outside both session totals (measured 1,475 B of 2,084 B, set at 1,470 B plus 614 B, [decision](../decisions/2026-10-28-phone-first-3d-part-2.md)) | `e2e/budgets.ts` |
 | Pad picker sheet chunk (`BYTES_3D_BUDGET.picker`) | 2.45 KB gzip, loaded when a pad picker first opens, outside both session totals (measured 1,891 B of 2,505 B: measured plus 614 B, [decision](../decisions/2026-10-28-phone-first-3d-part-2.md)) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 530.9 KB, 543,572 B of 544,558 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 516.0 KB (measured 515.1 KB, 527,438 B of 528,424 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 492.5 KB, 504,366 B of 544,558 B since the three catalogue, 543,513 B before; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 516.0 KB (measured 476.8 KB, 488,231 B of 528,424 B since the three catalogue, 527,379 B before; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 142.9 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -71,8 +71,9 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 
 ### Perf lane (`e2e/perf/`)
 
-- Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards with 2 Playwright workers each: the whole lane on 4 shards (`main`, dispatches, the nightly and a full PR); on a selective PR, 1 to 4 shards (`ceil(seconds / 960)` from the perf lane of `e2e/durations.json`) running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+- Runs only with `PERF=1`: `bun run e2e:perf` (`bun run e2e:perf:nightly` adds the nightly-only L1 poses).
+  - Tags: `@look` (the local look check) and `@timeline` (`perf-nightly.yml`) never run in a CI perf shard; `@nightly` marks the eight L1 poses past the arrival (the Needs Kurniadi beacon, the office in view, the Agent Office stop and the day replay, both tiers; 2,637 of 7,427 lane worker-seconds), which run on the nightly schedule and on a PR that changes the Lobby or the office, never on other PRs or `main` (owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md); the L1 arrival gate on both tiers keeps the Lobby covered on every 3D PR and merge). A unit test in `tests/unit/e2e-plan.test.ts` pins the eight. Run them locally when you touch the Lobby or the office.
+  - CI job `3D perf gates`: `scripts/e2e-shard.ts i/N` with `PERF=1` (`bun run e2e:perf:shard i/N` locally), duration-balanced shards with 2 Playwright workers each: the whole lane on 4 shards (`main`, dispatches, the nightly and a full PR); on a selective PR, 1 to 4 shards (`ceil(seconds / 960)` from the perf lane of `e2e/durations.json`) running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run one perf key locally with the same grep, for example `PERF=1 bunx playwright test --grep "L3 (full|lite): settled"`.
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
@@ -91,12 +92,12 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 #### `bytes-3d`
 
 - Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 466.4 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 465.7 KB (476,877 B), lite 450.0 KB (460,743 B) (the full tier adds the lazy `Effects` chunk).
+  - It gates the critical path before the first frame. Measured: full 426.9 KB (437,196 B), lite 411.2 KB (421,061 B) since the three catalogue (full 476,341 B and lite 460,207 B before) (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 531.8 KB: measured 530.9 KB (main 465.7 KB plus floor chunks 30.5 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
-  - lite 516.0 KB: measured 515.1 KB (main 450.0 KB plus floor chunks 30.5 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
+  - full 531.8 KB: measured 492.5 KB (main 426.9 KB plus floor chunks 31.0 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
+  - lite 516.0 KB: measured 476.8 KB (main 411.2 KB plus floor chunks 31.0 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
   - Re-set for the L4 reader tracks (owner decision 2026-10-25, [decision](../decisions/2026-10-25-l4-reader-tracks.md)): measured + 614 B, +2,158 B on both tiers (from 526,266 B and 542,400 B).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md), applied for the office crew, [decision](../decisions/2026-10-21-office-crew-budgets.md), the always-live office, [decision](../decisions/2026-10-21-office-always-live-budgets.md), the ten desks, [decision](../decisions/2026-10-21-office-live-ten-budgets.md), the ship-it pipeline, [decision](../decisions/2026-10-21-office-pipeline-budgets.md), and last for the day replay, [decision](../decisions/2026-10-22-office-replay-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 13.2 KB (13,519 B), RF 3.3 KB, B1 16.5 KB (B1 only in unlocked sessions).
@@ -127,6 +128,7 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 
 - `memory-full` (owner decision): `GPU_MEMORY_BUDGET.fullTierRoundTrips` (3) Lobby to Roof round trips on the full tier with Motion Full leave geometries, textures and programs at their baseline and the heap within the budget.
   - Its warm-up tour rides with Motion Full as well: a Motion Reduced warm-up left 2 geometries and a program for the first measured trips to build (a false failure in PR #201's CI).
+  - After the warm-up tour it loads the always-live Agent Office scene and waits until it shows, as `e2e/memory.spec.ts` does: the back-to-back trips could leave that one-off idle load for the final settled read (+2 geometries and a program over the baseline in 3 CI runs).
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite. Its heap check is the retained JS of a heap snapshot (`readRetainedJsBytes`, under `GPU_MEMORY_BUDGET.retainedHeapBytes`, 256 KB), not the heap in use: over 10 Lobby to Roof round trips the heap in use grew about 2.1 MB, 1.9 MB of it V8's optimized code, while the retained JS grew 47 to 64 KB ([decision](../decisions/2026-10-31-retained-heap-gate.md)).
 - B1 memory: `e2e/memory.spec.ts` rides Lobby to B1 round trips in an unlocked session (`e2e/b1.ts`). The perf lane covers B1 in `floors.spec.ts` (settled, after a ride from the Lobby) and `peaks.spec.ts` (rides L1 to B1 and RF to B1, both tiers).
 - Page View toggles: the baseline is the steady state after 3 warm-up toggles and the one-off idle loads of an L1 visit (every public floor chunk `ready` in `__hq.floorChunks.snapshot()`, the office scene loaded: `__hq.office.load()`, then `__hq.probes.office.loaded`); then 4 measured toggles (`GPU_MEMORY_BUDGET.pageViewToggles` 5 counts the first toggle, the only warm-up before), the same idle loads again, and the final read. A leak still grows with every measured toggle; the first toggles' one-off loads no longer land in the window.
@@ -181,13 +183,13 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 
 ### Frame rate and timeline
 
-- Never gate time: SwiftShader FPS and timings are noise.
+- Never gate time: SwiftShader FPS and timings are noise. The two lite frame-rate bands of `e2e/perf/floors.spec.ts` (the Agent Office effects and the day replay, at least 75% of the still office's frame rate, an owner decision) compare two reads of the same page, each from a frame boundary over at least 24 whole frames (the effects read within 6 s, while the deploy beam runs), and the day replay's still read waits until the programs settle: read on arrival it caught the compiles (0.7 to 9 fps within seconds), and at 2 to 5 fps a fixed 3 s window moved by a whole frame, a third of the reading (7 failed runs in 5 days).
 - A parked scene renders at the idle cadence (30 fps or on demand, [3d-experience.md](3d-experience.md#idle-cadence)); it is off under automation, so specs and the perf lane count 60 fps frames. Measure it on a real GPU with `navigator.webdriver` hidden: `__hq.frames()` over 5 s parked and the CDP `Performance.getMetrics` TaskDuration delta (main-thread busy time).
 - Frame rate is checked on real devices with `?perf=1` and in the field with the RUM beacon.
   - The `?perf=1` overlay shows FPS p50/p10, frame p95, scene and post calls, GPU objects, tier and renderer, DPR and pixels, and a sixth line with the last elevator ride from `window.__hq.ridePrep.lastRide`.
   - It mounts only with the flag (about 1 KB inside the 3D chunk, never on the Page View).
   - `perfOverlayOn` in `experience/perf/lines.ts` is the one parser of the flag.
-- The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@nightly`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
+- The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@timeline`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
 
 ### Game-first LCP
 
@@ -208,6 +210,11 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 - Never with Do Not Track or GPC (they win over `?rum=1` too).
 - Do not add fields without amending appendix 06 and `src/lib/rum/protocol.ts` together.
 - Never send a URL, user agent, renderer string or free text.
+- Read the field numbers with `bun scripts/rum-report.ts` (`--days N` up to 90, `--json`; env `WA_TOKEN`
+  and `WA_ACCOUNT_ID` as for `scripts/stats-dry-run.ts`): per tier the sessions, context lost, boot timeouts and empty
+  beacons, the load path, fps50, fps10 and explore buckets, the 3D vs Classic split, and Web Vitals per device type (Web
+  Analytics, hard navigations). Read-only and aggregated: SELECT and `query` only, fixed enum groupings (never a path,
+  selector, browser, country, IP or user agent). Put its before and after tables in a PR that targets field performance.
 
 ## Fast verification
 
@@ -219,7 +226,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 |---|---|---|
 | Before every push | `bun run verify:quick` (typecheck, lint, unit tests, `next build`, then `og:check` over the export) | about 1 to 2 minutes |
 | Before every push, after it | `bun run e2e:changed` (only the specs that cover your changed paths) | usually 1 to 4 minutes |
-| Render path, materials, floor mounting, the elevator or what the 3D chunk imports changed | `E2E_PORT=<port> bun run e2e:perf` (3D bytes, floors, peaks, the full-tier memory gate) | about 10 to 12 minutes on 2 workers |
+| Render path, materials, floor mounting, the elevator or what the 3D chunk imports changed | `E2E_PORT=<port> bun run e2e:perf` (3D bytes, floors, peaks, the full-tier memory gate); `e2e:perf:nightly` adds the L1 poses past the arrival when the Lobby or the office changed | about 10 to 12 minutes on 2 workers |
 | CPU changes | `bun run bench` | |
 | Unsure | `bun run e2e:smoke` (static routes, SEO, deploy rules, game-first load, Page View) | about 1 to 2 minutes |
 | Shared test infrastructure changed, before a phase PR, or to reproduce a CI failure | `bun run e2e:full` (whole suite) | about 6 to 10 minutes locally |
@@ -407,5 +414,5 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 ### Retries and flaky tests
 
 - No blanket retries: CI retries once; fix a flaky test instead of adding retries.
-- The `Build, CV and e2e` job summary lists every test that passed only on retry (`scripts/flaky-report.ts`, plus a warning annotation).
+- The `Build, CV and e2e` job summary lists every test that passed only on retry (`scripts/flaky-report.ts`, plus a warning annotation), in the e2e lane and the perf lane (the perf shards' blob reports, merged to JSON): a slow perf test that passes on its retry adds its whole time again to its shard.
 - Give each one an issue with an owner, never a quarantine.

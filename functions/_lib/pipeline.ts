@@ -160,7 +160,30 @@ export type RoutePlan =
       team: boolean;
       /** HARD private topics of a mixed question's declined clauses (`partitionQuestion`). */
       declined: PrivateTopic[];
+      /** The question names one of his projects by its full title (`namesProject`): no topical or assisted re-route. */
+      named: boolean;
     };
+
+const projectTitles = new WeakMap<KnowledgePack, string[]>();
+const titleKey = (text: string) => normalizeDashes(text).toLowerCase().replace(/\s+/g, " ").trim();
+/** The Indonesian title of a project chunk, from its opening sentence (`Proyek (wing): title, start hingga end.`). */
+const ID_TITLE = /^Proyek \([^)]*\): (.+?), \d{4}-\d{2}(?:-\d{2})? hingga /;
+
+/**
+ * A question that names one of his projects by its full English or Indonesian title asks about that project, whatever
+ * words the title holds ("Anime Figure E-Commerce Backend" is not a hobby, "... Kebijakan PPKM" is not a policy
+ * question): the case study's "Ask Rover about this project" and visitors who paste a title.
+ */
+export function namesProject(question: string, pack: KnowledgePack): boolean {
+  let titles = projectTitles.get(pack);
+  if (!titles) {
+    const raw = pack.chunks.filter((c) => c.type === "project").flatMap((c) => [c.title, ID_TITLE.exec(c.text_id)?.[1]]);
+    titles = [...new Set(raw.filter((t): t is string => Boolean(t)).map(titleKey))].filter((t) => t.length >= 8);
+    projectTitles.set(pack, titles);
+  }
+  const q = titleKey(question);
+  return titles.some((t) => q.includes(t));
+}
 
 /**
  * Routing of one cleaned, PII-scrubbed question (owner rules 2026-10-15, 2026-10-19, 2026-10-24): harmful, persona
@@ -224,14 +247,16 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   const approach = problem && leadMatches(pack, routed).length > 0;
 
   // A learning question wins over the AI-and-jobs policy heuristic ("Which certificates would help me land an AI job?").
-  const mentoring = !lead && !civicQuestion(routed) && isMentoringQuestion(routed);
-  const topic = lead || mentoring ? undefined : routedTopic(routed);
+  // A question that names a project by its title is about that project: no topical route.
+  const named = namesProject(routed, pack);
+  const mentoring = !lead && !named && !civicQuestion(routed) && isMentoringQuestion(routed);
+  const topic = lead || mentoring || named ? undefined : routedTopic(routed);
   const civic = !lead && topic === "policy" && (civicQuestion(routed) || declined.includes("politics"));
   const team = !lead && !topic && !mentoring && isTeamQuestion(routed);
   // A related professional question (owner decision 2026-10-19): answered only from his work, with a cited source.
   const adjacent = !lead && !topic && !mentoring && !team && isAdjacentQuestion(routed);
   const route: AskRoute = approach ? "approach" : lead ? "lead" : civic ? "civic" : topic ? topic : mentoring ? "mentoring" : team ? "team" : adjacent ? "adjacent" : "default";
-  return { kind: "model", route, routed, modelQuestion, ...(anchor ? { anchor } : {}), history, ...(topic ? { topic } : {}), lead, approach, adjacent, civic, mentoring, team, declined };
+  return { kind: "model", route, routed, modelQuestion, ...(anchor ? { anchor } : {}), history, ...(topic ? { topic } : {}), lead, approach, adjacent, civic, mentoring, team, declined, named };
 }
 
 /**
@@ -243,7 +268,7 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
 export const ASSIST = { mentoring: 0.8, civic: 0.85, offtopic: 0.6, margin: 0.1, offtopicMargin: 0.15, privateVeto: 0.85, offtopicChunkMax: 0.5 } as const;
 
 export function assistRoute(plan: Extract<RoutePlan, { kind: "model" }>, signals: Partial<Record<RouterLabel, number>>, bestChunk: number): AskRoute | "offtopic" | undefined {
-  if (plan.route !== "default" || plan.declined.length || plan.anchor) return undefined;
+  if (plan.route !== "default" || plan.declined.length || plan.anchor || plan.named) return undefined;
   const s = (label: RouterLabel) => signals[label] ?? 0;
   if (s("private") >= ASSIST.privateVeto) return undefined;
   const others = (label: RouterLabel) => Math.max(...ROUTER_LABELS.filter((l) => l !== label).map(s));

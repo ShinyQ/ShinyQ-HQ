@@ -118,9 +118,9 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 ### E2E planning and perf reports
 
-- `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run. On a push to `main` it plans the complement of the merged PR's green same-tree run.
+- `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run. On a push to `main` it plans the complement of the merged PR's green same-tree run. A change of the spec maps runs what it moves (`mapDiff`, the base maps loaded from the PR base).
 - `scripts/ci-complement.ts`: pure complement helpers (what a CI run covered, its record artifact, what a `main` push still needs); dependency-free.
-- `scripts/perf-plan.ts`: pure perf lane selection: which 3D perf gates a set of changed 3D files needs and the Playwright `--grep` that runs them.
+- `scripts/perf-plan.ts`: pure perf lane selection: which 3D perf gates a set of changed 3D files needs and the Playwright `--grep` that runs them, and whether a change runs the nightly-only L1 poses (`nightlyPerfFor`).
 - `scripts/e2e-plan.ts`: pure path-to-spec map, worker-aware duration-balanced shard split, CI log timing parser and runner speed normalization (unit tested, including the shard union against the real `--list`).
 - `scripts/e2e-changed.ts`: `e2e:changed`: runs the specs that cover your changed paths.
 - `scripts/e2e-shard.ts`: `e2e:shard i/N` and `e2e:perf:shard i/N`: duration-balanced CI shard (e2e/durations.json; it lists the tests missing from the file) with a blob report; `--dry` prints the plan.
@@ -134,7 +134,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/ci-status.ts`: deploy gate: reuse the green complete CI result (`ci-full` artifact) for a commit or its tree.
 - `scripts/merge-gate.ts`: fast-path gate of a merge deploy: merged same-repository PR, same tree, required checks green on its head, no open `deploy-rollback` issue.
 - `scripts/rollback.ts`: `rollback.yml`: rolls Pages production back after a red `main` CI (`pages`), opens or updates (`issue`) and closes (`clear`) the `deploy-rollback` issue.
-- `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`).
+- `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`); with `NIGHTLY_KIND=screenshots` the same for the nightly `screenshots.yml` run and its `screenshots-nightly` issue.
 - `scripts/ask-eval.ts`: real-model golden and red-team runs (ask-eval.yml).
 - `scripts/ask-samples.ts`: owner-review Ask samples (ten fixed questions in EN and ID through the Function's pipeline, a Markdown table); ask-samples.yml runs it on a Groq model.
 - `scripts/provision-ask.ts`: idempotent Cloudflare provisioning (dry run unless --apply).
@@ -146,6 +146,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/uptime.ts`: hourly production check (uptime.yml): / and /en with og tags, /api/ask status, /api/stats freshness, last deploy.yml; one retry, then one `uptime` issue opened, updated or closed.
 - `scripts/stats-token-check.ts`: CI probes before the hq-stats deploy: the analytics token (CF_STATS_TOKEN, else CF_EVAL_TOKEN) reads Web Analytics and Analytics Engine, CLOUDFLARE_API_TOKEN sees Workers (KV advisory; never prints a token).
 - `scripts/stats-dry-run.ts`: runs the hq-stats pipeline against production data into an in-memory KV and prints the snapshot (WA_TOKEN, WA_ACCOUNT_ID from the environment).
+- `scripts/rum-report.ts`: read-only field performance report, RUM beacon buckets per tier, the 3D vs Classic split and Web Vitals per device (same env as `stats-dry-run.ts`).
 
 ### Captures
 
@@ -358,7 +359,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Systems
 
-- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box and grid per slab rect and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
+- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box per slab rect, one grid over them all and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
 - `src/experience/missions/`: pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring).
 - `src/experience/nav/`: pure navigation.
   - navgrid, collision, doors.
@@ -373,7 +374,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Effects (fx)
 
-- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
+- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor, 3 while the chevrons are out of view; 3 on L3, which turns chevrons off).
 - `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
 - `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots, `paperSlots` and `libraryIcons` (one icon over each bay's lead), run at build for the shapes JSON.
 - `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame and the crossfade weights (`HoloSwap` in `HoloIcon.tsx` draws the swap).

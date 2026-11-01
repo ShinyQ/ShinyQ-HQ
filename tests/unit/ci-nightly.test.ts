@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyNightlyAction, failedFromBody, failedJobs, findOpenIssue, type GitHubCall, ISSUE_TITLE, NIGHTLY_LABEL, nightlyAction, nightlyBody, parseNeeds, summaryMarkdown } from "../../scripts/ci-nightly";
+import { applyNightlyAction, failedFromBody, failedJobs, findOpenIssue, type GitHubCall, ISSUE_TITLE, NIGHTLY_KINDS, NIGHTLY_LABEL, nightlyAction, nightlyBody, nightlyKind, parseNeeds, summaryMarkdown } from "../../scripts/ci-nightly";
 
 const ctx = { runUrl: "https://x/runs/1", sha: "abc1234def", checkedAt: "2026-10-18T20:40:00Z" };
 
@@ -86,5 +86,31 @@ describe("applyNightlyAction and findOpenIssue", () => {
   it("throws on a GitHub error", async () => {
     const { gh } = fakeGh({ "PATCH /repos/o/r/issues/7": { status: 403, data: { message: "no" } } });
     await expect(applyNightlyAction(gh, "o/r", { kind: "update", number: 7, body: "B" })).rejects.toThrow(/HTTP 403/);
+  });
+});
+
+describe("nightly kinds", () => {
+  const ctx = { runUrl: "https://example.test/run/1", sha: "abcdef1234567", checkedAt: "2026-11-01T00:00:00Z" };
+
+  it("keeps the ci kind by default and names the screenshots kind's own label, title and wording", () => {
+    expect(nightlyKind(undefined)).toBe(NIGHTLY_KINDS.ci);
+    expect(nightlyKind("screenshots").label).toBe("screenshots-nightly");
+    expect(() => nightlyKind("visual")).toThrow(/NIGHTLY_KIND/);
+    const kind = NIGHTLY_KINDS.screenshots;
+    expect(nightlyAction(["capture"], null, ctx, kind)).toMatchObject({ kind: "open", title: "Nightly screenshots failed on main" });
+    expect(nightlyBody(["capture"], ctx, kind)).toContain("The nightly screenshots run on main failed on commit abcdef1.");
+    expect(nightlyAction([], { number: 3 }, ctx, kind)).toMatchObject({ kind: "close", comment: expect.stringContaining("The nightly screenshots run on abcdef1 passes again") });
+  });
+
+  it("opens and finds the screenshots issue under its own label", async () => {
+    const calls: [string, string, unknown][] = [];
+    const gh: GitHubCall = async (method, p, body) => {
+      calls.push([method, p, body]);
+      return { status: 200, data: method === "GET" ? [] : { html_url: "https://example.test/issues/9" } };
+    };
+    expect(await findOpenIssue(gh, "o/r", NIGHTLY_KINDS.screenshots)).toBeNull();
+    expect(calls[0][1]).toContain("labels=screenshots-nightly");
+    await applyNightlyAction(gh, "o/r", { kind: "open", title: "t", body: "b" }, NIGHTLY_KINDS.screenshots);
+    expect(calls.find(([m, p]) => m === "POST" && p.endsWith("/issues"))?.[2]).toMatchObject({ labels: ["screenshots-nightly"] });
   });
 });

@@ -148,7 +148,7 @@ All bindings and vars live in `wrangler.toml`.
 
 ## Wire additions
 
-- The request takes an optional `source` (`hero`, `dock`, `pill`, `followup`, `terminal`, `palette`), logged as Analytics Engine blob7 (never with question text).
+- The request takes an optional `source` (`hero`, `dock`, `pill`, `followup`, `terminal`, `palette`, `case`), logged as Analytics Engine blob7 (never with question text). `case` is the case study's "Ask Rover about this project" ([page-view.md](page-view.md#closing-section)).
 - The final SSE frame carries `tags`: the `ASK_TAGS` allowlist in `src/ask/protocol.ts`, derived from chunk types and keywords in `functions/_lib/tags.ts`, never chunk text. A canned decline sends fixed redirect tags (`REDIRECT_TAGS` in `functions/_lib/pipeline.ts`; none for harmful, persona or injection).
 - The final frame may carry `cites` (owner decision 2026-10-24): every cited page when an answer cites more than one, at most `ASK_MAX_CITES` (2), one per cite kind, allowlisted by `cleanCites` on both ends; `cite` stays the first, so older clients still work; a cache hit takes both from the checks it runs again.
 - The request takes an optional `history` (`AskTurn[]`: `{ q, a, sig }`, at most `ASK_HISTORY_TURNS` = 3, oldest first, `a` at most 1000 characters) and the final frame of a model answer carries `sig`.
@@ -314,6 +314,7 @@ Spec section 13.
 - `isGeneralAssistantRequest` also covers reviewing the visitor's CV, code or essay, and only "my/our homework" (so "Should students use ChatGPT for homework?" is a learning question).
 - A model refusal is replaced by the same text as `MESSAGES.decline`, reason `model_decline`.
 - `routedTopic`: retrieval keeps the profile and those chunks, and the answer must follow one of them (`citedSource` on that topic) or it becomes the no-view message.
+- `namesProject` (`functions/_lib/pipeline.ts`): a question that holds a project's full English or Indonesian title (the project chunk's `title`, or the title in its `text_id` opening sentence; dashes, case and spacing folded; titles under 8 characters ignored) skips `routedTopic` and `isMentoringQuestion`, and the router assist never re-routes it (`plan.named`). So "Anime Figure E-Commerce Backend" is not a lifestyle question and "... Kebijakan PPKM" not a policy one; the declines above still run first. Test: `tests/ask/case-question.test.ts` (every project's case study question, both languages, takes the default route and retrieves its own chunk).
 - `usableHistory` also drops earlier turns that were persona requests or rule overrides.
 
 ### Hybrid retrieval

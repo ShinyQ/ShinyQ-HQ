@@ -6,6 +6,8 @@ name: Screenshots
 # - on demand (Actions > Screenshots > Run workflow, any branch),
 # - on a PR labelled `screenshots`, or one that changes docs/design/**.
 # Artifacts: `screenshots` (PNG files) for review.
+# A red nightly opens one `screenshots-nightly` issue, updated while it stays red and closed by the next green
+# night (the `nightly` job, scripts/ci-nightly.ts with NIGHTLY_KIND=screenshots; owner decision 2026-11-01).
 
 on:
   schedule:
@@ -139,3 +141,34 @@ jobs:
           retention-days: 14
       - name: Summary
         run: echo "$(find screenshots -name '*.png' | wc -l) screenshots in the \`screenshots\` artifact." >> "$GITHUB_STEP_SUMMARY"
+
+  nightly:
+    # Nightly only: opens, updates or closes the one `screenshots-nightly` issue (scripts/ci-nightly.ts), so a red
+    # night is seen. APPLY is true only on main.
+    name: Nightly report
+    needs: [gate, site, capture, collect]
+    if: ${{ !cancelled() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+      # No install: scripts/ci-nightly.ts uses fetch only.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - name: Open, update or close the screenshots-nightly issue
+        env:
+          NIGHTLY_KIND: screenshots
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          APPLY: ${{ github.ref == 'refs/heads/main' }}
+        run: bun scripts/ci-nightly.ts
