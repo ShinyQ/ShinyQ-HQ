@@ -66,9 +66,9 @@ export const FETCHED_NAMESPACES = ["guides"] as const;
 
 /**
  * Dotted sub-paths of a CLIENT_NAMESPACES namespace that only server components read and pass on as resolved props
- * (the Classic office card's `office.classic`): `ClientMessages` drops them, so they never ride in a page's RSC payload.
+ * (the Classic office card's `office.classic`, the case study's `labs.engineering` labels): `ClientMessages` drops them, so they never ride in a page's RSC payload.
  */
-export const SERVER_PATHS = ["office.classic"] as const;
+export const SERVER_PATHS = ["labs.engineering", "office.classic"] as const;
 
 /** A copy without the dotted paths; only the objects along a path are copied, everything else stays the same object. */
 export function omitMessages(messages: AbstractIntlMessages, paths: readonly string[]): AbstractIntlMessages {

@@ -264,6 +264,11 @@
     "decisions": "Peran dan keputusan utama",
     "why": "Alasan",
     "lesson": "Pelajaran",
+    "engineering": {
+      "title": "Detail teknis",
+      "limits": "Batasan yang diketahui",
+      "post": "Selengkapnya"
+    },
     "approach": "Kontribusi",
     "architecture": "Arsitektur",
     "results": "Hasil",

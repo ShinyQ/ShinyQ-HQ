@@ -218,6 +218,20 @@ export const PodStorySchema = z.strictObject({
   lesson: LocalizedTextSchema.optional(),
 });
 
+/**
+ * One topic of a case study's "Engineering detail" chapter (owner decision 2026-11-02), for a technical reviewer: a
+ * heading (Title Case, no first person), a one-line summary, 2 to 5 sourced points, the known limits in plain words and
+ * an optional post (`floors.library.posts` slug) that covers the topic in depth. Classic page only: not in the 3D
+ * drawer, Ask or share cards.
+ */
+export const EngineeringTopicSchema = z.strictObject({
+  title: LocalizedTextSchema,
+  summary: LocalizedTextSchema,
+  points: z.array(LocalizedTextSchema).min(2).max(5),
+  limits: LocalizedTextSchema.optional(),
+  post: SlugSchema.optional(),
+});
+
 /** The featured case studies that must read as stories (owner decision 2026-10-25). */
 export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard"] as const;
 
@@ -266,6 +280,8 @@ export const PodSchema = z
     publications: z.array(SlugSchema).min(1).optional(),
     /** Story chapters on the case study page (`STORY_SLUGS` must have one); `problem` and `approach` stay for 3D and Ask. */
     story: PodStorySchema.optional(),
+    /** "Engineering detail" chapter on the case study page (`EngineeringTopicSchema`), 1 to 4 topics. */
+    engineering: z.array(EngineeringTopicSchema).min(1).max(4).optional(),
   })
   .superRefine((pod, ctx) => {
     if (pod.liveUrl) {
@@ -700,9 +716,13 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     }
   });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));
+  const postSlugs = new Set(posts.map((p) => p.slug));
   content.floors.labs.pods.forEach((pod, i) => {
     pod.publications?.forEach((id, j) => {
       if (!ids.has(id)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "publications", j], message: `Unknown publication "${id}"` });
+    });
+    pod.engineering?.forEach((topic, j) => {
+      if (topic.post && !postSlugs.has(topic.post)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "engineering", j, "post"], message: `Unknown post "${topic.post}"` });
     });
   });
   // A featured pod present in the dataset must carry its story. Presence of all six is checked against the real dataset
@@ -768,6 +788,7 @@ export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type PostDiagrams = z.infer<typeof PostDiagramsSchema>;
 export type Pod = z.infer<typeof PodSchema>;
 export type PodStory = z.infer<typeof PodStorySchema>;
+export type EngineeringTopic = z.infer<typeof EngineeringTopicSchema>;
 export type Track = z.infer<typeof TrackSchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
