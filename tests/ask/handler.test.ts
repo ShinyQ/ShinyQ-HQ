@@ -462,11 +462,11 @@ describe("privacy (T10)", () => {
     const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
     const { call, events } = setup();
     await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
-    expect(events[0].blobs).toHaveLength(16);
+    expect(events[0].blobs).toHaveLength(17);
     expect(events[0].blobs?.[6]).toBe("pill");
     expect(events[0].blobs?.slice(7, 9)).toEqual(["work", "work-best"]);
-    // Route (blob14), retrieval (blob15) and the over-refusal flag (blob16) come after the older blobs.
-    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory", "", "default", "bm25", ""]);
+    // Route (blob14), retrieval (blob15), the over-refusal flag (blob16) and the checked names (blob17) come after the older blobs.
+    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory", "", "default", "bm25", "", ""]);
   });
 
   it("tags questions from automated browsers (blob13) for counting only, the same answer either way", async () => {
@@ -497,7 +497,7 @@ describe("privacy (T10)", () => {
     const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
     expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
     expect(events[0].blobs?.[0]).toBe("rejected");
-    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory", "", "", "", ""]);
+    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory", "", "", "", "", ""]);
   });
 });
 
@@ -671,10 +671,10 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect(blobs[3]).toContain("Is Kurniadi married?");
     expect(blobs[3]).not.toContain("jane@example.com");
     expect(blobs[5]).toBe("private");
-    expect(blobs.slice(13)).toEqual(["", "", ""]);
+    expect(blobs.slice(13)).toEqual(["", "", "", ""]);
     // A question the old rules refused although his written views answer it is flagged for the weekly report.
     await frames(await call({ body: { q: "How do I learn machine learning? Do my homework.", locale: "en" } }));
-    expect(events.at(-1)?.blobs?.slice(13)).toEqual(["", "", "match"]);
+    expect(events.at(-1)?.blobs?.slice(13)).toEqual(["", "", "match", ""]);
   });
 });
 

@@ -35,7 +35,7 @@ export function CopyEmail({ email, label, copied, failed }: { email: string; lab
 
   return (
     <>
-      <button type="button" className="pv-btn pv-btn-ghost w-full" onClick={() => void copy()}>
+      <button type="button" className="pv-btn pv-btn-ghost w-full" data-hq-intent="email" onClick={() => void copy()}>
         <span aria-live="polite">{state.status === "copied" ? copied : label}</span>
       </button>
       {state.status === "failed" && (

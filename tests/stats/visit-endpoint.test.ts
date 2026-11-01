@@ -130,6 +130,23 @@ describe("POST /api/visit", () => {
     expect(JSON.stringify(points)).not.toContain("203.0.113");
   });
 
+  it("writes intent pings and tagged visits, and caps intents per visitor and hour on their own", async () => {
+    const { post, points } = setup({ ASK_IP_SALT_SEED: "seed" });
+    expect((await post('{"v":1,"intent":"cv"}')).status).toBe(204);
+    expect((await post('{"v":1,"kind":"visit","src":"li"}')).status).toBe(204);
+    expect(points).toEqual([
+      { blobs: ["1", "intent", "cv"], doubles: [1], indexes: ["visit"] },
+      { blobs: ["1", "visit", "li"], doubles: [1], indexes: ["visit"] },
+    ]);
+    expect((await post('{"v":1,"intent":"salary"}')).status).toBe(400);
+    expect((await post('{"v":1,"kind":"visit","src":"https://evil.example"}')).status).toBe(400);
+    for (let i = 0; i < VISIT_IP_CAP.intent + 5; i++) await post('{"v":1,"intent":"email"}');
+    expect(points.filter((p) => p.blobs?.[1] === "intent")).toHaveLength(VISIT_IP_CAP.intent);
+    // Visits keep their own budget.
+    await post('{"v":1,"kind":"visit"}');
+    expect(points.filter((p) => p.blobs?.[1] === "visit")).toHaveLength(2);
+  });
+
   it("never fails when Analytics Engine throws or is unbound", async () => {
     const throwing = setup({ VISIT_EVENTS: { writeDataPoint: () => { throw new Error("down"); } } });
     expect((await throwing.post('{"v":1,"mode":"both"}')).status).toBe(204);

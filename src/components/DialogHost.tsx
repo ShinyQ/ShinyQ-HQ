@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onHudCommand, type HudCommand } from "@/hud/events";
 import { audio } from "@/lib/audio";
+import { countIntent } from "@/lib/stats/visitClient";
 import { loadCertDialog, loadCvDialog, loadPaperDialog } from "./dialog-loaders";
 
 const CvDialog = dynamic(loadCvDialog, { ssr: false });
@@ -36,6 +37,8 @@ export function DialogHost() {
       if (!isOpen.current) opener.current = from instanceof HTMLElement && from !== document.body ? from : null;
       isOpen.current = true;
       audio.play("click");
+      // Every CV entry point (Classic, the 3D Rover menu and kiosk, the boot card) opens here: one private intent count.
+      if (next.type === "cv") countIntent("cv");
       setOpen(next as Open);
     };
     // Server-rendered "Read" buttons (the `/library` shelf, the cert card) carry `data-hq-guide`, and the `/cv` page's

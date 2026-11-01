@@ -235,6 +235,10 @@ export function parseSqlRows(json: unknown): CountRow[] {
   return data.map((row) => ({ key: String(row.key ?? ""), n: Math.round(Number(row.n) || 0) }));
 }
 
+/** Names an answer failed the entity or employer check on (blob17): only for `--questions` on the owner's machine. */
+export const CHECKED_QUERY =
+  "SELECT blob17 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob17 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 100 FORMAT JSON";
+
 /** Question text: only for `--questions` on the owner's machine. */
 export const QUESTIONS_QUERY =
   "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
@@ -292,10 +296,11 @@ async function main() {
       console.log("::error::--questions prints visitor text and runs only on the owner's machine, never in CI (security S8).");
       process.exit(1);
     }
-    const [unknown, declined, over] = await Promise.all([QUESTIONS_QUERY, DECLINED_QUERY, OVER_REFUSED_QUERY].map((query) => sql(account, token, query)));
+    const [unknown, declined, over, checked] = await Promise.all([QUESTIONS_QUERY, DECLINED_QUERY, OVER_REFUSED_QUERY, CHECKED_QUERY].map((query) => sql(account, token, query)));
     process.stdout.write(formatPrivateQuestions(groupQuestions(unknown)));
     process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(over), "Over-refused candidates (declined, strong match)", "None in the last 7 days.")}`);
     process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(declined), "Declined questions", "None in the last 7 days.")}`);
+    process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(checked), "Names that failed the entity or employer check", "None in the last 7 days.")}`);
     return;
   }
   const [topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval, trails] = await Promise.all(

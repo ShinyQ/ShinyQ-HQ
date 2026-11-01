@@ -171,6 +171,23 @@ interface EventData {
   retrieval?: string;
   /** A declined question with a strong retrieval match (blob16 "match"): the over-refusal count of the content-gap report. */
   strongMatch?: boolean;
+  /** Names that failed the entity or employer check (blob17, `checkedNames`), or "". */
+  checked?: string;
+}
+
+/** Longest blob17 value: a few names, enough to trace an entity miss. */
+export const CHECKED_NAMES_MAX = 120;
+
+/**
+ * The names an answer failed the entity or employer check on (owner decision 2026-11-01: an "entity" miss was
+ * untraceable), for blob17. Model output only: a name that shares a word with the visitor's question is dropped, so
+ * nothing the visitor typed is logged; comma joined, cut at CHECKED_NAMES_MAX.
+ */
+export function checkedNames(reason: string | undefined, detail: readonly string[] | undefined, question: string): string {
+  if ((reason !== "entity" && reason !== "employer") || !detail?.length) return "";
+  const asked = new Set(question.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
+  const own = detail.filter((name) => !(name.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).some((word) => asked.has(word)));
+  return [...new Set(own)].join(",").slice(0, CHECKED_NAMES_MAX);
 }
 
 /** Outcomes whose scrubbed question is logged (owner decision 2026-10-24: unanswered and declined, so over-refusals show). */
@@ -182,13 +199,13 @@ const LOGGED_QUESTION: ReadonlySet<string> = new Set(["unknown", "decline"]);
  * topic, chip id (these two feed the public visit stats), answering model id (blob10), failure trail
  * `model:reason > model:reason` cut at 200 characters (blob11), pack tier that served (blob12: memory, kv, pin,
  * fallback), "auto" when the client reported an automated browser (blob13, counting only, else ""), the route (blob14), the
- * retrieval (blob15: bm25 or hybrid) and "match" for a declined question retrieval would have answered (blob16). Appended
- * so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
+ * retrieval (blob15: bm25 or hybrid), "match" for a declined question retrieval would have answered (blob16) and the names
+ * an answer failed the entity or employer check on (blob17, `checkedNames`). Appended so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
  */
 function logEvent(env: AskEnv, loaded: LoadedPack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, LOGGED_QUESTION.has(e.outcome) ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier, e.auto ? "auto" : "", e.route ?? "", e.retrieval ?? "", e.strongMatch ? "match" : ""],
+      blobs: [e.outcome, e.locale, e.source, LOGGED_QUESTION.has(e.outcome) ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier, e.auto ? "auto" : "", e.route ?? "", e.retrieval ?? "", e.strongMatch ? "match" : "", e.checked ?? ""],
       doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
@@ -297,7 +314,7 @@ export function createAskHandler(deps: HandlerDeps) {
     // A model answer that passed every check, fresh or from the cache, is signed for multi-turn memory.
     const signable = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup" || result.source === "cache");
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed, route: result.route, retrieval: result.retrieval, strongMatch: result.strongMatch });
+    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed, route: result.route, retrieval: result.retrieval, strongMatch: result.strongMatch, checked: checkedNames(result.reason, result.detail, question) });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     // A decline carries the topics Rover can talk about instead (owner decision 2026-10-24: never a dead end).
     const tags = shareable || result.outcome === "decline" ? result.tags : [];

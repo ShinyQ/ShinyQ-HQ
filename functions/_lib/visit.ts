@@ -1,4 +1,4 @@
-import { isVisitPing, parseVisitPayload, visitDataPoint, VISIT_MAX_BYTES } from "../../src/lib/stats/visit";
+import { isIntentPing, isVisitPing, parseVisitPayload, visitDataPoint, VISIT_MAX_BYTES } from "../../src/lib/stats/visit";
 import { originAllowed, readCapped, visitorHash } from "./security";
 import type { PagesContext, VisitEnv } from "./types";
 
@@ -7,10 +7,11 @@ export const VISIT_ISOLATE_CAP = 600;
 
 /**
  * Points per visitor and hour at most (per isolate), by kind: the visit ping is sent once per tab session,
- * the mode ping once per page lifetime, so real use stays far below (a shared office or family IP included).
+ * the mode ping once per page lifetime and each intent once per tab session, so real use stays far below (a
+ * shared office or family IP included).
  * Over the cap the answer is still 204, with no point: a forged flood cannot tell it was dropped.
  */
-export const VISIT_IP_CAP = { visit: 20, mode: 60 } as const;
+export const VISIT_IP_CAP = { visit: 20, mode: 60, intent: 20 } as const;
 /** Visitor keys held per isolate at most; the map starts over above it (and every hour). */
 export const VISIT_IP_KEYS = 5000;
 
@@ -42,7 +43,8 @@ const empty = (status: number, headers: Record<string, string> = {}) => new Resp
 
 /**
  * `POST /api/visit` (appendix 06 section 4): one point into Analytics Engine `visit_events` per visit ping
- * (once per tab session: the public visit count) or mode ping (once per page lifetime: 3D, Classic or both).
+ * (once per tab session: the public visit count), mode ping (once per page lifetime: 3D, Classic or both) or
+ * intent ping (once per tab session and intent: private, never in the public stats).
  * Same origin only, at most VISIT_MAX_BYTES, exactly the protocol object. The IP address is read only to
  * key an in-memory hourly cap per visitor (a salted, daily-rotating hash, never stored or written); the IP
  * and the user agent never reach the point. Forged pings are also bounded by the hq-stats Worker, which
@@ -71,7 +73,8 @@ export function createVisitHandler({ now = () => Date.now() }: { now?: () => num
     }
     visitWindow.count += 1;
     if (visitWindow.count > VISIT_ISOLATE_CAP) return empty(429);
-    if (!(await underVisitorCap(request, env.ASK_IP_SALT_SEED, isVisitPing(payload) ? "visit" : "mode", now()))) return empty(204);
+    const kind = isVisitPing(payload) ? "visit" : isIntentPing(payload) ? "intent" : "mode";
+    if (!(await underVisitorCap(request, env.ASK_IP_SALT_SEED, kind, now()))) return empty(204);
     try {
       env.VISIT_EVENTS?.writeDataPoint(visitDataPoint(payload));
     } catch {

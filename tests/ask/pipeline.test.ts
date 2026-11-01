@@ -209,10 +209,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("Kurniadi mencatat 425 ms dalam drill PoC, dua kali lebih cepat daripada ACS yang setara.", id).pass).toBe(false);
   });
 
-  it("has 108 unique items with a 105 pass threshold", () => {
-    expect(golden.items).toHaveLength(108);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(108);
-    expect(golden.passThreshold).toBe(105);
+  it("has 112 unique items with a 109 pass threshold", () => {
+    expect(golden.items).toHaveLength(112);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(112);
+    expect(golden.passThreshold).toBe(109);
   });
 
   it("scores the in-progress AB-100 as not earned", () => {
