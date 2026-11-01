@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { floorOfPath } from "@/lib/stats/floors";
-import { parseVisitPayload, visitDataPoint, VISIT_MAX_BYTES } from "@/lib/stats/visit";
+import { parseVisitPayload, visitDataPoint, visitSource, VISIT_INTENTS, VISIT_MAX_BYTES, VISIT_SOURCES } from "@/lib/stats/visit";
 
 describe("floorOfPath", () => {
   it.each([
@@ -37,5 +37,30 @@ describe("visit beacon payload", () => {
 
   it("keeps the largest payload far under the size cap", () => {
     expect(JSON.stringify({ v: 1, mode: "classic" }).length).toBeLessThan(VISIT_MAX_BYTES / 4);
+    expect(JSON.stringify({ v: 1, kind: "visit", src: "mail" }).length).toBe(35);
+    expect(35).toBeLessThan(VISIT_MAX_BYTES / 3);
+  });
+
+  it("accepts the visit ping with an allowlisted channel tag and the intent ping", () => {
+    for (const src of VISIT_SOURCES) expect(parseVisitPayload({ v: 1, kind: "visit", src })).toEqual({ v: 1, kind: "visit", src });
+    for (const intent of VISIT_INTENTS) expect(parseVisitPayload({ v: 1, intent })).toEqual({ v: 1, intent });
+  });
+
+  it.each([{ v: 1, kind: "visit", src: "twitter" }, { v: 1, kind: "visit", src: "" }, { v: 1, kind: "visit", src: 1 }, { v: 1, intent: "phone" }, { v: 1, intent: "cv", src: "li" }, { v: 1, kind: "visit", intent: "cv" }])("rejects %j", (value) => {
+    expect(parseVisitPayload(value)).toBeNull();
+  });
+
+  it("writes the tag and the intent into blob3, and nothing new for an untagged visit", () => {
+    expect(visitDataPoint({ v: 1, kind: "visit" })).toEqual({ blobs: ["1", "visit"], doubles: [1], indexes: ["visit"] });
+    expect(visitDataPoint({ v: 1, kind: "visit", src: "li" })).toEqual({ blobs: ["1", "visit", "li"], doubles: [1], indexes: ["visit"] });
+    expect(visitDataPoint({ v: 1, intent: "cv" })).toEqual({ blobs: ["1", "intent", "cv"], doubles: [1], indexes: ["visit"] });
+  });
+
+  it("reads only an allowlisted ?src= tag", () => {
+    expect(visitSource("?src=li")).toBe("li");
+    expect(visitSource("?tier=lite&src=gh&view=classic")).toBe("gh");
+    expect(visitSource("?src=evil")).toBeUndefined();
+    expect(visitSource("?source=li")).toBeUndefined();
+    expect(visitSource("")).toBeUndefined();
   });
 });
