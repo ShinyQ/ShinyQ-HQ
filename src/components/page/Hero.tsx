@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { CvButton } from "@/components/cv/CvButton";
-import { getProfile } from "@/content/load";
+import { getProfile, getRoof } from "@/content/load";
 import type { Locale } from "@/content/schema";
 import { QuietLink } from "../QuietLink";
 import { AskHeroBar } from "./AskEntry";
@@ -23,6 +23,7 @@ export async function HomeHero({ locale, proof }: { locale: Locale; proof: React
   const t = await getTranslations({ locale, namespace: "home" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const profile = getProfile();
+  const roof = getRoof();
 
   return (
     <div className="hx">
@@ -49,6 +50,13 @@ export async function HomeHero({ locale, proof }: { locale: Locale; proof: React
               </QuietLink>
               <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
             </div>
+            {/* One tap to reach him from the first screen (owner decision 2026-11-01): availability and the email. */}
+            <p className="pv-small mt-6 text-ink-2" data-testid="hero-contact">
+              {roof.availability[locale]}{" "}
+              <a href={`mailto:${roof.contact.email}`} className="pv-uline text-ink transition-colors [overflow-wrap:anywhere] hover:text-cyan">
+                {roof.contact.email}
+              </a>
+            </p>
           </div>
           <AskHeroBar />
         </div>
