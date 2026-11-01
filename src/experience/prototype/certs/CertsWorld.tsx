@@ -17,7 +17,10 @@ import { Rover } from "../../rover/Rover";
 import { roverRuntime } from "../../rover/runtime";
 import { usePostComposer } from "../../scene/postComposer";
 import { sceneSettings } from "../../scene/settings";
+import { registerThreeCatalogue } from "../../scene/threeCatalogue";
 import type { ExperienceData, GpuTier } from "../../types";
+
+registerThreeCatalogue();
 
 /** Rover in front of the wall, camera behind it looking east (the L1:certifications view zone). */
 const ROVER_AT = { x: 18, z: LOBBY.certWall.z };

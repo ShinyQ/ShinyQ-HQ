@@ -1,0 +1,39 @@
+diff --git a/dist/react-three-fiber.cjs.dev.js b/dist/react-three-fiber.cjs.dev.js
+index 66b333ccdcc4b2c3eb25f1b15f1a2328e6e7ba63..4fef35c1532e15b8146d804ff15985a33e56b5aa 100644
+--- a/dist/react-three-fiber.cjs.dev.js
++++ b/dist/react-three-fiber.cjs.dev.js
+@@ -64,7 +64,7 @@ function CanvasImpl({
+   // Create a known catalogue of Threejs-native elements
+   // This will include the entire THREE namespace by default, users can extend
+   // their own elements by using the createRoot API instead
+-  React__namespace.useMemo(() => events.extend(THREE__namespace), []);
++  // ShinyQ HQ patch: the app registers only the three classes it renders (src/experience/scene/threeCatalogue.ts), so three can tree-shake.
+   const Bridge = events.useBridge();
+   const [containerRef, containerRect] = useMeasure__default["default"]({
+     scroll: true,
+diff --git a/dist/react-three-fiber.cjs.prod.js b/dist/react-three-fiber.cjs.prod.js
+index d58643d038caa9fc3e999abaf1bee52389641dce..c249a631966259225d72c7109487026e8eebb623 100644
+--- a/dist/react-three-fiber.cjs.prod.js
++++ b/dist/react-three-fiber.cjs.prod.js
+@@ -64,7 +64,7 @@ function CanvasImpl({
+   // Create a known catalogue of Threejs-native elements
+   // This will include the entire THREE namespace by default, users can extend
+   // their own elements by using the createRoot API instead
+-  React__namespace.useMemo(() => events.extend(THREE__namespace), []);
++  // ShinyQ HQ patch: the app registers only the three classes it renders (src/experience/scene/threeCatalogue.ts), so three can tree-shake.
+   const Bridge = events.useBridge();
+   const [containerRef, containerRect] = useMeasure__default["default"]({
+     scroll: true,
+diff --git a/dist/react-three-fiber.esm.js b/dist/react-three-fiber.esm.js
+index 878dc219d8e686387be50b3d1399a456502fb475..1ef86244400bed0691350ae4b94d1161c14b5e61 100644
+--- a/dist/react-three-fiber.esm.js
++++ b/dist/react-three-fiber.esm.js
+@@ -37,7 +37,7 @@ function CanvasImpl({
+   // Create a known catalogue of Threejs-native elements
+   // This will include the entire THREE namespace by default, users can extend
+   // their own elements by using the createRoot API instead
+-  React.useMemo(() => extend(THREE), []);
++  // ShinyQ HQ patch: the app registers only the three classes it renders (src/experience/scene/threeCatalogue.ts), so three can tree-shake.
+   const Bridge = useBridge();
+   const [containerRef, containerRect] = useMeasure({
+     scroll: true,
