@@ -110,8 +110,11 @@ export function Rover({ tier }: { tier: GpuTier }) {
     nextBlink: 3,
     blinkUntil: 0,
     spin: 0,
+    wheelSpin: NaN,
+    wheelScale: NaN,
     lastSpeed: 0,
     dust: Array.from({ length: DUST }, () => ({ life: 0, x: 0, y: 0, z: 0, vx: 0, vz: 0 })),
+    dustAlive: true,
     nextDust: 0,
     dummy: new Object3D(),
     body: createBodyState(),
@@ -232,7 +235,11 @@ export function Rover({ tier }: { tier: GpuTier }) {
     }
 
     l.spin += (r.speed * dt) / WHEEL_R;
-    if (wheels.current) {
+    // The wheels compose with the scale the dust leaves in the shared dummy (0 unless the 18th particle lives),
+    // so they are rewritten when the spin or that scale changes.
+    if (wheels.current && (l.spin !== l.wheelSpin || l.dummy.scale.x !== l.wheelScale)) {
+      l.wheelSpin = l.spin;
+      l.wheelScale = l.dummy.scale.x;
       WHEELS.forEach(([x, z], i) => {
         l.dummy.position.set(x, WHEEL_R + 0.03, z);
         l.dummy.rotation.set(l.spin, 0, Math.PI / 2);
@@ -284,20 +291,31 @@ export function Rover({ tier }: { tier: GpuTier }) {
           slot.vz = -c * 1.2 + (Math.random() - 0.5);
         }
       }
-      l.dust.forEach((p, i) => {
+      l.dust.forEach((p) => {
         if (p.life > 0) {
           p.life -= dt;
           p.x += p.vx * dt;
           p.z += p.vz * dt;
           p.y += dt * 0.6;
         }
-        l.dummy.position.set(p.x, p.y, p.z);
-        l.dummy.rotation.set(0, 0, 0);
-        l.dummy.scale.setScalar(p.life > 0 ? 0.6 + (0.6 - p.life) : 0);
-        l.dummy.updateMatrix();
-        dust.current!.setMatrixAt(i, l.dummy.matrix);
       });
-      dust.current.instanceMatrix.needsUpdate = true;
+      // Written and drawn while a particle lives and on the frame after, all at scale 0 then (the shared dummy too);
+      // otherwise the dust leaves the draw. It starts drawn, so its first render fixes the bounds three sorts it by
+      // with every particle at the origin.
+      const alive = l.dust.some((p) => p.life > 0);
+      const draw = alive || l.dustAlive;
+      l.dustAlive = alive;
+      if (draw) {
+        l.dust.forEach((p, i) => {
+          l.dummy.position.set(p.x, p.y, p.z);
+          l.dummy.rotation.set(0, 0, 0);
+          l.dummy.scale.setScalar(p.life > 0 ? 0.6 + (0.6 - p.life) : 0);
+          l.dummy.updateMatrix();
+          dust.current!.setMatrixAt(i, l.dummy.matrix);
+        });
+        dust.current.instanceMatrix.needsUpdate = true;
+      }
+      dust.current.visible = draw;
     }
   });
 
