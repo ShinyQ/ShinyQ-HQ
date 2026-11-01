@@ -582,6 +582,7 @@
     "bootLine5": "[ ok ] lift siap",
     "bootLine6": "rover siap ^_^",
     "bootStart": "Nyalakan rover",
+    "bootContact": "Kontak",
     "retry3d": "Coba 3D lagi",
     "staticNotice": "3D tidak tersedia. Situs klasik dibuka.",
     "kioskTitle": "rover@hq:~$ ./rover-menu",
