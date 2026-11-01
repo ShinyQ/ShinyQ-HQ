@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     globalNotFound: true,
   },
   turbopack: {
+    // One scheduler for React DOM and the R3F reconciler: the same build as npm `scheduler` (tests/unit/scheduler-alias.test.ts).
+    resolveAlias: { scheduler: "next/dist/compiled/scheduler" },
     rules: {
       "*.css": {
         // CSS modules (the study guide reader's styles) skip Tailwind and keep Next's scoped class names.
