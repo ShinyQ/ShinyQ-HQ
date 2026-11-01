@@ -115,7 +115,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Where (owner decision 2026-11-01, so a reader who is convinced never hunts for the footer): the landing's last section, every case study after "More {wing} projects", and `/cv` under the cover (`cv={false}`: the cover has View CV already).
 - Case studies add `AskAboutButton` (`src/components/page/AskAboutButton.tsx`, client): "Ask Rover about this project" (`case.askAboutLabel`) opens the Ask dock with `case.askAbout` and the project title, entry `case`. Like the hero bar it shows until Ask the HQ is known to be off. The question always takes Ask's default route ([ask.md](ask.md#scope-routing), `namesProject`).
 - One class set for every page, so it adds no CSS; case study HTML grows by the section only.
-- Tests: `e2e/closing-cta.spec.ts`, `tests/ask/case-question.test.ts`.
+- Tests: `e2e/pageview.spec.ts` ("closing section"), `tests/ask/case-question.test.ts`.
 
 ### Time Travel (`/journey`)
 
