@@ -1,18 +1,21 @@
 {
-  "asOf": "2026-10-12",
+  "asOf": "2026-11-02",
   "github": {
     "login": "ShinyQ",
-    "contributionsLastYear": 7573,
-    "publicRepos": 171
+    "contributionsLastYear": 9652,
+    "publicRepos": 172
   },
   "huggingface": {
     "user": "ShinyQ",
     "models": 3,
-    "downloads": 41
+    "downloads": 56
   },
   "credentials": [
     { "id": "ai-103", "reachable": true },
     { "id": "ai-901", "reachable": true },
-    { "id": "az-900", "reachable": true }
+    { "id": "az-900", "reachable": true },
+    { "id": "gh-300", "reachable": true },
+    { "id": "gh-600", "reachable": true },
+    { "id": "google-gen-ai-leader", "reachable": true }
   ]
 }
