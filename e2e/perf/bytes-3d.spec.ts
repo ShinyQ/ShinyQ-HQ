@@ -87,10 +87,17 @@ type ReplayProbe = { __hq: { office: { test(): { advance(ms: number): void } | n
  */
 async function measureReplay(page: Page, seen: Set<string>, counted: Set<string>): Promise<number | null> {
   if (!(await page.evaluate(() => Boolean((window as unknown as OfficeLoad).__hq.office?.loadReplay)))) return null;
-  await driveTo(page, LOBBY.officeWing.stop);
+  // The first gesture in the 3D view wakes the lazy audio engine and the floor ambience (a moving rover would on the
+  // way): load them first, outside this count, so the recording below holds only what the idle loop fetches.
+  const audio = await recordTransfers(page, () => page.keyboard.press("Shift"), 2000);
+  for (const t of audio) counted.add(t.path);
   const loaded = await recordTransfers(
     page,
     async () => {
+      // Recorded from before the drive: the poller's clock runs in real time too, so a SwiftShader drive past the 30 s
+      // quiet rule starts the loop (and fetches the chunk) on the way, which a recording from the stop missed (0 bytes,
+      // 4 CI retries in 5 days).
+      await driveTo(page, LOBBY.officeWing.stop);
       await page.evaluate(() => (window as unknown as ReplayProbe).__hq.office.test()!.advance(31_000));
       await page.waitForFunction(() => {
         const r = (window as unknown as ReplayProbe).__hq.probes.office.replay;
