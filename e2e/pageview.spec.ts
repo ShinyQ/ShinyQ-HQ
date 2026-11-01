@@ -812,3 +812,31 @@ for (const viewport of [
     await context.close();
   });
 }
+
+test.describe("Quick view brief (owner decision 2026-11-01)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("the contact line and View CV are in the first screen, and every list is short with a link to the full page", async ({ page }) => {
+    await openPage(page, staticTier("/en/quick"));
+    const email = data.floors.roof.contact.email;
+    const contact = page.getByTestId("quick-contact");
+    await expect(contact).toContainText(data.floors.roof.availability.en);
+    for (const action of [contact.getByRole("link", { name: email }), page.getByTestId("cv-open-quick")]) {
+      const box = (await action.boundingBox())!;
+      expect(box.y + box.height, "in the first screen").toBeLessThanOrEqual(844);
+    }
+    for (const wing of ["software", "ai", "data"]) {
+      const section = page.locator(`#${wing}`);
+      expect(await section.locator("ul.pv-rows > li").count(), wing).toBeLessThanOrEqual(3);
+      await expect(section.locator(`a[href*="/labs?wing=${wing}"]`)).toHaveCount(1);
+    }
+    expect(await page.locator("#timeline ul.pv-rows > li").count()).toBeLessThanOrEqual(6);
+    await expect(page.locator('#timeline a[href$="/journey"]')).toHaveCount(1);
+    await expect(page.locator('#library a[href$="/library"]')).toHaveCount(1);
+    await expect(page.locator('#projects a[href*="/journey#workshop"]')).toHaveCount(1);
+    await expect(page.locator('#certifications a[href*="/contact#certifications"]')).toHaveCount(1);
+    for (const id of ["profile", "stats", "software", "ai", "data", "timeline", "skills", "projects", "certifications", "awards", "library", "contact"]) await expect(page.locator(`#${id}`), id).toHaveCount(1);
+    const screens = await page.evaluate(() => document.documentElement.scrollHeight / innerHeight);
+    expect(screens, "a short brief, not the whole site").toBeLessThan(24);
+  });
+});
