@@ -582,6 +582,7 @@
     "bootLine5": "[ ok ] elevator ready",
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
+    "bootContact": "Contact",
     "retry3d": "Retry 3D",
     "staticNotice": "3D is unavailable. Showing the classic site.",
     "kioskTitle": "rover@hq:~$ ./rover-menu",
