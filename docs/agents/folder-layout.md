@@ -118,9 +118,9 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 ### E2E planning and perf reports
 
-- `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run. On a push to `main` it plans the complement of the merged PR's green same-tree run.
+- `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run. On a push to `main` it plans the complement of the merged PR's green same-tree run. A change of the spec maps runs what it moves (`mapDiff`, the base maps loaded from the PR base).
 - `scripts/ci-complement.ts`: pure complement helpers (what a CI run covered, its record artifact, what a `main` push still needs); dependency-free.
-- `scripts/perf-plan.ts`: pure perf lane selection: which 3D perf gates a set of changed 3D files needs and the Playwright `--grep` that runs them.
+- `scripts/perf-plan.ts`: pure perf lane selection: which 3D perf gates a set of changed 3D files needs and the Playwright `--grep` that runs them, and whether a change runs the nightly-only L1 poses (`nightlyPerfFor`).
 - `scripts/e2e-plan.ts`: pure path-to-spec map, worker-aware duration-balanced shard split, CI log timing parser and runner speed normalization (unit tested, including the shard union against the real `--list`).
 - `scripts/e2e-changed.ts`: `e2e:changed`: runs the specs that cover your changed paths.
 - `scripts/e2e-shard.ts`: `e2e:shard i/N` and `e2e:perf:shard i/N`: duration-balanced CI shard (e2e/durations.json; it lists the tests missing from the file) with a blob report; `--dry` prints the plan.
@@ -134,7 +134,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/ci-status.ts`: deploy gate: reuse the green complete CI result (`ci-full` artifact) for a commit or its tree.
 - `scripts/merge-gate.ts`: fast-path gate of a merge deploy: merged same-repository PR, same tree, required checks green on its head, no open `deploy-rollback` issue.
 - `scripts/rollback.ts`: `rollback.yml`: rolls Pages production back after a red `main` CI (`pages`), opens or updates (`issue`) and closes (`clear`) the `deploy-rollback` issue.
-- `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`).
+- `scripts/ci-nightly.ts`: `Nightly report` job of the nightly CI run: opens, updates or closes the one `ci-nightly` issue (dry run off `main`); with `NIGHTLY_KIND=screenshots` the same for the nightly `screenshots.yml` run and its `screenshots-nightly` issue.
 - `scripts/ask-eval.ts`: real-model golden and red-team runs (ask-eval.yml).
 - `scripts/ask-samples.ts`: owner-review Ask samples (ten fixed questions in EN and ID through the Function's pipeline, a Markdown table); ask-samples.yml runs it on a Groq model.
 - `scripts/provision-ask.ts`: idempotent Cloudflare provisioning (dry run unless --apply).

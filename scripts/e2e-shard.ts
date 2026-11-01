@@ -1,7 +1,7 @@
 /**
  * Runs one CI shard of the e2e suite (or of the perf lane with PERF=1) with a duration-balanced test list.
  * Usage: bun scripts/e2e-shard.ts 2/4 [extra playwright args]
- *        PERF=1 bun scripts/e2e-shard.ts 1/2 --grep-invert "@nightly|@look"   (`bun run e2e:perf:shard 1/2`)
+ *        PERF=1 bun scripts/e2e-shard.ts 1/2 --grep-invert "@nightly|@look|@timeline"   (`bun run e2e:perf:shard 1/2`)
  *        bun scripts/e2e-shard.ts 1/4 --dry   (prints every shard's size and estimate, runs nothing)
  *
  * Lists the suite (`playwright test --list`, with the same extra args), splits it with planShards

@@ -119,16 +119,38 @@ async function playEffects(page: Page, office: Awaited<ReturnType<typeof servePi
 }
 
 /** Rendered frames per second over `ms` of wall time (`__hq.frames()`; the idle cadence is off in tests, so up to 60). */
-async function fps(page: Page, ms = 3_000) {
+/** The Agent Office effects window: the deploy beam runs about 8 s from when `playEffects` sees it. */
+const EFFECTS_WINDOW_MS = 6_000;
+
+/**
+ * Frames per second, from a frame boundary over at least `minFrames` frames and `minMs`. SwiftShader draws the lite L1 at 2 to
+ * 5 fps, where a fixed 3 s window gains or loses a whole frame between reads (a third of the reading at 2 fps, against the
+ * 25% band of the lite checks); counting enough whole frames keeps one frame near 4% and the boundary start removes the
+ * partial first frame.
+ */
+async function fps(page: Page, minFrames = 24, minMs = 3_000, maxMs = 60_000) {
   return page.evaluate(
-    (ms) =>
+    ({ minFrames, minMs, maxMs }) =>
       new Promise<number>((resolve) => {
         const hq = (window as unknown as OfficeWindow).__hq;
-        const f0 = hq.frames();
-        const t0 = performance.now();
-        setTimeout(() => resolve(((hq.frames() - f0) * 1000) / (performance.now() - t0)), ms);
+        const first = hq.frames();
+        const start = performance.now();
+        let f0 = -1;
+        let t0 = 0;
+        const poll = () => {
+          const now = performance.now();
+          const frames = hq.frames();
+          if (f0 < 0) {
+            if (frames > first) {
+              f0 = frames;
+              t0 = now;
+            } else if (now - start >= maxMs) return resolve(0);
+          } else if ((frames - f0 >= minFrames && now - t0 >= minMs) || now - t0 >= maxMs) return resolve(((frames - f0) * 1000) / (now - t0));
+          setTimeout(poll, 20);
+        };
+        poll();
       }),
-    ms,
+    { minFrames, minMs, maxMs },
   );
 }
 
@@ -231,9 +253,12 @@ for (const tier of ["lite", "full"] as const) {
     await rideTo(page, "B1");
     await measureFloor(page, tier, "B1");
   });
+  // The L1 poses past the arrival (the beacon, the office in view, the Agent Office stop and the day replay) end with
+  // ` @nightly` (owner decision 2026-11-01): the nightly runs them, and so does a pull request that changes the Lobby or
+  // the office (scripts/perf-plan.ts `nightlyPerfFor`); other pull requests and main skip them.
   // The Needs Kurniadi beacon lit from the spawn (a Rover asks): the beacon chunk plus the live crew of `crewA`, the
   // office scene loaded as at the spawn spot. Same cap and program baseline; reported as the settled-L1-beacon peak.
-  test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon @nightly`, async ({ page }) => {
     await page.route(OFFICE_API, (route) => {
       const body = crewA(Date.now());
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) || OFFICE_API_V4.test(route.request().url()) ? body : asV1(body)) });
@@ -247,7 +272,7 @@ for (const tier of ["lite", "full"] as const) {
   // point turned toward it, each with the office in view and in its far level of detail, the ship-it pipeline's lanes lit
   // and, while the draw calls are read, a burst playing and the deploy beam running (the spawn's +1 call). Same cap and
   // program baseline; reported as the settled-L1-spawn-wing and settled-L1-ring-south peaks.
-  test(`L1 ${tier}: settled draw calls and shader programs with the office in view from the Lobby`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the office in view from the Lobby @nightly`, async ({ page }) => {
     const office = await servePipeline(page);
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
@@ -274,7 +299,7 @@ for (const tier of ["lite", "full"] as const) {
   // At the stop: the same pipeline effects while the draw calls are read; then the frame rate with the effects playing
   // against the still office, and the GPU objects flat across live switches (the ship-it steps, a rollback's v3 body,
   // offline and back, each round with the effects playing).
-  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office @nightly`, async ({ page }) => {
     const office = await servePipeline(page);
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
@@ -284,9 +309,10 @@ for (const tier of ["lite", "full"] as const) {
     // Same cap and program baseline as the L1 spawn; reported as the settled-L1-office peak (the spawn entry is the L1 baseline).
     await measureFloor(page, tier, "L1", "office", () => playEffects(page, office));
     await page.waitForFunction(() => (window as unknown as OfficeWindow).__hq.probes.office?.beam === false, null, { timeout: 60_000 });
-    const still = await fps(page);
+    // Both windows end within 6 s: the deploy beam runs about 8 s, so the effects window stays inside it.
+    const still = await fps(page, 24, 3_000, EFFECTS_WINDOW_MS);
     await playEffects(page, office);
-    const playing = await fps(page);
+    const playing = await fps(page, 24, 3_000, EFFECTS_WINDOW_MS);
     console.log(`L1 office ${tier}: ${still.toFixed(1)} fps still, ${playing.toFixed(1)} fps with the burst and the beam`);
     if (tier === "lite") expect(playing, `${playing.toFixed(1)} fps with the effects vs ${still.toFixed(1)} still`).toBeGreaterThanOrEqual(still * 0.75);
     const gpu = await readGpuCounters(page);
@@ -313,7 +339,7 @@ for (const tier of ["lite", "full"] as const) {
   // merges, runs, one deploy): at the office stop and at the lane ring's south point, in the busy part of the day and later in
   // it, the same L1 cap and the program baseline with no new program, the lite frame rate within the still office's band, and
   // the GPU objects flat across three replay loops and a seek.
-  test(`L1 ${tier}: settled draw calls and shader programs with the day replay looping`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the day replay looping @nightly`, async ({ page }) => {
     test.setTimeout(900_000);
     const office = await servePipeline(page);
     await serveHistory(page);
@@ -323,9 +349,11 @@ for (const tier of ["lite", "full"] as const) {
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
     await pollOffice(page);
-    const still = await fps(page);
     // The programs the still office settled at: the replay adds none (the count of a full-tier page is fixed by when its precompile resolved).
     const programs = await waitForStablePrograms(page);
+    // The still office's frame rate once its programs settled: read on arrival, it caught the compiles (0.7 to 9 fps
+    // within seconds on one machine), so the replay band compared against a moving baseline.
+    const still = await fps(page);
     await startReplay(page);
     await playedTo(page, 4);
     const stop = await measureFloor(page, tier, "L1", "replay", () => playedTo(page, 4));

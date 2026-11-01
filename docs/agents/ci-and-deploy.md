@@ -19,7 +19,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | `verify:quick` | see [Fast verification](performance.md#fast-verification) |
 | `e2e` | plain `playwright test` |
 | `e2e:full`, `e2e:changed`, `e2e:smoke`, `e2e:shard` | |
-| `e2e:perf` | perf lane |
+| `e2e:perf` | perf lane (without the nightly-only L1 poses) |
+| `e2e:perf:nightly` | perf lane with the nightly-only L1 poses (`@nightly`), as the nightly runs it |
 | `e2e:perf:shard` | one CI perf shard |
 | `e2e:durations` | refresh the shard timings |
 | `e2e:timeline` | nightly timeline |
@@ -32,9 +33,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - Before pushing: see [Fast verification](performance.md#fast-verification) (`verify:quick` plus `e2e:changed`); PR CI runs only the heavy jobs the change needs, `main` and the nightly run everything ([CI](#ci)).
 - CI runs in flight (GitHub Free plan: 20 concurrent jobs for the account; each job is its own hosted VM, so overlapping runs only queue jobs past the cap). Before pushing, check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`:
-  - at most 2 runs in flight, both `pull_request` runs, at most one of them a full run: peaks of 12 jobs for a full PR run (6 e2e and 4 perf shards, `Lighthouse CI` and the unit test job; at most 10 e2e plus perf shards per PR run, `PR_HEAVY_SHARDS` in `scripts/ci-plan.ts`) and 5 to 7 for a typical selective one, so 19 at worst;
-  - a `main` run (push complement or full run, dispatch, nightly) stays the only run in flight: it peaks at 14 jobs (8 e2e and 4 perf shards) plus about 1 for `Deploy`, and 14 + 1 + 7 is over 20.
-  - Measured 2026-10-18 (job `startedAt` to `completedAt` overlap): full `main` runs 39114729615, 39116733269 and 39119431246 peak at 14; complement dispatch 39128755562 at 14, `main` complement 39129760520 at 4; full PR runs 39122107380 and 39126462529 at 12; selective PR runs 39111135400 and 39108331771 at 7, 39127959018 at 5.
+  - every run has at most 10 e2e plus perf shards (`HEAVY_SHARDS` in `scripts/ci-complement.ts`, owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md)): a full run (pull request, `main`, dispatch or nightly) peaks at 12 jobs (6 e2e and 4 perf shards, `Lighthouse CI` and the unit test job), a typical selective pull request at 5 to 8 (Lighthouse on 2 shards), a `main` complement at up to 12;
+  - at most 2 runs in flight, at most one of them a full run: two pull request runs (12 + 8), or a `main` run with one selective pull request run (12 + 1 for `Deploy` + 7); at a rare joint peak a job waits in the queue for a minute, which costs far less than holding every push for a whole `main` run;
+  - measured 2026-10-18 before the cap (job `startedAt` to `completedAt` overlap): full `main` runs 39114729615, 39116733269 and 39119431246 peaked at 14 on 8 e2e shards; full PR runs 39122107380 and 39126462529 at 12; selective PR runs 39111135400 and 39108331771 at 7, 39127959018 at 5.
+- Bring a pull request up to date with `main` (merge `main` in) and wait for its CI before handing it to the owner (owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md)): a PR behind `main` merges as a tree its CI never saw, so the deploy waits for a full `main` run (27.4 min median to live in 15 of 52 deploys) instead of its 4 min fast path, and `main` runs everything instead of the complement.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`).
 - Prefer the `rtk` git wrapper.
 - One PR per change; do not merge without the owner. PRs land as squash merges.
@@ -57,7 +59,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `Typecheck, lint, unit tests`
   - `Build, CV and e2e`
   - `Lighthouse CI`
-- No shard is a required check (owner decision [2026-10-23](../decisions/2026-10-23-ci-speed.md)): the shard counts follow the plan, and `Build, CV and e2e` fails unless every e2e and perf shard passed.
+- No shard is a required check (owner decision [2026-10-23](../decisions/2026-10-23-ci-speed.md)): the shard counts follow the plan, `Build, CV and e2e` fails unless every e2e and perf shard passed, and `Lighthouse CI` (the `lighthouse-report` job) unless every Lighthouse shard passed.
 - The checks report on selective smart CI runs too ([How the required checks stay green](#how-the-required-checks-stay-green)).
 - Force pushes, deletion and direct pushes are rejected.
 - Admins can bypass only through a PR, for emergencies.
@@ -67,7 +69,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 `.github/workflows/ci.yml` runs smart CI (owner decisions 2026-10-17 and 2026-10-18, [decisions.md](../decisions.md)): a
 pull request runs the fast checks always and only the tests its changed paths affect; a push to `main` runs only what
 its merged pull request's green CI run on the same tree did not (the complement, a full run otherwise); dispatches and
-the nightly run everything on 8 e2e and 4 perf shards (a full pull request on 6 e2e and 4 perf shards).
+the nightly run everything on 6 e2e and 4 perf shards, like a full pull request.
 
 ### Jobs
 
@@ -80,20 +82,23 @@ the nightly run everything on 8 e2e and 4 perf shards (a full pull request on 6 
     - The `site` job of `deploy.yml` (full-history checkout) runs the same step before its builds, so the shipped build page carries fresh numbers.
     - Local builds use the committed snapshot; refresh it with `bun scripts/build-facts.ts --write`. `--no-runners` skips the `playwright test --list` count and cannot be combined with `--write` (it would drop it from the file). No unit test count is measured (`vitest list` counts each `it.each` template once); only unit test files are. A shallow clone keeps the committed file. A failing runner prints a warning and omits only its number.
 - Heavy jobs, against that one build:
-  - e2e in duration-balanced shards (`E2E shard n/N`, worker-aware packing from `e2e/durations.json`, [performance.md](performance.md#ci-shards); functional specs run rides, drives, camera eases and the intro 4x faster, [performance.md](performance.md#animation-speed)): 8 on a full run, 6 on a full pull request run; a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8; on a pull request at most 10 minus its perf shards).
-  - The 3D perf gates (`perf` job, `3D perf gates n/N`: `bun run e2e:perf:shard`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)): the whole lane on 4 shards (full runs, pull requests included), a part on `ceil(seconds / 960)` shards, 1 to 4, from the perf lane of `e2e/durations.json` (a selective pull request and a complement run), running only the planned perf tests (`PERF_GREP`); 1 shard with only the "Not needed" step when no perf gate can move.
-  - A blocking `Lighthouse CI` job (`lighthouserc.json`):
+  - e2e in duration-balanced shards (`E2E shard n/N`, worker-aware packing from `e2e/durations.json`, [performance.md](performance.md#ci-shards); functional specs run rides, drives, camera eases and the intro 4x faster, [performance.md](performance.md#animation-speed)): 6 on a full run (pull request, `main`, dispatch or nightly); a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8, at most 10 minus its perf shards).
+  - The 3D perf gates (`perf` job, `3D perf gates n/N`: `scripts/e2e-shard.ts` with `PERF=1`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)): the whole lane on 4 shards (full runs, pull requests included), a part on `ceil(seconds / 960)` shards, 1 to 4, from the perf lane of `e2e/durations.json` (a selective pull request and a complement run), running only the planned perf tests (`PERF_GREP`); 1 shard with only the "Not needed" step when no perf gate can move.
+    - Every shard skips the look check (`@look`) and the timeline (`@timeline`, `perf-nightly.yml`). The nightly-only L1 poses (`@nightly`: the Needs Kurniadi beacon, the office in view, the Agent Office stop and the day replay, both tiers) run on the nightly schedule, a dispatch with the `nightly` input and a pull request that changes the Lobby or the office (`perf_nightly`, `nightlyPerfFor` in `scripts/perf-plan.ts`); other pull requests and `main` skip them (owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md)). The shard sizing counts them only when they run.
+    - Each shard uploads its blob report (`perf-blob-report-n`) for the flaky summary.
+  - Blocking Lighthouse (`lighthouserc.json`), `Lighthouse shard n/N` jobs plus the `Lighthouse CI` job (`lighthouse-report`):
+    - The measured URLs split over 2 shards (each takes every second URL) when a run checks 4 or more URLs and has at most 8 e2e plus perf shards (`lighthouse_shards`), so a selective run, where Lighthouse finishes last, halves its 7 min; a full run keeps 1 shard, its e2e and perf shards outlast it. Each shard is its own runner, so no parallel Chrome skews a timing.
+    - `Lighthouse CI` always runs: it merges the shards' reports (one folder per shard), adds the source run's reports on a complement run, writes the Page View JS per chunk against main, uploads `lighthouse-reports` and fails unless every shard passed.
     - LCP 2 s, CLS 0.01, TBT 200 ms and transfer budgets for fonts, HTML, CSS and JS fail the aggregate check.
-    - The first URL is a warm-up that is never asserted. CI runs it once: the step serves `out/` itself, runs a 1-run `lhci collect` of the warm-up, then `lhci autorun` of the measured URLs with the config's 3 runs and assertions (its collect clears the warm-up result). Local runs of `lighthouserc.json` keep the warm-up in the URL list.
+    - The first URL is a warm-up that is never asserted. Each shard runs it once: the step serves `out/` itself, runs a 1-run `lhci collect` of the warm-up, then `lhci autorun` of its measured URLs with the config's 3 runs and assertions (its collect clears the warm-up result). Local runs of `lighthouserc.json` keep the warm-up in the URL list.
     - A selective run checks only the affected URLs (`LHCI_URLS`, written into `lighthouserc.ci.json` with `jq`), warm-up first.
-    - Its job summary has the Page View JS per chunk against main.
     - See `docs/deploy.md` section 8 ([deploy.md](../deploy.md)) for what keeps LCP low.
 - The aggregate required check `Build, CV and e2e`:
-  - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, Lighthouse), every e2e and perf shard included;
+  - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, the Lighthouse shards and `Lighthouse CI`), every e2e and perf shard included;
   - runs without the setup action's bun cache and install: its scripts import only node builtins and dependency-free repo files (`tests/unit/workflows.test.ts`), and the blob report merge runs `bunx playwright@<version>` with the `@playwright/test` version of `bun.lock`;
-  - merged HTML report, the tests that passed only on retry, and the 3D perf summary against the last green main run (when the perf gates ran);
+  - merged HTML report, the tests that passed only on retry (e2e, and the perf lane from its merged blob reports: a slow perf test that passes on its retry adds its whole time again to its shard), and the 3D perf summary against the last green main run (when the perf gates ran);
   - uploads the `ci-full` artifact when the plan ran every e2e test, every perf test and every Lighthouse URL, or is a complement run (second line `complement of CI run <id>`), even if the run then turns red; the marker the deploy gate needs, which still treats a red run as red.
-- A Cloudflare Pages preview (`preview` job, project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only on a same-repository PR with `CF_PREVIEWS=true` and both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` readable without an environment. The deploy token lives only in the `production` environment, so previews need their own preview-only repository token; today the job skips with a notice.
+- No PR preview job: the deploy token lives only in the `production` environment, so a preview would need its own preview-only repository token (the always-skipped `preview` job was removed on 2026-11-01).
 - PR runs replace each other; in-progress runs on `main` are never cancelled (a newer push can replace a queued one; the deploy reuses them).
 
 ### What a pull request runs
@@ -105,7 +110,8 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 
 | Class | Paths | e2e | 3D perf gates | Lighthouse |
 |---|---|---|---|---|
-| `ci` | `.github/workflows/`, `.github/actions/`, `package.json`, `bun.lock`, `bunfig.toml`, `next.config.ts`, `playwright.config.ts`, `tsconfig.json`, `lighthouserc.json`, `postcss.config.*`, `e2e/{hq,routes,budgets}.ts`, `e2e/perf/`, `scripts/{ci-plan,ci-complement,ci-status,merge-gate,e2e-plan,e2e-shard,perf-*,serve-static,flaky-report}` | full run | full run | full run |
+| `planmap` | the spec maps `scripts/e2e-plan.ts` and `scripts/perf-plan.ts` | the specs whose mapping changed (`mapDiff`) | the keys whose mapping changed | no |
+| `ci` | `.github/workflows/ci.yml`, `.github/actions/`, `package.json`, `bun.lock`, `bunfig.toml`, `next.config.ts`, `playwright.config.ts`, `tsconfig.json`, `lighthouserc.json`, `postcss.config.*`, `e2e/{hq,routes,budgets}.ts`, `e2e/perf/`, `scripts/{ci-plan,ci-complement,ci-status,merge-gate,e2e-shard,perf-*,serve-static,flaky-report}` | full run | full run | full run |
 | `code3d` | `src/experience/`, `src/hud/`, `src/store/`, `src/assets/`, `public/floors/`, `public/fonts/`, `public/atlas/` | mapped specs plus the PR smoke set | affected perf tests | affected URLs |
 | `tests` | `tests/`, `e2e/durations.json`, `vitest.config.mts`, `eslint.config.mjs` | none | no | no |
 | `e2e` | other `e2e/` files (specs, helpers) | specs: mapped (a changed spec runs itself); helpers: every shard | no | no |
@@ -114,12 +120,13 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 | `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts` | mapped specs plus the PR smoke set | no | all URLs |
 | `tooling` | other `scripts/`, `tools/` | mapped specs | no | no |
 | `ui` | other `src/`, `messages/`, other `public/` | mapped specs plus the PR smoke set | affected perf tests, only for `src/` files the 3D roots import: the keys of the 3D files that import them | affected URLs |
-| `docs` | `docs/`, other `.github/`, `*.md`, `LICENSE`, root dotfiles | none | no | no |
+| `docs` | `docs/`, other `.github/` (the other workflows: `ci.yml` never runs them, `tests/unit/workflows.test.ts` checks them), `*.md`, `LICENSE`, root dotfiles | none | no | no |
 | `other` | anything unmatched | full run | full run | full run |
 
-- Mapped specs: `specsForChanges` in `scripts/e2e-plan.ts` (the `e2e:changed` map) over every changed file outside `docs` and `tests`. A changed e2e helper (a non-spec `e2e/` file) runs the whole e2e suite on 8 shards; a path no rule maps plans a full run.
+- Mapped specs: `specsForChanges` in `scripts/e2e-plan.ts` (the `e2e:changed` map) over every changed file outside `docs` and `tests`. A changed e2e helper (a non-spec `e2e/` file) runs the whole e2e suite on up to 8 shards; a path no rule maps plans a full run.
+- Spec map changes (`planmap`, owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md)): `Plan CI` loads the PR base's `scripts/e2e-plan.ts` and `scripts/perf-plan.ts` (contents API, `BASE_SHA`) and compares them with the checked-out ones over every tracked file (git trees API): the e2e specs and perf keys either side maps differently, the specs whose smoke entry changed and the keys whose test selection changed run on top of the PR's own plan (`mapDiff` in `scripts/ci-plan.ts`); a path one side sends to the full suite runs every spec. Any failure (an API error, a base map that imports another file) plans a full run. The planner logic stays in the `ci` class.
 - PR smoke set (`PR_SMOKE` in `scripts/e2e-plan.ts`), added whenever `code3d` or `ui` files change: `static-routes`, `boot-first` and `deploy`, one elevator ride and the 3D HUD axe check (single tests run as `e2e/<spec>.spec.ts:<line>` filters; a unit test keeps their titles real).
-- Shard count of a selective run: the planned tests' worker-seconds from `e2e/durations.json` (an unknown spec counts 150 s, an unknown test 30 s) divided by 2 workers times 240 s, rounded up, 1 to 8, then at most 10 minus the perf shards (`PR_HEAVY_SHARDS`).
+- Shard count of a selective run: the planned tests' worker-seconds from `e2e/durations.json` (an unknown spec counts 150 s, an unknown test 30 s) divided by 2 workers times 240 s, rounded up, 1 to 8, then at most 10 minus the perf shards (`HEAVY_SHARDS`).
 - Perf shard count of a selective run: the whole lane 4; a part `ceil(seconds / 960)`, 1 to 4, from the perf lane of `e2e/durations.json` (`perfShardsFor`, as a complement run); no perf 1 ("Not needed").
 - 3D perf tests (`scripts/perf-plan.ts`): a `code3d` file maps to perf keys (`PERF_RULES`): a floor folder to its floor gate (both tiers) and the rides to and from it, the HUD to the 3D bytes gate, rover and boost code to the boost and boot peaks, point-and-go to the hover peak, memory-sensitive paths (renderer, `Effects`, the floor chunk loader, the tower mount, `useDispose`, shared geometry and materials) to the whole lane including `memory-full`, anything else in the 3D code to the whole lane except `memory-full`. The keys become one Playwright `--grep`.
 - Shared `src/` modules (`sharedPerfKeys` in `scripts/ci-plan.ts`): a `ui` file reachable from the 3D roots (`src/experience`, `src/hud`, `src/store`) through value, re-export, side-effect or dynamic imports (type-only imports do not count) gets the keys of the 3D files that import it, directly or through a chain of non-3D files (the walk stops at the first 3D file), so a module only the Lobby imports selects the Lobby gates, one only the HUD imports the bytes gate, one `Experience.tsx` imports every gate.
@@ -132,7 +139,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
   - a page's URLs (`LIGHTHOUSE_PAGES`): a file only in that page's closure; a post: the measured post;
   - `/en` too for the Classic office card (`src/components/office/`, `HOME_LAZY`): its panel is a lazy chunk the home page loads near the viewport, with its classes in the shared stylesheet;
   - every selective run adds `/en` to its list; the `main` complement run checks the URLs the PR skipped.
-- Full run (every e2e test, every perf test, every Lighthouse URL): `ci` or `other` files, a path the e2e rules cannot map, the `full-ci` label (add it, then re-run the workflow: the planner reads the labels from the API), a PR at the 3000-file cap of the GitHub API, a file list that cannot be read, or any planner error (the planner fails safe). A full PR run uses 6 e2e and 4 perf shards (12 jobs at its peak).
+- Full run (every e2e test, every perf test, every Lighthouse URL): `ci` or `other` files, a spec map change whose diff cannot be computed, a path the e2e rules cannot map, the `full-ci` label (add it, then re-run the workflow: the planner reads the labels from the API), a PR at the 3000-file cap of the GitHub API, a file list that cannot be read, or any planner error (the planner fails safe). A full PR run uses 6 e2e and 4 perf shards (12 jobs at its peak).
 - Docs-only and tests-only PRs run no heavy job; content-only PRs run only Lighthouse on the affected URLs. Known trade-off: content data (for example `content/site-content.json`) feeds the 3D floors, and a selective PR skips tests the map does not tie to its paths, so such a break is caught by the complement run on `main` after the merge (it runs every test the PR run skipped; a red `main` rolls production back) or by the nightly.
 - The local workflow does not change: `verify:quick` plus `e2e:changed` before pushing, plus the perf lane for 3D work ([Fast verification](performance.md#fast-verification)).
 
@@ -141,9 +148,9 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 A push to `main` (`EVENT=push`) runs only what its merged pull request's green CI run did not, so `main` still covers
 everything once per merge without repeating the PR's tests (`scripts/ci-complement.ts`, called from `scripts/ci-plan.ts`).
 
-- Source run: the merged PR from `GET /repos/{repo}/commits/{sha}/pulls` (same repository only); its head tree must equal the merged tree (`GET commits/{sha}`); the newest green `pull_request` run of `ci.yml` on that head; its `ci-plan` record (`gh run download`).
+- Source run: the merged PR from `GET /repos/{repo}/commits/{sha}/pulls` (same repository only; GitHub links a merge commit to its PR a few seconds after the push, so the lookup asks again every 5 s for about 30 s while no PR names the commit as its merge, `PR_LOOKUP_RETRIES` in `scripts/ci-complement.ts`); its head tree must equal the merged tree (`GET commits/{sha}`); the newest green `pull_request` run of `ci.yml` on that head; its `ci-plan` record (`gh run download`).
 - Plan, the complement of the record:
-  - e2e: every spec the PR run did not run whole (a spec it ran only as a single smoke test runs whole), on `ceil(worker-seconds / 480)` shards, 1 to 8, from `e2e/durations.json` (8 when the PR ran no spec whole);
+  - e2e: every spec the PR run did not run whole (a spec it ran only as a single smoke test runs whole), on `ceil(worker-seconds / 480)` shards, 1 to 8, from `e2e/durations.json` (8 when the PR ran no spec whole), at most 10 minus its perf shards (`HEAVY_SHARDS`);
   - 3D perf gates: the perf keys it did not run, on `ceil(seconds / 960)` shards (about one `memory-full` test each), 1 to 4, from the perf lane of `e2e/durations.json`; the whole lane keeps 4;
   - Lighthouse: the URLs it did not check (every URL when it checked none).
 - Fallback, a full run with the reason in the job summary: no merged PR from this repository, a different tree (a PR not up to date with `main`), no green run on the head, no readable record (a PR whose green run predates the `ci-plan` record, such as one merged before complement runs existed, or an expired artifact), or any API or planner error.
@@ -167,12 +174,12 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
 
 ### Full runs and the nightly
 
-- `workflow_dispatch` (without `complement_pr`) and the nightly schedule always run everything: 8 e2e shards and 4 perf shards. A push to `main` runs the complement of its merged PR's green same-tree run ([Complement runs on `main`](#complement-runs-on-main)), else everything as well.
-- The nightly-only e2e tests (title ending ` @nightly`, [performance.md](performance.md#nightly-only-e2e-tests)) run only on the nightly schedule and on a dispatch with `nightly: true`; pull requests, pushes to `main` and other dispatches skip them (`--grep-invert @nightly` in the `e2e` job).
+- `workflow_dispatch` (without `complement_pr`) and the nightly schedule always run everything: 6 e2e shards and 4 perf shards. A push to `main` runs the complement of its merged PR's green same-tree run ([Complement runs on `main`](#complement-runs-on-main)), else everything as well.
+- The nightly-only e2e tests (title ending ` @nightly`, [performance.md](performance.md#nightly-only-e2e-tests)) run only on the nightly schedule and on a dispatch with `nightly: true`; pull requests, pushes to `main` and other dispatches skip them (`--grep-invert @nightly` in the `e2e` job). The nightly-only L1 perf poses follow the same rule, and also run on a pull request that changes the Lobby or the office ([Jobs](#jobs)).
 - Nightly: cron `15 20 * * *` (03:15 WIB) on `main`, in its own concurrency group so it never replaces a pending `main` push. It adds one job:
   - `Nightly report` (`scripts/ci-nightly.ts`): opens one issue labelled `ci-nightly` when a job failed, updates it while the nightly keeps failing (a comment only when the failed jobs change) and closes it once a later nightly is green. It writes only on `main`; elsewhere it is a dry run.
 - Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`): the nightly-only tests and the report.
-- The strict visual gate is not in CI because it needs a real GPU (hosted runners time out on SwiftShader, [run](https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/38966094099)); run it locally per [performance.md](performance.md). Nightly visual captures for review stay in `screenshots.yml`.
+- The strict visual gate is not in CI because it needs a real GPU (hosted runners time out on SwiftShader, [run](https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/38966094099)); run it locally per [performance.md](performance.md). Nightly visual captures for review stay in `screenshots.yml`; its own `Nightly report` job (`scripts/ci-nightly.ts` with `NIGHTLY_KIND=screenshots`) opens, updates and closes one `screenshots-nightly` issue the same way, so a red night is seen (owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md)).
 
 ## Production deploy
 
@@ -222,7 +229,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   - Drill: `gh workflow run rollback.yml --ref main -f sha=<commit>` (a dry run by default: decides and reports, no rollback call, no Worker deploy, no issue); `-f dry_run=false -f project=<throwaway project>` for a real rollback on a drill project.
   - Manual rollback: [deploy.md section 6](../deploy.md#6-rollback).
 - Ask pack check (`.github/workflows/ask-pack.yml`, dispatch from `main` only, `production` environment): `-f mode=verify` (the deploy token can read, list, write and delete `pack:` keys, with a probe key), `dry-run` (build and validate the pack and plan the publish, writing only the probe) or `status`. Run it after adding or rotating the token's Workers KV Storage: Edit permission.
-- PR previews are off unless `CF_PREVIEWS=true` and a preview-only repository token exist ([Jobs](#jobs)).
+- No PR previews ([Jobs](#jobs)).
 - Credentials: the deploy token `CLOUDFLARE_API_TOKEN` (the account-owned Cloudflare API token `hq-ci-deploy`) is a secret of the main-only `production` environment, next to `GROQ_API_KEY`, `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET`; `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN` and `CF_LOGS_TOKEN` are repository secrets. The deploy, rollback, Worker, Ask pack, eval and content-gap jobs declare `environment: production` (with `deployment: false` where nothing deploys) and passes secrets only in step-level `env` (`tests/unit/workflows.test.ts`). Permissions and setup: [deploy.md](../deploy.md) sections 2 and 3.
 - Owner setup: `docs/deploy.md` ([deploy.md](../deploy.md)).
 
