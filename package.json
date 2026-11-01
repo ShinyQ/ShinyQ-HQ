@@ -89,5 +89,8 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "patchedDependencies": {
+    "@react-three/fiber@9.8.2": "patches/@react-three%2Ffiber@9.8.2.patch"
+  }
 }

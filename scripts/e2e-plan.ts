@@ -90,7 +90,7 @@ interface Rule {
  */
 export const RULES: Rule[] = [
   // Test infrastructure and dependencies: anything can break.
-  { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$/, specs: "all" },
+  { test: /^(package\.json|bun\.lock|next\.config\.ts|playwright\.config\.ts|tsconfig\.json)$|^patches\//, specs: "all" },
   { test: /^e2e\/(hq|routes|budgets)\.ts$/, specs: "all" },
   { test: /^e2e\/(screenshots|pageview-visual|camera-visual|visual-gate|delivery-visual)\.spec\.ts$|^e2e\/vclock\.ts$/, specs: [] },
   // CI shard timings (scripts/e2e-shard.ts): they change which shard runs a test, never what it checks.
