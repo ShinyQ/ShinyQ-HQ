@@ -82,6 +82,9 @@ Code: `nav/pads.ts` (owner decision).
   - It sits 3 u in front of the shaft door, so it follows the door constants.
 - L2 has a teleporter on every year plaza (`CAREER_ROAD.teleport`: 3.5 u past the plaza start, 6.5 u south of the road center; `CareerYear.teleport`).
 - Pads are not obstacles.
+- `fx/PadGlow.tsx` draws every pad on a floor in one instanced call: a dim fill disc, a rim and an inner ring, 32
+  segments each (160 triangles a pad, 1,600 for L2's ten; 48 segments cost 800 more on L2, where the full-tier ride
+  from L1 peaks closest to the 30k triangle budget).
 
 ### Latch and picker
 
