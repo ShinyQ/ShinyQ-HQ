@@ -28,8 +28,8 @@
       "id": "Saya Forward Deployed AI Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin pengembangan platform AI berbasis Azure hingga rilis di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
     },
     "story": {
-      "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
-      "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, melalui beragam proyek, dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan tim Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang dapat disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menghasilkan jawaban tanpa dasar. Hasil evaluasi menentukan perubahan yang saya rilis."
+      "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Alongside that, I build Indonesian-language Terminal-Bench tasks for LILT AI that test whether frontier AI agents handle Indonesian conventions. Evaluation determines which changes I release.",
+      "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, melalui beragam proyek, dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan tim Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang dapat disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menghasilkan jawaban tanpa dasar. Di samping itu, saya membangun task Terminal-Bench berbahasa Indonesia untuk LILT AI yang menguji apakah AI agent frontier mampu menangani konvensi Indonesia. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
       "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method. Exact logic stays in deterministic code, and an LLM feature is done only when it is evaluated, guarded and observable.",
@@ -2329,37 +2329,40 @@
           "type": "freelance",
           "org": "LILT AI (United States, remote)",
           "role": {
-            "en": "AI Benchmark Engineer, Indonesian (freelance)",
-            "id": "AI Benchmark Engineer, Bahasa Indonesia (freelance)"
+            "en": "AI Benchmark Engineer, Native Language Specialist (Indonesian, freelance)",
+            "id": "AI Benchmark Engineer, Native Language Specialist (Indonesia, freelance)"
           },
           "start": "2026-10",
           "end": "present",
           "summary": {
-            "en": "I design Indonesian-language tasks for Terminal-Bench, an agentic coding benchmark that evaluates frontier AI models on realistic terminal and programming work with Indonesian language and conventions.",
-            "id": "Saya merancang task berbahasa Indonesia untuk Terminal-Bench, benchmark agentic coding yang mengevaluasi model AI frontier pada pekerjaan terminal dan pemrograman yang realistis dengan bahasa dan konvensi Indonesia."
+            "en": "I design and build Indonesian-language tasks for Terminal-Bench, an agentic coding benchmark used to evaluate frontier AI models (OpenAI GPT, Google Gemini, Anthropic Claude) on real-world terminal and programming work. The tasks test whether AI agents handle Indonesian language and cultural conventions in realistic workplace data: government records, family registration, finance and procurement.",
+            "id": "Saya merancang dan membangun task berbahasa Indonesia untuk Terminal-Bench, benchmark agentic coding yang dipakai untuk mengevaluasi model AI frontier (OpenAI GPT, Google Gemini, Anthropic Claude) pada pekerjaan terminal dan pemrograman di dunia nyata. Task ini menguji apakah AI agent mampu menangani bahasa dan konvensi budaya Indonesia pada data kerja yang realistis: arsip pemerintahan, Kartu Keluarga, serta keuangan dan pengadaan."
           },
           "highlights": [
             {
-              "en": "Built each task end to end: native-language datasets, Dockerized environments, Python reference solutions and pytest verifiers",
-              "id": "Membangun setiap task secara end-to-end: dataset berbahasa Indonesia, environment Docker, solusi referensi Python, dan verifier pytest"
+              "en": "Built each task end to end: native-language datasets, Dockerized environments, Python reference and control solutions, and pytest verifiers with held-out data, sandboxed reruns and tamper checks",
+              "id": "Membangun setiap task secara end-to-end: dataset berbahasa Indonesia yang realistis, environment Docker, solusi referensi dan kontrol dalam Python, serta verifier pytest dengan data held-out, rerun dalam sandbox, dan pemeriksaan tamper"
             },
             {
-              "en": "Hardened verifiers with held-out data, sandboxed reruns and tamper checks",
-              "id": "Memperkuat verifier dengan data held-out, rerun dalam sandbox, dan pemeriksaan tamper"
+              "en": "Ran agentic probe experiments across multiple LLMs to measure difficulty before submission, and used failure analysis to separate language-understanding gaps from generic coding errors",
+              "id": "Menjalankan eksperimen probe agentic pada beberapa LLM untuk mengukur tingkat kesulitan sebelum submit, dan memakai analisis kegagalan untuk memisahkan celah pemahaman bahasa dari error coding umum"
             },
             {
-              "en": "Measured difficulty with agentic probe runs across several LLMs before submission",
-              "id": "Mengukur tingkat kesulitan lewat probe run agentic pada beberapa LLM sebelum submit"
+              "en": "Worked through rigorous peer review: reproduced reviewer findings, closed specification gaps without weakening difficulty and kept documentation and evaluation evidence consistent",
+              "id": "Menjalani peer review yang ketat: mereproduksi temuan reviewer, menutup celah spesifikasi tanpa menurunkan tingkat kesulitan, dan menjaga konsistensi dokumentasi dengan bukti evaluasi"
             },
             {
-              "en": "Used failure analysis to separate language-understanding gaps from generic coding errors",
-              "id": "Memakai analisis kegagalan untuk memisahkan celah pemahaman bahasa dari error coding umum"
+              "en": "Set up a multi-agent R&D workflow (research, red-teaming and verification agents) to discover and validate new evaluation ideas",
+              "id": "Menyiapkan workflow R&D multi-agent (agent riset, red-teaming, dan verifikasi) untuk menemukan dan memvalidasi ide evaluasi baru"
             }
           ],
           "stack": [
             "Python",
             "Docker",
             "pytest",
+            "Harbor",
+            "Terminal-Bench 2.0",
+            "LLM-as-judge",
             "LLM evaluation"
           ],
           "discipline": "ai",
