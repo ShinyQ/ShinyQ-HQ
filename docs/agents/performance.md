@@ -71,8 +71,9 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 
 ### Perf lane (`e2e/perf/`)
 
-- Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards with 2 Playwright workers each: the whole lane on 4 shards (`main`, dispatches, the nightly and a full PR); on a selective PR, 1 to 4 shards (`ceil(seconds / 960)` from the perf lane of `e2e/durations.json`) running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+- Runs only with `PERF=1`: `bun run e2e:perf` (`bun run e2e:perf:nightly` adds the nightly-only L1 poses).
+  - Tags: `@look` (the local look check) and `@timeline` (`perf-nightly.yml`) never run in a CI perf shard; `@nightly` marks the eight L1 poses past the arrival (the Needs Kurniadi beacon, the office in view, the Agent Office stop and the day replay, both tiers; 2,637 of 7,427 lane worker-seconds), which run on the nightly schedule and on a PR that changes the Lobby or the office, never on other PRs or `main` (owner decision [2026-11-01](../decisions/2026-11-01-ci-audit.md); the L1 arrival gate on both tiers keeps the Lobby covered on every 3D PR and merge). A unit test in `tests/unit/e2e-plan.test.ts` pins the eight. Run them locally when you touch the Lobby or the office.
+  - CI job `3D perf gates`: `scripts/e2e-shard.ts i/N` with `PERF=1` (`bun run e2e:perf:shard i/N` locally), duration-balanced shards with 2 Playwright workers each: the whole lane on 4 shards (`main`, dispatches, the nightly and a full PR); on a selective PR, 1 to 4 shards (`ceil(seconds / 960)` from the perf lane of `e2e/durations.json`) running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run one perf key locally with the same grep, for example `PERF=1 bunx playwright test --grep "L3 (full|lite): settled"`.
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
@@ -188,7 +189,7 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
   - The `?perf=1` overlay shows FPS p50/p10, frame p95, scene and post calls, GPU objects, tier and renderer, DPR and pixels, and a sixth line with the last elevator ride from `window.__hq.ridePrep.lastRide`.
   - It mounts only with the flag (about 1 KB inside the 3D chunk, never on the Page View).
   - `perfOverlayOn` in `experience/perf/lines.ts` is the one parser of the flag.
-- The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@nightly`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
+- The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@timeline`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
 
 ### Game-first LCP
 
@@ -220,7 +221,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 |---|---|---|
 | Before every push | `bun run verify:quick` (typecheck, lint, unit tests, `next build`, then `og:check` over the export) | about 1 to 2 minutes |
 | Before every push, after it | `bun run e2e:changed` (only the specs that cover your changed paths) | usually 1 to 4 minutes |
-| Render path, materials, floor mounting, the elevator or what the 3D chunk imports changed | `E2E_PORT=<port> bun run e2e:perf` (3D bytes, floors, peaks, the full-tier memory gate) | about 10 to 12 minutes on 2 workers |
+| Render path, materials, floor mounting, the elevator or what the 3D chunk imports changed | `E2E_PORT=<port> bun run e2e:perf` (3D bytes, floors, peaks, the full-tier memory gate); `e2e:perf:nightly` adds the L1 poses past the arrival when the Lobby or the office changed | about 10 to 12 minutes on 2 workers |
 | CPU changes | `bun run bench` | |
 | Unsure | `bun run e2e:smoke` (static routes, SEO, deploy rules, game-first load, Page View) | about 1 to 2 minutes |
 | Shared test infrastructure changed, before a phase PR, or to reproduce a CI failure | `bun run e2e:full` (whole suite) | about 6 to 10 minutes locally |
@@ -408,5 +409,5 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 ### Retries and flaky tests
 
 - No blanket retries: CI retries once; fix a flaky test instead of adding retries.
-- The `Build, CV and e2e` job summary lists every test that passed only on retry (`scripts/flaky-report.ts`, plus a warning annotation).
+- The `Build, CV and e2e` job summary lists every test that passed only on retry (`scripts/flaky-report.ts`, plus a warning annotation), in the e2e lane and the perf lane (the perf shards' blob reports, merged to JSON): a slow perf test that passes on its retry adds its whole time again to its shard.
 - Give each one an issue with an owner, never a quarantine.
