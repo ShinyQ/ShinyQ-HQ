@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { complementPlan, findSource, parseRecord, perfSeconds, perfShardsFor, recordFor, type PlanRecord, type SourceDeps } from "../../scripts/ci-complement";
+import { complementPlan, findSource, parseRecord, PR_LOOKUP_DELAY_MS, PR_LOOKUP_RETRIES, perfSeconds, perfShardsFor, recordFor, type PlanRecord, type SourceDeps } from "../../scripts/ci-complement";
 import { LIGHTHOUSE_PAGES, lookupComplement, planFor, planOutputs } from "../../scripts/ci-plan";
 import { ALL_SPECS } from "../../scripts/e2e-plan";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS } from "../../scripts/perf-plan";
@@ -57,6 +57,8 @@ describe("complementPlan", () => {
     expect(plan.perf).toEqual([...ALL_PERF_KEYS]);
     expect(plan.lighthouse).toBe("all");
     expect(plan.perfShards).toBe(4);
+    // At most 10 e2e plus perf shards per run (owner decision 2026-11-01), so a main run peaks at about 12 jobs.
+    expect(plan.e2eShards).toBe(6);
   });
   it("says so when the PR run listed every spec whole", () => {
     const plan = complementPlan({ version: 1, e2e: { specs: [...ALL_SPECS], tests: [] }, perf: "all", lighthouse: "all" }, source, opts);
@@ -79,6 +81,11 @@ describe("perf sizing", () => {
     expect(perfSeconds(durations, ["memory"])).toBe(900);
     expect(perfSeconds(durations, [...ALL_PERF_KEYS])).toBe(1056);
   });
+  it("counts the nightly-only tests only when the run includes them", () => {
+    const withNightly = { ...durations, "floors.spec.ts › L1 full: settled draw calls and shader programs at the Agent Office @nightly": 300 };
+    expect(perfSeconds(withNightly, [...ALL_PERF_KEYS])).toBe(1056);
+    expect(perfSeconds(withNightly, ["floor:L1"], true)).toBe(456);
+  });
   it("sizes ceil(seconds / 960), 1 to 4", () => {
     expect(perfShardsFor(0)).toBe(1);
     expect(perfShardsFor(900)).toBe(1);
@@ -97,10 +104,29 @@ describe("findSource", () => {
     treeOf: async () => "t",
     greenRuns: async () => [{ id: 7, html_url: "r7", event: "pull_request", head_repository: { full_name: repo } }],
     record: async () => record,
+    sleep: async () => {},
     ...over,
   });
   it("finds the newest green same-repo PR run on the same tree", async () => {
     expect(await findSource(repo, "m", null, deps())).toEqual({ ok: true, source: { run: 7, pr: 210, url: "r7" }, record });
+  });
+  it("asks again while GitHub has not linked the merge commit to its pull request yet", async () => {
+    let calls = 0;
+    const waits: number[] = [];
+    const late = deps({ pullsFor: async () => (++calls < 3 ? [] : [pr]), sleep: async (ms) => void waits.push(ms) });
+    expect(await findSource(repo, "m", null, late)).toMatchObject({ ok: true, source: { pr: 210 } });
+    expect(waits).toEqual([PR_LOOKUP_DELAY_MS, PR_LOOKUP_DELAY_MS]);
+  });
+  it("falls back after about 30 s of lookups, and at once for a merge GitHub linked to a fork's pull request", async () => {
+    const waits: number[] = [];
+    const never = await findSource(repo, "m", null, deps({ pullsFor: async () => [], sleep: async (ms) => void waits.push(ms) }));
+    expect(never).toEqual({ ok: false, why: "no pull request from this repository was merged as this commit" });
+    expect(waits).toHaveLength(PR_LOOKUP_RETRIES);
+    expect(PR_LOOKUP_RETRIES * PR_LOOKUP_DELAY_MS).toBe(30_000);
+    const fork = { ...pr, head: { sha: "h", repo: { full_name: "fork/r" } } };
+    const forkWaits: number[] = [];
+    expect((await findSource(repo, "m", null, deps({ pullsFor: async () => [fork], sleep: async (ms) => void forkWaits.push(ms) }))).ok).toBe(false);
+    expect(forkWaits).toEqual([]);
   });
   it("uses the given pull request for a dispatch", async () => {
     expect(await findSource(repo, "x", 210, deps({ pullsFor: async () => [] }))).toMatchObject({ ok: true });

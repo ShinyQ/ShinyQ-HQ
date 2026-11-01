@@ -1,8 +1,8 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { BootCard, type BootWho } from "@/components/BootCard";
+import { BootCard, bootQuickLinks, type BootWho } from "@/components/BootCard";
 import { bootCoverUsed } from "@/lib/boot-first";
 import { useHQStore } from "@/store/useHQStore";
 
@@ -17,6 +17,8 @@ const LINE_MS = 180;
  */
 export function BootOverlay({ who }: { who: BootWho }) {
   const t = useTranslations("hud");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const setPhase = useHQStore((s) => s.setPhase);
   const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name: who.name }), t("bootLine5"), t("bootLine6")];
   const [typed, setTyped] = useState(() => (bootCoverUsed() ? lines.length : 0));
@@ -50,6 +52,7 @@ export function BootOverlay({ who }: { who: BootWho }) {
         startLabel={t("bootStart")}
         who={who}
         pageView={{ href: "?view=classic", label: t("pageView"), hint: t("pageViewHint") }}
+        quick={bootQuickLinks(locale, tc("viewCv"), t("bootContact"))}
         startDisabled={!ready}
         startRef={start}
         onStart={() => {

@@ -584,6 +584,7 @@
     "bootLine5": "[ ok ] elevator ready",
     "bootLine6": "rover ready ^_^",
     "bootStart": "Boot rover",
+    "bootContact": "Contact",
     "retry3d": "Retry 3D",
     "staticNotice": "3D is unavailable. Showing the classic site.",
     "kioskTitle": "rover@hq:~$ ./rover-menu",
@@ -869,7 +870,9 @@
     "more": "More {wing} projects",
     "breadcrumb": "Breadcrumb",
     "kind": "Project type",
-    "room": "Room in the 3D HQ"
+    "room": "Room in the 3D HQ",
+    "askAbout": "What did Kurniadi build in {title}, and what were the results?",
+    "askAboutLabel": "Ask Rover about this project"
   },
   "writing": {
     "title": "Writing",

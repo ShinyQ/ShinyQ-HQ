@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale } from "@/content/schema";
-import { BootCard, type BootWho } from "./BootCard";
+import { BootCard, bootQuickLinks, type BootWho } from "./BootCard";
 
 /**
  * SSR boot cover. Hidden unless the inline head script set `html[data-hq-boot]` (src/lib/boot-first.ts);
@@ -9,6 +9,7 @@ import { BootCard, type BootWho } from "./BootCard";
  */
 export async function BootCover({ locale, who }: { locale: Locale; who: BootWho }) {
   const t = await getTranslations({ locale, namespace: "hud" });
+  const tc = await getTranslations({ locale, namespace: "common" });
   const lines = [t("bootLine1"), t("bootLine2"), t("bootLine3"), t("bootLine4", { name: who.name }), t("bootLine5"), t("bootLine6")];
   return (
     <div id="hq-boot-cover" data-testid="boot-cover" className="hq-boot-cover">
@@ -22,6 +23,7 @@ export async function BootCover({ locale, who }: { locale: Locale; who: BootWho 
         placeholder
         who={who}
         pageView={{ href: "?view=classic", label: t("pageView"), hint: t("pageViewHint") }}
+        quick={bootQuickLinks(locale, tc("viewCv"), t("bootContact"))}
       />
     </div>
   );

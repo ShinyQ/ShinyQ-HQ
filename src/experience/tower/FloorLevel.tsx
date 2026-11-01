@@ -35,7 +35,7 @@ function ghostFill(fill: MeshBasicMaterial, above: boolean, ghost: number) {
 }
 
 /**
- * One floor slab (one box and one grid per slab rect: the bounds plus any wings) with accent edges and
+ * One floor slab (one box per slab rect, the bounds plus any wings, and one grid over them all) with accent edges and
  * its content. Floors above the rover turn into ghosts each frame so the follow camera, which sits
  * higher than FLOOR_GAP, can look down through them. In first person (round 5) the ghosts
  * fade out and hide, so no ceiling hangs over the rover's eyes. A ghost's outline also fades out while the rover is
@@ -63,7 +63,7 @@ export function FloorLevel({
   const slabFills = useRef<(Mesh | null)[]>([]);
   /** The ghost outline's hide amount (0 shown, 1 hidden), eased by `stepGhostOutline`. */
   const outline = useRef(0);
-  // Every rect's box and grid, the grids faded as one floor around the slab's box.
+  // Every rect's box, and one grid over every rect faded as one floor around the slab's box.
   const rects = useMemo(
     () =>
       slabRects({ bounds, wings }).map((r) => ({
@@ -136,7 +136,7 @@ export function FloorLevel({
         </lineSegments>
       </group>
       <group ref={content}>
-        {near && rects.map((r, i) => <GridFloor key={i} width={r.w} depth={r.d} center={r.center} fade={fade} />)}
+        {near && <GridFloor rects={rects} fade={fade} />}
         {near && layout.doors && <ProximityGlow doors={layout.doors} color={accent} floorY={y} />}
         {near && layout.pads && <PadGlow pads={layout.pads} floorY={y} />}
         {children}

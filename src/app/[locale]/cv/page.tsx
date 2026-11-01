@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CvCover } from "@/components/cv/CvCover";
+import { ClosingCta } from "@/components/page/ClosingCta";
 import { assertLocale } from "@/i18n/locale";
 import { seoMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
@@ -36,6 +37,7 @@ export default async function CvPage({ params }: PageProps<"/[locale]/cv">) {
           }}
         />
       </div>
+      <ClosingCta locale={locale} cv={false} />
     </>
   );
 }
