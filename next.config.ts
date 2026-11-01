@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     globalNotFound: true,
   },
   turbopack: {
+    // troika's right-to-left text support: every in-world string is left to right (src/experience/bidiLtr.ts).
+    resolveAlias: { "bidi-js": "./src/experience/bidiLtr.ts" },
     rules: {
       "*.css": {
         // CSS modules (the study guide reader's styles) skip Tailwind and keep Next's scoped class names.
