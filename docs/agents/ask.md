@@ -116,7 +116,7 @@ All bindings and vars live in `wrangler.toml`.
 - Shows:
   - a thread (sessionStorage, last 20 messages); the last 5 signed turns go with each question (see [Multi-turn memory](#multi-turn-memory));
   - a **New chat** button in the header (`ask.dock.newChat`, ID "Obrolan baru") that clears the thread and the memory;
-  - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills;
+  - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills, led by a hiring question (a `recruiter` pill, owner decision 2026-11-01);
   - topic pills that expand into 4 curated questions;
   - 2 or 3 deterministic follow-ups (`pickFollowUps` in `src/ask/suggestions.ts`: the question's own `followUps`, then the answer's `tags`, then other topics); a decline carries redirect `tags` too, so it never ends without a next question;
   - up to two "Read on this site" links (`cites`, one per kind).
@@ -133,12 +133,12 @@ All bindings and vars live in `wrangler.toml`.
 
 ## Curated pills
 
-- `content/ask/suggestions.json`: 106 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
+- `content/ask/suggestions.json`: 107 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each. `recruiter: true` marks the hiring pills (`work-best`, `ai-voice`, `career-now`, `career-history`, `contact-open`, `contact-where`, `contact-reach`).
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
   - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
   - "About Kurniadi" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
 - Sampling (`src/ask/suggestions.ts`), seeded once per page session (`sessionStorage["hq:ask-seed"]`, read by `readAskSeed`):
-  - `topicQuestions` shows a seeded random 4 of a topic, `starterQuestions` the "Try asking" mix (one pill from each of 3 topics in seeded order);
+  - `topicQuestions` shows a seeded random 4 of a topic, `starterQuestions` the "Try asking" mix: an unasked `recruiter` pill first (seeded, salted so it never mirrors a topic's order), then one pill from each other topic in seeded order (bank order without a seed keeps `work-best`, `ai-voice`, `career-now`);
   - a pill asked in the thread never shows again (an exhausted topic shows none); the order stays stable while the panel is open;
   - tests inject the seed: `"order"` keeps bank order (every Ask e2e spec but the seeded one), a number fixes the sample;
   - follow-ups stay deterministic (`pickFollowUps`).
@@ -227,7 +227,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
 - No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
 - Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
-- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier, blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)), blob14 the route (`approach`, `civic`, `policy`, `lifestyle`, `mentoring`, `team`, `adjacent`, `lead`, `default`, plus `+partial`; empty for a canned reply), blob15 the retrieval (`bm25`) and blob16 `match` for a declined question that retrieval would have answered (`strongMatch`). Blob4 holds the PII-scrubbed question for `unknown` and `decline` outcomes only. The `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models, Primary failures (the first tier's failure reason from blob11, never later tiers), Pack tier, Over-refused, Routes and Retrieval tables.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier, blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)), blob14 the route (`approach`, `civic`, `policy`, `lifestyle`, `mentoring`, `team`, `adjacent`, `lead`, `default`, plus `+partial`; empty for a canned reply), blob15 the retrieval (`bm25`), blob16 `match` for a declined question that retrieval would have answered (`strongMatch`) and blob17 the names an answer failed the entity or employer check on (`checkedNames` in `functions/_lib/handler.ts`: model output only, any name sharing a word with the question dropped, 120 characters at most; owner decision 2026-11-01, because an `entity` miss was untraceable). Blob4 holds the PII-scrubbed question for `unknown` and `decline` outcomes only. The `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models, Primary failures (the first tier's failure reason from blob11, never later tiers), Pack tier, Over-refused, Routes and Retrieval tables; its private `--questions` output also lists the blob17 names.
 - Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks
