@@ -209,6 +209,10 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "nessus api",
   "rag",
   "hybrid/vector search",
+  // Harbor here is the Terminal-Bench evaluation harness, not the CNCF Harbor registry, so it gets no logo.
+  "harbor",
+  "terminal-bench",
+  "llm-as-judge",
 ]);
 
 /** Lowercases, drops parentheticals and trailing version numbers ("Next.js 14" to "next.js"). */
