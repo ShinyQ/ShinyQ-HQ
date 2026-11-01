@@ -359,7 +359,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Systems
 
-- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box and grid per slab rect and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
+- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box per slab rect, one grid over them all and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
 - `src/experience/missions/`: pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring).
 - `src/experience/nav/`: pure navigation.
   - navgrid, collision, doors.
@@ -374,7 +374,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Effects (fx)
 
-- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
+- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor, 3 while the chevrons are out of view; 3 on L3, which turns chevrons off).
 - `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
 - `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots, `paperSlots` and `libraryIcons` (one icon over each bay's lead), run at build for the shapes JSON.
 - `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame and the crossfade weights (`HoloSwap` in `HoloIcon.tsx` draws the swap).
