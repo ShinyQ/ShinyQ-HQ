@@ -24,6 +24,11 @@ registerThreeCatalogue();
 
 /** Rover in front of the wall, camera behind it looking east (the L1:certifications view zone). */
 const ROVER_AT = { x: 18, z: LOBBY.certWall.z };
+const GRID = (() => {
+  const b = LOBBY.bounds;
+  const rect = { w: b.maxX - b.minX, d: b.maxZ - b.minZ, center: [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2] as [number, number] };
+  return { rects: [rect], fade: { center: rect.center, radius: Math.hypot(rect.w, rect.d) / 2 } };
+})();
 
 function CameraRig({ mobile }: { mobile: boolean }) {
   const view = mobile ? { dx: -12, y: 10, fov: 60 } : { dx: -11, y: 8, fov: 45 };
@@ -65,7 +70,6 @@ export default function CertsWorld({ data, certs, labels, tier, mobile }: { data
     roverRuntime.heading = Math.PI / 2;
     getHQStore().getState().setTier(tier);
   }, [tier]);
-  const b = LOBBY.bounds;
   return (
     <div className="fixed inset-0 z-[60] bg-void" data-testid="certs-3d" data-ready={ready ? "1" : "0"}>
       <Canvas dpr={[1, 1.5]} gl={{ antialias: true }} camera={{ fov: 45, near: 0.5, far: 400, position: [0, 30, 30] }} onCreated={({ gl }) => (gl.toneMapping = ACESFilmicToneMapping)}>
@@ -75,7 +79,7 @@ export default function CertsWorld({ data, certs, labels, tier, mobile }: { data
         <hemisphereLight args={settings.hemisphere} />
         <directionalLight color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
         <CameraRig mobile={mobile} />
-        <GridFloor width={b.maxX - b.minX} depth={b.maxZ - b.minZ} center={[(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2]} />
+        <GridFloor rects={GRID.rects} fade={GRID.fade} />
         <Lanes packets={tier === "full" ? 28 : 12} />
         <SkillsWall skills={data.skills} atlas={atlas} atlasTexture={atlasTexture} title="Skills" />
         <CertWall certifications={certs} atlas={atlas} atlasTexture={atlasTexture} labels={labels} tier={tier} />
