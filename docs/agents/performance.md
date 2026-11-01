@@ -210,6 +210,11 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 - Never with Do Not Track or GPC (they win over `?rum=1` too).
 - Do not add fields without amending appendix 06 and `src/lib/rum/protocol.ts` together.
 - Never send a URL, user agent, renderer string or free text.
+- Read the field numbers with `bun scripts/rum-report.ts` (`--days N` up to 90, `--json`; env `WA_TOKEN`
+  and `WA_ACCOUNT_ID` as for `scripts/stats-dry-run.ts`): per tier the sessions, context lost, boot timeouts and empty
+  beacons, the load path, fps50, fps10 and explore buckets, the 3D vs Classic split, and Web Vitals per device type (Web
+  Analytics, hard navigations). Read-only and aggregated: SELECT and `query` only, fixed enum groupings (never a path,
+  selector, browser, country, IP or user agent). Put its before and after tables in a PR that targets field performance.
 
 ## Fast verification
 
