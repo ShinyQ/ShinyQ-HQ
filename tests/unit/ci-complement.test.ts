@@ -57,6 +57,8 @@ describe("complementPlan", () => {
     expect(plan.perf).toEqual([...ALL_PERF_KEYS]);
     expect(plan.lighthouse).toBe("all");
     expect(plan.perfShards).toBe(4);
+    // At most 10 e2e plus perf shards per run (owner decision 2026-11-01), so a main run peaks at about 12 jobs.
+    expect(plan.e2eShards).toBe(6);
   });
   it("says so when the PR run listed every spec whole", () => {
     const plan = complementPlan({ version: 1, e2e: { specs: [...ALL_SPECS], tests: [] }, perf: "all", lighthouse: "all" }, source, opts);
@@ -78,6 +80,11 @@ describe("perf sizing", () => {
   it("sums the durations of the tests the keys grep", () => {
     expect(perfSeconds(durations, ["memory"])).toBe(900);
     expect(perfSeconds(durations, [...ALL_PERF_KEYS])).toBe(1056);
+  });
+  it("counts the nightly-only tests only when the run includes them", () => {
+    const withNightly = { ...durations, "floors.spec.ts › L1 full: settled draw calls and shader programs at the Agent Office @nightly": 300 };
+    expect(perfSeconds(withNightly, [...ALL_PERF_KEYS])).toBe(1056);
+    expect(perfSeconds(withNightly, ["floor:L1"], true)).toBe(456);
   });
   it("sizes ceil(seconds / 960), 1 to 4", () => {
     expect(perfShardsFor(0)).toBe(1);
