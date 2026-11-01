@@ -121,6 +121,20 @@ test("a featured case study reads as a story: situation, key decisions, results,
   await expectNoSeriousViolations(page);
 });
 
+test("the voice AI case study adds an Engineering detail chapter after the architecture, with known limits and a post link", async ({ page }) => {
+  await openPage(page, staticTier(`/en/labs/${storyPod.slug}`));
+  const chapters = await page.locator("article section[id] > h2").evaluateAll((els) => els.map((h) => h.parentElement!.id));
+  expect(chapters[chapters.indexOf("architecture") + 1]).toBe("engineering");
+  const topics = data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.engineering!;
+  await expect(page.locator("#engineering h2")).toHaveText(en.labs.engineering.title);
+  await expect(page.locator("#engineering h3")).toHaveText(topics.map((t) => t.title.en));
+  await expect(page.locator("#engineering")).toContainText(`${en.labs.engineering.limits}:`);
+  const post = page.locator("#engineering").getByRole("link", { name: data.floors.library.posts.find((p) => p.slug === topics[0].post)!.title.en });
+  await expect(post).toHaveAttribute("href", `/en/blog/${topics[0].post}`);
+  await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link", { name: en.labs.engineering.title })).toHaveAttribute("href", "#engineering");
+  await expectNoSeriousViolations(page);
+});
+
 test("Home keeps the deep-link anchors used by the room catalog", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   // `office`: the Agent Office room's Classic page (`/#office`, src/experience/missions/rooms.ts).

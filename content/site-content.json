@@ -5628,6 +5628,149 @@
               "id": "Spec dan PR yang sudah di-merge bukan bukti bahwa sebuah perbaikan berhasil. Tetapkan kriteria pengujian lebih dulu, terima hasil negatif, dan hapus perubahan yang tidak didukung data."
             }
           },
+          "engineering": [
+            {
+              "title": {
+                "en": "Latency Budget",
+                "id": "Latency Budget"
+              },
+              "summary": {
+                "en": "Latency is measured where the caller hears it: a harness plays recorded caller audio over the real call path and joins its timeline with per-turn backend telemetry, so every stage has its own number.",
+                "id": "Latensi diukur dari sisi penelepon: harness memutar audio penelepon yang sudah direkam melalui jalur panggilan sebenarnya, lalu menggabungkan timeline-nya dengan telemetry backend per giliran, sehingga setiap tahap punya angkanya sendiri."
+              },
+              "points": [
+                {
+                  "en": "On the live WebRTC path, the caller hears an answer 1,204 ms after speaking at P50 (P95 1,257 ms, n=6 turns without a tool call). The largest stages are the model's end-of-turn wait (about 520 ms) and its time to first audio (408 ms); the media path adds about 136 ms.",
+                  "id": "Pada jalur WebRTC live, penelepon mendengar jawaban 1.204 ms setelah selesai berbicara pada P50 (P95 1.257 ms, n=6 giliran tanpa tool call). Tahap terbesar adalah waktu tunggu model untuk mendeteksi akhir giliran (sekitar 520 ms) dan waktu hingga audio pertama (408 ms); jalur media menambah sekitar 136 ms."
+                },
+                {
+                  "en": "Knowledge lookups run as cancellable tasks under one 2.5 s budget. Search and embeddings each get a 1.5 s timeout per attempt, and the remaining deadline travels with every retry, so no retry starts that cannot finish in time.",
+                  "id": "Akses knowledge base berjalan sebagai task yang bisa dibatalkan dengan satu batas waktu 2,5 detik. Search dan embeddings masing-masing mendapat timeout 1,5 detik per percobaan, dan sisa deadline ikut dibawa ke setiap retry, sehingga tidak ada retry yang dimulai jika tidak sempat selesai."
+                },
+                {
+                  "en": "Moving knowledge search into the backend's geography cut retrieval P50 by 1,351 ms in a live A/B, so the move was kept.",
+                  "id": "Memindahkan knowledge search ke geografi yang sama dengan backend memangkas P50 retrieval sebesar 1.351 ms pada A/B live, sehingga perubahan ini dipertahankan."
+                },
+                {
+                  "en": "Tuning that saved too little was rejected against thresholds set before the run: minimal model reasoning saved 39 ms and a 500 ms server-side silence window saved 69 ms across 84 calls. An end-of-turn model that added 220 ms stays off.",
+                  "id": "Tuning yang penghematannya terlalu kecil ditolak berdasarkan ambang yang ditetapkan sebelum pengujian: reasoning model minimal hanya menghemat 39 ms dan jendela hening 500 ms di sisi server hanya menghemat 69 ms dari 84 panggilan. Model deteksi akhir giliran yang menambah 220 ms tetap dinonaktifkan."
+                }
+              ],
+              "limits": {
+                "en": "The samples are small and come from test runs, not production traffic, and the largest stage, the end-of-turn wait, happens inside the model service.",
+                "id": "Sampelnya kecil dan berasal dari test run, bukan trafik produksi, dan tahap terbesar, yaitu waktu tunggu akhir giliran, terjadi di dalam layanan model."
+              },
+              "post": "making-a-voice-agent-interruptible"
+            },
+            {
+              "title": {
+                "en": "Failover Design",
+                "id": "Desain Failover"
+              },
+              "summary": {
+                "en": "Every dependency on the call path has a per-attempt timeout, retries for idempotent calls only, and a circuit breaker that opens after 5 failures in 60 s and probes again after 30 s. Breaker state shows on the readiness endpoint.",
+                "id": "Setiap dependensi di jalur panggilan punya timeout per percobaan, retry hanya untuk panggilan idempotent, dan circuit breaker yang terbuka setelah 5 kegagalan dalam 60 detik lalu mencoba lagi setelah 30 detik. Status breaker terlihat di endpoint readiness."
+              },
+              "points": [
+                {
+                  "en": "Media runs on two self-hosted LiveKit nodes in separate availability zones. New calls go to the healthy, non-draining node with the fewest rooms, checked every 5 s.",
+                  "id": "Media berjalan di dua node LiveKit self-hosted pada availability zone yang berbeda. Panggilan baru diarahkan ke node yang sehat, tidak sedang drain, dan memiliki room paling sedikit, dicek setiap 5 detik."
+                },
+                {
+                  "en": "Call bridges run in supervised worker processes with a 2 s heartbeat. When a worker dies, its calls rejoin a live worker, and a caller who is still present is handed to a human rather than hung up.",
+                  "id": "Bridge panggilan berjalan di proses worker yang diawasi supervisor dengan heartbeat 2 detik. Saat sebuah worker mati, panggilannya bergabung kembali ke worker yang masih hidup, dan penelepon yang masih terhubung dialihkan ke petugas, bukan diputus."
+                },
+                {
+                  "en": "A chaos suite on a fake model passed 16 of 17 failure modes in 3 consecutive runs (region outage was not applicable): failed database writes go to a replayable dead-letter queue, search and embedding failures fall back to keyword search, and an admin API outage starts calls from the last good agent config.",
+                  "id": "Chaos suite dengan model tiruan lolos 16 dari 17 mode kegagalan dalam 3 run berturut-turut (gangguan region tidak berlaku): write database yang gagal masuk ke dead-letter queue yang bisa di-replay, kegagalan search dan embedding beralih ke keyword search, dan saat admin API mati panggilan tetap dimulai dengan konfigurasi agent terakhir yang valid."
+                },
+                {
+                  "en": "Admission control refuses a new call with 429 when capacity is full or the model is throttled, and 503 when a dependency's breaker is open, so calls already in progress keep their capacity.",
+                  "id": "Admission control menolak panggilan baru dengan 429 saat kapasitas penuh atau model terkena throttling, dan 503 saat breaker sebuah dependensi terbuka, sehingga panggilan yang sedang berjalan tetap mendapat kapasitasnya."
+                },
+                {
+                  "en": "A live handover drill of 44 calls traced failed takeovers to model throttling and a failed response the bridge dropped silently. Failed responses are now logged and retried.",
+                  "id": "Drill handover live dengan 44 panggilan menelusuri takeover yang gagal ke throttling model dan respons gagal yang dibuang bridge tanpa jejak. Kini respons yang gagal dicatat dan di-retry."
+                }
+              ],
+              "limits": {
+                "en": "The backend still runs as one instance that is not zone-redundant, there is no fallback model deployment or second region yet, and regional disaster recovery is designed but has never been drilled.",
+                "id": "Backend masih berjalan sebagai satu instance yang belum zone-redundant, belum ada deployment model cadangan atau region kedua, dan disaster recovery lintas region baru sebatas desain dan belum pernah di-drill."
+              }
+            },
+            {
+              "title": {
+                "en": "Evaluation Method",
+                "id": "Metode Evaluasi"
+              },
+              "summary": {
+                "en": "Decision rules are written and committed before any measurement, and only a pass changes a default. A change without supporting evidence stays off.",
+                "id": "Kriteria keputusan ditulis dan di-commit sebelum pengukuran apa pun, dan hanya hasil lulus yang boleh mengubah default. Perubahan tanpa bukti pendukung tetap dinonaktifkan."
+              },
+              "points": [
+                {
+                  "en": "The harness drives the real call bridge three ways: a media emulator for deterministic runs, a fake realtime endpoint for no-cost runs and a headless WebRTC caller for live runs.",
+                  "id": "Harness menjalankan bridge panggilan yang sebenarnya dengan tiga cara: media emulator untuk run deterministik, endpoint realtime tiruan untuk run tanpa biaya, dan penelepon WebRTC headless untuk run live."
+                },
+                {
+                  "en": "Scenarios cover quiet turns, knowledge questions, interruptions, escalation, long pauses, Indonesian callers, street noise at 15 dB and office noise with speakerphone echo.",
+                  "id": "Skenarionya mencakup giliran tenang, pertanyaan knowledge base, interupsi, eskalasi, jeda panjang, penelepon berbahasa Indonesia, kebisingan jalan pada 15 dB, dan kebisingan kantor dengan gema speakerphone."
+                },
+                {
+                  "en": "Answer quality uses 16 golden questions in English and Indonesian, 2 runs per model, scored 1 to 5 on groundedness, correctness, completeness, language match and brevity by an LLM judge. The judge first had to agree with 10 hand-labelled items: 0.8 per item and 1.0 on hallucination flags.",
+                  "id": "Kualitas jawaban diukur dengan 16 golden question dalam bahasa Inggris dan Indonesia, 2 run per model, dinilai 1 sampai 5 untuk groundedness, correctness, completeness, kesesuaian bahasa, dan keringkasan oleh LLM judge. Judge tersebut harus lebih dulu sesuai dengan 10 item yang dilabeli manual: 0,8 per item dan 1,0 untuk penanda halusinasi."
+                },
+                {
+                  "en": "Turn-taking is scored on false end-of-turn rate, cut-off rate and spurious events per 100 utterances, next to latency, against limits set before each run.",
+                  "id": "Turn-taking dinilai dari tingkat salah deteksi akhir giliran, tingkat ucapan terpotong, dan event palsu per 100 ucapan, di samping latensi, terhadap batas yang ditetapkan sebelum setiap run."
+                },
+                {
+                  "en": "A retrieval regression gate checks recall at k=4 on a fixed question set (0.909 in English, n=44), and its guard flagged all 4 poisoned chunks that the injection probes retrieved.",
+                  "id": "Retrieval regression gate memeriksa recall pada k=4 dengan set pertanyaan tetap (0,909 untuk bahasa Inggris, n=44), dan guard-nya menandai keempat chunk beracun yang terambil oleh probe injeksi."
+                }
+              ],
+              "limits": {
+                "en": "Evaluation runs on demand, not on every pull request, the samples are small, there is no word error rate or real-traffic containment metric yet, and Indonesian retrieval recall on the regression set is still low (0.182, n=11).",
+                "id": "Evaluasi dijalankan sesuai kebutuhan, bukan di setiap pull request, sampelnya kecil, belum ada metrik word error rate atau containment dari trafik nyata, dan recall retrieval bahasa Indonesia pada set regresi masih rendah (0,182, n=11)."
+              }
+            },
+            {
+              "title": {
+                "en": "Security and Identity",
+                "id": "Keamanan dan Identitas"
+              },
+              "summary": {
+                "en": "Each app runs on its own managed identity with least-privilege data-plane roles, and key-based access is disabled on the database, search, AI services and storage, so no data-store keys sit in app config.",
+                "id": "Setiap aplikasi berjalan dengan managed identity masing-masing dan role data-plane dengan hak akses minimum, dan akses berbasis key dinonaktifkan pada database, search, layanan AI, dan storage, sehingga tidak ada key data store di konfigurasi aplikasi."
+              },
+              "points": [
+                {
+                  "en": "Service-to-service calls use Entra app roles plus a signed actor context, with no shared keys between the apps.",
+                  "id": "Panggilan antarlayanan memakai Entra app role ditambah actor context yang ditandatangani, tanpa key yang dibagi antaraplikasi."
+                },
+                {
+                  "en": "Operators sign in with Entra single sign-on, access control fails closed and maps Entra groups to roles, and the first admin is bound only for the right tenant, a member account and a verified email.",
+                  "id": "Operator masuk dengan Entra single sign-on, kontrol akses bersifat fail-closed dan memetakan grup Entra ke role, dan admin pertama hanya bisa diikat untuk tenant yang benar, akun member, dan email yang terverifikasi."
+                },
+                {
+                  "en": "Public callers are anonymous, so each call gets a signed, scoped token that lasts at most 45 minutes. Media join tokens are scoped per role, webhooks are signed with a replay guard, and per-install secrets are generated inside the install and kept in Key Vault.",
+                  "id": "Penelepon publik bersifat anonim, sehingga setiap panggilan mendapat token bertanda tangan dengan cakupan terbatas yang berlaku paling lama 45 menit. Token join media dibatasi per role, webhook ditandatangani dengan proteksi replay, dan secret setiap instalasi dibuat di dalam instalasi itu sendiri lalu disimpan di Key Vault."
+                },
+                {
+                  "en": "Every ingested document chunk is scanned for prompt injection, and quarantined chunks are filtered out at query time, which adds no call latency.",
+                  "id": "Setiap chunk dokumen yang di-ingest dipindai untuk prompt injection, dan chunk yang dikarantina disaring saat query, sehingga tidak menambah latensi panggilan."
+                },
+                {
+                  "en": "No call audio is recorded. Transcripts can be PII-redacted after the call, retention is set per data category, data-subject deletion is supported, and an AI disclosure plays first on every call with tools off and cannot be cut short.",
+                  "id": "Audio panggilan tidak direkam. Transkrip dapat diredaksi PII-nya setelah panggilan, retensi diatur per kategori data, penghapusan data subjek didukung, dan pemberitahuan AI selalu diputar pertama di setiap panggilan tanpa tool dan tidak dapat dipotong."
+                }
+              ],
+              "limits": {
+                "en": "Callers are not identity-verified, private endpoints are built into the templates but off by default and not yet deployed, and an external penetration test is planned before the first customer install.",
+                "id": "Identitas penelepon tidak diverifikasi, private endpoint sudah ada di template tetapi nonaktif secara default dan belum pernah di-deploy, dan penetration test eksternal direncanakan sebelum instalasi pelanggan pertama."
+              }
+            }
+          ],
           "stack": [
             "Azure OpenAI Realtime",
             "Azure AI Search",
