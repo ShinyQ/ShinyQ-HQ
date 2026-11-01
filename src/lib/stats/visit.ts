@@ -8,7 +8,7 @@
  *   3D view, the Classic site or both (the 3D vs Classic split). It never counts as a visit;
  * - the intent ping `{ v: 1, intent }`, sent once per tab session and kind (owner decision 2026-11-01): the
  *   visitor opened the CV, wrote or copied the email, or followed the LinkedIn or GitHub link. Private: only the
- *   owner's report reads it (`scripts/intent-report.ts`), never the public stats.
+ *   owner's report reads it (`scripts/stats-intents.ts`), never the public stats.
  * Shared by the client (src/lib/stats/visitClient.ts), the Pages Function (functions/_lib/visit.ts) and the
  * hq-stats Worker queries.
  */

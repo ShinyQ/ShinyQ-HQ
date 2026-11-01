@@ -4,7 +4,7 @@
  * Engine `visit_events` (blob2 "intent" with blob3 the intent; blob2 "visit" with blob3 the tag, empty when untagged).
  * Never part of the public stats and never run in CI.
  *
- *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/intent-report.ts [--days 30]
+ *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/stats-intents.ts [--days 30]
  */
 import { parseSqlRows, type CountRow } from "./content-gap";
 import { VISIT_INTENTS, VISIT_SOURCES } from "../src/lib/stats/visit";

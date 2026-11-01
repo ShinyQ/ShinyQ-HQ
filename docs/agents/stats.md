@@ -103,8 +103,8 @@ Owner decision 2026-11-01: how many visitors take a step toward hiring him, neve
 - The intent ping `{ v: 1, intent }` (`VISIT_INTENTS`: `cv`, `email`, `linkedin`, `github`), once per browser tab session and intent (`sessionStorage["hq:intent:<intent>"]`), with the same skips as the visit ping (automation and crawlers; `?visit=1` forces it in tests).
 - `cv`: `countIntent("cv")` in `DialogHost` when the CV reader opens, so every entry point counts (Classic buttons, the boot card, the 3D Rover menu and kiosk).
 - `email`, `linkedin`, `github`: a capture click listener (`intentOf` in `visitClient.ts`) on `mailto:` links, `[data-hq-intent="email"]` controls (the About copy email button) and `https://linkedin.com/` or `https://github.com/` links. It stays on for the whole page lifetime, also after the mode ping.
-- Report, owner only: `CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/intent-report.ts [--days 30]` prints every intent and every `?src=` channel (zeros and untagged visits included). It refuses to run in CI.
-- Tests: `tests/stats/shared.test.ts`, `tests/stats/visit-endpoint.test.ts`, `tests/stats/visit-client.test.ts`, `tests/stats/intent-report.test.ts`, `e2e/visit.spec.ts`.
+- Report, owner only: `CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/stats-intents.ts [--days 30]` prints every intent and every `?src=` channel (zeros and untagged visits included). It refuses to run in CI.
+- Tests: `tests/stats/shared.test.ts`, `tests/stats/visit-endpoint.test.ts`, `tests/stats/visit-client.test.ts`, `tests/stats/stats-intents.test.ts`, `e2e/visit.spec.ts`.
 - No cookie, no identifier, no URL.
 - Never under automation or crawlers (`?visit=1` forces it in tests, `?visit=0` turns it off); Do Not Track and GPC are counted (decision 2026-10-24).
 

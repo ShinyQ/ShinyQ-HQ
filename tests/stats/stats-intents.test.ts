@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatIntentReport, intentQuery, sourceQuery } from "../../scripts/intent-report";
+import { formatIntentReport, intentQuery, sourceQuery } from "../../scripts/stats-intents";
 
 describe("intent report (private)", () => {
   it("reads only intent and visit points of the current protocol version", () => {
