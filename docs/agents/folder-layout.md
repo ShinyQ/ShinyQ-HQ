@@ -358,7 +358,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Systems
 
-- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box and grid per slab rect and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
+- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box per slab rect, one grid over them all and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ghostOutline.ts (pure: when the ghost outline of a floor above hides), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
 - `src/experience/missions/`: pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring).
 - `src/experience/nav/`: pure navigation.
   - navgrid, collision, doors.

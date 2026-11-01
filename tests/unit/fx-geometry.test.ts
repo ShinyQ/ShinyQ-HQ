@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getGlassMaterial, glassSidesGeometry, laneRibbonGeometry, rimGeometry, rimThickness } from "@/experience/fx/geometry";
+import { Mesh, PlaneGeometry, Vector3 } from "three";
+import { getGlassMaterial, glassSidesGeometry, gridPlanesGeometry, laneRibbonGeometry, rimGeometry, rimThickness, type GridRect } from "@/experience/fx/geometry";
 import { getGlassMaterial as fromPrimitives } from "@/experience/tower/primitives";
 
 describe("fx geometry", () => {
@@ -27,5 +28,36 @@ describe("fx geometry", () => {
     const uv = g.getAttribute("uv");
     expect(uv.count).toBe(8);
     expect(uv.getX(7)).toBeCloseTo(7);
+  });
+  it("grid planes draw every rect where one flat plane per rect drew it, in one geometry", () => {
+    const rects: GridRect[] = [
+      { w: 40, d: 30, center: [5, -3] },
+      { w: 12, d: 8.5, center: [31, 10.25] },
+    ];
+    const y = 0.01;
+    const merged = new Mesh(gridPlanesGeometry(rects));
+    merged.rotation.x = -Math.PI / 2;
+    merged.position.set(0, y, 0);
+    merged.updateMatrixWorld();
+    const pos = merged.geometry.getAttribute("position");
+    const index = merged.geometry.getIndex()!;
+    expect(pos.count).toBe(8);
+    expect(index.count).toBe(12);
+    const at = new Vector3();
+    rects.forEach((r, k) => {
+      const plane = new Mesh(new PlaneGeometry(r.w, r.d));
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(r.center[0], y, r.center[1]);
+      plane.updateMatrixWorld();
+      const own = plane.geometry.getAttribute("position");
+      for (let i = 0; i < own.count; i++) {
+        const want = at.fromBufferAttribute(own, i).applyMatrix4(plane.matrixWorld).clone();
+        const got = at.fromBufferAttribute(pos, k * 4 + i).applyMatrix4(merged.matrixWorld);
+        expect(got.distanceTo(want)).toBeLessThan(1e-6);
+      }
+      // Same triangles in the same order and winding, so the planes still face up.
+      const ownIndex = Array.from(plane.geometry.getIndex()!.array);
+      expect(Array.from(index.array).slice(k * 6, k * 6 + 6)).toEqual(ownIndex.map((v) => v + k * 4));
+    });
   });
 });
