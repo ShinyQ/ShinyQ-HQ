@@ -28,7 +28,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - `clampToSlab(p, s, inset, out)`: the nearest point of the inset union, allocation-free (collision and the camera call it per frame);
   - `slabInsetRects` (each rect inset plus one bridge across each joint; a concave corner keeps the square inset, a little stricter than the rounded one; cached per wings array, so insets come from a small fixed set);
   - `slabEdges` (the outer edges of the union, joints left out) and `slabCorners` (where the outline turns).
-- Consumers: the navgrid (`buildNavGrid` over `slabBox`), collision (`resolveCircle`), the space rules (`bounds-gap` against `slabEdges`, `pad-bounds`, `wideGrid`, `reachFrom`), the camera (`cameraWorld` carries the wings; `cameraBlocked`, `viewOnSlab`, `clampCamera`), the slab mesh (`tower/FloorLevel.tsx`: one box and one grid per rect faded as one floor, one outline from `tower/slabOutline.ts` with no edge across a joint; the ride cull gets every rect as an occluder), `Tower.tsx` (`slabBox`) and the minimap (one fill path of every rect plus an outline path of the outer edges). A wing costs 2 draw calls on its floor (its box and grid).
+- Consumers: the navgrid (`buildNavGrid` over `slabBox`), collision (`resolveCircle`), the space rules (`bounds-gap` against `slabEdges`, `pad-bounds`, `wideGrid`, `reachFrom`), the camera (`cameraWorld` carries the wings; `cameraBlocked`, `viewOnSlab`, `clampCamera`), the slab mesh (`tower/FloorLevel.tsx`: one box per rect and one grid over every rect, its planes merged into one geometry (`gridPlanesGeometry`) and faded as one floor, one outline from `tower/slabOutline.ts` with no edge across a joint; the ride cull gets every rect as an occluder), `Tower.tsx` (`slabBox`) and the minimap (one fill path of every rect plus an outline path of the outer edges). A wing costs 1 draw call on its floor (its box; its grid plane joins the floor's one grid).
 
 ### Arrival
 
@@ -289,6 +289,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 ### Rendering
 
 - `<RoadMarkings network color tier reducedMotion />` (`src/experience/fx/RoadMarkings.tsx`; mesh data in `nav/roadGeometry.ts`).
+- The chevrons are one instanced mesh placed once with its bounds computed after placement, so three culls them while the road is out of view.
 - The lite tier and reduced motion drop the chevron pulse; the lite tier drops the additive edge glow.
 
 ### Space rules
