@@ -1,5 +1,6 @@
 # Ask
 
 - Date: 2026-11-01
+- PR: [#369](https://github.com/ShinyQ/ShinyQ-HQ/pull/369)
 
 Ask's "Try asking" row always leads with a hiring question: `recruiter: true` marks seven pills (what he does now, his best work, the voice AI contact center, where he worked, whether he is open to opportunities, where he is based, how to contact him) and `starterQuestions` puts an unasked one first, then one pill from each other topic. A data science tools pill joins the bank (107), the `now` chunk adds his time zone (GMT+7) to "Based in" (folded into that line so the 6,000-character context keeps golden q23's result), and golden q109 to q112 cover both (pass threshold 109 of 112, still 3 allowed misses). Answers replaced by the entity or employer check now log the failing names as blob17 (model output only, names sharing a word with the question dropped), read only by `content-gap.ts --questions`. Reason (idea search 2026-11-01): chips drive 44% of questions while a starter row could show three hobby or site questions, two curated chip answers ended "unknown" on an entity check with no way to see which name failed, and a time zone question had no source.
