@@ -205,7 +205,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | Route | Classic site | In 3D |
 |---|---|---|
 | `/{locale}` | Hero, stats ticker, featured projects, intro, Live Agent Office, journey, writing, skills, certifications | L1 Lobby and the Highlights Hall (`#highlights-<station>`) |
-| `/{locale}/quick` | Quick view: everything on one page | |
+| `/{locale}/quick` | Quick view: a short brief with links to the full pages | |
 | `/{locale}/journey`, `/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop | L2 Career Road; a slug opens that room |
 | `/{locale}/labs`, `/labs/{slug}` | Case studies, `?wing=software\|ai\|data` filter | L3 Project Roads; a slug opens that pod |
 | `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, study guides, `?topic=` filter | L4 Newsroom and the Topic Constellation |

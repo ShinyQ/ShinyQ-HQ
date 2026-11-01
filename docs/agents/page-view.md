@@ -146,6 +146,12 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   inside a control label); Preview (`paper-cite`) and Read the paper sit below it.
 - The Time Travel skyline is named as a chart (`tt-chart` on its SVG).
 - Guide cards and repo rows join their meta with commas, never middle dots.
+- Quick view (`/quick`, owner decision 2026-11-01) is a short brief, every list capped with a link to its full page
+  (`SectionSplit` `more`): the profile carries the contact line (`quick-contact`: availability and the email) and View
+  CV (`cv-open-quick`); the first 3 projects of each wing (`/labs?wing=`), the 6 latest roles (`/journey`), 3 side
+  projects (`/journey#workshop`), the certifications summary (`limit`, its own link to About), the 3 latest posts
+  (`/library`). Skills, stats and awards stay whole (awards are listed nowhere else). Every ToC anchor stays. Test:
+  `e2e/pageview.spec.ts` ("Quick view brief").
 
 ## Filters
 
