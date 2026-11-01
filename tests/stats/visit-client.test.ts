@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CLASSIC_DWELL_MS, clearLegacyOptOut, LEGACY_OPTOUT_KEY, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf, VISIT_SESSION_KEY } from "@/lib/stats/visitClient";
+import { CLASSIC_DWELL_MS, clearLegacyOptOut, countIntent, intentOf, LEGACY_OPTOUT_KEY, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf, VISIT_SESSION_KEY } from "@/lib/stats/visitClient";
 
 const base = { webdriver: false, crawler: false, search: "" };
 const VISIT = { url: "/api/visit", body: '{"v":1,"kind":"visit"}' };
@@ -39,7 +39,8 @@ describe("visitMode and viewOf", () => {
 describe("startVisitBeacon", () => {
   const sent: { url: string; body: string }[] = [];
   /** Mode pings only (the visit ping is checked on its own). */
-  const modes = () => sent.filter((b) => !b.body.includes('"kind"'));
+  const modes = () => sent.filter((b) => b.body.includes('"mode"'));
+  const intents = () => sent.filter((b) => b.body.includes('"intent"')).map((b) => JSON.parse(b.body).intent as string);
   const visits = () => sent.filter((b) => b.body.includes('"kind"'));
   let visibility: DocumentVisibilityState = "visible";
   let t = 0;
@@ -265,5 +266,66 @@ describe("startVisitBeacon", () => {
     t += CLASSIC_DWELL_MS;
     hide();
     expect(modes()).toHaveLength(1);
+  });
+
+  it("tags the visit ping with an allowlisted ?src= channel, and drops any other tag", () => {
+    window.history.replaceState({}, "", "/en?src=li");
+    start();
+    expect(visits()).toEqual([{ url: "/api/visit", body: '{"v":1,"kind":"visit","src":"li"}' }]);
+    cleanups.splice(0).forEach((stop) => stop());
+    resetVisitBeacon();
+    sessionStorage.clear();
+    sent.length = 0;
+    window.history.replaceState({}, "", "/en?src=https://evil.example");
+    start();
+    expect(visits()).toEqual([VISIT]);
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("counts each intent once per tab session, also after the mode ping went out", () => {
+    start();
+    const link = (attrs: Record<string, string>, text = "x") => {
+      const a = document.createElement(attrs.href ? "a" : "button");
+      for (const [k, v] of Object.entries(attrs)) a.setAttribute(k, v);
+      a.append(document.createElement("span"));
+      a.firstElementChild!.textContent = text;
+      document.body.append(a);
+      return a;
+    };
+    const mail = link({ href: "mailto:someone@example.com" });
+    mail.addEventListener("click", (e) => e.preventDefault());
+    (mail.firstElementChild as HTMLElement).click();
+    mail.click();
+    t += CLASSIC_DWELL_MS;
+    hide();
+    const li = link({ href: "https://www.linkedin.com/in/someone" });
+    li.addEventListener("click", (e) => e.preventDefault());
+    li.click();
+    link({ "data-hq-intent": "email" }).click();
+    expect(intents()).toEqual(["email", "linkedin"]);
+    expect(sessionStorage.getItem("hq:intent:email")).toBe("1");
+    document.body.replaceChildren();
+  });
+
+  it("maps clicks to intents and counts CV opens only where visits count", () => {
+    const el = (html: string) => {
+      document.body.innerHTML = html;
+      return document.body.firstElementChild!.firstElementChild ?? document.body.firstElementChild!;
+    };
+    expect(intentOf(el('<a href="mailto:a@b.co"><span>a</span></a>'))).toBe("email");
+    expect(intentOf(el('<button data-hq-intent="email"><span>Copy</span></button>'))).toBe("email");
+    expect(intentOf(el('<a href="https://linkedin.com/in/x"><span>x</span></a>'))).toBe("linkedin");
+    expect(intentOf(el('<a href="https://github.com/ShinyQ"><span>x</span></a>'))).toBe("github");
+    expect(intentOf(el('<a href="https://evil.example/?linkedin.com/"><span>x</span></a>'))).toBeNull();
+    expect(intentOf(el('<a href="/en/labs"><span>x</span></a>'))).toBeNull();
+    document.body.replaceChildren();
+    countIntent("cv");
+    countIntent("cv");
+    expect(intents()).toEqual(["cv"]);
+    Object.defineProperty(navigator, "webdriver", { configurable: true, get: () => true });
+    sessionStorage.clear();
+    resetVisitBeacon();
+    countIntent("github");
+    expect(intents()).toEqual(["cv"]);
   });
 });
