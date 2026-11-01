@@ -32,9 +32,14 @@ function renderedClasses(): Map<string, string> {
       if (name && !used.has(name)) used.set(name, file);
     }
   }
-  // drei components render three elements of their own (RoundedBox an `<extrudeGeometry>`).
+  // drei components render three elements of their own (RoundedBox an `<extrudeGeometry>`): read the module each
+  // imported name comes from (drei's index re-exports `core/` and `web/` modules, several names per module).
+  const dreiIndex = read("node_modules/@react-three/drei/index.js") + read("node_modules/@react-three/drei/core/index.js");
   for (const component of drei) {
-    for (const m of read(`node_modules/@react-three/drei/core/${component}.js`).matchAll(/createElement\("([a-z][A-Za-z0-9]*)"/g)) {
+    const from = new RegExp(`export \\{[^}]*\\b${component}\\b[^}]*\\} from '\\./((?:core|web)/)?([\\w/]+\\.js)'`).exec(dreiIndex);
+    if (!from) throw new Error(`drei export ${component} not found in its index`);
+    const file = `node_modules/@react-three/drei/${from[1] ?? "core/"}${from[2]}`;
+    for (const m of read(file).matchAll(/createElement\("([a-z][A-Za-z0-9]*)"/g)) {
       const name = ELEMENTS.get(m[1]);
       if (name && !used.has(name)) used.set(name, `drei ${component}`);
     }
