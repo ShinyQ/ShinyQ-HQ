@@ -24,7 +24,7 @@ export interface AskStatus {
  * Which UI entry point sent a question (analytics only, never the question text): the home hero bar,
  * the dock's own input, a topic question pill, a follow-up pill, the Rover Terminal or Cmd-K.
  */
-export const ASK_ENTRIES = ["hero", "dock", "pill", "followup", "terminal", "palette"] as const;
+export const ASK_ENTRIES = ["hero", "dock", "pill", "followup", "terminal", "palette", "case"] as const;
 export type AskEntry = (typeof ASK_ENTRIES)[number];
 
 export const isAskEntry = (value: unknown): value is AskEntry => typeof value === "string" && (ASK_ENTRIES as readonly string[]).includes(value);
