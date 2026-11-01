@@ -1,6 +1,6 @@
 "use client";
 
-import { RoundedBox } from "@react-three/drei";
+import { RoundedBox, RoundedBoxGeometry } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   CanvasTexture as GlowTexture,
   type CanvasTexture,
   type Material,
+  Matrix4,
   Object3D,
   SRGBColorSpace,
   type Group,
@@ -39,6 +40,10 @@ import { roverRuntime } from "./runtime";
 const WHEEL_R = 0.2;
 const WHEELS: [number, number][] = [-0.7, 0.7].flatMap((x) => [-0.38, 0, 0.38].map((z) => [x, z] as [number, number]));
 const DUST = 18;
+
+function placePods(mesh: InstancedMesh | null) {
+  [-0.7, 0.7].forEach((x, i) => mesh?.setMatrixAt(i, new Matrix4().makeTranslation(x, 0.25, 0)));
+}
 
 function makeCanvas(w: number, h: number) {
   const canvas = document.createElement("canvas");
@@ -355,11 +360,10 @@ export function Rover({ tier }: { tier: GpuTier }) {
             <cylinderGeometry args={[0.22, 0.12, 0.1, 24]} />
             <meshBasicMaterial color={neon.thruster} toneMapped={false} />
           </mesh>
-          {[-0.7, 0.7].map((x) => (
-            <RoundedBox key={x} args={[0.32, 0.45, 1.1]} radius={0.1} smoothness={2} position={[x, 0.25, 0]}>
-              <meshStandardMaterial color="#27272a" roughness={0.9} />
-            </RoundedBox>
-          ))}
+          <instancedMesh ref={placePods} args={[undefined, undefined, 2]}>
+            <RoundedBoxGeometry args={[0.32, 0.45, 1.1]} radius={0.1} smoothness={2} />
+            <meshStandardMaterial color="#27272a" roughness={0.9} />
+          </instancedMesh>
           <instancedMesh ref={wheels} args={[undefined, undefined, WHEELS.length]} frustumCulled={false}>
             <cylinderGeometry args={[WHEEL_R, WHEEL_R, 0.36, 12]} />
             <meshStandardMaterial color="#71717a" roughness={0.6} />
