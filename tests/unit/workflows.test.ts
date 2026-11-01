@@ -112,6 +112,8 @@ describe("smart CI (ci.yml)", () => {
     expect(job("lighthouse-report")).toContain("RESULT: ${{ needs.lighthouse.result }}");
     expect(job("lighthouse-report")).toContain('if [ "$RESULT" != "success" ]; then');
     expect(job("lighthouse-report")).toContain("name: lighthouse-reports");
+    // perf-summary.ts reaches e2e/budgets.ts through perf-report.ts: no scripts-only sparse checkout.
+    expect(job("lighthouse-report")).not.toContain("sparse-checkout");
     expect(job("build")).toContain("name: Require every job");
     expect(job("build")).toContain("RESULTS: ${{ join(needs.*.result, ' ') }}");
   });
