@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { complementPlan, findSource, parseRecord, perfSeconds, perfShardsFor, recordFor, type PlanRecord, type SourceDeps } from "../../scripts/ci-complement";
+import { complementPlan, findSource, parseRecord, PR_LOOKUP_DELAY_MS, PR_LOOKUP_RETRIES, perfSeconds, perfShardsFor, recordFor, type PlanRecord, type SourceDeps } from "../../scripts/ci-complement";
 import { LIGHTHOUSE_PAGES, lookupComplement, planFor, planOutputs } from "../../scripts/ci-plan";
 import { ALL_SPECS } from "../../scripts/e2e-plan";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS } from "../../scripts/perf-plan";
@@ -104,10 +104,29 @@ describe("findSource", () => {
     treeOf: async () => "t",
     greenRuns: async () => [{ id: 7, html_url: "r7", event: "pull_request", head_repository: { full_name: repo } }],
     record: async () => record,
+    sleep: async () => {},
     ...over,
   });
   it("finds the newest green same-repo PR run on the same tree", async () => {
     expect(await findSource(repo, "m", null, deps())).toEqual({ ok: true, source: { run: 7, pr: 210, url: "r7" }, record });
+  });
+  it("asks again while GitHub has not linked the merge commit to its pull request yet", async () => {
+    let calls = 0;
+    const waits: number[] = [];
+    const late = deps({ pullsFor: async () => (++calls < 3 ? [] : [pr]), sleep: async (ms) => void waits.push(ms) });
+    expect(await findSource(repo, "m", null, late)).toMatchObject({ ok: true, source: { pr: 210 } });
+    expect(waits).toEqual([PR_LOOKUP_DELAY_MS, PR_LOOKUP_DELAY_MS]);
+  });
+  it("falls back after about 30 s of lookups, and at once for a merge GitHub linked to a fork's pull request", async () => {
+    const waits: number[] = [];
+    const never = await findSource(repo, "m", null, deps({ pullsFor: async () => [], sleep: async (ms) => void waits.push(ms) }));
+    expect(never).toEqual({ ok: false, why: "no pull request from this repository was merged as this commit" });
+    expect(waits).toHaveLength(PR_LOOKUP_RETRIES);
+    expect(PR_LOOKUP_RETRIES * PR_LOOKUP_DELAY_MS).toBe(30_000);
+    const fork = { ...pr, head: { sha: "h", repo: { full_name: "fork/r" } } };
+    const forkWaits: number[] = [];
+    expect((await findSource(repo, "m", null, deps({ pullsFor: async () => [fork], sleep: async (ms) => void forkWaits.push(ms) }))).ok).toBe(false);
+    expect(forkWaits).toEqual([]);
   });
   it("uses the given pull request for a dispatch", async () => {
     expect(await findSource(repo, "x", 210, deps({ pullsFor: async () => [] }))).toMatchObject({ ok: true });
