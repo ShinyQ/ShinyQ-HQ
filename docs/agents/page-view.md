@@ -107,6 +107,15 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - The ids `problem` and `approach` stay, so 3D drawer tabs, missions and old links keep working; only the labels change (`labs.situation`, `labs.decisions`, `labs.results`, `labs.lesson`). The strip never carries `#results` in story mode.
   - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
   - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
+- After "More {wing} projects" the page ends with the [closing section](#closing-section), plus "Ask Rover about this project".
+
+### Closing section
+
+- `ClosingCta` (`src/components/page/ClosingCta.tsx`, server markup, `data-testid="closing-cta"`, `#contact`): the availability line (`roof.availability`) as the heading, the email (`mailto:`), then About and contact and View CV as ghost buttons, then any page action passed as children (last, so a late island never moves the others).
+- Where (owner decision 2026-11-01, so a reader who is convinced never hunts for the footer): the landing's last section, every case study after "More {wing} projects", and `/cv` under the cover (`cv={false}`: the cover has View CV already).
+- Case studies add `AskAboutButton` (`src/components/page/AskAboutButton.tsx`, client): "Ask Rover about this project" (`case.askAboutLabel`) opens the Ask dock with `case.askAbout` and the project title, entry `case`. Like the hero bar it shows until Ask the HQ is known to be off. The question always takes Ask's default route ([ask.md](ask.md#scope-routing), `namesProject`).
+- One class set for every page, so it adds no CSS; case study HTML grows by the section only.
+- Tests: `e2e/closing-cta.spec.ts`, `tests/ask/case-question.test.ts`.
 
 ### Time Travel (`/journey`)
 
@@ -131,7 +140,8 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   gaps at the section scale, Previous and Next without arrows. Post prose holds about 70 characters a line
   (`.prose-hq > p` capped at 36rem); the date is a `<time>` under the title.
 - `/cv`: the title, the intro, then page 1 beside "2 pages, PDF" and the two actions at the top of their column, so View
-  CV is in the 1280 x 800 first screen (`cv-card`, `cv-read`, `cv-download`, `cv-cover-image` kept).
+  CV is in the 1280 x 800 first screen (`cv-card`, `cv-read`, `cv-download`, `cv-cover-image` kept), then the
+  [closing section](#closing-section) without View CV.
 - `/library` research: the paper title is text with its button laid over it (named by the title, so it never wraps
   inside a control label); Preview (`paper-cite`) and Read the paper sit below it.
 - The Time Travel skyline is named as a chart (`tt-chart` on its SVG).
@@ -159,7 +169,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Section order after the hero (`src/app/[locale]/page.tsx`, the recruiter path, owner decision 2026-10-25): Selected
   work (`#work`), the intro (`#intro`: bio, status and the `#stats` ledger), Journey, Certifications and Skills (one
   `paper-2` band, both anchors), the Live Agent Office (`#office`, lazy, [office.md](office.md#classic-card-and-ask)),
-  Writing, Contact.
+  Writing, Contact (the [closing section](#closing-section)).
 
 ### Hero
 
