@@ -231,9 +231,12 @@ for (const tier of ["lite", "full"] as const) {
     await rideTo(page, "B1");
     await measureFloor(page, tier, "B1");
   });
+  // The L1 poses past the arrival (the beacon, the office in view, the Agent Office stop and the day replay) end with
+  // ` @nightly` (owner decision 2026-11-01): the nightly runs them, and so does a pull request that changes the Lobby or
+  // the office (scripts/perf-plan.ts `nightlyPerfFor`); other pull requests and main skip them.
   // The Needs Kurniadi beacon lit from the spawn (a Rover asks): the beacon chunk plus the live crew of `crewA`, the
   // office scene loaded as at the spawn spot. Same cap and program baseline; reported as the settled-L1-beacon peak.
-  test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon @nightly`, async ({ page }) => {
     await page.route(OFFICE_API, (route) => {
       const body = crewA(Date.now());
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) || OFFICE_API_V4.test(route.request().url()) ? body : asV1(body)) });
@@ -247,7 +250,7 @@ for (const tier of ["lite", "full"] as const) {
   // point turned toward it, each with the office in view and in its far level of detail, the ship-it pipeline's lanes lit
   // and, while the draw calls are read, a burst playing and the deploy beam running (the spawn's +1 call). Same cap and
   // program baseline; reported as the settled-L1-spawn-wing and settled-L1-ring-south peaks.
-  test(`L1 ${tier}: settled draw calls and shader programs with the office in view from the Lobby`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the office in view from the Lobby @nightly`, async ({ page }) => {
     const office = await servePipeline(page);
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
@@ -274,7 +277,7 @@ for (const tier of ["lite", "full"] as const) {
   // At the stop: the same pipeline effects while the draw calls are read; then the frame rate with the effects playing
   // against the still office, and the GPU objects flat across live switches (the ship-it steps, a rollback's v3 body,
   // offline and back, each round with the effects playing).
-  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office @nightly`, async ({ page }) => {
     const office = await servePipeline(page);
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
@@ -313,7 +316,7 @@ for (const tier of ["lite", "full"] as const) {
   // merges, runs, one deploy): at the office stop and at the lane ring's south point, in the busy part of the day and later in
   // it, the same L1 cap and the program baseline with no new program, the lite frame rate within the still office's band, and
   // the GPU objects flat across three replay loops and a seek.
-  test(`L1 ${tier}: settled draw calls and shader programs with the day replay looping`, async ({ page }) => {
+  test(`L1 ${tier}: settled draw calls and shader programs with the day replay looping @nightly`, async ({ page }) => {
     test.setTimeout(900_000);
     const office = await servePipeline(page);
     await serveHistory(page);

@@ -6,7 +6,7 @@
 import type { CiPlan } from "./ci-plan";
 import { ALL_SPECS, e2eShardsFor, MAX_E2E_SHARDS, specSeconds, type Durations, type Spec } from "./e2e-plan";
 import { mergedPrFor, type MergedPr } from "./merge-gate";
-import { ALL_PERF_KEYS, perfGrep, type PerfKey } from "./perf-plan";
+import { ALL_PERF_KEYS, PERF_NIGHTLY_TAG, perfGrep, type PerfKey } from "./perf-plan";
 
 /** Plan CI uploads the record of every run under this artifact name (ci.yml). */
 export const PLAN_ARTIFACT = "ci-plan";
@@ -54,14 +54,23 @@ export function parseRecord(text: string): PlanRecord | null {
   return e2eOk && perfOk && lighthouseOk ? (v as PlanRecord) : null;
 }
 
-/** Worker-seconds of the perf tests `keys` select (the perf lane of e2e/durations.json). */
-export function perfSeconds(durations: Durations | null | undefined, keys: readonly PerfKey[]): number {
+/**
+ * Worker-seconds of the perf tests `keys` select (the perf lane of e2e/durations.json); the nightly-only tests
+ * (`@nightly`) count only when the run includes them (`nightly`).
+ */
+export function perfSeconds(durations: Durations | null | undefined, keys: readonly PerfKey[], nightly = false): number {
   if (!keys.length) return 0;
   const grep = perfGrep(keys);
   const re = grep ? new RegExp(grep) : null;
-  return Object.entries(durations ?? {}).reduce((sum, [title, s]) => (!re || re.test(title) ? sum + s : sum), 0);
+  return Object.entries(durations ?? {}).reduce((sum, [title, s]) => ((!re || re.test(title)) && (nightly || !title.includes(PERF_NIGHTLY_TAG)) ? sum + s : sum), 0);
 }
 
+/**
+ * e2e plus perf shards of any one CI run (owner decision 2026-11-01). With Lighthouse and the unit test job beside
+ * them a run peaks at about 12 jobs, so a `main` run and one selective pull request run fit the 20-job cap together
+ * (docs/agents/ci-and-deploy.md); a full run is 6 e2e and 4 perf shards.
+ */
+export const HEAVY_SHARDS = 10;
 export const MAX_PERF_SHARDS = 4;
 /** Worker-seconds one perf shard should take: about one memory-full test. */
 export const PERF_SHARD_SECONDS = 960;
@@ -98,6 +107,10 @@ export function complementPlan(record: PlanRecord, source: Source, opts: { light
   // The whole lane keeps the full run's 4 shards; a part is sized from its durations.
   const perfShards = !perf ? 1 : perfRest.length === ALL_PERF_KEYS.length ? MAX_PERF_SHARDS : perfShardsFor(perfSeconds(opts.perfDurations, perfRest));
   reasons.push(perf ? `3D perf gates: ${perfRest.join(", ")} on ${perfShards} shard(s)` : "3D perf gates: the PR run ran every gate");
+  if (e2eShards > HEAVY_SHARDS - perfShards) {
+    e2eShards = HEAVY_SHARDS - perfShards;
+    reasons.push(`e2e on ${e2eShards} shards beside ${perfShards} perf shards (at most ${HEAVY_SHARDS} per run)`);
+  }
 
   const lhDone = record.lighthouse === "all" ? opts.lighthousePaths : record.lighthouse;
   const lhRest = opts.lighthousePaths.filter((p) => !lhDone.includes(p));
