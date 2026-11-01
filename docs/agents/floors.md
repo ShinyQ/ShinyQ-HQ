@@ -286,6 +286,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 ### Rendering
 
 - `<RoadMarkings network color tier reducedMotion />` (`src/experience/fx/RoadMarkings.tsx`; mesh data in `nav/roadGeometry.ts`).
+- The chevrons are one instanced mesh placed once with its bounds computed after placement, so three culls them while the road is out of view.
 - The lite tier and reduced motion drop the chevron pulse; the lite tier drops the additive edge glow.
 
 ### Space rules

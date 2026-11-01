@@ -373,7 +373,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Effects (fx)
 
-- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
+- `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor, 3 while the chevrons are out of view; 3 on L3, which turns chevrons off).
 - `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
 - `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots, `paperSlots` and `libraryIcons` (one icon over each bay's lead), run at build for the shapes JSON.
 - `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame and the crossfade weights (`HoloSwap` in `HoloIcon.tsx` draws the swap).
