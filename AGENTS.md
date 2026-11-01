@@ -91,6 +91,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | Styling | No colored edge stripes; use `AccentDot` and `hq-glow` | [styling-and-i18n.md](docs/agents/styling-and-i18n.md) |
 | Motion | Write reduce rules as `@variant motion-reduce`, never a bare `prefers-reduced-motion` query | [hud-and-drawer.md](docs/agents/hud-and-drawer.md) |
 | 3D memory | `useDispose(value)` after every memoized geometry, texture or material | [3d-experience.md](docs/agents/3d-experience.md) |
+| 3D elements | A new three JSX element (`<torusGeometry>`) needs its class in `THREE_CATALOGUE` (`scene/threeCatalogue.ts`): R3F's whole-namespace catalogue is patched out | [3d-experience.md](docs/agents/3d-experience.md#three-catalogue) |
 | 3D loop | Animate with `useFrame` deltas; never start another rAF loop | [3d-experience.md](docs/agents/3d-experience.md) |
 | Floor chunks | Never import `Labs`, `Library`, `Roof`, `EngineRoom` or their HUD pieces statically from the `Experience.tsx` closure | [floors.md](docs/agents/floors.md) |
 | Floor text | No words painted on a floor: use `FloatingSigns` | [floors.md](docs/agents/floors.md) |
