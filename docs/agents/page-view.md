@@ -179,6 +179,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - the stats ledger skips these ids, so no number shows twice.
 - The actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button, solid cyan (full width on phones), then
   See the work (`/labs`), then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
+- Under the actions, the contact line (`data-testid="hero-contact"`, owner decision 2026-11-01): the availability
+  (`roof.availability`) and the email as a `mailto:` link, in `pv-small`, so a recruiter can write from the first
+  screen (1440 x 900 and 390 x 844, `e2e/first-screen-contact.spec.ts`). Server markup, no new CSS.
 - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link
   path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`.
 - The backdrop is the body's static Neon Grid plus one fixed indigo bloom (`hx-bloom`, the `--color-bloom` vignette
