@@ -96,7 +96,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | Floor text | No words painted on a floor: use `FloatingSigns` | [floors.md](docs/agents/floors.md) |
 | Interaction | In-world targets go through the point-and-go registry; no navigation `onClick` on scene objects | [floors.md](docs/agents/floors.md) |
 | Audio | Use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext` | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) |
-| 3D-only strings | B1 Engine Room strings live in the `engine` namespace (in `CLIENT_NAMESPACES`, never `LAYOUT_NAMESPACES`): `/en/quick` is at its HTML budget | [styling-and-i18n.md](docs/agents/styling-and-i18n.md#client-messages) |
+| 3D-only strings | B1 Engine Room strings live in the `engine` namespace (in `CLIENT_NAMESPACES`, never `LAYOUT_NAMESPACES`): layout namespaces ship in every Classic page's HTML | [styling-and-i18n.md](docs/agents/styling-and-i18n.md#client-messages) |
 | Metadata | Every `generateMetadata` returns `seoMetadata(locale, path)`; new routes go into `src/lib/routes.ts` | [styling-and-i18n.md](docs/agents/styling-and-i18n.md) |
 | CSP | No inline event handlers, `javascript:` URLs or runtime inline scripts | [ask.md](docs/agents/ask.md) |
 | Ask | Bump `PROMPT_VERSION` with any prompt change; update `tests/ask/golden.json` with content changes | [ask.md](docs/agents/ask.md) |
