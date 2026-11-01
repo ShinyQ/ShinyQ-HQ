@@ -124,7 +124,17 @@ export interface SourceDeps {
   greenRuns(headSha: string): Promise<GreenRun[]>;
   /** The run's `ci-plan` record, or null when it has none. */
   record(runId: number): Promise<PlanRecord | null>;
+  /** Waits between merged pull request lookups (default a timer; tests pass a no-op). */
+  sleep?(ms: number): Promise<void>;
 }
+
+/**
+ * GitHub links a merge commit to its pull request a few seconds after the push: Plan CI once asked 2 s after it, found
+ * none and ran everything (owner decision 2026-11-01). Ask again every 5 s for about 30 s while no pull request names
+ * the commit as its merge.
+ */
+export const PR_LOOKUP_RETRIES = 6;
+export const PR_LOOKUP_DELAY_MS = 5_000;
 
 export type SourceResult = { ok: true; source: Source; record: PlanRecord } | { ok: false; why: string };
 
@@ -133,7 +143,18 @@ export type SourceResult = { ok: true; source: Source; record: PlanRecord } | { 
  * tree, its newest green same-repository `pull_request` CI run and that run's record.
  */
 export async function findSource(repo: string, sha: string, prNumber: number | null, deps: SourceDeps): Promise<SourceResult> {
-  const pr = prNumber !== null ? await deps.pull(prNumber) : mergedPrFor(sha, await deps.pullsFor(sha), repo);
+  let pr: MergedPr | undefined;
+  if (prNumber !== null) pr = await deps.pull(prNumber);
+  else {
+    const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    for (let attempt = 0; ; attempt++) {
+      const prs = await deps.pullsFor(sha);
+      pr = mergedPrFor(sha, prs, repo);
+      // A merge GitHub already linked (a fork's included) or the last try: decide now.
+      if (pr || prs.some((p) => p.merge_commit_sha === sha) || attempt >= PR_LOOKUP_RETRIES) break;
+      await sleep(PR_LOOKUP_DELAY_MS);
+    }
+  }
   if (!pr || pr.head.repo?.full_name !== repo) return { ok: false, why: prNumber !== null ? `#${prNumber} is not a pull request from this repository` : "no pull request from this repository was merged as this commit" };
   const [tree, prTree] = await Promise.all([deps.treeOf(sha), deps.treeOf(pr.head.sha)]);
   if (tree !== prTree) return { ok: false, why: `#${pr.number} was not up to date with main (its head tree differs)` };
