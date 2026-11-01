@@ -320,6 +320,39 @@
     justify-content: center;
   }
 }
+/* Landscape phones (owner decision 2026-11-01): the centered card drops the decorative log and its bar, takes the
+   portrait card's compact header (mark beside the eyebrow and title) and widens, so the owner block is never clipped
+   at the top and Boot rover, Classic site, View CV and Contact share one row on screen (844 x 390, 667 x 375). */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hq-boot-log,
+  .hq-boot-bar {
+    display: none;
+  }
+  .hq-boot-card {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    column-gap: 12px;
+    width: min(640px, 100%);
+    padding: 16px 24px;
+  }
+  .hq-boot-card > * {
+    grid-column: 1 / -1;
+  }
+  .hq-boot-card > .eyebrow,
+  .hq-boot-title {
+    grid-column: 2;
+    margin: 0;
+  }
+  .hq-boot-mark {
+    grid-area: 1 / 1 / 3;
+    width: 36px;
+    margin: 0;
+  }
+  .hq-boot-title {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+}
 @keyframes hq-boot-roll {
   20%,
   80% {

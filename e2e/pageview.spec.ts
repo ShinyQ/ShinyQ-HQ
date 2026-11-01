@@ -886,3 +886,21 @@ test.describe("closing section", () => {
     await expect(page.getByTestId("case-ask")).toHaveCount(0);
   });
 });
+
+test.describe("landing hero contact line (owner decision 2026-11-01)", () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`shows the availability line and the email in the first screen (${viewport.width}x${viewport.height})`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await openPage(page, "/en?tier=static");
+      const line = page.getByTestId("hero-contact");
+      await expect(line).toContainText(data.floors.roof.availability.en);
+      const mail = line.getByRole("link", { name: data.floors.roof.contact.email });
+      await expect(mail).toHaveAttribute("href", `mailto:${data.floors.roof.contact.email}`);
+      const b = (await mail.boundingBox())!;
+      expect(b.y + b.height, "the email is in the first screen").toBeLessThanOrEqual(viewport.height);
+    });
+  }
+});
