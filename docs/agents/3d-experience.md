@@ -208,6 +208,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 - Troika syncs are counted per floor (`tower/textSync.ts`, installed by `text-config.ts`).
 - A troika text whose glyph count changes gets a disposed and rebuilt geometry (`renderer.info` geometries drop by one until it draws again, so an unseen text holds the count low). Text that changes on a timer keeps the same glyphs (the Lobby kiosk clips the entries it does not show).
 - Text workers: troika typesets on the main thread (`useWorker: false`), and `text-config.ts` makes `new Worker(blob:)` throw, so a GPU that fails webgl-sdf-generator's trial run (some tablets) gets troika's JS glyph SDFs on the main thread. A blob: worker would pass troika's probe in WebKit and then fail under the CSP, leaving every text unsynced and the Lobby empty (owner report 2026-10-24; `e2e/sdf-fallback.spec.ts` forces the trial failure).
+- Left to right only: `next.config.ts` aliases troika's `bidi-js` (the Unicode bidirectional algorithm) to `src/experience/bidiLtr.ts`, which puts every character at level 0 with no reordering or mirroring, about 5 KB gzip off the main path. `tests/unit/bidi-ltr.test.ts` checks that every content and UI string lays out as with bidi-js and that no right-to-left script exists; right-to-left text needs the alias dropped.
 - `advanceRide` holds the car at closed doors (end of `closing`, or at the door under reduced motion) until `destinationReady(to)` (`tower/ridePrep.ts`) or `PREPARE_TIMEOUT` (1.5 s).
 - A floor below the car that is still compiling stays hidden until the car moves (`floorContentVisible`, `tower/near.ts`).
 - Ride stats: the Director measures each ride (`tower/rideStats.ts`): `window.__hq.ridePrep.lastRide`, and with `?perf=1` one `[hq ride]` console line per ride.
@@ -249,6 +250,21 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 - Config, elevator, rigs, orbit, camera collision, first person, movement, faces, navgrid, collision, intents, url-sync, gpu-tier and viewport must stay free of React and three side effects, so Vitest can run them in node.
 - `rover/fade.ts` only touches the three objects it is given.
+
+## Three catalogue
+
+- R3F knows a JSX element (`<mesh>`, `<boxGeometry>`) only when its three class is registered with `extend`. R3F's own
+  `Canvas` registers the whole three namespace, which keeps every three class (loaders, animation, audio, helpers, ...)
+  on the first-frame path; a `bun patch` of `@react-three/fiber` drops that call ([ci-and-deploy.md](ci-and-deploy.md#dependencies)).
+- `THREE_CATALOGUE` in `src/experience/scene/threeCatalogue.ts` lists the classes the 3D tree renders (drei's
+  `RoundedBox` adds `ExtrudeGeometry`); `registerThreeCatalogue()` runs at module scope in every file that renders a
+  `Canvas` (`Experience.tsx`, the dev certs prototype).
+- A new element needs its class in the catalogue, or R3F throws "is not part of the THREE namespace" at mount. Classes
+  used only from code (`new Vector3()`, `<primitive object={...}>`) need no entry.
+- Guard: `tests/unit/three-catalogue.test.ts` scans the 3D files (and the drei components they import) and fails on a
+  missing or an unused entry, a `Canvas` file that does not register it, or an unpatched R3F.
+- Measured (2026-11-01): the main path dropped from 476,341 to 437,196 B gzip (full) and from 460,207 to 421,061 B
+  (lite), the same 39.1 KB on both session totals.
 
 ## Disposal
 

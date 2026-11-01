@@ -4,7 +4,7 @@
  * og:check) and the secret scan always run. A pull request runs only the affected e2e specs (plus a small
  * smoke set when 3D or page code changed) on as many shards as their measured time needs, only the 3D perf
  * gates its 3D files can move (also sized from their measured time), and only the Lighthouse URLs its files can
- * move. A pull request runs at most 10 e2e plus perf shards (PR_HEAVY_SHARDS), so a full one is 6 e2e and 4 perf. A push to main whose merged
+ * move. Every run has at most 10 e2e plus perf shards (HEAVY_SHARDS), so a full one is 6 e2e and 4 perf. A push to main whose merged
  * pull request passed CI on the same tree runs only the complement of that run (scripts/ci-complement.ts).
  * Other pushes, dispatches, the nightly schedule, the `full-ci` label and any failure here run everything.
  *
@@ -19,16 +19,30 @@
 import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { complementPlan, findSource, MAX_PERF_SHARDS, parseRecord, perfSeconds, perfShardsFor, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
-import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
+import { complementPlan, findSource, HEAVY_SHARDS, MAX_PERF_SHARDS, parseRecord, perfSeconds, perfShardsFor, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
+import * as headE2ePlan from "./e2e-plan";
+import { ALL_SPECS, e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import type { MergedPr } from "./merge-gate";
-import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
+import * as headPerfPlan from "./perf-plan";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, nightlyPerfFor, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
 
-export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
+export { HEAVY_SHARDS };
 
-/** First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. */
+export type ChangeClass = "planmap" | "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
+
+/**
+ * The spec maps (owner decision 2026-11-01): a change runs the specs and perf keys whose mapping it changes
+ * (`mapDiff`), not everything.
+ */
+export const PLAN_MAPS = ["scripts/e2e-plan.ts", "scripts/perf-plan.ts"] as const;
+
+/**
+ * First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. Only ci.yml and the setup
+ * action of the workflows can change a test result; the other workflows are `docs` (unit tests check them).
+ */
 const CLASSES: [RegExp, ChangeClass][] = [
-  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^scripts\/(e2e|perf)-plan\.ts$/, "planmap"],
+  [/^\.github\/(workflows\/ci\.yml$|actions\/)|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^patches\/|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts|atlas)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
@@ -136,6 +150,67 @@ export function sharedPerfKeys(file: string, importers: ReadonlyMap<string, Read
   return ALL_PERF_KEYS.filter((k) => keys.has(k));
 }
 
+/** The parts of scripts/e2e-plan.ts and scripts/perf-plan.ts that decide what a path runs (`mapDiff`). */
+export interface PlanMaps {
+  e2e: {
+    specsForChanges(files: readonly string[]): { specs: readonly string[] | "all" };
+    PR_SMOKE?: readonly { spec: string; title?: string }[];
+    SMOKE_SPECS?: readonly string[];
+  };
+  perf: {
+    perfKeysFor(files: readonly string[]): readonly string[];
+    sharedRuleKeys?(file: string): readonly string[] | null;
+    pagePerfKeys?(file: string): readonly string[];
+    perfGrep?(keys: readonly string[]): string;
+  };
+}
+
+/** The head spec maps: the versions Plan CI checked out. */
+export const HEAD_MAPS: PlanMaps = { e2e: headE2ePlan, perf: headPerfPlan };
+
+/**
+ * What a change of the spec maps moves: over every tracked file, the e2e specs and perf keys the base and the head
+ * maps disagree on (both directions), the specs whose smoke entries changed and the perf keys whose test selection
+ * changed. A file that one side sends to the full suite and the other does not makes the e2e side "all".
+ */
+export function mapDiff(base: PlanMaps, head: PlanMaps, tracked: readonly string[]): MapDiff {
+  const specs = new Set<string>();
+  const keys = new Set<string>();
+  let allSpecs = false;
+  const both = (a: readonly string[], b: readonly string[], into: Set<string>) => {
+    for (const x of a) if (!b.includes(x)) into.add(x);
+    for (const x of b) if (!a.includes(x)) into.add(x);
+  };
+  for (const file of tracked) {
+    const cls = classify(file);
+    if (cls === "docs" || cls === "tests") continue;
+    const b = base.e2e.specsForChanges([file]).specs;
+    const h = head.e2e.specsForChanges([file]).specs;
+    if (b === "all" || h === "all") allSpecs ||= b !== h;
+    else both(b, h, specs);
+    if (cls === "code3d") both(base.perf.perfKeysFor([file]), head.perf.perfKeysFor([file]), keys);
+    if (cls === "ui" && file.startsWith("src/")) {
+      both(base.perf.sharedRuleKeys?.(file) ?? [], head.perf.sharedRuleKeys?.(file) ?? [], keys);
+      both(base.perf.pagePerfKeys?.(file) ?? [], head.perf.pagePerfKeys?.(file) ?? [], keys);
+    }
+  }
+  const smoke = (m: PlanMaps, spec: string) => JSON.stringify((m.e2e.PR_SMOKE ?? []).filter((s) => s.spec === spec));
+  for (const spec of ALL_SPECS) if (smoke(base, spec) !== smoke(head, spec)) specs.add(spec);
+  both(base.e2e.SMOKE_SPECS ?? [], head.e2e.SMOKE_SPECS ?? [], specs);
+  const grep = (m: PlanMaps, k: PerfKey) => {
+    try {
+      return m.perf.perfGrep?.([k]) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  for (const k of ALL_PERF_KEYS) if (grep(base, k) !== grep(head, k)) keys.add(k);
+  return {
+    specs: allSpecs ? "all" : ALL_SPECS.filter((s) => specs.has(s)),
+    keys: ALL_PERF_KEYS.filter((k) => keys.has(k)),
+  };
+}
+
 export interface PlanOptions {
   /** Default "pull_request" when `files` is known, "other" when it is null. */
   event?: "pull_request" | "other";
@@ -149,6 +224,14 @@ export interface PlanOptions {
   pages?: (file: string) => readonly string[] | "all";
   /** The pull request carries the `full-ci` label. */
   fullLabel?: boolean;
+  /** What a change of the spec maps (PLAN_MAPS) moves (`mapDiff`); null or missing plans a full run for such a change. */
+  mapDiff?: MapDiff | null;
+}
+
+/** The specs and perf keys whose mapping differs between the base and the head spec maps. */
+export interface MapDiff {
+  specs: Spec[] | "all";
+  keys: PerfKey[];
 }
 
 export interface CiPlan {
@@ -157,12 +240,14 @@ export interface CiPlan {
   e2e: "all" | Spec[];
   /** Extra `e2e/<spec>.spec.ts:<line>` filters (smoke tests), only with a spec list. */
   e2eTests: string[];
-  /** 1 to 8; "all" is 8, or 6 on a pull request (PR_HEAVY_SHARDS minus the 4 perf shards). */
+  /** 1 to 8, at most HEAVY_SHARDS minus the perf shards; a full run is 6 (beside the 4 perf shards). */
   e2eShards: number;
   /** false: no perf; ALL_PERF_KEYS: the whole lane. */
   perf: false | PerfKey[];
   /** 1 to 4: the whole lane 4, a pull request's part sized from its durations (perfShardsFor), 1 without perf. */
   perfShards: number;
+  /** Also run the nightly-only perf tests (`@nightly`): a pull request that changes the Lobby or the office. */
+  perfNightly?: boolean;
   /** URL paths such as "/en/quick". */
   lighthouse: false | "all" | string[];
   classes: Partial<Record<ChangeClass, string[]>>;
@@ -187,11 +272,12 @@ export const LIGHTHOUSE_PAGES: Readonly<Record<string, string>> = {
 const SPEC_FILE = /^e2e\/[^/]+\.spec\.ts$/;
 
 /**
- * e2e plus perf shards of one pull request run. With Lighthouse and the unit test job beside them a pull request
- * peaks at 12 jobs (docs/agents/ci-and-deploy.md: two PR runs in flight under the 20-job cap), so a full pull
- * request runs 6 e2e shards next to the 4 perf shards; pushes, dispatches and the nightly keep 8 and 4.
+ * Lighthouse splits its URLs over 2 shards (each its own runner, so no parallel Chrome skews a timing) from 4 URLs, in a
+ * run with at most 8 e2e plus perf shards: there it finishes last, while a full run's e2e and perf shards outlast it, so
+ * a full run keeps one Lighthouse job and its peak of 12 jobs.
  */
-export const PR_HEAVY_SHARDS = 10;
+export const LIGHTHOUSE_SPLIT_AT = 4;
+export const MAX_LIGHTHOUSE_SHARDS = 2;
 
 const defaultPages = (file: string): readonly string[] | "all" => (["ui", "code3d"].includes(classify(file)) ? "all" : []);
 
@@ -219,9 +305,10 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
     full: true,
     e2e: "all",
     e2eTests: [],
-    e2eShards: event === "pull_request" ? PR_HEAVY_SHARDS - MAX_PERF_SHARDS : MAX_E2E_SHARDS,
+    e2eShards: HEAVY_SHARDS - MAX_PERF_SHARDS,
     perf: [...ALL_PERF_KEYS],
     perfShards: MAX_PERF_SHARDS,
+    perfNightly: files !== null && nightlyPerfFor(files),
     lighthouse: "all",
     classes,
     reasons,
@@ -233,6 +320,7 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
   if (classes.ci || classes.other) {
     return full(classes, [`${classes.ci ? "CI, dependency or test infrastructure" : "unclassified"} files changed: full run`]);
   }
+  if (classes.planmap && !opts.mapDiff) return full(classes, ["the spec maps changed and what they move is unknown: full run"]);
   const reasons: string[] = [];
 
   // e2e: the mapped specs of every non-docs, non-tests file; an unmapped path is a full run, a changed helper every e2e shard.
@@ -248,8 +336,12 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
   } else if (mapped.specs === "all") {
     e2e = "all";
     reasons.push("the e2e mapping asks for the full suite");
+  } else if (classes.planmap && opts.mapDiff?.specs === "all") {
+    e2e = "all";
+    reasons.push("the spec map change moves a path to the full suite");
   } else {
-    const specs = new Set<Spec>(mapped.specs);
+    const specs = new Set<Spec>([...mapped.specs, ...(classes.planmap ? (opts.mapDiff!.specs as Spec[]) : [])]);
+    if (classes.planmap) reasons.push(`spec map change: ${opts.mapDiff!.specs.length ? `e2e specs ${(opts.mapDiff!.specs as Spec[]).join(", ")}` : "no e2e spec moves"}`);
     if (classes.code3d || classes.ui) {
       const locate = opts.locate ?? locateFromDisk(process.cwd());
       for (const { spec } of PR_SMOKE.filter((s) => s.title === undefined)) specs.add(spec);
@@ -291,14 +383,21 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
     reasons.push(`perf gate of page code: ${f} (${own.join(", ")})`);
     for (const k of own) keySet.add(k);
   }
+  if (classes.planmap && opts.mapDiff!.keys.length) {
+    reasons.push(`spec map change: perf keys ${opts.mapDiff!.keys.join(", ")}`);
+    for (const k of opts.mapDiff!.keys) keySet.add(k);
+  }
   const keys = ALL_PERF_KEYS.filter((k) => keySet.has(k));
   const perf = keys.length ? keys : false;
+  // The nightly-only L1 poses (`@nightly`) run on a pull request that changes the Lobby or the office.
+  const perfNightly = perf !== false && perf.includes("floor:L1") && nightlyPerfFor(files);
+  if (perfNightly) reasons.push("the Lobby or the office changed: the nightly-only L1 perf poses run too");
   // As a complement run: the whole lane on 4 shards, a part on ceil(seconds / 960), 1 to 4; without perf 1 shard ("Not needed").
-  const perfShards = !perf ? 1 : perf.length === ALL_PERF_KEYS.length ? MAX_PERF_SHARDS : perfShardsFor(perfSeconds(opts.perfDurations, perf));
+  const perfShards = !perf ? 1 : perf.length === ALL_PERF_KEYS.length ? MAX_PERF_SHARDS : perfShardsFor(perfSeconds(opts.perfDurations, perf, perfNightly));
   if (perf) reasons.push(`${perf.length === ALL_PERF_KEYS.length ? "3D perf gates: the whole lane" : `3D perf gates: ${perf.join(", ")}`} on ${perfShards} shard${perfShards > 1 ? "s" : ""}`);
-  if (e2eShards > PR_HEAVY_SHARDS - perfShards) {
-    e2eShards = PR_HEAVY_SHARDS - perfShards;
-    reasons.push(`e2e on ${e2eShards} shards beside ${perfShards} perf shards (at most ${PR_HEAVY_SHARDS} per pull request run)`);
+  if (e2eShards > HEAVY_SHARDS - perfShards) {
+    e2eShards = HEAVY_SHARDS - perfShards;
+    reasons.push(`e2e on ${e2eShards} shards beside ${perfShards} perf shards (at most ${HEAVY_SHARDS} per run)`);
   }
 
   // Lighthouse: the URLs that page, 3D and content files can move.
@@ -322,7 +421,7 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
   }
   if (lighthouse) reasons.push(lighthouse === "all" ? "Lighthouse: every URL" : `Lighthouse: ${lighthouse.join(", ")}`);
 
-  return { full: false, e2e, e2eTests, e2eShards, perf, perfShards, lighthouse, classes, reasons };
+  return { full: false, e2e, e2eTests, e2eShards, perf, perfShards, perfNightly, lighthouse, classes, reasons };
 }
 
 const range = (n: number) => JSON.stringify(Array.from({ length: n }, (_, i) => i + 1));
@@ -351,6 +450,11 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     const found = new Set(picked.map(pathOf));
     if (warmup && plan.lighthouse.every((p) => found.has(p))) lighthouseUrls = JSON.stringify([warmup, ...picked]);
   }
+  // Measured URLs (the warm-up never counts): the selected ones, or every one of lighthouserc.json.
+  const everyUrl = lhciUrls.filter((u) => !u.includes("lhci-warmup")).length || Object.keys(LIGHTHOUSE_PAGES).length;
+  const lighthouseCount = plan.lighthouse === false ? 0 : lighthouseUrls ? (JSON.parse(lighthouseUrls) as string[]).length - 1 : everyUrl;
+  const roomy = plan.e2eShards + plan.perfShards <= HEAVY_SHARDS - MAX_LIGHTHOUSE_SHARDS;
+  const lighthouseShards = lighthouseCount >= LIGHTHOUSE_SPLIT_AT && roomy ? MAX_LIGHTHOUSE_SHARDS : 1;
   return {
     full: String(plan.full || plan.source !== undefined || (plan.e2e === "all" && perfAll && plan.lighthouse === "all")),
     e2e: plan.e2e === "all" ? "all" : specs.length || tests.length ? "specs" : "none",
@@ -361,8 +465,11 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     perf_grep: plan.perf ? perfGrep(plan.perf) : "",
     perf_shards: range(plan.perfShards),
     perf_total: String(plan.perfShards),
+    perf_nightly: String(plan.perf !== false && plan.perfNightly === true),
     lighthouse: String(plan.lighthouse !== false),
     lighthouse_urls: lighthouseUrls,
+    lighthouse_shards: range(lighthouseShards),
+    lighthouse_total: String(lighthouseShards),
     source_run: plan.source ? String(plan.source.run) : "",
   };
 }
@@ -493,6 +600,39 @@ function apiDeps(repo: string, token: string): SourceDeps {
   };
 }
 
+/** A file at `ref` through the contents API (raw), or an error. */
+async function rawFile(repo: string, ref: string, file: string, token: string): Promise<string> {
+  const response = await fetch(`https://api.github.com/repos/${repo}/contents/${file}?ref=${ref}`, {
+    headers: { ...apiHeaders(token), Accept: "application/vnd.github.raw" },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!response.ok) throw new Error(`GitHub API contents/${file} at ${ref.slice(0, 7)}: HTTP ${response.status}`);
+  return response.text();
+}
+
+/** Every tracked file of commit `sha` (the git trees API); a truncated listing is an error. */
+async function trackedFiles(repo: string, sha: string, token: string): Promise<string[]> {
+  const response = await fetch(`https://api.github.com/repos/${repo}/git/trees/${sha}?recursive=1`, { headers: apiHeaders(token), signal: AbortSignal.timeout(20_000) });
+  if (!response.ok) throw new Error(`GitHub API git/trees: HTTP ${response.status}`);
+  const body = (await response.json()) as { truncated?: boolean; tree: { path: string; type: string }[] };
+  if (body.truncated) throw new Error("the tracked file listing is truncated");
+  return body.tree.filter((e) => e.type === "blob").map((e) => e.path);
+}
+
+/** `mapDiff` of the base spec maps (dependency-free files, loaded from the PR base) and the checked-out ones. */
+async function loadMapDiff(repo: string, base: string, sha: string, token: string): Promise<MapDiff> {
+  const dir = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), "plan-maps-"));
+  try {
+    const [e2eSource, perfSource, tracked] = await Promise.all([rawFile(repo, base, PLAN_MAPS[0], token), rawFile(repo, base, PLAN_MAPS[1], token), trackedFiles(repo, sha, token)]);
+    writeFileSync(path.join(dir, "e2e-plan.ts"), e2eSource);
+    writeFileSync(path.join(dir, "perf-plan.ts"), perfSource);
+    const baseMaps: PlanMaps = { e2e: await import(path.join(dir, "e2e-plan.ts")), perf: await import(path.join(dir, "perf-plan.ts")) };
+    return mapDiff(baseMaps, HEAD_MAPS, tracked);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function repoReader(root: string): (f: string) => string | null {
   return (f) => {
     const p = path.join(root, f);
@@ -533,7 +673,7 @@ function writeRecord(plan: CiPlan, outputs: Record<string, string>) {
 }
 
 async function main() {
-  const { EVENT, REPO, PR, GH_TOKEN, SHA, COMPLEMENT_PR } = process.env;
+  const { EVENT, REPO, PR, GH_TOKEN, SHA, COMPLEMENT_PR, BASE_SHA } = process.env;
   const event = EVENT === "pull_request" ? "pull_request" : "other";
   const complementPr = COMPLEMENT_PR && /^[1-9]\d*$/.test(COMPLEMENT_PR) ? Number(COMPLEMENT_PR) : null;
   const wantsComplement = EVENT === "push" || (complementPr !== null && event !== "pull_request");
@@ -551,6 +691,16 @@ async function main() {
     if (files) fullLabel = await hasFullLabel(REPO, PR, GH_TOKEN);
   }
   if (COMPLEMENT_PR && complementPr === null && event !== "pull_request") note = `complement_pr "${COMPLEMENT_PR}" is not a pull request number`;
+  // A spec map change: what it moves, from the base maps; without it the plan is a full run.
+  let diff: MapDiff | null = null;
+  if (files?.some((f) => classify(f) === "planmap")) {
+    try {
+      if (!REPO || !BASE_SHA || !SHA || !GH_TOKEN) throw new Error("REPO, BASE_SHA, SHA or GH_TOKEN is missing");
+      diff = await loadMapDiff(REPO, BASE_SHA, SHA, GH_TOKEN);
+    } catch (error) {
+      console.log(`::warning::Smart CI could not diff the spec maps (${error instanceof Error ? error.message : String(error)}); running everything.`);
+    }
+  }
   const root = process.cwd();
   const read = repoReader(root);
   const durations = readJson<DurationsFile>(read, "e2e/durations.json");
@@ -563,6 +713,7 @@ async function main() {
       perfDurations: durations?.perf ?? null,
       locate: locateFromDisk(root),
       pages: files ? pagesFromRepo(read) : undefined,
+      mapDiff: diff,
     });
     if (note) p.reasons.unshift(`full run: ${note}`);
     return p;
@@ -586,8 +737,8 @@ async function main() {
       "",
       ...(plan.source ? [`Source: [CI run ${plan.source.run}](${plan.source.url}) of #${plan.source.pr}`, ""] : []),
       `e2e: **${outputs.e2e}** on ${outputs.e2e_total} shard(s)${outputs.e2e_files ? ` (${outputs.e2e_files})` : ""}`,
-      `3D perf gates: **${outputs.perf}**${outputs.perf === "true" ? ` on ${outputs.perf_total} shard(s)${outputs.perf_grep ? `, grep \`${outputs.perf_grep}\`` : ", the whole lane"}` : ""}`,
-      `Lighthouse: **${outputs.lighthouse}**${outputs.lighthouse === "true" ? (Array.isArray(plan.lighthouse) && outputs.lighthouse_urls ? ` (${plan.lighthouse.join(", ")})` : ", every URL") : ""}`,
+      `3D perf gates: **${outputs.perf}**${outputs.perf === "true" ? ` on ${outputs.perf_total} shard(s)${outputs.perf_grep ? `, grep \`${outputs.perf_grep}\`` : ", the whole lane"}${outputs.perf_nightly === "true" ? ", nightly-only L1 poses included" : ""}` : ""}`,
+      `Lighthouse: **${outputs.lighthouse}**${outputs.lighthouse === "true" ? `${Array.isArray(plan.lighthouse) && outputs.lighthouse_urls ? ` (${plan.lighthouse.join(", ")})` : ", every URL"} on ${outputs.lighthouse_total} shard(s)` : ""}`,
       "",
       ...plan.reasons.map((r) => `- ${r}`),
       ...(rows.length ? ["", "| Class | Files | Examples |", "|---|---|---|", ...rows] : []),

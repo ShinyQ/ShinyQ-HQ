@@ -79,6 +79,9 @@ import { rideCullStats } from "./tower/rideCull";
 import { useStatsAfterFirstFrame } from "./visits3d";
 import { VISITS_ROOM } from "./floors/lobby/visitsRoom";
 import { isOfficeRoom } from "./floors/lobby/officeLayout";
+import { registerThreeCatalogue } from "./scene/threeCatalogue";
+
+registerThreeCatalogue();
 
 const COARSE_QUERY = "(pointer: coarse)";
 

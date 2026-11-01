@@ -14,13 +14,15 @@ import { neonColor } from "./materials";
 import { proximityLevel } from "./proximity";
 
 const IDLE = 0.25;
+/** Segments of each pad circle: 32 keeps the edge of a 1.4 u pad within 7 mm of a true circle (160 triangles a pad). */
+const PAD_SEGMENTS = 32;
 
 /** Unit pad (radius 1, scaled per instance): a dim fill disc, a bright rim and an inner ring, with per-vertex brightness. */
 function padGeometry() {
   const parts = [
-    { g: new CircleGeometry(0.82, 48), k: 0.28 },
-    { g: new RingGeometry(0.82, 1, 48), k: 1 },
-    { g: new RingGeometry(0.42, 0.5, 48), k: 0.7 },
+    { g: new CircleGeometry(0.82, PAD_SEGMENTS), k: 0.28 },
+    { g: new RingGeometry(0.82, 1, PAD_SEGMENTS), k: 1 },
+    { g: new RingGeometry(0.42, 0.5, PAD_SEGMENTS), k: 0.7 },
   ];
   for (const { g, k } of parts) g.setAttribute("color", new Float32BufferAttribute(new Array(g.getAttribute("position").count * 3).fill(k), 3));
   const merged = mergeGeometries(

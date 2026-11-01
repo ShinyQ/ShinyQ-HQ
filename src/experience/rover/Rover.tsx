@@ -1,6 +1,6 @@
 "use client";
 
-import { RoundedBox } from "@react-three/drei";
+import { RoundedBox, RoundedBoxGeometry } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   CanvasTexture as GlowTexture,
   type CanvasTexture,
   type Material,
+  Matrix4,
   Object3D,
   SRGBColorSpace,
   type Group,
@@ -37,8 +38,11 @@ import { prepareFade, setFadeOpacity } from "./fade";
 import { roverRuntime } from "./runtime";
 
 const WHEEL_R = 0.2;
-const WHEELS: [number, number][] = [-0.7, 0.7].flatMap((x) => [-0.38, 0, 0.38].map((z) => [x, z] as [number, number]));
 const DUST = 18;
+
+function placePods(mesh: InstancedMesh | null) {
+  [-0.7, 0.7].forEach((x, i) => mesh?.setMatrixAt(i, new Matrix4().makeTranslation(x, 0.25, 0)));
+}
 
 function makeCanvas(w: number, h: number) {
   const canvas = document.createElement("canvas");
@@ -75,7 +79,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
   const head = useRef<Group>(null);
-  const wheels = useRef<InstancedMesh>(null);
   const tip = useRef<Mesh>(null);
   const flag = useRef<Group>(null);
   const target = useRef<Mesh>(null);
@@ -109,9 +112,9 @@ export function Rover({ tier }: { tier: GpuTier }) {
     font: "monospace",
     nextBlink: 3,
     blinkUntil: 0,
-    spin: 0,
     lastSpeed: 0,
     dust: Array.from({ length: DUST }, () => ({ life: 0, x: 0, y: 0, z: 0, vx: 0, vz: 0 })),
+    dustFirst: true,
     nextDust: 0,
     dummy: new Object3D(),
     body: createBodyState(),
@@ -231,17 +234,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
       l.lastKey = frame.key;
     }
 
-    l.spin += (r.speed * dt) / WHEEL_R;
-    if (wheels.current) {
-      WHEELS.forEach(([x, z], i) => {
-        l.dummy.position.set(x, WHEEL_R + 0.03, z);
-        l.dummy.rotation.set(l.spin, 0, Math.PI / 2);
-        l.dummy.updateMatrix();
-        wheels.current!.setMatrixAt(i, l.dummy.matrix);
-      });
-      wheels.current.instanceMatrix.needsUpdate = true;
-    }
-
     if (tip.current) tip.current.scale.setScalar(Math.sin(t * 5) > 0 ? 1 : 0.55);
     // On-demand frames (scene/idle.ts): render when the antenna flips (every pi/5 s) or the eyes blink or open.
     wakeFrameAt(Math.min((Math.floor((t * 5) / Math.PI) + 1) * (Math.PI / 5), l.blinkUntil > t ? l.blinkUntil : l.nextBlink));
@@ -284,20 +276,30 @@ export function Rover({ tier }: { tier: GpuTier }) {
           slot.vz = -c * 1.2 + (Math.random() - 0.5);
         }
       }
-      l.dust.forEach((p, i) => {
+      l.dust.forEach((p) => {
         if (p.life > 0) {
           p.life -= dt;
           p.x += p.vx * dt;
           p.z += p.vz * dt;
           p.y += dt * 0.6;
         }
-        l.dummy.position.set(p.x, p.y, p.z);
-        l.dummy.rotation.set(0, 0, 0);
-        l.dummy.scale.setScalar(p.life > 0 ? 0.6 + (0.6 - p.life) : 0);
-        l.dummy.updateMatrix();
-        dust.current!.setMatrixAt(i, l.dummy.matrix);
       });
-      dust.current.instanceMatrix.needsUpdate = true;
+      // Written and drawn only while a particle lives, and on the first frame: that render fixes the bounds three
+      // sorts the dust by, with every particle at the origin.
+      const alive = l.dust.some((p) => p.life > 0);
+      const draw = alive || l.dustFirst;
+      l.dustFirst = false;
+      if (draw) {
+        l.dust.forEach((p, i) => {
+          l.dummy.position.set(p.x, p.y, p.z);
+          l.dummy.rotation.set(0, 0, 0);
+          l.dummy.scale.setScalar(p.life > 0 ? 0.6 + (0.6 - p.life) : 0);
+          l.dummy.updateMatrix();
+          dust.current!.setMatrixAt(i, l.dummy.matrix);
+        });
+        dust.current.instanceMatrix.needsUpdate = true;
+      }
+      dust.current.visible = draw;
     }
   });
 
@@ -337,12 +339,12 @@ export function Rover({ tier }: { tier: GpuTier }) {
             <cylinderGeometry args={[0.22, 0.12, 0.1, 24]} />
             <meshBasicMaterial color={neon.thruster} toneMapped={false} />
           </mesh>
-          {[-0.7, 0.7].map((x) => (
-            <RoundedBox key={x} args={[0.32, 0.45, 1.1]} radius={0.1} smoothness={2} position={[x, 0.25, 0]}>
-              <meshStandardMaterial color="#27272a" roughness={0.9} />
-            </RoundedBox>
-          ))}
-          <instancedMesh ref={wheels} args={[undefined, undefined, WHEELS.length]} frustumCulled={false}>
+          <instancedMesh ref={placePods} args={[undefined, undefined, 2]}>
+            <RoundedBoxGeometry args={[0.32, 0.45, 1.1]} radius={0.1} smoothness={2} />
+            <meshStandardMaterial color="#27272a" roughness={0.9} />
+          </instancedMesh>
+          {/* Hidden: the wheels have drawn nothing since #5 (scale 0 from the shared scratch object); fixing them is a look change. */}
+          <instancedMesh args={[undefined, undefined, 6]} visible={false}>
             <cylinderGeometry args={[WHEEL_R, WHEEL_R, 0.36, 12]} />
             <meshStandardMaterial color="#71717a" roughness={0.6} />
           </instancedMesh>
