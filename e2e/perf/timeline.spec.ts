@@ -63,7 +63,7 @@ async function collect(page: Page) {
 for (const profile of Object.keys(PROFILES) as (keyof typeof PROFILES)[]) {
   for (const [scenario, path] of Object.entries(SCENARIOS)) {
     for (let run = 1; run <= RUNS; run++) {
-      test(`${scenario} on ${profile}, run ${run} @nightly`, async ({ browser }) => {
+      test(`${scenario} on ${profile}, run ${run} @timeline`, async ({ browser }) => {
         const context = await browser.newContext();
         const page = await context.newPage();
         await asHumanBrowser(page);

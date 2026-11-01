@@ -8,16 +8,45 @@
  * failed job set changed) and closes it with a comment once a nightly run is green again (GitHub emails
  * the owner). `APPLY=true` (main only) writes to GitHub; anything else is a dry run that prints the
  * action. Uses fetch and GH_TOKEN only (issues: write); no dependencies, so the job skips `bun install`.
+ * `NIGHTLY_KIND=screenshots` reports the nightly screenshots.yml run the same way, with its own
+ * `screenshots-nightly` issue (owner decision 2026-11-01).
  */
 import { appendFileSync } from "node:fs";
 
-export const NIGHTLY_LABEL = "ci-nightly";
-export const ISSUE_TITLE = "Nightly CI failed on main";
+/** One nightly workflow's issue: its label, title and wording. */
+export interface NightlyKind {
+  label: string;
+  title: string;
+  description: string;
+  /** "The <failed> on main failed on commit ..." */
+  failed: string;
+  /** "The <passes> on <sha> passes again" */
+  passes: string;
+}
+
+export const NIGHTLY_KINDS = {
+  ci: {
+    label: "ci-nightly",
+    title: "Nightly CI failed on main",
+    description: "Nightly full CI run failing on main (ci.yml schedule)",
+    failed: "nightly full CI run",
+    passes: "nightly CI run",
+  },
+  screenshots: {
+    label: "screenshots-nightly",
+    title: "Nightly screenshots failed on main",
+    description: "Nightly screenshots run failing on main (screenshots.yml schedule)",
+    failed: "nightly screenshots run",
+    passes: "nightly screenshots run",
+  },
+} as const satisfies Record<string, NightlyKind>;
+
+export const NIGHTLY_LABEL = NIGHTLY_KINDS.ci.label;
+export const ISSUE_TITLE = NIGHTLY_KINDS.ci.title;
 const LABEL_COLOR = "B60205";
-const LABEL_DESCRIPTION = "Nightly full CI run failing on main (ci.yml schedule)";
 const MARKER = /<!-- ci-nightly:failed=([\w,-]*) -->/;
 const FETCH_TIMEOUT_MS = 20_000;
-/** Results that are not failures: a job skipped by its own condition (the preview). */
+/** Results that are not failures: a job its own condition skipped. */
 const PASSING = new Set(["success", "skipped"]);
 
 export type Needs = Record<string, { result: string; outputs?: Record<string, string> }>;
@@ -52,10 +81,10 @@ export function failedFromBody(body: string): string[] | null {
 
 const short = (sha: string) => sha.slice(0, 7);
 
-export function nightlyBody(failed: readonly string[], ctx: NightlyContext): string {
+export function nightlyBody(failed: readonly string[], ctx: NightlyContext, kind: NightlyKind = NIGHTLY_KINDS.ci): string {
   const lines = [
     `<!-- ci-nightly:failed=${failed.join(",")} -->`,
-    `The nightly full CI run on main failed on commit ${short(ctx.sha)}.`,
+    `The ${kind.failed} on main failed on commit ${short(ctx.sha)}.`,
     "",
     "| Job | Result |",
     "|---|---|",
@@ -66,12 +95,12 @@ export function nightlyBody(failed: readonly string[], ctx: NightlyContext): str
   return lines.join("\n");
 }
 
-export function nightlyAction(failed: readonly string[], open: OpenIssue | null, ctx: NightlyContext): NightlyAction {
+export function nightlyAction(failed: readonly string[], open: OpenIssue | null, ctx: NightlyContext, kind: NightlyKind = NIGHTLY_KINDS.ci): NightlyAction {
   if (failed.length === 0) {
-    return open ? { kind: "close", number: open.number, comment: `The nightly CI run on ${short(ctx.sha)} passes again (${ctx.checkedAt}, [run](${ctx.runUrl})). Closing.` } : { kind: "none" };
+    return open ? { kind: "close", number: open.number, comment: `The ${kind.passes} on ${short(ctx.sha)} passes again (${ctx.checkedAt}, [run](${ctx.runUrl})). Closing.` } : { kind: "none" };
   }
-  const body = nightlyBody(failed, ctx);
-  if (!open) return { kind: "open", title: ISSUE_TITLE, body };
+  const body = nightlyBody(failed, ctx, kind);
+  if (!open) return { kind: "open", title: kind.title, body };
   const before = (failedFromBody(open.body ?? "") ?? []).slice().sort().join(",");
   const now = failed.slice().sort().join(",");
   if (before === now) return { kind: "update", number: open.number, body };
@@ -111,21 +140,21 @@ async function must(gh: GitHubCall, method: string, path: string, body?: unknown
   return res.data;
 }
 
-export async function findOpenIssue(gh: GitHubCall, repo: string): Promise<OpenIssue | null> {
-  const data = (await must(gh, "GET", `/repos/${repo}/issues?labels=${NIGHTLY_LABEL}&state=open&per_page=20`)) as { number: number; body?: string | null; pull_request?: unknown }[];
+export async function findOpenIssue(gh: GitHubCall, repo: string, kind: NightlyKind = NIGHTLY_KINDS.ci): Promise<OpenIssue | null> {
+  const data = (await must(gh, "GET", `/repos/${repo}/issues?labels=${kind.label}&state=open&per_page=20`)) as { number: number; body?: string | null; pull_request?: unknown }[];
   const issue = data.find((i) => !i.pull_request);
   return issue ? { number: issue.number, body: issue.body ?? "" } : null;
 }
 
-export async function applyNightlyAction(gh: GitHubCall, repo: string, action: NightlyAction): Promise<string> {
+export async function applyNightlyAction(gh: GitHubCall, repo: string, action: NightlyAction, kind: NightlyKind = NIGHTLY_KINDS.ci): Promise<string> {
   switch (action.kind) {
     case "none":
-      return "No open ci-nightly issue; nothing to do.";
+      return `No open ${kind.label} issue; nothing to do.`;
     case "open": {
-      const label = await gh("POST", `/repos/${repo}/labels`, { name: NIGHTLY_LABEL, color: LABEL_COLOR, description: LABEL_DESCRIPTION });
+      const label = await gh("POST", `/repos/${repo}/labels`, { name: kind.label, color: LABEL_COLOR, description: kind.description });
       if (label.status >= 300 && label.status !== 422) throw new Error(`GitHub POST label returned HTTP ${label.status}`);
-      const issue = (await must(gh, "POST", `/repos/${repo}/issues`, { title: action.title, body: action.body, labels: [NIGHTLY_LABEL] })) as { html_url?: string };
-      return `Opened ${issue.html_url ?? "the ci-nightly issue"}.`;
+      const issue = (await must(gh, "POST", `/repos/${repo}/issues`, { title: action.title, body: action.body, labels: [kind.label] })) as { html_url?: string };
+      return `Opened ${issue.html_url ?? `the ${kind.label} issue`}.`;
     }
     case "update":
       if (action.comment) await must(gh, "POST", `/repos/${repo}/issues/${action.number}/comments`, { body: action.comment });
@@ -163,18 +192,26 @@ export function parseNeeds(raw: string | undefined): Needs {
   return needs;
 }
 
-export function summaryMarkdown(needs: Needs, outcome: string): string {
-  return ["## Nightly CI", "", "| Job | Result |", "|---|---|", ...Object.entries(needs).map(([id, job]) => `| \`${id}\` | ${job.result} |`), "", outcome, ""].join("\n");
+/** The kind NIGHTLY_KIND names (default `ci`); an unknown name is an error. */
+export function nightlyKind(name: string | undefined): NightlyKind {
+  if (!name) return NIGHTLY_KINDS.ci;
+  if (!(name in NIGHTLY_KINDS)) throw new Error(`NIGHTLY_KIND "${name}" is not one of ${Object.keys(NIGHTLY_KINDS).join(", ")}`);
+  return NIGHTLY_KINDS[name as keyof typeof NIGHTLY_KINDS];
+}
+
+export function summaryMarkdown(needs: Needs, outcome: string, kind: NightlyKind = NIGHTLY_KINDS.ci): string {
+  return [kind === NIGHTLY_KINDS.ci ? "## Nightly CI" : `## ${kind.title.replace(/ failed on main$/, "")}`, "", "| Job | Result |", "|---|---|", ...Object.entries(needs).map(([id, job]) => `| \`${id}\` | ${job.result} |`), "", outcome, ""].join("\n");
 }
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 async function main() {
   const needs = parseNeeds(process.env.NEEDS);
+  const kind = nightlyKind(process.env.NIGHTLY_KIND);
   const repo = process.env.REPO ?? process.env.GITHUB_REPOSITORY ?? "ShinyQ/ShinyQ-HQ";
   const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
   const apply = process.env.APPLY === "true";
-  if (process.env.GITHUB_ACTIONS === "true" && apply && !token) throw new Error("GH_TOKEN is missing in GitHub Actions: refusing to skip the ci-nightly issue");
+  if (process.env.GITHUB_ACTIONS === "true" && apply && !token) throw new Error(`GH_TOKEN is missing in GitHub Actions: refusing to skip the ${kind.label} issue`);
   const server = process.env.GITHUB_SERVER_URL ?? "https://github.com";
   const runUrl = process.env.RUN_URL ?? (process.env.GITHUB_RUN_ID ? `${server}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` : `${server}/${repo}/actions/workflows/ci.yml`);
   const sha = process.env.SHA ?? process.env.GITHUB_SHA ?? "unknown";
@@ -182,15 +219,15 @@ async function main() {
   const ctx: NightlyContext = { runUrl, sha, checkedAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"), results: Object.fromEntries(Object.entries(needs).map(([id, job]) => [id, job.result])) };
   for (const [id, job] of Object.entries(needs)) console.log(`${PASSING.has(job.result) ? "ok  " : "FAIL"}  ${id}: ${job.result}`);
   const writeSummary = (outcome: string) => {
-    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(needs, outcome));
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(needs, outcome, kind));
   };
   let outcome: string;
   try {
     const gh = token ? githubClient(fetch, token) : null;
-    const open = gh ? await findOpenIssue(gh, repo) : null;
-    const action = nightlyAction(failed, open, ctx);
+    const open = gh ? await findOpenIssue(gh, repo, kind) : null;
+    const action = nightlyAction(failed, open, ctx, kind);
     if (apply && gh) {
-      outcome = await applyNightlyAction(gh, repo, action);
+      outcome = await applyNightlyAction(gh, repo, action, kind);
     } else {
       const why = apply ? "no GH_TOKEN" : "APPLY is not true, main only";
       const known = gh ? "" : " (no GH_TOKEN: open issue unknown)";

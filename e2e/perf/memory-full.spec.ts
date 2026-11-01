@@ -15,7 +15,9 @@ import { writePerfEntry } from "./helpers";
  * for the failure message only and read unsettled; the baseline and the final read are settled. No full-tier toggle test: each canvas mount compiles 39 or 40 shader programs
  * (one program is drawn in some mounts only), so an exact program baseline across remounts is not stable.
  */
-type MemoryWindow = Window & { __hq: { store: { getState: () => { goToFloor: (floor: string) => void } } } };
+type MemoryWindow = Window & {
+  __hq: { store: { getState: () => { goToFloor: (floor: string) => void } }; office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } };
+};
 
 const { fullTierRoundTrips: TRIPS, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
 
@@ -32,6 +34,23 @@ test.beforeEach(({ page }) =>
   }),
 );
 
+/**
+ * The always-live Agent Office scene loads once per page at idle on an L1 visit; the back-to-back trips can leave that idle
+ * load for the final settled read (+2 geometries and a program over the baseline in 3 CI runs). Load it now and wait until
+ * it shows, so the baseline has it, as `e2e/memory.spec.ts` does (a build without the office skips this).
+ */
+async function settleOffice(page: Page) {
+  await page.evaluate(() => (window as unknown as MemoryWindow).__hq.office?.load());
+  await page.waitForFunction(
+    () => {
+      const hq = (window as unknown as MemoryWindow).__hq;
+      return !hq.office || hq.probes.office?.loaded === true;
+    },
+    null,
+    { timeout: 120_000 },
+  );
+}
+
 async function ride(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as MemoryWindow).__hq.store.getState().goToFloor(f), floor);
   await waitForFloor(page, floor, 120_000);
@@ -40,6 +59,7 @@ async function ride(page: Page, floor: string) {
 test("full tier, Motion Full: Lobby to Roof round trips leave renderer memory at its baseline", async ({ page }) => {
   await enterHQ(page, { tier: "full" });
   for (const floor of ["L2", "L3", "L4", "RF", "L1"]) await ride(page, floor);
+  await settleOffice(page);
   await readSettledGpuCounters(page);
   await ride(page, "RF");
   await ride(page, "L1");

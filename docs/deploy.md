@@ -8,11 +8,11 @@ The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function 
 | --- | --- |
 | Production project | `kurniadi`, Direct Upload, production branch `main` |
 | Production URL | https://kurniadi.pages.dev |
-| Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6` (never pushed, so every deploy is a preview) |
+| Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6`: unused since the PR preview job was removed (2026-11-01) |
 | Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
 | `production` environment secrets | `CLOUDFLARE_API_TOKEN` (the account-owned Cloudflare API token `hq-ci-deploy`: Cloudflare Pages Edit, Workers KV Storage Edit for the Ask knowledge pack, Workers Scripts Edit for the hq-office and hq-stats Workers, R2 access for the `GUIDES` binding), `GROQ_API_KEY`, `OFFICE_INGEST_KEY`, `OFFICE_GITHUB_WEBHOOK_SECRET` |
 | Repository secrets | `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` (section 3) |
-| Repository variables | `CF_PAGES_PROJECT`, `CF_ACCOUNT_ID`, `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); unset: `AUTO_DEPLOY_FACTS` (auto-deploy on), `CF_PREVIEWS` (PR previews off), `STATS_WORKER_DEPLOY` and `OFFICE_WORKER_DEPLOY` (both Workers deploy from CI), `SITE_URL` (default origin) |
+| Repository variables | `CF_PAGES_PROJECT`, `CF_ACCOUNT_ID`, `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); unset: `AUTO_DEPLOY_FACTS` (auto-deploy on), `STATS_WORKER_DEPLOY` and `OFFICE_WORKER_DEPLOY` (both Workers deploy from CI), `SITE_URL` (default origin) |
 
 The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
 
@@ -60,17 +60,14 @@ Run `bun run e2e` on a build without the beacon if you want the e2e suite: its c
 
 | Trigger | Workflow | Cloudflare project | Result |
 | --- | --- | --- | --- |
-| Pull request from this repo, only with `CF_PREVIEWS=true` and a preview-only repository token | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
 | Push to `main` (a merge) | `deploy.yml` (fast path, or after the complete `main` CI) and `ci.yml` (the complement of the PR run, or a full run) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`), smoke-checked |
 | Weekly facts PR merged (`refresh-facts.yml`), or manual run | `deploy.yml` (`workflow_dispatch`) | `CF_PAGES_PROJECT` (`kurniadi`) | Production, smoke-checked |
 | Red CI on a push to `main` | `rollback.yml` | `CF_PAGES_PROJECT` | Production rolled back when it serves the failing commit; `deploy-rollback` issue |
-| Every CI run | `ci.yml` job `lighthouse` (`Lighthouse CI`) | none | Lighthouse budgets (blocking) on the planned URLs and reports as an artifact |
+| Every CI run | `ci.yml` jobs `Lighthouse shard n/N` and `Lighthouse CI` | none | Lighthouse budgets (blocking) on the planned URLs and reports as an artifact |
 
 ```mermaid
 flowchart LR
   PR[Pull request] --> CI[ci.yml: check, build, affected e2e, perf, Lighthouse]
-  CI --> PV[preview job, only if CF_PREVIEWS=true]
-  PV --> PP[(Preview project: shinyq-hq)]
   M[Push to main] --> CI2[ci.yml: complement of the PR run]
   M --> F{Fast path: PR green on the same tree?}
   F -- yes --> D[deploy.yml: build, hq-office, KV pack, upload, smoke check, hq-stats]
@@ -163,21 +160,17 @@ Settings > Secrets and variables > Actions > Variables, or with `gh`:
 
 ```sh
 gh variable set CF_PAGES_PROJECT --body kurniadi
-gh variable set CF_PREVIEW_PROJECT --body shinyq-hq            # optional
 gh variable set SITE_URL --body https://kurniadi.pages.dev     # optional
 gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # set on 2026-10-11
 gh variable set AUTO_DEPLOY_FACTS --body false                 # optional: stop the weekly auto-deploy
-gh variable set CF_PREVIEWS --body true                        # optional: turn PR previews on
 ```
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `CF_PAGES_PROJECT` | Yes, to enable production deploys | Production Pages project name. While unset, `deploy.yml` builds and tests but skips the upload. |
-| `CF_PREVIEW_PROJECT` | Optional | Project for PR previews. Defaults to `shinyq-hq` (created automatically with a production branch that is never pushed, so every deploy stays a preview). |
 | `SITE_URL` | Optional | Public origin baked into canonical URLs, `hreflang`, sitemap, robots and OG URLs (`NEXT_PUBLIC_SITE_URL`). Defaults to `https://kurniadi.pages.dev`. Set to `https://kurniadi.dev` after the domain move. |
 | `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
-| `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
 | `GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console HTML tag token (the `content` value of `google-site-verification`), rendered on `/`, `/en` and `/id` by production builds. Section 15. |
 | `BING_SITE_VERIFICATION` | Optional | Bing Webmaster Tools `msvalidate.01` token, rendered the same way. Section 15. |
 | `STATS_WORKER_DEPLOY` | Optional (unset) | `false` skips the hq-stats Worker job in `deploy.yml` and its redeploy in `rollback.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
@@ -302,7 +295,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | Kind | Name | Used by |
 |---|---|---|
 | Pages | `kurniadi` | Production, https://kurniadi.pages.dev |
-| Pages | `shinyq-hq` | Optional PR previews (`CF_PREVIEWS=true`) |
+| Pages | `shinyq-hq` | Unused since the PR preview job was removed (2026-11-01); delete it or keep it for a future preview token |
 | KV | `shinyq-hq-ask` | Ask answer cache and rate-limit counters |
 | AI Gateway | `shinyq-hq` | Ask model calls (cache, logs, rate limit) |
 | Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `kurniadi.dev`) |
