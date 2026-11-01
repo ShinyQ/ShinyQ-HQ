@@ -285,7 +285,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
     expect(specsForChanges(["src/experience/fx/FilterHighlights.tsx"]).specs).toEqual(["reactor", "topics"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
-    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "first-screen-contact", "onboarding", "phone-first"]);
+    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding", "phone-first"]);
     // The per-page script policy: its build step, the headers it derives from and every inline script source.
     expect(specsForChanges(["scripts/csp-hashes.ts"]).specs).toEqual(["boot-first", "csp", "deploy", "sdf-fallback", "static-routes"]);
     expect(specsForChanges(["public/_headers"]).specs).toEqual(["csp", "deploy", "sdf-fallback", "static-routes"]);

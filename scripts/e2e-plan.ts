@@ -28,7 +28,6 @@ export const ALL_SPECS = [
   "engine-room",
   "experience",
   "fast-return",
-  "first-screen-contact",
   "floor-chunks",
   "gallery",
   "gpu",
@@ -407,8 +406,6 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
-  // The boot card and the landing hero offer View CV and Contact from the first screen.
-  { test: /^src\/components\/(BootCard|BootCover|page\/Hero)\.tsx$|^src\/hud\/BootOverlay\.tsx$|^src\/app\/hud-shared\.css$/, specs: ["first-screen-contact"] },
   // The phone-first 3D design (e2e/phone-first.spec.ts): the bottom boot card, the docked Rover line and the band stepping aside, the phone tour, the L1 landing view and the camera it primes.
   {
     test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared)\.css$/,
