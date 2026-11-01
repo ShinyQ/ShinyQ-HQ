@@ -308,6 +308,10 @@ Keep them documented here.
   - Every pod in `STORY_SLUGS` (`src/content/schema.ts`, the six featured case studies) needs one: a `SiteContentSchema` check when the pod is in the dataset, and `tests/content/recruiter-pass.test.ts` checks all six are there.
   - `situation` and `why` are body text (first person fine); decision titles read as headings: no first person, at most 90 characters (`recruiter-pass.test.ts`).
   - No new numbers: every number in the situation or a decision must already appear in the pod's tagline, problem, approach, results or role (same test).
+- `Pod.engineering`: optional 1 to 4 `EngineeringTopicSchema` topics (owner decision 2026-11-02), the "Engineering detail" chapter for a technical reviewer ([page-view.md](page-view.md#case-study-labsslug)).
+  - Each topic: `title` (a heading in Title Case, no first person; in `titleSlots`), a one-line `summary`, 2 to 5 `points`, optional `limits` (the known limits, stated plainly) and optional `post` (a `floors.library.posts` slug; an unknown slug fails the schema).
+  - Every number and claim must trace to the project's own source (docs, R&D reports, drill write-ups, code); prefer measured results over design intent and leave out what cannot be sourced. Pattern-level security only: no resource names, hostnames, tenant or subscription ids.
+  - Classic page only: the 3D drawer, Ask (`src/ask/pack.ts` picks pod fields explicitly) and share cards do not read it. Tests: `tests/content/engineering.test.ts`.
   - `lesson` is the owner's own words only: drafted from what the owner already wrote (posts, perspectives, the CV, commits) and added only after the owner approves it, one by one. Never write one for the owner.
   - `problem` and `approach` stay required: the 3D drawer, missions and Ask still read them.
 
