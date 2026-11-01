@@ -219,13 +219,13 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     title: "Now",
     url: "/contact",
     updatedAt: profile.currentRole.since,
-    keywords: ["now", "current", "currently", "today", "role", "career", "available", "availability", "location"],
+    keywords: ["now", "current", "currently", "today", "role", "career", "available", "availability", "location", "timezone"],
     text: join([
       {
         en: `Current role: ${profile.currentRole.title.en} at ${profile.currentRole.org} since ${profile.currentRole.since}.`,
         id: `Peran saat ini: ${profile.currentRole.title.id} di ${profile.currentRole.org} sejak ${profile.currentRole.since}.`,
       },
-      label("Based in", "Berdomisili di", loc(profile.location)),
+      label("Based in", "Berdomisili di", { en: `${profile.location.en} (${profile.timezone})`, id: `${profile.location.id} (${profile.timezone})` }),
       label("Availability", "Ketersediaan", loc(roof.availability)),
     ]),
   });

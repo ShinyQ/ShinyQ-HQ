@@ -1,9 +1,10 @@
 {
-  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career, contact, perspectives, about or site (the seven topic pills; public stats fold about into perspectives and site into work, STATS_TOPIC_OF). A topic expands into four of its unasked pills and the Try asking row shows one pill from each of three topics, both sampled per page session by a seeded shuffle (src/ask/suggestions.ts, seed in sessionStorage hq:ask-seed), so order within a topic does not decide what shows; follow-ups stay deterministic. tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3).",
+  "$comment": "Curated Ask the HQ question pills (EN and ID). topic: work, ai, career, contact, perspectives, about or site (the seven topic pills; public stats fold about into perspectives and site into work, STATS_TOPIC_OF). A topic expands into four of its unasked pills and the Try asking row shows one pill from each of three topics, both sampled per page session by a seeded shuffle (src/ask/suggestions.ts, seed in sessionStorage hq:ask-seed), so order within a topic does not decide what shows; follow-ups stay deterministic. tags: ASK_TAGS values (src/ask/protocol.ts) used to match follow-ups to an answer. followUps: ids shown after this question is answered. expect: knowledge chunk ids (or id prefixes ending in *) that retrieval must return in both languages (tests/ask/suggestions.test.ts). The nightly eval (bun scripts/ask-eval.ts suggestions) asks every question against the real model; an optional answer.any lists strings the real answer must contain, with live values as {{facts.<path>}} placeholders, never literals. Never name a client company here (C3). recruiter: true marks the hiring pills; the Try asking row always leads with one of them (owner decision 2026-11-01).",
   "items": [
     {
       "id": "work-best",
       "topic": "work",
+      "recruiter": true,
       "q": { "en": "What are his best software projects?", "id": "Apa proyek software terbaiknya?" },
       "tags": ["work", "software"],
       "followUps": ["work-banking", "work-tickets", "work-stack"],
@@ -82,6 +83,14 @@
       "expect": ["skills-backend"]
     },
     {
+      "id": "work-data-stack",
+      "topic": "work",
+      "q": { "en": "Which data science tools does he use?", "id": "Tools data science apa saja yang dia pakai?" },
+      "tags": ["skills", "data"],
+      "followUps": ["ai-forecasting", "work-stack", "career-skills"],
+      "expect": ["skills-ds"]
+    },
+    {
       "id": "work-github",
       "topic": "work",
       "q": { "en": "What are his public GitHub repos?", "id": "Apa saja repo GitHub publiknya?" },
@@ -108,6 +117,7 @@
     {
       "id": "ai-voice",
       "topic": "ai",
+      "recruiter": true,
       "q": { "en": "How does the voice AI contact center work?", "id": "Bagaimana cara kerja voice AI contact center?" },
       "tags": ["ai", "voice"],
       "followUps": ["ai-voice-latency", "ai-fraud", "ai-agents"],
@@ -237,6 +247,7 @@
     {
       "id": "career-now",
       "topic": "career",
+      "recruiter": true,
       "q": { "en": "What is he working on now?", "id": "Apa yang sedang dia kerjakan sekarang?" },
       "tags": ["now", "career"],
       "followUps": ["career-history", "career-certs", "contact-open"],
@@ -245,6 +256,7 @@
     {
       "id": "career-history",
       "topic": "career",
+      "recruiter": true,
       "q": { "en": "Where has he worked before?", "id": "Di mana saja dia pernah bekerja?" },
       "tags": ["career"],
       "followUps": ["career-jenius", "career-freelance", "career-education"],
@@ -341,6 +353,7 @@
     {
       "id": "contact-reach",
       "topic": "contact",
+      "recruiter": true,
       "q": { "en": "How can I contact him?", "id": "Bagaimana cara menghubunginya?" },
       "tags": ["contact"],
       "followUps": ["contact-open", "contact-where", "contact-channels"],
@@ -349,6 +362,7 @@
     {
       "id": "contact-open",
       "topic": "contact",
+      "recruiter": true,
       "q": { "en": "Is he open to new opportunities?", "id": "Apakah dia terbuka untuk peluang baru?" },
       "tags": ["contact", "now"],
       "followUps": ["contact-reach", "career-now", "work-best"],
@@ -357,6 +371,7 @@
     {
       "id": "contact-where",
       "topic": "contact",
+      "recruiter": true,
       "q": { "en": "Where is he based?", "id": "Dia berdomisili di mana?" },
       "tags": ["contact", "now"],
       "followUps": ["contact-reach", "contact-open", "career-now"],

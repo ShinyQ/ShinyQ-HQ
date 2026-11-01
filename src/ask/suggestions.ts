@@ -31,6 +31,8 @@ export interface Suggestion {
   expect?: string[];
   /** Nightly eval only: the real answer must contain one of these (live values as `{{facts.<path>}}`). */
   answer?: { any?: string[] };
+  /** A hiring question (owner decision 2026-11-01): the Try asking row always leads with one. */
+  recruiter?: boolean;
 }
 
 export const SUGGESTIONS = bank.items as unknown as readonly Suggestion[];
@@ -105,12 +107,22 @@ export function topicQuestions(topic: AskTopic, asked: ReadonlySet<string> = new
     .slice(0, size);
 }
 
-/** At most `size` unasked questions from distinct topics: topics in seeded order, each topic's first pill in its seeded order. */
+/** Salt of the recruiter pill's shuffle, so it never mirrors a topic's order under the same seed. */
+const RECRUITER_SALT = hashString("recruiter");
+
+/**
+ * At most `size` unasked questions from distinct topics. The row leads with an unasked `recruiter` pill (owner
+ * decision 2026-11-01: a recruiter opening Ask always sees a hiring question), in seeded order; then topics in seeded
+ * order, skipping the lead's topic, each topic's first pill in its seeded order.
+ */
 export function starterQuestions(asked: ReadonlySet<string> = new Set(), seed: AskSeed = null, list: readonly Suggestion[] = SUGGESTIONS, size = STARTER_SIZE): Suggestion[] {
   const topics = seed === null ? ASK_TOPICS : seededShuffle(ASK_TOPICS, seed);
-  const picked: Suggestion[] = [];
+  const recruiters = list.filter((s) => s.recruiter && !asked.has(s.id));
+  const lead = (seed === null ? recruiters : seededShuffle(recruiters, (seed ^ RECRUITER_SALT) >>> 0))[0];
+  const picked: Suggestion[] = lead && size > 0 ? [lead] : [];
   for (const topic of topics) {
     if (picked.length >= size) break;
+    if (picked.some((s) => s.topic === topic)) continue;
     const first = topicOrder(topic, list, seed).find((s) => !asked.has(s.id));
     if (first) picked.push(first);
   }

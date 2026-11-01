@@ -109,6 +109,30 @@ describe("starterQuestions", () => {
   it("returns nothing once every pill was asked", () => {
     expect(starterQuestions(new Set(list.map((s) => s.id)), 3, list)).toEqual([]);
   });
+
+  it("leads with an unasked recruiter pill, then other topics (owner decision 2026-11-01)", () => {
+    const hiring = [...list, { ...pill("k2", "contact"), recruiter: true }, { ...pill("c3", "career"), recruiter: true }];
+    expect(ids(starterQuestions(new Set(), null, hiring))).toEqual(["k2", "w1", "a1"]);
+    expect(ids(starterQuestions(new Set(["k2"]), null, hiring))).toEqual(["c3", "w1", "a1"]);
+    expect(ids(starterQuestions(new Set(["k2", "c3"]), null, hiring))).toEqual(["w1", "a1", "c1"]);
+    for (const seed of SEEDS) {
+      const starters = starterQuestions(new Set(), seed, hiring);
+      expect(starters[0].recruiter, String(seed)).toBe(true);
+      expect(new Set(starters.map((s) => s.topic)).size).toBe(starters.length);
+    }
+  });
+
+  it("keeps the real bank's order row and always leads with a hiring question", () => {
+    expect(ids(starterQuestions(new Set(), null))).toEqual(["work-best", "ai-voice", "career-now"]);
+    expect(SUGGESTIONS.filter((s) => s.recruiter).length).toBeGreaterThanOrEqual(5);
+    const leads = new Set<string>();
+    for (const seed of SEEDS) {
+      const [first] = starterQuestions(new Set(), seed);
+      expect(first.recruiter, String(seed)).toBe(true);
+      leads.add(first.id);
+    }
+    expect(leads.size, "the lead varies across seeds").toBeGreaterThan(3);
+  });
 });
 
 describe("readAskSeed", () => {
