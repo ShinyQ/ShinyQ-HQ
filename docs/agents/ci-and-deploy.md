@@ -149,7 +149,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 A push to `main` (`EVENT=push`) runs only what its merged pull request's green CI run did not, so `main` still covers
 everything once per merge without repeating the PR's tests (`scripts/ci-complement.ts`, called from `scripts/ci-plan.ts`).
 
-- Source run: the merged PR from `GET /repos/{repo}/commits/{sha}/pulls` (same repository only); its head tree must equal the merged tree (`GET commits/{sha}`); the newest green `pull_request` run of `ci.yml` on that head; its `ci-plan` record (`gh run download`).
+- Source run: the merged PR from `GET /repos/{repo}/commits/{sha}/pulls` (same repository only; GitHub links a merge commit to its PR a few seconds after the push, so the lookup asks again every 5 s for about 30 s while no PR names the commit as its merge, `PR_LOOKUP_RETRIES` in `scripts/ci-complement.ts`); its head tree must equal the merged tree (`GET commits/{sha}`); the newest green `pull_request` run of `ci.yml` on that head; its `ci-plan` record (`gh run download`).
 - Plan, the complement of the record:
   - e2e: every spec the PR run did not run whole (a spec it ran only as a single smoke test runs whole), on `ceil(worker-seconds / 480)` shards, 1 to 8, from `e2e/durations.json` (8 when the PR ran no spec whole), at most 10 minus its perf shards (`HEAVY_SHARDS`);
   - 3D perf gates: the perf keys it did not run, on `ceil(seconds / 960)` shards (about one `memory-full` test each), 1 to 4, from the perf lane of `e2e/durations.json`; the whole lane keeps 4;
