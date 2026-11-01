@@ -4,6 +4,7 @@ import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { PostList } from "@/components/LibraryBlocks";
 import { OfficeSection } from "@/components/office/OfficeSection";
+import { ClosingCta } from "@/components/page/ClosingCta";
 import { FeaturedProject } from "@/components/page/Featured";
 import { HomeHero } from "@/components/page/Hero";
 import { SectionSplit, SectionWide } from "@/components/page/Layout";
@@ -19,7 +20,6 @@ import { heroProofStats, moreKeyProjects, pickFeaturedPods } from "@/content/pag
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { experienceDataVersion } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
-import { Link } from "@/i18n/navigation";
 import { formatYearMonth } from "@/lib/format";
 import { seoMetadata } from "@/lib/seo";
 import { searchVerification } from "@/lib/site";
@@ -144,23 +144,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <PostList posts={getPosts().slice(0, 3)} locale={locale} />
       </SectionWide>
 
-      <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec-l">
-        <h2 id="closing-title" className="pv-d-l max-w-[24ch] text-[length:var(--text-display-s)]">
-          {roof.availability[locale]}
-        </h2>
-        <a
-          href={`mailto:${roof.contact.email}`}
-          className="pv-uline mt-8 inline-flex min-h-11 items-center font-display text-lg font-extrabold sm:text-2xl text-ink transition-colors [overflow-wrap:anywhere] [font-stretch:90%] hover:text-cyan"
-        >
-          {roof.contact.email}
-        </a>
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link href="/contact" className="pv-btn pv-btn-ghost">
-            {t("aboutContact")}
-          </Link>
-          <CvButton className="pv-btn pv-btn-ghost">{tc("viewCv")}</CvButton>
-        </div>
-      </section>
+      <ClosingCta locale={locale} />
     </ClientMessages>
   );
 }
