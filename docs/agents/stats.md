@@ -31,7 +31,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `GET /api/stats` (no parameters; `functions/_lib/stats.ts`) validates the KV value again and answers 200 with the snapshot (ETag, 304 on a match, `max-age=30, stale-while-revalidate=30`; KV reads cached 60 s) or 204 (`max-age=60`) when the kill switch is off or nothing valid is stored. `HEAD` works the same; other methods get 405.
   - Live today: it reads the live tail `stats:live:v1` (`src/lib/stats/live.ts`: `from`, the pings the snapshot already counted since then, the snapshot's `updatedAt`) and asks the hq-stats Worker through the `STATS` service binding for the pings since `from`; the difference is added to `visits.d30` and `visits.all`.
   - Skipped (snapshot served as it is) when the tail is missing, from another run, `from` is null, the Worker fails or takes over `LIVE_TIMEOUT_MS` (1.5 s), or the difference is not between 1 and `LIVE_MAX_DELTA` (300). One isolate reuses a count for `LIVE_MEMO_MS` (30 s).
-- `POST /api/visit` writes one `visit_events` point per visit ping (`{ v: 1, kind: "visit" }`, blob2 `visit`) or mode ping (`{ v: 1, mode }`) (`functions/_lib/visit.ts`; 204 and no point when the kill switch is off); other methods get 405.
+- `POST /api/visit` writes one `visit_events` point per visit ping (`{ v: 1, kind: "visit" }`, blob2 `visit`; with an allowlisted `src`, blob3 the tag), mode ping (`{ v: 1, mode }`) or intent ping (`{ v: 1, intent }`, blob2 `intent`, blob3 the intent) (`functions/_lib/visit.ts`; 204 and no point when the kill switch is off); other methods get 405. The Worker reads only blob2 `visit` and the modes, so tags and intents never change a public number.
 - Change the contract only with a new version (`v: 2`) and both sides in one PR.
 
 ### Cron Worker
@@ -68,7 +68,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 Security S7.
 
 - `/api/rum` and `/api/visit` read bodies with `readCapped` (`functions/_lib/security.ts`, also used by `/api/ask`), which stops streaming at the byte cap even without `Content-Length`.
-- `/api/visit` caps points per isolate and minute (`VISIT_ISOLATE_CAP`) and per visitor and hour (`VISIT_IP_CAP`: 20 visit pings, 60 mode pings), keyed by the salted, daily-rotating IP hash (`visitorHash` with `ASK_IP_SALT_SEED`) in memory only; over the per-visitor cap it still answers 204 with no point.
+- `/api/visit` caps points per isolate and minute (`VISIT_ISOLATE_CAP`) and per visitor and hour (`VISIT_IP_CAP`: 20 visit pings, 60 mode pings, 20 intent pings), keyed by the salted, daily-rotating IP hash (`visitorHash` with `ASK_IP_SALT_SEED`) in memory only; over the per-visitor cap it still answers 204 with no point.
 - The Worker keeps a day's Web Analytics visits when its pings outrun its page views (`VISIT_FREEZE`), and `/api/stats` adds at most `LIVE_MAX_DELTA` live pings.
 - The Worker freezes a day's 3D vs Classic split (`MODE_FREEZE`) and its `perf` block (`PERF_FREEZE`) when beacon points or RUM sessions exceed `max(30, 3 x page views)`, so a forged flood is capped: below the ceiling forged beacons count like real ones (an accepted tolerance, security audit 2026-10-24); above it the day keeps zero.
 
@@ -94,6 +94,17 @@ Security S7.
 - `src/lib/stats/visitClient.ts` (mounted by `VisitBeacon` in the locale layout) sends two pings with `sendBeacon`:
   - the visit ping `{ v: 1, kind: "visit" }` as soon as the page is visible (and not prerendering), once per browser tab session: `sessionStorage["hq:visit"]` is set after an accepted beacon (a memory flag when storage is blocked; a refused beacon retries on the next show);
   - the mode ping `{ v: 1, mode }` once per page lifetime on the first hide or `pagehide`: `3d` when `html[data-hq]` was set, `classic` after 3 s on screen, `both`. It never counts as a visit.
+  - the visit ping carries the landing's `?src=` tag when it is one of `VISIT_SOURCES` (`li` LinkedIn, `gh` GitHub, `cv` the CV, `mail` an email signature; `visitSource`); any other value is dropped, so no free text reaches a point.
+
+### Intent counts (private)
+
+Owner decision 2026-11-01: how many visitors take a step toward hiring him, never shown on the site.
+
+- The intent ping `{ v: 1, intent }` (`VISIT_INTENTS`: `cv`, `email`, `linkedin`, `github`), once per browser tab session and intent (`sessionStorage["hq:intent:<intent>"]`), with the same skips as the visit ping (automation and crawlers; `?visit=1` forces it in tests).
+- `cv`: `countIntent("cv")` in `DialogHost` when the CV reader opens, so every entry point counts (Classic buttons, the boot card, the 3D Rover menu and kiosk).
+- `email`, `linkedin`, `github`: a capture click listener (`intentOf` in `visitClient.ts`) on `mailto:` links, `[data-hq-intent="email"]` controls (the About copy email button) and `https://linkedin.com/` or `https://github.com/` links. It stays on for the whole page lifetime, also after the mode ping.
+- Report, owner only: `CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/intent-report.ts [--days 30]` prints every intent and every `?src=` channel (zeros and untagged visits included). It refuses to run in CI.
+- Tests: `tests/stats/shared.test.ts`, `tests/stats/visit-endpoint.test.ts`, `tests/stats/visit-client.test.ts`, `tests/stats/intent-report.test.ts`, `e2e/visit.spec.ts`.
 - No cookie, no identifier, no URL.
 - Never under automation or crawlers (`?visit=1` forces it in tests, `?visit=0` turns it off); Do Not Track and GPC are counted (decision 2026-10-24).
 
