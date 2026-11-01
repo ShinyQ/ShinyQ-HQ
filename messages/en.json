@@ -867,7 +867,9 @@
     "more": "More {wing} projects",
     "breadcrumb": "Breadcrumb",
     "kind": "Project type",
-    "room": "Room in the 3D HQ"
+    "room": "Room in the 3D HQ",
+    "askAbout": "What did Kurniadi build in {title}, and what were the results?",
+    "askAboutLabel": "Ask Rover about this project"
   },
   "writing": {
     "title": "Writing",

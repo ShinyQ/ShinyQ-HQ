@@ -12,7 +12,9 @@ import { LiveSiteLink } from "@/components/LiveSiteLink";
 import { MetricStrip } from "@/components/MetricStrip";
 import { ShareLinks } from "@/components/ShareLinks";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
+import { AskAboutButton } from "@/components/page/AskAboutButton";
 import { CaseToc } from "@/components/page/CaseToc";
+import { ClosingCta } from "@/components/page/ClosingCta";
 import { PodCodeResearch } from "@/components/page/PodCodeResearch";
 import { DecisionList, Lesson } from "@/components/page/Story";
 import { CrumbLink } from "@/components/page/Layout";
@@ -220,6 +222,9 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
           )}
         </section>
       </article>
+      <ClosingCta locale={locale}>
+        <AskAboutButton question={tcase("askAbout", { title: pod.title[locale] })} label={tcase("askAboutLabel")} />
+      </ClosingCta>
     </ClientMessages>
   );
 }

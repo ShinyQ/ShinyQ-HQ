@@ -21,6 +21,7 @@ export const ALL_SPECS = [
   "boot-first",
   "camera",
   "career",
+  "closing-cta",
   "csp",
   "daynight",
   "deploy",
@@ -144,6 +145,8 @@ export const RULES: Rule[] = [
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },
   { test: /^src\/components\/page\/AskEntry/, specs: ["ask", "pageview"] },
+  // The closing section (landing, case studies, CV page) and its "Ask Rover about this project" island.
+  { test: /^src\/components\/page\/(ClosingCta|AskAboutButton)\.tsx$/, specs: ["closing-cta", "ask", "pageview"] },
   // The landing's way into the tower: exercised from page view (experience) and on a software renderer (boot-first).
   { test: /^src\/components\/page\/EnterHqButton\.tsx$/, specs: ["boot-first", "experience", "pageview"] },
   // Corners HUD hosts (Round 8 I): the HUD root, the view controls, the shared modal, Rover's toast and its
@@ -406,6 +409,8 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // The pages that end with the closing section.
+  { test: /^src\/app\/\[locale\]\/(page|cv\/page|labs\/\[slug\]\/page)\.tsx$/, specs: ["closing-cta"] },
   // The phone-first 3D design (e2e/phone-first.spec.ts): the bottom boot card, the docked Rover line and the band stepping aside, the phone tour, the L1 landing view and the camera it primes.
   {
     test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared)\.css$/,
