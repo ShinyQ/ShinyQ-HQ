@@ -19,8 +19,12 @@ const nextConfig: NextConfig = {
     globalNotFound: true,
   },
   turbopack: {
-    // troika's right-to-left text support: every in-world string is left to right (src/experience/bidiLtr.ts).
-    resolveAlias: { "bidi-js": "./src/experience/bidiLtr.ts" },
+    resolveAlias: {
+      // One scheduler for React DOM and the R3F reconciler: the same build as npm `scheduler` (tests/unit/scheduler-alias.test.ts).
+      scheduler: "next/dist/compiled/scheduler",
+      // troika's right-to-left text support: every in-world string is left to right (src/experience/bidiLtr.ts).
+      "bidi-js": "./src/experience/bidiLtr.ts",
+    },
     rules: {
       "*.css": {
         // CSS modules (the study guide reader's styles) skip Tailwind and keep Next's scoped class names.
