@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classify, importClosure, importing3d, LIGHTHOUSE_PAGES, locateFromDisk, pagesFromRepo, planFor, planOutputs, PR_HEAVY_SHARDS, reverseImports, ROOTS, sharedPerfKeys, type PlanOptions } from "../../scripts/ci-plan";
+import { classify, HEAD_MAPS, HEAVY_SHARDS, importClosure, importing3d, LIGHTHOUSE_PAGES, locateFromDisk, mapDiff, pagesFromRepo, planFor, planOutputs, reverseImports, ROOTS, sharedPerfKeys, type PlanMaps, type PlanOptions } from "../../scripts/ci-plan";
 import { locateTest, type DurationsFile } from "../../scripts/e2e-plan";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS } from "../../scripts/perf-plan";
 
@@ -10,10 +10,17 @@ const none = () => [];
 describe("ci-plan classify", () => {
   it.each([
     [".github/workflows/ci.yml", "ci"],
+    [".github/actions/setup/action.yml", "ci"],
+    // Other workflows cannot change a test result of ci.yml (owner decision 2026-11-01).
+    [".github/workflows/deploy.yml", "docs"],
+    [".github/workflows/ask-eval.yml", "docs"],
     ["package.json", "ci"],
     ["bun.lock", "ci"],
     ["e2e/perf/floors.spec.ts", "ci"],
-    ["scripts/e2e-plan.ts", "ci"],
+    ["scripts/e2e-plan.ts", "planmap"],
+    ["scripts/perf-plan.ts", "planmap"],
+    ["scripts/perf-report.ts", "ci"],
+    ["scripts/e2e-shard.ts", "ci"],
     ["scripts/ci-complement.ts", "ci"],
     ["scripts/ci-status.ts", "ci"],
     ["scripts/merge-gate.ts", "ci"],
@@ -163,7 +170,7 @@ describe("ci-plan shared perf keys", () => {
 });
 
 describe("ci-plan planFor: full runs", () => {
-  const fullOutputs = (perfShards: string, perfTotal: string, e2eShards = 8) => ({
+  const fullOutputs = (perfShards: string, perfTotal: string, e2eShards = 6) => ({
     full: "true",
     e2e: "all",
     e2e_files: "",
@@ -173,24 +180,27 @@ describe("ci-plan planFor: full runs", () => {
     perf_grep: "",
     perf_shards: perfShards,
     perf_total: perfTotal,
+    perf_nightly: "false",
     lighthouse: "true",
     lighthouse_urls: "",
+    lighthouse_shards: "[1]",
+    lighthouse_total: "1",
     source_run: "",
   });
 
-  it("runs everything on 8 e2e and 4 perf shards when the file list is unknown (push)", () => {
+  it("runs everything on 6 e2e and 4 perf shards when the file list is unknown (push), like every full run", () => {
     const plan = planFor(null, none);
-    expect(plan).toMatchObject({ full: true, e2e: "all", e2eTests: [], e2eShards: 8, perf: [...ALL_PERF_KEYS], perfShards: 4, lighthouse: "all" });
+    expect(plan).toMatchObject({ full: true, e2e: "all", e2eTests: [], e2eShards: 6, perf: [...ALL_PERF_KEYS], perfShards: 4, lighthouse: "all" });
     expect(planOutputs(plan, lhciUrls)).toEqual(fullOutputs("[1,2,3,4]", "4"));
   });
 
   it("runs a full pull request on 6 e2e and 4 perf shards, so it peaks at 12 jobs", () => {
     expect(planFor(null, none, { event: "pull_request" })).toMatchObject({ full: true, e2eShards: 6, perfShards: 4 });
-    expect(PR_HEAVY_SHARDS).toBe(10);
+    expect(HEAVY_SHARDS).toBe(10);
   });
 
   it("runs everything for a non-PR event even with a file list", () => {
-    expect(planFor(["docs/a.md"], none, { event: "other" })).toMatchObject({ full: true, e2eShards: 8, perfShards: 4 });
+    expect(planFor(["docs/a.md"], none, { event: "other" })).toMatchObject({ full: true, e2eShards: 6, perfShards: 4 });
   });
 
   it("runs everything on 6 e2e and 4 perf shards for the full-ci label", () => {
@@ -203,7 +213,76 @@ describe("ci-plan planFor: full runs", () => {
   it("runs everything for CI files and unknown paths", () => {
     expect(planFor([".github/workflows/ci.yml"], none)).toMatchObject({ full: true, e2eShards: 6, perfShards: 4 });
     expect(planFor(["weird/file.bin"], none).full).toBe(true);
+    // A spec map change whose diff is unknown (no base maps) runs everything.
     expect(planFor(["scripts/perf-plan.ts"], none).full).toBe(true);
+    expect(planFor(["scripts/e2e-plan.ts"], none).reasons).toContain("the spec maps changed and what they move is unknown: full run");
+    // Another workflow: no heavy job (its own unit tests always run).
+    expect(planFor([".github/workflows/ask-eval.yml"], none, opts)).toMatchObject({ full: false, e2e: [], perf: false, lighthouse: false });
+  });
+});
+
+describe("ci-plan spec map changes", () => {
+  const maps = (e2e: Record<string, string[] | "all">, perf: Record<string, string[]>, extra: { smoke?: { spec: string; title?: string }[]; grep?: Record<string, string> } = {}): PlanMaps => ({
+    e2e: { specsForChanges: (files) => ({ specs: e2e[files[0]] ?? [] }), PR_SMOKE: extra.smoke ?? [], SMOKE_SPECS: ["static-routes"] },
+    perf: { perfKeysFor: (files) => perf[files[0]] ?? [], perfGrep: (keys) => extra.grep?.[keys[0]] ?? `(${keys[0]})` },
+  });
+  const tracked = ["src/components/page/A.tsx", "src/experience/floors/labs/OpsRoom.tsx", "docs/a.md"];
+
+  it("runs the specs and perf keys whose mapping changed, in both directions", () => {
+    const base = maps({ "src/components/page/A.tsx": ["pageview", "seo"] }, { "src/experience/floors/labs/OpsRoom.tsx": ["floor:L3"] });
+    const head = maps({ "src/components/page/A.tsx": ["pageview", "topics"] }, { "src/experience/floors/labs/OpsRoom.tsx": ["bytes", "floor:L3"] });
+    expect(mapDiff(base, head, tracked)).toEqual({ specs: ["seo", "topics"], keys: ["bytes"] });
+    expect(mapDiff(base, base, tracked)).toEqual({ specs: [], keys: [] });
+  });
+
+  it("runs the full suite when one side sends a path there, a changed smoke entry's spec and a changed perf selection", () => {
+    const base = maps({ "src/components/page/A.tsx": ["pageview"] }, {}, { smoke: [{ spec: "ride", title: "a" }] });
+    expect(mapDiff(base, maps({ "src/components/page/A.tsx": "all" }, {}, { smoke: [{ spec: "ride", title: "a" }] }), tracked).specs).toBe("all");
+    expect(mapDiff(base, maps({ "src/components/page/A.tsx": ["pageview"] }, {}, { smoke: [{ spec: "ride", title: "b" }] }), tracked).specs).toEqual(["ride"]);
+    expect(mapDiff(base, maps({ "src/components/page/A.tsx": ["pageview"] }, {}, { smoke: [{ spec: "ride", title: "a" }], grep: { hover: "(new)" } }), tracked).keys).toEqual(["hover"]);
+  });
+
+  it("on this repo: the checked-out maps against themselves move nothing", () => {
+    const files = execSync("git ls-files").toString().split("\n").filter(Boolean);
+    expect(mapDiff(HEAD_MAPS, HEAD_MAPS, files)).toEqual({ specs: [], keys: [] });
+  });
+
+  it("plans the PR's own files plus what the map change moves, without a full run", () => {
+    const plan = planFor(["scripts/e2e-plan.ts", "e2e/topics.spec.ts"], none, { ...opts, mapDiff: { specs: ["seo"], keys: ["floor:L3"] } });
+    expect(plan).toMatchObject({ full: false, e2e: ["seo", "topics"], perf: ["floor:L3"] });
+    expect(plan.reasons).toContain("spec map change: e2e specs seo");
+    expect(plan.reasons).toContain("spec map change: perf keys floor:L3");
+    expect(planFor(["scripts/perf-plan.ts"], none, { ...opts, mapDiff: { specs: [], keys: [] } })).toMatchObject({ full: false, e2e: [], perf: false, lighthouse: false });
+    expect(planFor(["scripts/e2e-plan.ts"], none, { ...opts, mapDiff: { specs: "all", keys: [] } })).toMatchObject({ full: false, e2e: "all" });
+  });
+});
+
+describe("ci-plan nightly-only L1 perf poses and Lighthouse shards", () => {
+  it("runs the nightly-only L1 poses on a pull request that changes the Lobby or the office, and sizes its shards with them", () => {
+    const nightly = "floors.spec.ts \u203a L1 full: settled draw calls and shader programs with the day replay looping @nightly";
+    const perfDurations = { [nightly]: 3000, "floors.spec.ts \u203a L1 full: settled draw calls and shader programs": 200 };
+    const lobby = planFor(["src/experience/floors/lobby/Lanes.tsx"], none, { ...opts, perfDurations });
+    expect(lobby).toMatchObject({ perfNightly: true, perfShards: 4 });
+    expect(planOutputs(lobby, lhciUrls).perf_nightly).toBe("true");
+    expect(lobby.reasons).toContain("the Lobby or the office changed: the nightly-only L1 perf poses run too");
+    // A shared module the Lobby imports moves the L1 gates, not the nightly-only poses.
+    const shared = planFor(["src/lib/office/fixtures.ts"], () => ["floor:L1"], { ...opts, perfDurations });
+    expect(shared).toMatchObject({ perfNightly: false, perfShards: 1 });
+    expect(planFor(["src/experience/floors/labs/OpsRoom.tsx"], none, opts).perfNightly).toBe(false);
+  });
+
+  it("splits Lighthouse over 2 shards from 4 measured URLs in a run with at most 8 e2e plus perf shards", () => {
+    const pages = (urls: string[]) => (f: string) => (f === "src/components/page/A.tsx" ? urls : []);
+    const three = planFor(["src/components/page/A.tsx"], none, { ...opts, pages: pages(["/en/quick", "/en/cv"]) });
+    expect(planOutputs(three, lhciUrls)).toMatchObject({ lighthouse_shards: "[1]", lighthouse_total: "1" });
+    const four = planFor(["src/components/page/A.tsx"], none, { ...opts, pages: pages(["/en/quick", "/en/cv", "/en/contact"]) });
+    expect(planOutputs(four, lhciUrls)).toMatchObject({ lighthouse_shards: "[1,2]", lighthouse_total: "2" });
+    expect(planOutputs(planFor(["docs/a.md"], none, opts), lhciUrls)).toMatchObject({ lighthouse: "false", lighthouse_shards: "[1]" });
+    // A full run (10 e2e plus perf shards) keeps one Lighthouse job: its e2e and perf shards outlast it.
+    expect(planOutputs(planFor(null, none), lhciUrls)).toMatchObject({ lighthouse_urls: "", lighthouse_shards: "[1]" });
+    const all = planFor(["src/components/page/A.tsx"], none, { ...opts, pages: () => "all" as const });
+    expect(all.e2eShards + all.perfShards).toBeLessThanOrEqual(8);
+    expect(planOutputs(all, lhciUrls)).toMatchObject({ lighthouse_urls: "", lighthouse_shards: "[1,2]" });
   });
 });
 
@@ -221,8 +300,11 @@ describe("ci-plan planFor: selective pull request runs", () => {
       perf_grep: "",
       perf_shards: "[1]",
       perf_total: "1",
+      perf_nightly: "false",
       lighthouse: "false",
       lighthouse_urls: "",
+      lighthouse_shards: "[1]",
+      lighthouse_total: "1",
       source_run: "",
     });
   });
@@ -331,15 +413,15 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(planFor(["src/lib/audio/engine.ts"], () => [...ALL_PERF_KEYS], { ...opts, perfDurations: l3(1) }).perfShards).toBe(4);
   });
 
-  it("keeps e2e plus perf shards of a pull request within PR_HEAVY_SHARDS (6 e2e beside the whole perf lane)", () => {
+  it("keeps e2e plus perf shards of a pull request within HEAVY_SHARDS (6 e2e beside the whole perf lane)", () => {
     const plan = planFor(["e2e/edge-audit.ts", "src/lib/audio/engine.ts"], (f) => (f === "src/lib/audio/engine.ts" ? [...ALL_PERF_KEYS] : []), opts);
     expect(plan).toMatchObject({ full: false, e2e: "all", e2eShards: 6, perfShards: 4 });
-    expect(plan.reasons).toContain("e2e on 6 shards beside 4 perf shards (at most 10 per pull request run)");
+    expect(plan.reasons).toContain("e2e on 6 shards beside 4 perf shards (at most 10 per run)");
     const d = (seconds: number) => ({ "topics.spec.ts \u203a a": seconds });
     const l3 = { "floors.spec.ts \u203a L3 full: settled draw calls and shader programs": 2000 };
     const both = planFor(["e2e/topics.spec.ts", "src/experience/floors/labs/OpsRoom.tsx"], none, { durations: d(100_000), perfDurations: l3, locate });
     expect(both).toMatchObject({ e2eShards: 7, perfShards: 3 });
-    expect(both.e2eShards + both.perfShards).toBeLessThanOrEqual(PR_HEAVY_SHARDS);
+    expect(both.e2eShards + both.perfShards).toBeLessThanOrEqual(HEAVY_SHARDS);
   });
 
   it("sizes e2e shards from the durations: ceil(seconds / 480), 1 to 8", () => {
