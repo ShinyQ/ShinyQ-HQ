@@ -14,16 +14,18 @@ name: CI
 # of that PR run (its `ci-plan` record, scripts/ci-complement.ts) and merges the PR run's Lighthouse and perf
 # reports, so main still covers everything and keeps a full baseline. Manual dispatches (unless
 # `complement_pr` is set, a measurement), the nightly schedule, the `full-ci` label, CI or dependency
-# changes, unmapped paths, a push without such a PR run and any planner failure run everything: 8 e2e
-# and 4 perf shards, or 6 e2e and 4 perf shards on a pull request (at most 10 e2e plus perf shards per PR
-# run, so with Lighthouse and the unit test job a PR run peaks at 12 jobs). A selective pull request sizes
-# its perf shards (1 to 4) from e2e/durations.json like its e2e shards. The required checks name no shard
-# (owner decision 2026-10-23): `Build, CV and e2e` requires every job. A heavy job never skips at the job
+# changes, unmapped paths, a push without such a PR run and any planner failure run everything: 6 e2e
+# and 4 perf shards (at most 10 e2e plus perf shards per run, owner decision 2026-11-01, so with Lighthouse
+# and the unit test job a run peaks at about 12 jobs and a main run fits beside one selective PR run). A
+# selective pull request sizes its perf shards (1 to 4) from e2e/durations.json like its e2e shards, and
+# Lighthouse splits its URLs over 2 shards from 4 URLs. The required checks name no shard (owner decision
+# 2026-10-23): `Build, CV and e2e` requires every job, `Lighthouse CI` every Lighthouse shard. A heavy job never skips at the job
 # level (a skipped matrix job would report an unexpanded check name): its steps skip and one "Not needed"
 # step passes. Complete runs (complement runs included) upload the `ci-full` artifact for the deploy gate
 # (scripts/ci-status.ts).
-# The nightly schedule runs the full pipeline on main every night, the nightly-only e2e tests (`@nightly`,
-# skipped by pull requests and pushes) included, plus the nightly-only `nightly` job
+# The nightly schedule runs the full pipeline on main every night, the nightly-only e2e and perf tests
+# (`@nightly`, skipped by pull requests and pushes; a pull request that changes the Lobby or the office runs the
+# nightly-only L1 perf poses) included, plus the nightly-only `nightly` job
 # (also on a dispatch with the `nightly` input), which reads every job's result and opens, updates or
 # closes the one `ci-nightly` issue (scripts/ci-nightly.ts; writes only on main, a dry run elsewhere).
 # The strict visual gate (scripts/visual-gate.ts) is not here: it needs a real GPU and times out on the
@@ -86,8 +88,11 @@ jobs:
       perf_grep: ${{ steps.plan.outputs.perf_grep }}
       perf_shards: ${{ steps.plan.outputs.perf_shards }}
       perf_total: ${{ steps.plan.outputs.perf_total }}
+      perf_nightly: ${{ steps.plan.outputs.perf_nightly }}
       lighthouse: ${{ steps.plan.outputs.lighthouse }}
       lighthouse_urls: ${{ steps.plan.outputs.lighthouse_urls }}
+      lighthouse_shards: ${{ steps.plan.outputs.lighthouse_shards }}
+      lighthouse_total: ${{ steps.plan.outputs.lighthouse_total }}
       source_run: ${{ steps.plan.outputs.source_run }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -111,6 +116,8 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
+          # The spec maps' base versions (scripts/e2e-plan.ts and perf-plan.ts) for a pull request that changes them.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           COMPLEMENT_PR: ${{ inputs.complement_pr }}
         run: bun scripts/ci-plan.ts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -240,8 +247,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Sized by the plan: 8 for a full run (6 on a pull request), 1 to 8 for the affected specs of a pull
-        # request, at most 10 minus its perf shards.
+        # Sized by the plan: 6 for a full run, 1 to 8 for the affected specs of a pull request or a complement
+        # run, at most 10 minus its perf shards.
         shard: ${{ fromJSON(needs.changes.outputs.e2e_shards) }}
     steps:
       - name: Not needed
@@ -324,21 +331,33 @@ jobs:
         # Same duration-balanced split as the e2e shards (perf lane timings in e2e/durations.json), not
         # Playwright's contiguous --shard, which put all four slow full-tier floors into shard 1.
         # PERF_GREP: the affected perf tests of a pull request (scripts/perf-plan.ts); empty runs the lane.
+        # NIGHTLY: the nightly-only L1 perf poses (`@nightly`) run on the nightly schedule, a dispatch with the
+        # `nightly` input and a pull request that changes the Lobby or the office (`perf_nightly`); the look check
+        # (`@look`) and the timeline (`@timeline`, perf-nightly.yml) never run here.
         if: needs.changes.outputs.perf != 'false'
         env:
           PERF_GREP: ${{ needs.changes.outputs.perf_grep }}
           SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true || needs.changes.outputs.perf_nightly == 'true' }}
         run: |
-          if [ -n "$PERF_GREP" ]; then
-            bun run e2e:perf:shard "$SHARD" --grep "$PERF_GREP"
-          else
-            bun run e2e:perf:shard "$SHARD"
-          fi
+          skip="@nightly|@look|@timeline"
+          if [ "$NIGHTLY" = "true" ]; then skip="@look|@timeline"; fi
+          args=("$SHARD" --grep-invert "$skip")
+          if [ -n "$PERF_GREP" ]; then args+=(--grep "$PERF_GREP"); fi
+          PERF=1 bun scripts/e2e-shard.ts "${args[@]}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && needs.changes.outputs.perf != 'false' }}
         with:
           name: perf-report-${{ matrix.shard }}
           path: perf-report/
+          retention-days: 3
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # The aggregate job lists the perf tests that passed only on retry, like the e2e ones.
+        if: ${{ !cancelled() && needs.changes.outputs.perf != 'false' }}
+        with:
+          name: perf-blob-report-${{ matrix.shard }}
+          path: blob-report/
           retention-days: 3
           if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -353,7 +372,7 @@ jobs:
     # checks keep working.
     name: Build, CV and e2e
     runs-on: ubuntu-latest
-    needs: [changes, check, secrets, site, e2e, lighthouse, perf]
+    needs: [changes, check, secrets, site, e2e, lighthouse, lighthouse-report, perf]
     if: ${{ !cancelled() }}
     permissions:
       contents: read
@@ -397,6 +416,29 @@ jobs:
         # e2e-results.json (no shard ran) it prints a notice and passes.
         if: ${{ !cancelled() }}
         run: bun scripts/flaky-report.ts e2e-results.json --lane "E2E"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.changes.outputs.perf != 'false'
+        with:
+          pattern: perf-blob-report-*
+          path: perf-blob-reports
+          merge-multiple: true
+      - name: Merge perf reports
+        # The perf shards' blob reports (testDir e2e/perf), merged on their own into JSON for the flaky summary.
+        if: needs.changes.outputs.perf != 'false'
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: perf-results.json
+        run: |
+          if compgen -G "perf-blob-reports/*.zip" > /dev/null; then
+            version=$(grep -oE '"@playwright/test@[0-9][^"]*"' bun.lock | head -n1 | tr -d '"' | sed 's/.*@//')
+            if [ -z "$version" ]; then echo "::error::No @playwright/test version in bun.lock."; exit 1; fi
+            bunx "playwright@$version" merge-reports --reporter json ./perf-blob-reports
+          else
+            echo "::notice::No perf blob reports to merge."
+          fi
+      - name: Flaky perf tests (job summary)
+        # A slow perf test that passes only on its retry adds its whole time again to the shard: list it like an e2e one.
+        if: ${{ !cancelled() && needs.changes.outputs.perf != 'false' }}
+        run: bun scripts/flaky-report.ts perf-results.json --lane "3D perf"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
@@ -460,7 +502,7 @@ jobs:
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "changes, check, secrets, site, e2e, lighthouse, perf: $RESULTS"
+          echo "changes, check, secrets, site, e2e, lighthouse, lighthouse-report, perf: $RESULTS"
           for r in $RESULTS; do
             if [ "$r" != "success" ]; then
               echo "::error::A required job did not succeed ($RESULTS)."
@@ -470,16 +512,17 @@ jobs:
 
   lighthouse:
     # Blocking: the error-level budgets in lighthouserc.json (LCP, CLS, TBT as the median of 3 runs;
-    # font, document, CSS and JS transfer bytes) fail this job and, through the aggregate job, the
-    # required check.
-    name: Lighthouse CI
+    # font, document, CSS and JS transfer bytes) fail this shard and, through `Lighthouse CI` and the
+    # aggregate job, the required checks. The measured URLs split over 2 shards from 4 URLs (owner decision
+    # 2026-11-01), each on its own runner, so no parallel Chrome skews a timing.
+    name: Lighthouse shard ${{ matrix.shard }}/${{ needs.changes.outputs.lighthouse_total }}
     runs-on: ubuntu-latest
-    # No job-level `if:` (smart CI): the steps skip and "Not needed" passes the required check.
+    # No job-level `if:` (smart CI): the steps skip and "Not needed" passes.
     needs: [site, changes]
-    permissions:
-      contents: read
-      # Downloads the last green main run's Lighthouse reports for the per-chunk diff.
-      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.changes.outputs.lighthouse_shards) }}
     steps:
       - name: Not needed
         if: needs.changes.outputs.lighthouse == 'false'
@@ -503,21 +546,27 @@ jobs:
         if: needs.changes.outputs.lighthouse != 'false'
         with:
           node-version-file: .nvmrc
-      - name: Run Lighthouse CI
+      - name: Run Lighthouse CI (shard ${{ matrix.shard }}/${{ needs.changes.outputs.lighthouse_total }})
         # Uses the preinstalled Google Chrome and lighthouserc.json. LHCI_URLS: the affected URLs of a pull
-        # request (warm-up first, scripts/ci-plan.ts); empty runs every URL in lighthouserc.json.
-        # The warm-up URL (never asserted) runs once instead of numberOfRuns times: one server serves a
+        # request (warm-up first, scripts/ci-plan.ts); empty runs every URL in lighthouserc.json. This shard
+        # takes every TOTAL-th measured URL from SHARD.
+        # The warm-up URL (never asserted) runs once per shard instead of numberOfRuns times: one server serves a
         # 1-run `collect` of the warm-up, then `autorun` of the measured URLs (its collect clears the
         # warm-up result; the medians of 3 runs and the assertions are unchanged). Local runs keep
         # lighthouserc.json as is.
         if: needs.changes.outputs.lighthouse != 'false'
         env:
           LHCI_URLS: ${{ needs.changes.outputs.lighthouse_urls }}
+          SHARD: ${{ matrix.shard }}
+          TOTAL: ${{ needs.changes.outputs.lighthouse_total }}
         run: |
           urls=${LHCI_URLS:-$(jq -c '.ci.collect.url' lighthouserc.json)}
           warmup=$(jq -r '[.ci.collect.url[] | select(contains("lhci-warmup"))][0] // empty' lighthouserc.json)
-          jq --argjson urls "$urls" --arg warmup "$warmup" \
-            '.ci.collect.url = ($urls - [$warmup]) | del(.ci.collect.startServerCommand, .ci.collect.startServerReadyPattern, .ci.collect.startServerReadyTimeout)' \
+          mine=$(jq -cn --argjson urls "$urls" --arg warmup "$warmup" --argjson shard "$SHARD" --argjson total "$TOTAL" \
+            '$urls - [$warmup] | to_entries | map(select(.key % $total == $shard - 1) | .value)')
+          echo "Lighthouse shard $SHARD/$TOTAL: $mine"
+          jq --argjson urls "$mine" \
+            '.ci.collect.url = $urls | del(.ci.collect.startServerCommand, .ci.collect.startServerReadyPattern, .ci.collect.startServerReadyTimeout)' \
             lighthouserc.json > lighthouserc.ci.json
           bun scripts/serve-static.ts --port 4320 --dir out &
           server=$!
@@ -528,6 +577,42 @@ jobs:
             bunx @lhci/cli@0.15.1 collect --config=lighthouserc.warmup.json
           fi
           bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.ci.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ always() && needs.changes.outputs.lighthouse != 'false' }}
+        with:
+          name: lighthouse-shard-${{ matrix.shard }}
+          path: .lighthouseci/
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: ignore
+
+  lighthouse-report:
+    # The required check `Lighthouse CI`: it fails unless every Lighthouse shard passed, and it merges the shards'
+    # reports into the run's `lighthouse-reports` (the next pull request's baseline when on main) with the Page
+    # View JS per chunk against main. It always runs, so the required check reports on every run.
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    needs: [changes, lighthouse]
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+      # Downloads the last green main run's Lighthouse reports for the per-chunk diff.
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+      # No install: scripts/perf-summary.ts imports only node builtins and dependency-free files.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        # One folder per shard (lighthouse-shard-n/): the reports keep their names, the summaries read them recursively.
+        if: needs.changes.outputs.lighthouse != 'false'
+        with:
+          pattern: lighthouse-shard-*
+          path: .lighthouseci
       - name: The PR run's reports (complement run)
         # A complement run measured only the URLs the PR run did not: add the PR run's reports, so main's
         # lighthouse-reports stay a full baseline for the next pull request (cp -n keeps this run's files).
@@ -539,7 +624,7 @@ jobs:
         run: |
           mkdir -p .lighthouseci
           if gh run download "$RUN" --repo "$REPO" --name lighthouse-reports --dir source-lhci; then
-            find source-lhci -maxdepth 1 -name 'lhr-*' -exec cp -n {} .lighthouseci/ \;
+            find source-lhci -name 'lhr-*' -exec cp -n {} .lighthouseci/ \;
             echo "Merged the Lighthouse reports of CI run $RUN."
           else
             echo "::notice::CI run $RUN has no lighthouse-reports artifact; the baseline covers only this run's URLs."
@@ -560,13 +645,22 @@ jobs:
           path: .lighthouseci/
           include-hidden-files: true
           retention-days: 14
+      - name: Require every Lighthouse shard
+        env:
+          RESULT: ${{ needs.lighthouse.result }}
+        run: |
+          echo "Lighthouse shards: $RESULT"
+          if [ "$RESULT" != "success" ]; then
+            echo "::error::A Lighthouse shard did not succeed ($RESULT)."
+            exit 1
+          fi
 
   nightly:
     # Nightly only: one `ci-nightly` issue opened on a failing night, updated while it keeps failing and
     # closed by the next green nightly (scripts/ci-nightly.ts). APPLY is true only on main; a dispatch
     # with `nightly` on another branch is a dry run that prints the action.
     name: Nightly report
-    needs: [changes, check, secrets, site, e2e, perf, lighthouse, build]
+    needs: [changes, check, secrets, site, e2e, perf, lighthouse, lighthouse-report, build]
     if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.nightly) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -591,61 +685,3 @@ jobs:
           SHA: ${{ github.sha }}
           APPLY: ${{ github.ref == 'refs/heads/main' }}
         run: bun scripts/ci-nightly.ts
-
-  preview:
-    name: Cloudflare Pages preview
-    runs-on: ubuntu-latest
-    needs: site
-    # Preview only, and opt-in: set the repository variable CF_PREVIEWS=true to turn it on. The
-    # CLOUDFLARE_API_TOKEN secret exists for deploy.yml, so the variable keeps previews off by default.
-    # Once the Cloudflare secrets live only in the main-only `production` environment (S3), PR jobs
-    # cannot read them: previews then need their own preview-only token (Pages Edit on the preview
-    # project) as a repository secret.
-    # Production deploys run from .github/workflows/deploy.yml.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.CF_PREVIEWS == 'true'
-    permissions:
-      contents: read
-      deployments: write
-      pull-requests: write
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # Optional repository variable; defaults to the dedicated preview project.
-      CF_PAGES_PROJECT: ${{ vars.CF_PREVIEW_PROJECT || 'shinyq-hq' }}
-    steps:
-      - name: Check Cloudflare secrets
-        id: secrets
-        run: |
-          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping the preview deploy."
-          fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.secrets.outputs.enabled == 'true'
-        with:
-          persist-credentials: false
-      # wrangler from the lockfile (devDependency, exact version; S4).
-      - uses: ./.github/actions/setup
-        if: steps.secrets.outputs.enabled == 'true'
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: steps.secrets.outputs.enabled == 'true'
-        with:
-          name: site
-          path: out
-      - name: Ensure the preview project exists
-        if: steps.secrets.outputs.enabled == 'true'
-        # Production branch is a branch we never push, so every deploy stays a preview.
-        run: bunx wrangler pages project create "$CF_PAGES_PROJECT" --production-branch=production-cutover-phase-6 || true
-      - name: Deploy preview
-        id: deploy
-        if: steps.secrets.outputs.enabled == 'true'
-        run: |
-          BRANCH="pr-${{ github.event.pull_request.number }}"
-          bunx wrangler pages deploy out --project-name="$CF_PAGES_PROJECT" --branch="$BRANCH" --commit-dirty=true | tee deploy.log
-          URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-      - name: Summary
-        if: steps.secrets.outputs.enabled == 'true'
-        run: echo "Preview deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

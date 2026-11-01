@@ -62,7 +62,9 @@ describe("smart CI (ci.yml)", () => {
     expect(job("e2e")).toContain("E2E_FILES: ${{ needs.changes.outputs.e2e_files }}");
     expect(job("perf")).toContain("PERF_GREP: ${{ needs.changes.outputs.perf_grep }}");
     expect(job("lighthouse")).toContain("LHCI_URLS: ${{ needs.changes.outputs.lighthouse_urls }}");
-    for (const out of ["e2e_shards", "e2e_total", "perf_grep", "perf_shards", "perf_total", "lighthouse_urls"]) {
+    expect(job("lighthouse")).toContain("shard: ${{ fromJSON(needs.changes.outputs.lighthouse_shards) }}");
+    expect(job("changes")).toContain("BASE_SHA: ${{ github.event.pull_request.base.sha }}");
+    for (const out of ["e2e_shards", "e2e_total", "perf_grep", "perf_shards", "perf_total", "perf_nightly", "lighthouse_urls", "lighthouse_shards", "lighthouse_total"]) {
       expect(job("changes")).toContain(`${out}: \${{ steps.plan.outputs.${out} }}`);
     }
     // The planner follows imports into content JSON and reads e2e/durations.json and the smoke test lines.
@@ -86,8 +88,8 @@ describe("smart CI (ci.yml)", () => {
     expect(job("changes")).toContain("SHA: ${{ github.sha }}");
     expect(job("changes")).toContain("COMPLEMENT_PR: ${{ inputs.complement_pr }}");
     expect(job("changes")).toMatch(/name: ci-plan\n\s+path: ci-plan\.json/);
-    expect(job("lighthouse")).toContain("--name lighthouse-reports --dir source-lhci");
-    expect(job("lighthouse")).toContain("if: ${{ always() && (needs.changes.outputs.lighthouse != 'false' || needs.changes.outputs.source_run != '') }}");
+    expect(job("lighthouse-report")).toContain("--name lighthouse-reports --dir source-lhci");
+    expect(job("lighthouse-report")).toContain("if: ${{ always() && (needs.changes.outputs.lighthouse != 'false' || needs.changes.outputs.source_run != '') }}");
     expect(job("build")).toContain("--name perf-report --dir perf-report");
     expect(job("build")).toContain("complement of CI run $SOURCE_RUN");
   });
@@ -102,7 +104,14 @@ describe("smart CI (ci.yml)", () => {
   });
 
   it("requires every job in the aggregate check, so no shard needs to be a required check", () => {
-    expect(job("build")).toContain("needs: [changes, check, secrets, site, e2e, lighthouse, perf]");
+    expect(job("build")).toContain("needs: [changes, check, secrets, site, e2e, lighthouse, lighthouse-report, perf]");
+    // `Lighthouse CI` (a required check) always reports and fails unless every Lighthouse shard passed.
+    expect(job("lighthouse-report")).toContain("name: Lighthouse CI");
+    expect(job("lighthouse-report")).toContain("needs: [changes, lighthouse]");
+    expect(job("lighthouse-report")).toContain("if: ${{ !cancelled() }}");
+    expect(job("lighthouse-report")).toContain("RESULT: ${{ needs.lighthouse.result }}");
+    expect(job("lighthouse-report")).toContain('if [ "$RESULT" != "success" ]; then');
+    expect(job("lighthouse-report")).toContain("name: lighthouse-reports");
     expect(job("build")).toContain("name: Require every job");
     expect(job("build")).toContain("RESULTS: ${{ join(needs.*.result, ' ') }}");
   });
@@ -129,7 +138,10 @@ describe("smart CI (ci.yml)", () => {
     expect(lh).toContain(".ci.collect.url = [$warmup] | .ci.collect.numberOfRuns = 1");
     expect(lh).toContain("bunx @lhci/cli@0.15.1 collect --config=lighthouserc.warmup.json");
     expect(lh).toContain("bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.ci.json");
-    expect(lh).toContain(".ci.collect.url = ($urls - [$warmup])");
+    // Each shard measures every TOTAL-th URL from SHARD, the warm-up never among them.
+    expect(lh).toContain("'$urls - [$warmup] | to_entries | map(select(.key % $total == $shard - 1) | .value)'");
+    expect(lh).toContain(".ci.collect.url = $urls");
+    expect(lh).toContain("name: lighthouse-shard-${{ matrix.shard }}");
     expect(lh).toContain("bun scripts/serve-static.ts --port 4320 --dir out &");
   });
 
@@ -137,7 +149,7 @@ describe("smart CI (ci.yml)", () => {
     expect(ci).toContain('- cron: "15 20 * * *"');
     expect(job("visual")).toBe("");
     expect(ci).not.toContain("visual_base");
-    expect(job("nightly")).toContain("needs: [changes, check, secrets, site, e2e, perf, lighthouse, build]");
+    expect(job("nightly")).toContain("needs: [changes, check, secrets, site, e2e, perf, lighthouse, lighthouse-report, build]");
     expect(job("nightly")).toContain("if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.nightly) }}");
     expect(job("nightly")).toContain("NEEDS: ${{ toJSON(needs) }}");
     expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
@@ -149,6 +161,26 @@ describe("smart CI (ci.yml)", () => {
     expect(job("e2e")).toContain("skip=(--grep-invert @nightly)");
     expect(job("e2e")).toContain('if [ "$NIGHTLY" = "true" ]; then skip=(); fi');
     expect(job("e2e")).toContain('bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"');
+  });
+
+  it("runs the nightly-only perf poses on the nightly, the nightly input or a Lobby or office pull request, never the look check or the timeline", () => {
+    expect(job("perf")).toContain("NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true || needs.changes.outputs.perf_nightly == 'true' }}");
+    expect(job("perf")).toContain('skip="@nightly|@look|@timeline"');
+    expect(job("perf")).toContain('if [ "$NIGHTLY" = "true" ]; then skip="@look|@timeline"; fi');
+    expect(job("perf")).toContain('PERF=1 bun scripts/e2e-shard.ts "${args[@]}"');
+  });
+
+  it("lists the perf tests that passed only on retry, like the e2e ones", () => {
+    expect(job("perf")).toContain("name: perf-blob-report-${{ matrix.shard }}");
+    expect(job("build")).toContain("pattern: perf-blob-report-*");
+    expect(job("build")).toContain("PLAYWRIGHT_JSON_OUTPUT_NAME: perf-results.json");
+    expect(job("build")).toContain('bunx "playwright@$version" merge-reports --reporter json ./perf-blob-reports');
+    expect(job("build")).toContain('run: bun scripts/flaky-report.ts perf-results.json --lane "3D perf"');
+  });
+
+  it("has no preview job (the deploy token lives only in the production environment)", () => {
+    expect(job("preview")).toBe("");
+    expect(ci).not.toContain("CF_PREVIEWS");
   });
 });
 
@@ -321,7 +353,7 @@ describe("pinned Node (security release 2026-10-21)", () => {
   const nvmrc = read(path.join(root, ".nvmrc")).trim();
   const jobsOf = (text: string) => (text.split(/\njobs:\n/)[1] ?? "").split(/\n  (?=[a-z][\w-]*:\n)/);
   // Steps that run a node-shebang bin (next, playwright, wrangler, lhci) or the repo's install and build.
-  const usesNode = /wrangler|lhci|playwright|bun run |bun install|\.github\/actions\/setup\b/;
+  const usesNode = /wrangler|@lhci\/cli|playwright|bun run |bun install|\.github\/actions\/setup\b/;
   const setupNode = /actions\/setup-node@[0-9a-f]{40} # v\d[^\n]*\n(\s+if:[^\n]*\n)?\s+with:\n\s+node-version-file: \.nvmrc/;
 
   it("pins one exact Node version in .nvmrc, .node-version and package.json engines", () => {
@@ -357,5 +389,20 @@ describe("weekly live facts (refresh-facts.yml)", () => {
     expect(text).toContain('gh pr edit "$NUMBER" --add-reviewer "$OWNER"');
     expect(text).toContain('echo "merged=false" >> "$GITHUB_OUTPUT"');
     expect(text).toMatch(/- name: Deploy production\n(?:\s+#.*\n)*\s+if: .*steps\.merge\.outputs\.merged == 'true'/);
+  });
+});
+
+describe("screenshots nightly (screenshots.yml)", () => {
+  const text = read(path.join(dir, "screenshots.yml"));
+  const nightly = text.split(/\n  (?=[a-z][\w-]*:\n)/).find((block) => block.startsWith("nightly:")) ?? "";
+
+  it("reports a red night in one screenshots-nightly issue, only on the schedule and writing only on main", () => {
+    expect(nightly).toContain("needs: [gate, site, capture, collect]");
+    expect(nightly).toContain("if: ${{ !cancelled() && github.event_name == 'schedule' }}");
+    expect(nightly).toContain("issues: write");
+    expect(nightly).toContain("NIGHTLY_KIND: screenshots");
+    expect(nightly).toContain("NEEDS: ${{ toJSON(needs) }}");
+    expect(nightly).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
+    expect(nightly).toContain("run: bun scripts/ci-nightly.ts");
   });
 });
