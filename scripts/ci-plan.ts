@@ -28,7 +28,7 @@ export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "toolin
 
 /** First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. */
 const CLASSES: [RegExp, ChangeClass][] = [
-  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^patches\/|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts|atlas)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
