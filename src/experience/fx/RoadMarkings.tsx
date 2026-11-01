@@ -142,6 +142,8 @@ export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = 
       mesh.setMatrixAt(i, d.matrix);
     });
     mesh.instanceMatrix.needsUpdate = true;
+    // The chevrons never move (the shader only applies instanceMatrix): three culls them by the union of their bounds.
+    mesh.computeBoundingSphere();
   };
 
   return (
@@ -158,7 +160,7 @@ export function RoadMarkings({ network, color, tier, reducedMotion, stubColor = 
         <lineBasicMaterial color={edgeColor} transparent opacity={full ? 0.75 : 0.4} depthWrite={false} toneMapped={false} blending={full ? AdditiveBlending : NormalBlending} />
       </lineSegments>
       {marks.length > 0 && (
-        <instancedMesh key={marks.length} ref={placeChevrons} args={[chevron, chevronMaterial, marks.length]} raycast={() => null} frustumCulled={false} />
+        <instancedMesh key={marks.length} ref={placeChevrons} args={[chevron, chevronMaterial, marks.length]} raycast={() => null} />
       )}
     </group>
   );

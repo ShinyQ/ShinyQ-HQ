@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, Float32BufferAttribute, type ShaderMaterial } from "three";
+import { BoxGeometry, BufferGeometry, Float32BufferAttribute, PlaneGeometry, type ShaderMaterial } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { createGlassMaterial } from "./materials";
 
@@ -51,6 +51,23 @@ export function rimGeometry(w: number, h: number, d: number, t: number): BufferG
   for (const x of [-w / 2, w / 2]) for (const z of [-d / 2, d / 2]) parts.push(new BoxGeometry(t, h, t).translate(x, 0, z));
   const merged = mergeGeometries(parts, false)!;
   parts.forEach((p) => p.dispose());
+  return merged;
+}
+
+export interface GridRect {
+  w: number;
+  d: number;
+  center: [number, number];
+}
+
+/**
+ * One plane per floor rect, merged into one geometry for a mesh turned flat (rotation x -pi/2): a plane lies in
+ * the mesh's xy until then, so a rect centred at (x, z) goes to (x, -z).
+ */
+export function gridPlanesGeometry(rects: readonly GridRect[]): BufferGeometry {
+  const planes = rects.map((r) => new PlaneGeometry(r.w, r.d).translate(r.center[0], -r.center[1], 0));
+  const merged = mergeGeometries(planes)!;
+  planes.forEach((p) => p.dispose());
   return merged;
 }
 
