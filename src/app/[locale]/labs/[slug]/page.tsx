@@ -16,9 +16,9 @@ import { AskAboutButton } from "@/components/page/AskAboutButton";
 import { CaseToc } from "@/components/page/CaseToc";
 import { ClosingCta } from "@/components/page/ClosingCta";
 import { PodCodeResearch } from "@/components/page/PodCodeResearch";
-import { DecisionList, Lesson } from "@/components/page/Story";
+import { DecisionList, EngineeringList, Lesson } from "@/components/page/Story";
 import { CrumbLink } from "@/components/page/Layout";
-import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
+import { getContent, getLibrary, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
 import { adjacent, clientLabel, headlineResults, podLiveLink } from "@/content/selectors";
@@ -61,8 +61,11 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   // The full results chapter only when it adds something to the strip: more results, or how they were measured.
   const detail = pod.results.length > headline.length || pod.results.some((r) => r.context);
   const story = pod.story;
+  const engineering = pod.engineering;
+  const postTitles = engineering ? Object.fromEntries(getLibrary().posts.map((p) => [p.slug, p.title])) : {};
   const tail = [
     ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
+    ...(engineering ? [{ id: "engineering", label: t("engineering.title") }] : []),
     ...(images.length > 0 ? [{ id: "gallery", label: tg("title") }] : []),
     ...(codeResearch ? [{ id: "code", label: t("codeResearch") }] : []),
     { id: "stack", label: tc("stack") },
@@ -167,6 +170,11 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             {pod.architecture && (
               <Chapter id="architecture" title={t("architecture")}>
                 <ArchitectureDiagram architecture={pod.architecture} locale={locale} />
+              </Chapter>
+            )}
+            {engineering && (
+              <Chapter id="engineering" title={t("engineering.title")}>
+                <EngineeringList topics={engineering} locale={locale} labels={{ limits: t("engineering.limits"), post: t("engineering.post") }} posts={postTitles} />
               </Chapter>
             )}
             {images.length > 0 && (

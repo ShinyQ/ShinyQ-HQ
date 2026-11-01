@@ -264,6 +264,11 @@
     "decisions": "Role and key decisions",
     "why": "Why",
     "lesson": "Lesson",
+    "engineering": {
+      "title": "Engineering detail",
+      "limits": "Known limits",
+      "post": "In depth"
+    },
     "approach": "Contribution",
     "architecture": "Architecture",
     "results": "Results",

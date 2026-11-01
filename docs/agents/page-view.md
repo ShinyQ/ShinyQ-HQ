@@ -107,6 +107,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - The ids `problem` and `approach` stay, so 3D drawer tabs, missions and old links keep working; only the labels change (`labs.situation`, `labs.decisions`, `labs.results`, `labs.lesson`). The strip never carries `#results` in story mode.
   - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
   - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
+- **Engineering detail** (owner decision 2026-11-02): a pod with `engineering` gets an `#engineering` chapter right after Architecture (story or not), listed in the TOC. `EngineeringList` (`src/components/page/Story.tsx`) numbers the topics like `DecisionList`: an `h3` title, the summary, a bulleted list of points, "Known limits" and an "In depth" link to the related post. Existing classes only (no CSS growth); its labels live in `labs.engineering`, a server-only sub-path (`SERVER_PATHS`), so they never ride in a page's client messages. The voice AI case study grew about 5.6 KB gzip per locale (EN 42,954 to 48,513 B, ID 43,880 to 49,641 B, cap 83,968 B). Test: `e2e/pageview.spec.ts` ("Engineering detail chapter").
 - After "More {wing} projects" the page ends with the [closing section](#closing-section), plus "Ask Rover about this project".
 
 ### Closing section
