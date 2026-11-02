@@ -145,12 +145,13 @@ export function AskDock({ locale }: { locale: Locale }) {
               aria-haspopup="dialog"
               aria-label={t("launcherLabel")}
               data-testid="ask-launcher"
-              className="glass glass-solid pointer-events-auto inline-flex min-h-12 shrink-0 items-center gap-2.5 rounded-full border-cyan/40 pr-5 pl-4 font-semibold text-ink shadow-[0_10px_28px_-10px_rgb(34_211_238/0.55)] transition hover:border-cyan/70 hover:text-cyan focus-visible:outline-offset-4 sm:min-h-14 sm:pr-6 sm:text-[17px]"
+              className="pv-ask glass glass-solid pointer-events-auto inline-flex min-h-12 shrink-0 items-center gap-2.5 rounded-full border-cyan/40 pr-5 pl-4 font-semibold text-ink shadow-[0_10px_28px_-10px_rgb(34_211_238/0.55)] transition hover:border-cyan/70 hover:text-cyan focus-visible:outline-offset-4 sm:min-h-14 sm:pr-6 sm:text-[17px]"
             >
               <span className="text-cyan">
                 <SparkIcon className="size-5" />
               </span>
-              {t("launcher")}
+              {/* Hidden while reading down on phones and tablets (pageview.css); the button keeps its aria-label. */}
+              <span className="pv-ask-label">{t("launcher")}</span>
             </button>
           )}
           {teaser && enabled && !open && (
