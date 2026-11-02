@@ -1,7 +1,7 @@
 # Classic site: blog reading revamp
 
 - Date: 2026-11-02
-- PR: [#392](https://github.com/ShinyQ/ShinyQ-HQ/pull/392)
+- PR: [#392](https://github.com/ShinyQ/ShinyQ-HQ/pull/392), [#395](https://github.com/ShinyQ/ShinyQ-HQ/pull/395)
 
 The owner found blog posts hard to enjoy (text that felt wide, the phone navigation taking reading space). Decisions:
 free stylesheet room first with CL-1 (#392: the lazy client UI's utilities moved into a second stylesheet that loads with

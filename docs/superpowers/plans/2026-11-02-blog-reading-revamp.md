@@ -26,4 +26,4 @@ a CSS scroll timeline.
 - [x] **4. Tests and docs**: e2e "reading a post" in `e2e/pageview.spec.ts` (column, contents with and without JS,
   figure step-aside, phone header with zero layout shift, reduced motion); `page-view.md`, `ask.md`, `DESIGN.md`,
   `features.md`, the decision file.
-- [ ] **5. Gates**: `verify:quick`, `e2e:changed`, the strict visual gate, Lighthouse, the bytes gate; CI green.
+- [x] **5. Gates**: `verify:quick`, `e2e:changed`, the strict visual gate, Lighthouse, the bytes gate; CI green.
