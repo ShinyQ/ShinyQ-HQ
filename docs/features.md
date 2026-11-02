@@ -519,7 +519,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Freshness and operations
 
-- `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
+- `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`, including the daily GitHub contribution calendar of the last year), merges after CI and deploys.
 - `ask-eval.yml` runs nightly within a budget: a 21-question smoke set on Workers AI (about 800 of the 10,000 daily neurons), and on a Groq model production never uses a fourth of the golden set, a twenty-eighth of the pills and a sixth of the red team; a 10-question fidelity set checks production's first Groq backup. A question that never reached a model (a used-up quota, a rate limit, an upstream error) counts as not run, not as a wrong answer ([runbook section 9a](ask-runbook.md#9a-eval-neuron-budget-owner-decision-2026-10-19)).
 - `ask-samples.yml` (dispatch only) writes sample answers for a branch on the Groq tier; `ask-pack.yml` (dispatch only) proves the deploy token can publish the KV pack.
 - `content-gap.yml` reports unanswered questions weekly, why the first model failed when it did (quota, a slow first token, an upstream error), and which pack tier served (memory, KV, the pinned version or the fallback).
