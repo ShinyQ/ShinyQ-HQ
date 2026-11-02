@@ -38,16 +38,16 @@ pixel-identical, with no flash and no cascade change.
 
 ## Tasks
 
-- [ ] **1. Split algorithm** (`scripts/client-sheet/split.mjs`): `splitClientSheet(full, classic)` returns the client
+- [x] **1. Split algorithm** (`scripts/client-sheet/split.mjs`): `splitClientSheet(full, classic)` returns the client
   sheet. Unit tests (`tests/unit/client-sheet.test.ts`): client-only rules kept, C rules dropped, order-restoring copies
   (a client `p-[13px]` before a C `sm:p-4`), transitive closure, theme and `@property` diffs, keyframes.
-- [ ] **2. Lazy sources** (`scripts/client-sheet.ts`): the closure walk, the folder compression, the writer; `build`
+- [x] **2. Lazy sources** (`scripts/client-sheet.ts`): the closure walk, the folder compression, the writer; `build`
   and `dev` run it; `.gitignore` the output. Tests: the Classic closure keeps every page, layout and their islands; no
   Classic file is excluded; every entry imports `client-sheet.css` and no Classic file does.
-- [ ] **3. Loader and wiring**: `next.config.ts` rules (Tailwind for every non-module sheet but the client sheet; the
+- [x] **3. Loader and wiring**: `next.config.ts` rules (Tailwind for every non-module sheet but the client sheet; the
   split loader for it), `client-sheet.css`, the seven entry imports, `globals.css` import.
-- [ ] **4. Verify**: `verify:quick`; Classic pages and overlays pixel-identical against `out-main` (desktop, tablet,
+- [x] **4. Verify**: `verify:quick`; Classic pages and overlays pixel-identical against `out-main` (desktop, tablet,
   phone; the palette, Rover menu, Ask chat, CV, paper and cert dialogs opened on a Classic page); the strict visual
   gate; `e2e:changed`; the perf lane bytes gate (JS totals under caps; the client sheet reported as CSS); Lighthouse.
-- [ ] **5. Docs**: `docs/agents/performance.md` and `docs/agents/styling-and-i18n.md` (the two sheets and the rule
+- [x] **5. Docs**: `docs/agents/performance.md` and `docs/agents/styling-and-i18n.md` (the two sheets and the rule
   for new lazy UI), `DESIGN.md` budget line, `docs/agents/folder-layout.md`.
