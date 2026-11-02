@@ -93,6 +93,11 @@ All bindings and vars live in `wrangler.toml`.
 
 - `content/generated/dynamic-facts.json` is written only by `scripts/refresh-facts.ts` (weekly PR that `refresh-facts.yml` merges itself after dispatching CI on it).
 - Numbers, dates, booleans and IDs only, never third-party text (T2); validate with `DynamicFactsSchema`.
+- `github.calendar` is the last year of daily GitHub contributions, fetched in the same GraphQL request as the total:
+  - Shape: `{ start: "YYYY-MM-DD", levels: "0120...", counts: [0,3,12,...] }`, one level digit (GitHub's `contributionLevel`, 0 to 4) and one count per day; the writer keeps `counts` on one line.
+  - The schema requires 358 to 378 days, level 0 exactly on the days without a contribution, and counts that add up to `contributionsLastYear`.
+  - The total and the calendar travel together: a missing or invalid calendar, or a total the drop guard refuses, keeps the previous pair and warns.
+  - Read it through the client-safe helpers in `src/lib/contributions.ts` (`calendarDays`, `calendarWeeks`, `calendarTotal`, `busiestDay`, `longestStreak`, `levelCounts`); never re-derive levels from counts.
 - Stats listed in `DYNAMIC_STATS` (`src/content/load.ts`) take their value from it, so the stats ring, Page View and Ask agree.
 - Read stats through `getStats()`, never `getContent().stats`.
 
