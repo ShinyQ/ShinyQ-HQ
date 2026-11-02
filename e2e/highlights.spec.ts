@@ -265,8 +265,10 @@ test.describe("Highlights Hall", () => {
     await page.keyboard.press("Control+k");
     await expect(page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox")).toBeFocused();
     await page.keyboard.type("highlights");
-    await expect(page.getByRole("option", { name: new RegExp(tour.label.en) }).first()).toBeVisible();
-    await page.keyboard.press("Enter");
+    // The mission's own row (the seven station rooms match "highlights" too, and a shorter title ranks first).
+    const mission = page.getByRole("option", { name: new RegExp(tour.label.en) }).first();
+    await expect(mission).toBeVisible();
+    await mission.click();
     await waitForFloor(page, "L1", 90_000);
     await waitForRoom(page, highlightRoom(STATIONS[0]));
   });
