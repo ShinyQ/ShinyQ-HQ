@@ -36,6 +36,9 @@ const stationNames = {
   about: en.hud.rooms.highlightsAbout,
   projects: en.hud.rooms.highlightsProjects,
   experience: en.hud.rooms.highlightsExperience,
+  wins: en.hud.rooms.highlightsWins,
+  now: en.hud.rooms.highlightsNow,
+  results: en.hud.rooms.highlightsResults,
   contact: en.hud.rooms.highlightsContact,
 };
 const items = highlightsInteractables(HALL_LAYOUT, stationNames);

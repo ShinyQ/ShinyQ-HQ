@@ -143,7 +143,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | `bun run e2e:smoke` / `e2e:full` | Smoke specs / the whole suite |
 | `E2E_PORT=<port> bun run e2e:perf` | Perf lane: 3D bytes, floors, peaks, full-tier memory gate (about 10 to 12 minutes) |
 | `bun run e2e:look` | Local look check of the canvas against a main build |
-| `bun scripts/visual-gate.ts --base HEAD --profile strict` | Look-preserving gate across 3 devices x 8 poses |
+| `bun scripts/visual-gate.ts --base HEAD --profile strict` | Look-preserving gate across 3 devices x 13 poses |
 | `bun run validate:content` | Schema, safety and Title Case check of the dataset |
 | `bun scripts/docs-index.ts` | Print the owner decisions log and the plans table (status, PRs, counts) from the files |
 | `bun run og:stills` | Regenerate the share card floor stills after a large floor change |

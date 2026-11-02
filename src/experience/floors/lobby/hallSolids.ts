@@ -1,7 +1,6 @@
 import { boxBuffers, boxEdgeBuffers, latticeSegments, type Box } from "../roof/solids";
-import { ABOUT, BEACON, contactBeacon, experienceArch, FOUNTAIN, monoliths, type Face } from "./hallGallery";
+import { ABOUT, BEACON, contactBeacon, experienceArch, FOUNTAINS, monoliths, nowArch, winsFace, type Face } from "./hallGallery";
 import { gatePillars, HALL } from "./hallLayout";
-import { PARK, parkArchPosts } from "./parkLayout";
 
 /**
  * Pure buffers for the gallery solids (no three): boxes (turned or not) plus round prisms (the About me
@@ -112,8 +111,8 @@ export interface HallShapes {
 
 const PEDESTAL_SIDES = 28;
 
-/** Every solid of the gallery: gateway arch, Proof Park arch, pedestal, monoliths, experience arch, beacon and card. */
-export function hallShapes(projectCount: number): HallShapes {
+/** Every solid of the gallery: gateway arch, the pedestals, the monoliths, the two lit arches, the beacon and its card. */
+export function hallShapes(projectCount: number, resultCount: number = 3): HallShapes {
   const g = HALL.gate;
   const boxes: Box[] = [];
   const prisms: Prism[] = [];
@@ -121,22 +120,19 @@ export function hallShapes(projectCount: number): HallShapes {
   // Gateway arch: pillars and the lintel the rover drives under.
   for (const p of gatePillars()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: g.h });
   boxes.push({ x: g.x, z: (g.north.minZ + g.south.maxZ) / 2, y: g.h - g.lintel, w: g.depth, d: g.south.maxZ - g.north.minZ, h: g.lintel });
-  // Proof Park arch (parkLayout.ts): its posts and the lintel over the road from the hall plaza into the park.
-  const A = PARK.arch;
-  for (const p of parkArchPosts()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: A.h });
-  boxes.push({ x: (A.west.minX + A.east.maxX) / 2, z: (A.west.minZ + A.west.maxZ) / 2, y: A.h - A.lintel, w: A.east.maxX - A.west.minX, d: A.west.maxZ - A.west.minZ, h: A.lintel });
-  // About me: two-step round pedestal; rims glow, the portrait gets a neon ring.
-  const a = ABOUT.center;
-  prisms.push({ x: a.x, z: a.z, y: 0, h: ABOUT.base.h, r: ABOUT.base.r, sides: PEDESTAL_SIDES });
-  prisms.push({ x: a.x, z: a.z, y: ABOUT.base.h, h: ABOUT.column.h, r: ABOUT.column.r, sides: PEDESTAL_SIDES });
+  // About me and wins: two-step round pedestals; rims glow, the portrait and the placings count get a neon ring.
   const top = ABOUT.base.h + ABOUT.column.h;
-  circles.push({ x: a.x, y: ABOUT.base.h + 0.005, z: a.z, r: ABOUT.base.r, segments: PEDESTAL_SIDES });
-  circles.push({ x: a.x, y: top + 0.005, z: a.z, r: ABOUT.column.r, segments: PEDESTAL_SIDES });
-  // Top projects: the monoliths.
+  for (const a of [ABOUT.center, winsFace().origin]) {
+    prisms.push({ x: a.x, z: a.z, y: 0, h: ABOUT.base.h, r: ABOUT.base.r, sides: PEDESTAL_SIDES });
+    prisms.push({ x: a.x, z: a.z, y: ABOUT.base.h, h: ABOUT.column.h, r: ABOUT.column.r, sides: PEDESTAL_SIDES });
+    circles.push({ x: a.x, y: ABOUT.base.h + 0.005, z: a.z, r: ABOUT.base.r, segments: PEDESTAL_SIDES });
+    circles.push({ x: a.x, y: top + 0.005, z: a.z, r: ABOUT.column.r, segments: PEDESTAL_SIDES });
+  }
+  // Top projects and results: the monoliths.
   for (const m of monoliths(projectCount)) boxes.push(m.box);
-  // Work experience: the lit arch.
-  const arch = experienceArch();
-  boxes.push(...arch.pillars, arch.lintel);
+  for (const m of monoliths(resultCount, "results")) boxes.push(m.box);
+  // Work experience and now: the lit arches.
+  for (const arch of [experienceArch(), nowArch()]) boxes.push(...arch.pillars, arch.lintel);
   // Contact: beacon base, a thin core, crossbars, the head, and the floating card.
   const b = contactBeacon();
   const B = BEACON;
@@ -146,8 +142,8 @@ export function hallShapes(projectCount: number): HallShapes {
   prisms.push({ x: b.mast.x, z: b.mast.z, y: B.mast.top, h: B.head.h, r: B.head.r, sides: 12 });
   circles.push({ x: b.mast.x, y: B.mast.top + B.head.h + 0.005, z: b.mast.z, r: B.head.r, segments: 12 });
   boxes.push(b.card.box);
-  // Light fountain: two floor rings (lines only, the rover drives through it).
-  for (const r of FOUNTAIN.rings) circles.push({ x: FOUNTAIN.x, y: 0.03, z: FOUNTAIN.z, r, segments: 48 });
+  // Light fountains: two floor rings each (lines only, the rover drives through them).
+  for (const f of FOUNTAINS) for (const r of f.rings) circles.push({ x: f.x, y: 0.03, z: f.z, r, segments: 48 });
   return { boxes, prisms, circles };
 }
 
@@ -156,9 +152,29 @@ export function portraitRing(face: Face): Circle {
   return { x: face.origin.x + face.out.x * 0.02, y: ABOUT.disc.y, z: face.origin.z + face.out.z * 0.02, r: ABOUT.disc.r + 0.08, segments: 40, face };
 }
 
-/** Every neon line of the gallery as segment pairs: box edges, prism rims, circles and the beacon lattice. */
-export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = []): Float32Array {
+/**
+ * The shapes of one hall part (by their centre, `partOf`): the hall draws its parts as separate groups, each culled on its
+ * own (`HallView`), so a view that only reaches one part never draws the others' meshes.
+ */
+export function partShapes<K extends string>(shapes: HallShapes, partOf: (x: number, z: number) => K, part: K): HallShapes {
+  const mine = (p: { x: number; z: number }) => partOf(p.x, p.z) === part;
+  return { boxes: shapes.boxes.filter(mine), prisms: shapes.prisms.filter(mine), circles: shapes.circles.filter(mine) };
+}
+
+/** Every neon line of the gallery as segment pairs: box edges, prism rims, circles and (with `lattice`) the beacon lattice. */
+export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = [], lattice: boolean = true): Float32Array {
   const edges = boxEdgeBuffers(shapes.boxes);
+  if (!lattice) {
+    const round = [...shapes.circles, ...extra].flatMap(circleSegments);
+    const out = new Float32Array(edges.length + round.length);
+    out.set(edges, 0);
+    out.set(round, edges.length);
+    return out;
+  }
+  return withLattice(edges, [...shapes.circles, ...extra]);
+}
+
+function withLattice(edges: Float32Array, circles: readonly Circle[]): Float32Array {
   const b = contactBeacon();
   const lattice = latticeSegments(BEACON.mast.top - BEACON.base.h, 0.45, 0.14, 8);
   for (let k = 0; k < lattice.length; k += 3) {
@@ -166,7 +182,7 @@ export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = []
     lattice[k + 1] += BEACON.base.h;
     lattice[k + 2] += b.mast.z;
   }
-  const round = [...shapes.circles, ...extra].flatMap(circleSegments);
+  const round = circles.flatMap(circleSegments);
   const out = new Float32Array(edges.length + lattice.length + round.length);
   out.set(edges, 0);
   out.set(lattice, edges.length);

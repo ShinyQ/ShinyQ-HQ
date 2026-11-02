@@ -1,6 +1,6 @@
 # L1 Proof Park, PR 2: One Rectangle (outline) Implementation Plan
 
-Status: in review
+Status: shipped in #390 (a4038219), 2026-11-02
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

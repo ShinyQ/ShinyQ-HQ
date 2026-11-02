@@ -2,8 +2,9 @@ import type { TallObstacle } from "../../camera/collision";
 import type { SignSpec } from "../../fx/signLayout";
 import type { GpuTier, Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
-import { gatePillars, HALL, stationOf } from "./hallLayout";
+import { gatePillars, HALL, stationOf, type HallStation } from "./hallLayout";
 import { LOBBY_SLAB } from "./slab";
+import type { HighlightStation } from "./stations";
 
 /**
  * Highlights Hall gallery (spectacle round, docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md
@@ -13,8 +14,17 @@ import { LOBBY_SLAB } from "./slab";
  * contact beside a signal beacon. A gateway arch spans the lead road, a light fountain marks the plaza
  * center (light only: the rover drives through it) and fake spotlight cones and glow pools light the
  * stations (no real lights: a light changes the program of every lit material in the tower).
+ * Wins (a pedestal with tier tiles), now (a smaller lit arch) and results (monoliths) reuse those shapes (2026-11-02).
  * Pure: the scenery, the camera collision and the tests read the same numbers.
  */
+
+/** How deep every station's footprint is, from its face to its slab edge (u). */
+const STATION_DEPTH = 3;
+
+/** A point `inset` u in from a station's slab edge, on the middle of its face (`along` u along the face's line). */
+function fromEdge(s: HallStation, inset: number): Vec2 {
+  return { x: s.front.x + s.facing.x * STATION_DEPTH - s.facing.x * inset, z: s.front.z + s.facing.z * STATION_DEPTH - s.facing.z * inset };
+}
 
 /** A vertical face that reads toward `out`: `u` runs along `right` (the reader's right), `y` up. */
 export interface Face {
@@ -68,10 +78,20 @@ export const ABOUT = {
   text: { eyebrow: 6.15, name: 5.55, headline: 5.05, motto: 1.2 },
 } as const;
 
-/** The pedestal's text face: through its center, reading toward the plaza. */
+/** A pedestal station's text face: through the pedestal's center, reading toward the plaza. */
+export function pedestalFace(name: "about" | "wins"): Face {
+  const s = stationOf(name);
+  return faceOf(name === "about" ? ABOUT.center : fromEdge(s, 1.5), { x: -s.facing.x, z: -s.facing.z });
+}
+
+/** The About me pedestal's text face. */
 export function aboutFace(): Face {
-  const s = stationOf("about");
-  return faceOf(ABOUT.center, { x: -s.facing.x, z: -s.facing.z });
+  return pedestalFace("about");
+}
+
+/** The wins pedestal's text face: the About me pedestal's shape on the east edge, its disc a ring around the placings count. */
+export function winsFace(): Face {
+  return pedestalFace("wins");
 }
 
 export interface StatTile {
@@ -81,12 +101,18 @@ export interface StatTile {
   h: number;
   /** Drift phase (radians). */
   phase: number;
+  /** Neon rim color (the About me tiles take the hall's green). */
+  tone?: string;
 }
 
-export function statTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
-  const face = aboutFace();
+export function statTiles(count: number = ABOUT.tiles.u.length, face: Face = aboutFace(), phase = 0): StatTile[] {
   const T = ABOUT.tiles;
-  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: i * 1.7 }));
+  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: phase + i * 1.7 }));
+}
+
+/** The wins tiles (one per placement tier, gold first), on the wins pedestal's arc; their drift starts out of step with About me's. */
+export function winsTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
+  return statTiles(count, winsFace(), 0.9);
 }
 
 // ---------------------------------------------------------------- 02 Top projects: monoliths
@@ -101,11 +127,12 @@ export interface Monolith {
   box: Box;
 }
 
-export function monoliths(count: number = MONOLITH.u.length): Monolith[] {
-  const s = stationOf("projects");
+/** The monoliths of a monolith station (top projects, results), up to three in a shallow arc. */
+export function monoliths(count: number = MONOLITH.u.length, name: "projects" | "results" = "projects"): Monolith[] {
+  const s = stationOf(name);
   const out = { x: -s.facing.x, z: -s.facing.z };
-  // The middle monolith's center line; the arc bends the outer two toward the plaza.
-  const center = faceOf({ x: s.front.x, z: MONOLITH.backZ }, out);
+  // The middle monolith's center line, 0.6 u in from the slab edge; the arc bends the outer two toward the plaza.
+  const center = faceOf(name === "projects" ? { x: s.front.x, z: MONOLITH.backZ } : fromEdge(s, 0.6), out);
   return MONOLITH.u.slice(0, count).map((u) => {
     const mid = arcFace(center, u, MONOLITH.arc);
     const face = faceOf({ x: mid.origin.x + (mid.out.x * MONOLITH.d) / 2, z: mid.origin.z + (mid.out.z * MONOLITH.d) / 2 }, mid.out);
@@ -116,6 +143,9 @@ export function monoliths(count: number = MONOLITH.u.length): Monolith[] {
 // ---------------------------------------------------------------- 03 Work experience: lit arch
 
 export const ARCH = { pillar: { from: 1.8, to: 9 }, depth: 1, h: 6.2, lintel: 1.2 } as const;
+/** The now station's arch: the same shape, smaller, one pillar per current role. */
+export const NOW_ARCH = { pillar: { from: 1.6, to: 6.6 }, depth: 1, h: 5.4, lintel: 1 } as const;
+type ArchShape = typeof ARCH | typeof NOW_ARCH;
 
 export interface ExperienceArch {
   face: Face;
@@ -126,29 +156,38 @@ export interface ExperienceArch {
   opening: { w: number; h: number };
 }
 
-export function experienceArch(): ExperienceArch {
-  const s = stationOf("experience");
+function litArch(name: HighlightStation, A: ArchShape): ExperienceArch {
+  const s = stationOf(name);
   const face = faceOf(s.front, { x: -s.facing.x, z: -s.facing.z });
-  const half = ARCH.depth / 2;
+  const half = A.depth / 2;
   const at = (u: number) => onFace(face, u, 0, -half);
-  const P = ARCH.pillar;
+  const P = A.pillar;
   const width = P.to - P.from;
   const along = Math.abs(face.right.x) > 0.5;
   const box = (u: number, w: number, y: number, h: number): Box => {
     const [x, , z] = at(u);
-    return { x, z, y, w: along ? w : ARCH.depth, d: along ? ARCH.depth : w, h };
+    return { x, z, y, w: along ? w : A.depth, d: along ? A.depth : w, h };
   };
   const mid = (P.from + P.to) / 2;
   return {
     face,
-    pillars: [box(-mid, width, 0, ARCH.h), box(mid, width, 0, ARCH.h)],
-    lintel: box(0, 2 * P.to, ARCH.h, ARCH.lintel),
+    pillars: [box(-mid, width, 0, A.h), box(mid, width, 0, A.h)],
+    lintel: box(0, 2 * P.to, A.h, A.lintel),
     columns: [
       { u: -mid, w: width },
       { u: mid, w: width },
     ],
-    opening: { w: 2 * P.from, h: ARCH.h },
+    opening: { w: 2 * P.from, h: A.h },
   };
+}
+
+export function experienceArch(): ExperienceArch {
+  return litArch("experience", ARCH);
+}
+
+/** The now station's lit arch: the employment role on the left pillar, the freelance one on the right. */
+export function nowArch(): ExperienceArch {
+  return litArch("now", NOW_ARCH);
 }
 
 // ---------------------------------------------------------------- 04 Contact: signal beacon
@@ -163,8 +202,8 @@ export const BEACON = {
     { y: 5.8, w: 1.2 },
     { y: 7.8, w: 0.9 },
   ],
-  /** `z`: the card's center, 2.65 u in from the south slab edge. */
-  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, z: LOBBY_SLAB.halfZ - 2.65 },
+  /** `inset`: the card's center, 2.65 u in from the slab edge behind the station. */
+  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
 } as const;
 
 export interface ContactBeacon {
@@ -183,11 +222,12 @@ export function contactBeacon(): ContactBeacon {
   const [mx] = onFace(face, BEACON.u, 0);
   const C = BEACON.card;
   const [cx] = onFace(face, C.u, 0);
-  const cardFace = faceOf({ x: cx, z: C.z - C.d / 2 }, out);
+  const cz = fromEdge(s, C.inset).z;
+  const cardFace = faceOf({ x: cx, z: cz + (out.z * C.d) / 2 }, out);
   const top = BEACON.mast.top + BEACON.head.h / 2;
   return {
     mast: { x: mx, z },
-    card: { face: cardFace, box: { x: cx, z: C.z, y: C.y, w: C.w, d: C.d, h: C.h } },
+    card: { face: cardFace, box: { x: cx, z: cz, y: C.y, w: C.w, d: C.d, h: C.h } },
     pulses: [
       { x: mx, y: top, z, phase: 0 },
       { x: mx, y: top, z, phase: 1 / 3 },
@@ -222,8 +262,12 @@ export function gateSign(text: string): SignSpec {
   return { text: text.toUpperCase(), x: HALL.gate.x, y: HALL.gate.signY, z: (o.minZ + o.maxZ) / 2, color: HALL.tone.about, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
-/** The light fountain marks the hall plaza center. */
-export const FOUNTAIN = { x: HALL.plaza.x, z: HALL.plaza.z, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;
+/** The light fountain marks the middle of the hall's north half (the plaza's centre before the hall grew south, z 3). */
+export const FOUNTAIN = { x: HALL.plaza.x, z: 3, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;
+/** A second fountain in the middle of the south half, between the office road's end and the east stations. */
+export const FOUNTAIN_SOUTH = { ...FOUNTAIN, z: LOBBY_SLAB.halfZ + 11 } as const;
+/** Both fountains (light and floor rings only: the rover drives through them). */
+export const FOUNTAINS = [FOUNTAIN, FOUNTAIN_SOUTH] as const;
 
 /** Light colors (the station tones, HALL.tone, plus the fountain cyan). */
 const CYAN = "#22d3ee";
@@ -250,7 +294,7 @@ const cone = (x: number, z: number, h: number, r0: number, color: string, alpha:
 const pool = (x: number, z: number, r: number, color: string, alpha: number): LightInstance => ({ kind: "pool", x, y: 0.025, z, h: 0, r0: r, r1: 0, color, alpha, spin: 0, phase: 0 });
 
 /** Every spotlight cone, uplight, fountain beam and glow pool of the hall (one instanced draw call). Lite gets fewer fountain beams. */
-export function hallLights(tier: GpuTier, projectCount: number = 3): LightInstance[] {
+export function hallLights(tier: GpuTier, projectCount: number = 3, resultCount: number = 3): LightInstance[] {
   const T = HALL.tone;
   const out: LightInstance[] = [];
   // About me: spotlight, floor pool and the projector beam from the column up to the portrait.
@@ -277,14 +321,38 @@ export function hallLights(tier: GpuTier, projectCount: number = 3): LightInstan
   const b = contactBeacon();
   const [cx, , cz] = onFace(b.card.face, 0, 0, 0.4);
   out.push(cone(cx, cz, 11, 3.4, T.contact, 0.09), pool(cx, cz, 3.6, T.contact, 0.3), pool(b.mast.x, b.mast.z, 1.6, T.contact, 0.4));
-  // Light fountain: turning beams on a floor ring, a core beam and a pool.
+  // Wins: the About me lighting on its pedestal (a spotlight, a pool and the projector beam up to the ring).
+  const w = winsFace().origin;
+  out.push(cone(w.x, w.z, 12, 3, T.wins, 0.1), pool(w.x - 0.2, w.z, 3.4, T.wins, 0.35));
+  out.push(beam(w.x, w.z, ABOUT.disc.y - ABOUT.disc.r - (ABOUT.base.h + ABOUT.column.h), 0.5, 0.95, T.wins, 0.22, ABOUT.base.h + ABOUT.column.h));
+  // Now: the work experience lighting on the smaller arch.
+  const now = nowArch();
+  const [nx, , nz] = onFace(now.face, 0, 0, 0.6);
+  out.push(cone(nx, nz, 10, 2.2, T.now, 0.09), pool(nx - 0.4, nz, 2.8, T.now, 0.28));
+  for (const c of now.columns) {
+    const [bx, , bz] = onFace(now.face, c.u, 0, 0.3);
+    out.push(beam(bx, bz, 2.6, 0.3, 1.8, T.now, 0.12));
+  }
+  // Results: the top projects lighting on its monoliths.
+  for (const m of monoliths(resultCount, "results")) {
+    const [ux, , uz] = onFace(m.face, 0, 0, 0.4);
+    const [px, , pz] = onFace(m.face, 0, 0, 1.0);
+    out.push(beam(ux, uz, 3.2, 0.25, 1.8, T.results, 0.18), pool(px, pz, 2.6, T.results, 0.3));
+  }
+  const r = stationOf("results");
+  out.push(cone(r.front.x, (r.rect.minZ + r.rect.maxZ) / 2, 12, 5, T.results, 0.07));
+  // Light fountains: turning beams on a floor ring, a core beam and a pool.
   const n = FOUNTAIN.beams[tier === "full" ? "full" : "lite"];
   const tones = [CYAN, T.about, T.projects];
-  for (let i = 0; i < n; i++) {
-    const t = (i / n) * Math.PI * 2;
-    out.push({ kind: "beam", x: FOUNTAIN.x + Math.sin(t) * FOUNTAIN.ring, y: 0, z: FOUNTAIN.z + Math.cos(t) * FOUNTAIN.ring, h: i % 2 ? 4.2 : 6, r0: 0.14, r1: 0.05, color: tones[i % tones.length], alpha: 0.55, spin: 1, phase: i / n });
+  for (const f of FOUNTAINS) {
+    // The stage shader turns spinning beams around one centre (`uCenter`, the north fountain's): the south ring stands still.
+    const spin = f === FOUNTAIN ? 1 : 0;
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * Math.PI * 2;
+      out.push({ kind: "beam", x: f.x + Math.sin(t) * f.ring, y: 0, z: f.z + Math.cos(t) * f.ring, h: i % 2 ? 4.2 : 6, r0: 0.14, r1: 0.05, color: tones[i % tones.length], alpha: 0.55, spin, phase: i / n });
+    }
+    out.push(beam(f.x, f.z, 8, 0.35, 0.15, CYAN, 0.35), pool(f.x, f.z, 3.6, CYAN, 0.35));
   }
-  out.push(beam(FOUNTAIN.x, FOUNTAIN.z, 8, 0.35, 0.15, CYAN, 0.35), pool(FOUNTAIN.x, FOUNTAIN.z, 3.6, CYAN, 0.35));
   // Gateway arch: uplights on the inner faces of both pillars.
   const o = gateOpening();
   out.push(beam(o.x, o.minZ + 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2), beam(o.x, o.maxZ - 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2));
@@ -301,15 +369,18 @@ const rectOfBox = (b: Box): Rect => {
 };
 
 /** Gallery shapes taller than the default camera clearance, for the camera collision (`TALL` in CameraDirector). */
-export function hallTall(projectCount: number = 3): TallObstacle[] {
+export function hallTall(projectCount: number = 3, resultCount: number = 3): TallObstacle[] {
   const g = HALL.gate;
   const arch = experienceArch();
+  const now = nowArch();
   const b = contactBeacon();
   const half = BEACON.base.w / 2;
   return [
     ...gatePillars().map((r) => ({ ...r, h: g.h })),
     ...monoliths(projectCount).map((m) => ({ ...rectOfBox(m.box), h: MONOLITH.h })),
     ...arch.pillars.map((p) => ({ ...rectOfBox(p), h: ARCH.h + ARCH.lintel })),
+    ...now.pillars.map((p) => ({ ...rectOfBox(p), h: NOW_ARCH.h + NOW_ARCH.lintel })),
+    ...monoliths(resultCount, "results").map((m) => ({ ...rectOfBox(m.box), h: MONOLITH.h })),
     { minX: b.mast.x - half, maxX: b.mast.x + half, minZ: b.mast.z - half, maxZ: b.mast.z + half, h: b.top + 0.3 },
     { ...rectOfBox(b.card.box), h: BEACON.card.y + BEACON.card.h },
   ];

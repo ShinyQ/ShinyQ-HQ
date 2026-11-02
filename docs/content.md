@@ -84,6 +84,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - A project whose title does not fit one line on its L3 directory board can set `shortTitle` (`{ en, id }`): at most 32 characters, shorter than the title in both languages, Title Case, no first person. Only the L3 boards use it; every other page, card and drawer keeps `title`.
 - Projects with a gallery come first in every project list (Work, Home, Cmd-K and the L3 wing roads), then hero, featured and listed pods by `order` (`orderPods` in `src/content/selectors.ts`).
 - The home page "Selected work" (and the L1 Highlights Hall projects) shows the pods with `selected: 1`, `2` and `3` in that order. Each needs a gallery and the ranks must be unique; the tier stays free, so a hero can remain a key project on `/labs` without a landing slot.
+- The rest of the Highlights Hall follows the dataset with no extra field (`src/content/highlights.ts`): Wins counts every entry in `awards` by its English placement, Now lists the timeline's jobs and freelance roles with `end: "present"`, and Results shows only case study results with `confidence: "verified"` whose value reads as a before and after (`→` or ` to `). Mark a result verified only once its number is confirmed; it then appears there with a link to its case study.
 
 ## Project galleries and live sites
 

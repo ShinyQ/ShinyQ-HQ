@@ -61,8 +61,9 @@ function CardList({ cards }: { cards: RoomCard[] }) {
         <section key={group.label ?? i} className="space-y-2">
           {group.label && <h3 className="label text-ink-2">{group.label}</h3>}
           <ul className="space-y-2">
-            {group.cards.map((card) => (
-              <li key={card.room}>
+            {group.cards.map((card, k) => (
+              // A case study can hold several results: the room alone is not a unique key.
+              <li key={`${card.room}:${k}`}>
                 <CardButton card={card} action={card.room.startsWith("L3:") ? t("openProject") : t("openRole")} />
                 {/* A link cannot sit inside the card button: the live site (R4-J) gets its own row under it. */}
                 {card.live && <LiveSiteLink href={card.live} label={tc("visitLive")} srHint={tc("external")} className="mt-1 inline-flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-cyan" testId="highlight-live" />}

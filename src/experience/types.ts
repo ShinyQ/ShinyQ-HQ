@@ -261,4 +261,10 @@ export interface EngineData {
 export interface HighlightsData {
   /** The Page View landing's featured projects (`pickFeaturedPods` over site order), each with its 480 px cover thumbnail. */
   projects: { slug: string; title: string; wing: Wing; thumb: string }[];
+  /** The wins station: every placing, the first places, and the count per tier (gold, silver, bronze, honor), from `awards`. */
+  wins: { placings: number; firsts: number; tiers: { tier: "gold" | "silver" | "bronze" | "honor"; count: number }[] };
+  /** The results station: verified before and after results from the case studies, in site order. */
+  results: { slug: string; project: string; value: string; label: string }[];
+  /** The now station: the roles still running, employment first (timeline text, the period formatted). */
+  now: { slug: string; org: string; role: string; type: "job" | "freelance"; period: string }[];
 }
