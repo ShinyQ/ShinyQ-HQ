@@ -244,6 +244,10 @@ jobs:
     # No job-level `if:` (smart CI): a skipped matrix job reports an unexpanded check name, so the
     # steps skip instead and "Not needed" passes.
     needs: [site, changes]
+    env:
+      # The site job bakes vars.SITE_URL into canonical and share URLs; specs that import SITE_URL
+      # (e2e/view-links.spec.ts) must expect the same origin. Empty (unset) falls back to the default.
+      NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
     strategy:
       fail-fast: false
       matrix:
