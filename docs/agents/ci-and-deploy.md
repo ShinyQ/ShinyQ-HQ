@@ -119,7 +119,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 | `e2e` | other `e2e/` files (specs, helpers) | specs: mapped (a changed spec runs itself); helpers: every shard | no | no |
 | `content` | `content/`, `public/media/`, `public/papers/`, `public/cv/` | none | no | affected URLs (`site-content.json` and `content/generated/`: all; posts: the blog URL) |
 | `functions` | `functions/`, `workers/`, `wrangler.toml` | mapped specs | no | no |
-| `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts` | mapped specs plus the PR smoke set | no | all URLs |
+| `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts`, `scripts/client-sheet/` | mapped specs plus the PR smoke set | no | all URLs |
 | `tooling` | other `scripts/`, `tools/` | mapped specs | no | no |
 | `ui` | other `src/`, `messages/`, other `public/` | mapped specs plus the PR smoke set | affected perf tests, only for `src/` files the 3D roots import: the keys of the 3D files that import them | affected URLs |
 | `docs` | `docs/`, other `.github/` (the other workflows: `ci.yml` never runs them, `tests/unit/workflows.test.ts` checks them), `*.md`, `LICENSE`, root dotfiles | none | no | no |
