@@ -10834,6 +10834,31 @@
       ],
       "posts": [
         {
+          "slug": "ten-very-hard-benchmark-tasks-in-ten-days",
+          "title": {
+            "en": "Ten Very Hard Benchmark Tasks in Ten Days",
+            "id": "10 Task Benchmark Sangat Sulit dalam 10 Hari"
+          },
+          "date": "2026-11-02",
+          "track": "engineering-with-ai-agents",
+          "tags": [
+            "ai-benchmarks",
+            "llm-evaluation",
+            "ai-coding-agents",
+            "multi-agent-workflow",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "First AI benchmark job: ten Indonesian tasks in ten days, half merged, most rated very hard, the top band. Over 300 ideas killed. The method, not the tasks.",
+            "id": "Pekerjaan benchmark AI pertama: sepuluh task bahasa Indonesia dalam sepuluh hari, separuh merged, mayoritas sangat sulit. Lebih dari 300 ide gugur."
+          },
+          "icon": "flask-conical"
+        },
+        {
           "slug": "aria-acs-to-livekit",
           "title": {
             "en": "Moving ARIA From ACS to LiveKit",

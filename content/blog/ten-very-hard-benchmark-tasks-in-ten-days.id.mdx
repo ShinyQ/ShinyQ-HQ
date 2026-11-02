@@ -1,0 +1,163 @@
+---
+title: "10 Task Benchmark Sangat Sulit dalam 10 Hari"
+date: "2026-11-02"
+excerpt: "Pekerjaan benchmark AI pertama: sepuluh task bahasa Indonesia dalam sepuluh hari, separuh merged, mayoritas sangat sulit. Lebih dari 300 ide gugur."
+tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workflow", "case-study"]
+readingTime: "12 min"
+---
+
+Pada 24 Oktober 2026, saya mulai bekerja freelance sebagai AI benchmark engineer, padahal sebelumnya saya belum pernah membuat satu pun task benchmark. Dalam sepuluh hari pertama, saya mengajukan sepuluh task lewat pull request. Separuhnya sudah di-merge, dan sebagian besar masuk kategori sangat sulit (very hard), level kesulitan teratas.
+
+Saya membuat task berbahasa Indonesia untuk Terminal-Bench, benchmark publik untuk AI coding agent. Di setiap task, agent mendapat terminal, file kerja berbahasa Indonesia yang realistis, dan instruksi dalam bahasa Indonesia. Agent harus menulis program yang menyelesaikan pekerjaan itu, lalu test tersembunyi menilai hasilnya, termasuk pada data yang belum pernah dilihat oleh agent. Setiap task dikerjakan berkali-kali oleh model frontier dari OpenAI, Google, dan Anthropic, dan tingkat kelulusannya menentukan level kesulitan task tersebut.
+
+Saya tidak bisa menunjukkan satu task pun. Datanya milik klien, dan task benchmark kehilangan fungsinya begitu dipublikasikan, karena model generasi berikutnya dapat lulus hanya dengan menghafal jawabannya. Karena itu, tulisan ini hanya membahas metodenya: arti "sangat sulit" ketika standarnya adalah keadilan, workspace yang membuat agent bisa langsung bekerja dalam semenit, saringan yang menggugurkan hampir semua ide, dan cara saya menjaga lebih dari tujuh puluh sesi AI agar tidak saling bertabrakan.
+
+## Belajar dari Task yang Sudah Merged
+
+Sebagai orang baru, saya tidak langsung mencari ide, tetapi membaca lebih dulu. Sebelum task pertama, saya meminta agent mengumpulkan task berbahasa Indonesia yang sudah merged maupun yang ditolak, thread review-nya, dan permintaan yang terus diulang oleh reviewer. Semua itu saya rangkum menjadi playbook singkat: apa yang membuat task diterima, apa yang membuatnya ditutup, dan pertanyaan yang biasa diajukan oleh tiap reviewer.
+
+Dari bacaan itulah saya belajar bahwa bagian tersulit pekerjaan ini adalah membuat model gagal secara adil.
+
+## Sulit bagi Model, Adil bagi Manusia
+
+Cara tercepat membuat task yang gagal dikerjakan model adalah dengan curang: menyembunyikan aturan yang mustahil ditebak, menilai dengan daftar kata pribadi, atau membiarkan instruksinya ambigu. Reviewer menolak ketiganya, dan memang sudah seharusnya, karena hasil benchmark seperti itu lebih banyak ditentukan oleh keberuntungan menebak.
+
+Standar yang saya pakai terdiri atas dua uji.
+
+Uji pertama adalah uji keadilan. Bayangkan ada engineer kedua yang tidak pernah melihat test maupun kunci jawabannya. Ia harus dapat lolos dari semua pemeriksaan tersembunyi hanya dengan berbekal instruksi, file di environment, dan konvensi yang diketahui setiap orang dewasa penutur asli bahasa Indonesia. Jika sebuah pemeriksaan butuh sesuatu di luar ketiganya, pemeriksaan itu tidak adil dan harus dibuang.
+
+Uji kedua adalah uji aturan tertulis: aturan bahasa yang menjadi inti task ditulis ke dalam instruksi dengan kalimat yang lugas, lalu modelnya dijalankan lagi. Jika model langsung lolos setelah aturannya ditulis, task itu sebenarnya hanya menguji apakah model sudah diberi tahu. Pemahamannya sama sekali tidak teruji.
+
+Celah di antara kedua uji itu sempit. Sebagai ilustrasi, saya sengaja mengambil contoh yang jauh dari task saya dan dari urusan bahasa, yaitu mengurutkan string versi software.
+
+- **Jawabannya sudah diberikan.** Instruksinya berbunyi "bandingkan angka di antara titik satu per satu", sehingga semua model lolos dan yang teruji hanya kemampuan membaca.
+- **Tidak adil.** Data tersembunyi memakai skema sufiks yang tidak muncul di file mana pun dan tidak didefinisikan oleh konvensi umum. Manusia yang teliti pun gagal, jadi reviewer menolaknya.
+- **Adil, tetapi mudah.** Tidak ada aturan yang ditulis, tetapi file yang terlihat menempatkan 1.9 sebelum 1.10, sedangkan data tersembunyi berisi versi-versi baru. Developer mana pun dapat menyimpulkan aturannya, begitu juga setiap model, karena konvensi ini jelas sudah tercakup dalam data latihnya.
+
+Task yang sangat sulit harus seadil versi ketiga, tetapi tetap membuat model gagal meskipun aturannya sudah ditulis. Sebagian besar ide gagal memenuhi kedua syarat itu.
+
+### Sumber Kesulitannya
+
+Saya tidak bisa menjelaskan apa yang membuat satu task tertentu sulit, karena itu sama saja dengan memberikan jawabannya kepada model berikutnya. Yang bisa saya bagikan adalah pola umumnya, yang konsisten di setiap probe:
+
+- **Tahu belum tentu bisa menerapkan.** Di awal, saya menanyai model secara langsung soal bahasa, tanpa tool, dan hampir semua pertanyaan dijawab dengan benar. Namun, model yang sama gagal mengerjakan task-nya. Saat menulis program, agent cenderung menggeneralisasi dari contoh file yang ada di depannya, sehingga pengetahuan bahasanya tidak ikut terpakai. Bottleneck-nya jarang ada pada pengetahuan; yang lebih sering bermasalah adalah penerapannya di dalam program.
+- **Penilai menjalankan ulang program pada data yang belum pernah dilihat oleh agent.** Program yang hanya menangani contoh yang terlihat akan tampak benar, lalu gagal.
+- **Kode yang masuk akal versus yang akan dilakukan penutur asli.** Kegagalan yang dihitung adalah ketika kodenya masuk akal bagi engineer, tetapi keliru bagi penutur asli mana pun.
+
+Dari ide-ide yang saya gugurkan, berikut kategori yang tidak berhasil:
+
+- konvensi yang sudah sangat dikenal oleh model: daftar yang terkenal, tata bahasa ala buku pelajaran, dan skala yang baku;
+- apa pun yang bisa dipelajari dari contoh yang terlihat dalam sekali baca;
+- kesulitan yang berasal dari kosakata tersembunyi, yang langsung hilang begitu task dibuat adil;
+- kedalaman engineering saja. Task yang sangat sulit memang butuh pekerjaan terminal yang nyata, tetapi membungkus konvensi yang sudah dikenal oleh model dalam setup yang lebih besar hanya menambah pekerjaan, sementara jumlah kegagalannya tidak bertambah.
+
+## Workspace yang Bisa Dipahami Agent dalam Semenit
+
+AI agent mengerjakan banyak riset, build, dan pemeriksaan di sesi-sesi paralel, dan setiap sesi baru dimulai tanpa konteks dari sesi sebelumnya. Karena itu, workspace-nya ditulis untuk pembaca seperti itu. Agent pertama-tama membaca file pintu masuk yang pendek, yang lalu mengarahkannya ke tiga file lain:
+
+```text
+workspace/
+  AGENTS.md          pintu masuk: baca START-HERE, STATUS, RULES, berurutan
+  START-HERE.md      orientasi 60 detik dan urutan baca untuk tiap jenis pekerjaan
+  STATUS.md          kondisi terkini: pull request terbuka, to-do saya, daftar ronde riset
+  RULES.md           setiap aturan ditulis sekali, satu baris, dengan sumbernya
+  IDEA-BACKLOG.md    setiap ide yang pernah muncul, gate-nya, dan verdict-nya
+  specs/             satu desain per task, satu laporan per ronde riset
+  archive/           sejarah apa adanya, dibaca hanya saat perlu
+  tools/             pemeriksaan lokal
+  task-repo/         clone repositori upstream
+  wt-<task>/         satu git worktree per task
+```
+
+Beberapa aturan menjaga workspace ini tetap berguna:
+
+- **Setiap aturan muncul sekali, dalam satu baris, beserta sumbernya.** Sumbernya bisa berupa review, probe yang gagal, atau keputusan yang menjadi dasar aturan itu. Saat sebuah pelajaran mengubah aturan, barisnya yang diubah; cerita panjangnya masuk ke spec atau arsip. Pada hari keenam, file instruksi awal sudah mencampur aturan yang berlaku dengan sejarahnya. Saya memecahnya menjadi lapisan ringkas ini dan memindahkan seluruh sejarahnya, apa adanya, ke arsip. Sekarang rulebook-nya berisi lebih dari seratus aturan satu baris.
+- **Status diperbarui setiap kali ada kejadian**: review, push, hasil kalibrasi, ronde yang dibuka atau ditutup. Agent mana pun dapat mengetahui apa yang sedang berjalan tanpa membaca transkrip.
+- **Tidak ada ide yang dihapus.** Setiap ide tetap tercatat di backlog bersama verdict dan gate yang membuatnya gugur. Sebelum mengusulkan apa pun, agent membaca semuanya, sehingga tidak ada ide yang diusulkan dua kali.
+- **Kepemilikan dicatat.** Setiap ronde riset memiliki satu file spec dan satu prefix untuk baris backlog-nya, sehingga agent yang bekerja paralel tidak pernah menyunting baris yang sama. Aturan ini lahir dari tabrakan: di awal, dua sesi peneliti dari keluarga model yang berbeda sama-sama mengklaim ronde yang sama setelah menerima handoff yang sama.
+
+Kalau terasa familier, ini gagasan constitution dari tulisan [spec-driven development bersama AI coding agent](/id/blog/spec-driven-development-with-ai-coding-agents) yang diterapkan pada riset: keputusan disimpan di file sehingga tidak tercecer di riwayat chat.
+
+## Saringan Ide
+
+Setiap ide melewati jalur yang sama, dan hampir semuanya gugur di tengah jalan.
+
+<Architecture diagram="idea-funnel" caption="Dari ide sampai task yang di-merge. Sebagian besar ide berhenti di dua pemeriksaan pertama." />
+
+1. **Ide.** Dari kepekaan saya sendiri tentang cara orang Indonesia benar-benar menulis dan bekerja, dari riset agent, atau dari backlog.
+2. **Saringan awal di atas kertas.** Sepuluh gate sebelum apa pun dijalankan. Apakah ide ini sudah dipakai, baik di task maupun di daftar reserved idea bahasa apa pun? Apakah semua penutur asli akan sepakat pada setiap jawabannya? Apakah instruksi atau file membocorkan jawabannya? Bisakah task ini dinilai tanpa daftar pribadi? Bisakah setiap ambiguitas dikecualikan dengan satu kalimat yang jujur?
+3. **Probe agentic.** Prototipe minimal, lalu run agent sungguhan dengan tool di sandbox: tiga keluarga model, masing-masing tiga kali. Pertanyaan tanpa tool tidak saya hitung sebagai probe, karena cara itu pernah membuat saya salah menilai, baik terlalu mudah maupun terlalu sulit.
+4. **Atribusi kegagalan.** Setiap kegagalan diputar ulang sebagai minimal pair: ubah fitur bahasanya saja, lalu lihat apakah kegagalannya berbalik. Kegagalan yang tetap terjadi setelah perubahan itu adalah error coding umum dan tidak dihitung.
+5. **Build**, di git worktree tersendiri.
+6. **Cek kunci jawaban secara independen.** Sesi baru yang tidak pernah melihat kunci jawaban saya melabeli sekumpulan input biasa. Setiap perbedaan berarti ada bug di kunci jawaban atau celah di instruksi saya. Saya mengulanginya dengan penulis baru sampai hasilnya konvergen. Sekitar 30 dari 70 subagent di seluruh sesi saya hanya mengerjakan pemeriksaan buta seperti ini.
+7. **Juri lokal.** Pemeriksaan berbasis LLM milik repositori, dijalankan di mesin saya dengan tiga model. Ketiganya harus lolos di setiap pemeriksaan sebelum push.
+8. **Instruksi saya, persetujuan saya.** Saya menulis instruksinya dan menyetujui setiap commit dan push.
+9. **Submit, kalibrasi, review.** Run milik benchmark yang menentukan tingkat kesulitan; reviewer manusia yang memutuskan apa yang di-merge.
+
+Selama sepuluh hari itu, ada dua puluh ronde riset bernomor dan lebih dari 330 ide yang masuk backlog. Lebih dari 300 di antaranya gugur, di atas kertas atau lewat probe. Sepuluh menjadi pull request.
+
+Tingginya tingkat gugur memang disengaja. NO-GO yang didukung bukti justru sebuah kemenangan, karena biayanya jauh lebih kecil daripada pull request yang kandas saat review.
+
+## Agent Paralel Tanpa Kekacauan
+
+Sesi-sesinya berjalan di aplikasi GitHub Copilot, dengan Copilot CLI untuk probe dan pemeriksaan lokal. Diagram berikut menunjukkan cara saya mengatur sesi-sesi itu:
+
+<Architecture diagram="agent-organisation" caption="Satu koordinator, lane yang berpagar, peneliti independen, dan gerbang manusia untuk semua yang keluar dari mesin." />
+
+- **Satu koordinator.** Sebuah sesi Claude merencanakan setiap ronde, membaginya ke beberapa lane, memeriksa setiap hasil langsung di disk, dan menggabungkan temuannya ke dokumen. Koordinator melapor kepada saya, dan lane melapor kepada koordinator. Koordinator terakhir membuat 28 child session dalam sekitar 54 jam.
+- **Lane yang berpagar.** Satu ronde biasanya punya tiga lane. Masing-masing berupa child session dengan sudut pandang, file spec, dan prefix backlog sendiri. Lane hanya menulis di bagiannya sendiri; koordinator yang menulis kesimpulan bersama.
+- **Prompt pembuka yang bisa berdiri sendiri.** Setiap lane dimulai dari satu pesan dengan lima bagian: permintaan saya yang dikutip kata per kata, keputusan yang sudah diambil (ditandai "jangan dibuka lagi"), bagian spec yang menjadi acuan, langkah bernomor, dan batasan seperti jumlah maksimal container per lane serta larangan menyunting dokumen bersama atau worktree lain.
+- **Pesan yang singkat.** Pesan dibuka dengan permintaan atau verdict, tanpa basa-basi. Satu perbedaan pendapat paling banyak dibahas dua kali bolak-balik sebelum koordinator memutuskan atau membawanya kepada saya.
+- **Keputusan datang kepada saya dalam bentuk pilihan.** Dalam 54 jam itu, koordinator mengajukan 101 pertanyaan. 83 di antaranya berupa pilihan dari dua sampai empat opsi dengan satu opsi yang direkomendasikan, dan 25 menyangkut commit, push, atau pull request. Pesan saya sendiri pendek-pendek; banyak yang isinya hanya "continue".
+- **Keluarga model lain sebagai peneliti independen.** Sesi GPT, Gemini, dan Grok yang terpisah mengusulkan dan menyerang ide. Dalam satu ronde, tiga agent dari tiga keluarga model masing-masing mengusulkan ide sendiri, lalu me-red-team ide dua agent lainnya, kemudian sepakat memilih paling banyak tiga ide untuk di-probe. Tiap keluarga model cenderung melewatkan hal yang berbeda, sehingga kritik silangnya saling melengkapi. Ronde itu juga memberi saya pelajaran: ke-18 idenya digugurkan dalam 34 menit lewat pertanyaan tanpa tool, dan ronde sesudahnya menunjukkan bahwa alasan pengguguran seperti itu tidak bisa dijadikan bukti.
+- **Red team yang read-only.** Satu sesi tugasnya hanya menyerang task yang sedang di-review, tanpa akses tulis ke worktree-nya.
+- **Automation, apa adanya.** Saya menjadwalkan dua peneliti (satu membaca sumber akademik, satu menelusuri praktik di dunia nyata) dan satu verifier. Dalam sehari, mereka berjalan enam kali, menolak 57 petunjuk, dan tidak mengusulkan satu pun yang bertahan, jadi saya menghentikannya. Automation yang benar-benar berguna justru yang membosankan: menyegarkan daftar semua task bahasa Indonesia yang terbuka maupun sudah merged setiap 12 jam, sehingga tabrakan dengan kontributor lain cepat ketahuan. Ide yang akhirnya menjadi task berawal dari intuisi saya sendiri sebagai penutur asli; agent yang mengujinya habis-habisan.
+
+## Gerbang Manusia
+
+AI menyusun banyak draf, tetapi semua yang keluar dari mesin tetap saya yang memutuskan.
+
+- **Tidak ada commit, push, atau pull request tanpa persetujuan eksplisit dari saya.** Agent berhenti dan bertanya. Sebelum build di-push, koordinator memeriksa ulang hasilnya langsung di disk dan menyebutkannya dalam pesan persetujuannya.
+- **Saya menulis setiap instruksi.** Saya menulisnya sendiri dalam bahasa Indonesia, lalu menempelkannya. Koordinator hanya boleh mengusulkan perbaikan mekanis, dan build memakai teks saya byte demi byte, diverifikasi dengan checksum. Agent mencantumkan kalimat-kalimat yang menjadi pijakan test, supaya suntingan saya tidak merusaknya.
+- **Fakta bahasa Indonesia butuh sumber primer**: KBBI, pedoman ejaan, dan penggunaan nyata, bukan ringkasan mesin pencari. Pengecekan KBBI saya lakukan sendiri, dan makna yang tidak bisa diverifikasi tidak dikutip.
+- **Temuan reviewer direproduksi sebelum dibalas.** Setelah itu, saya memperbaiki perilakunya, menjalankan ulang semua pemeriksaan, dan mengkalibrasi ulang setiap kali test, kunci jawaban, atau instruksi berubah. Saya tidak pernah membuat task lebih sulit sebagai respons terhadap review soal kebenaran; hasil task yang sudah diperbaiki itulah yang berlaku. Pernah ada review yang hanya butuh 14 menit dari dibaca sampai perbaikannya siap di-push.
+- **Belajar juga dari review orang lain.** Saat task kontributor lain ditutup, saya mencocokkan alasannya dengan semua task saya yang masih terbuka dan menyiapkan jawabannya sebelum ada reviewer yang bertanya.
+
+## Membaca Kegagalan
+
+Kesalahan saya justru lebih sering muncul saat membaca hasil daripada saat membangun task.
+
+- **Pisahkan kegagalan bahasa dari kegagalan coding.** Hanya kegagalan yang berbalik pada fitur bahasa Indonesia yang menjadi bukti; sisanya error umum yang bisa muncul di task apa pun.
+- **Hitung sekali per percobaan.** Satu run yang gagal dihitung satu kegagalan, berapa pun traceback yang dicetaknya.
+- **Hitung ulang tanpa item yang paling sering gagal.** Jika satu baris menentukan seluruh skor, skor itu sebenarnya hanya tentang baris tersebut.
+- **Sisir dulu kegagalan infrastruktur.** Gangguan jaringan yang mematikan sebuah run terlihat persis seperti kegagalan dan membuat ide tampak lebih sulit. Dengan sekitar dua puluh container paralel, 13 dari 144 run probe timeout karena beban yang saya buat sendiri; sekarang saya menjaganya di sekitar sembilan.
+- **Baca artefak mentahnya, bukan ringkasannya.** Ringkasan dari bot pernah mengutip baris yang tidak gagal di percobaan mana pun dan menyebut crash sebagai pilihan desain. Setiap kelompok kegagalan saya jelaskan sesuai apa yang benar-benar dilakukan script-nya, tanpa satu teori yang dipukul rata untuk semuanya.
+
+## Yang Akan Saya Pertahankan dan Ubah
+
+Saya akan mempertahankan lapisan ringkas tadi, kebiasaan menggugurkan ide sejak awal, probe agentic sungguhan, cek kunci jawaban yang independen, dan gerbang manusia.
+
+Beberapa hal akan saya ubah:
+
+- **Keadilan dulu, kesulitan kemudian.** Aturan keadilan yang lebih ketat datang pada hari ketujuh, dan saya mengaudit ulang setiap task dan ide berdasarkan aturan itu. Ide yang tampak sangat sulit sering kali sulit hanya karena ada yang disembunyikan. Sekarang pemeriksaan keadilan dilakukan sebelum probe pertama.
+- **Pastikan pemeriksa buta benar-benar independen.** Pemeriksa kunci jawaban saya memang tidak pernah melihat kuncinya, tetapi berasal dari keluarga model yang sama dengan agent yang menulisnya, sehingga titik butanya bisa sama. Versi berikutnya akan mencampur keluarga model.
+- **Anggarkan probe.** Sembilan run agent per ide, ditambah run ulang, cepat menumpuk dan hasilnya berisik. Sekarang saya menjalankan varian aturan tertulis yang murah lebih dulu.
+- **Siapkan rencana untuk malam yang buruk.** Suatu malam, gangguan jaringan menyebabkan 59 error di lima sesi, dan saya mengetik "continue" 64 kali secara manual. Sesi juga kehilangan konteks ketika riwayatnya dipadatkan.
+- **Jaga rulebook tetap jujur.** Lapisan ringkasnya tumbuh lagi: rulebook yang sudah dirapikan kini lebih besar daripada file yang digantikannya, dan saya melonggarkan gate tiga kali di tengah jalan. Setiap pelonggaran tercatat sebagai keputusan, tetapi file-nya perlu dipangkas, bukan hanya ditambah.
+- **Beri automation titik awal.** Dua run tanpa hasil menunjukkan bahwa brief yang terlalu terbuka adalah masalahnya. Versi berikutnya dimulai dari seed yang konkret.
+- **Approval belum tentu berarti merge.** Separuh task saya masih menunggu review, dan review masih bisa menutupnya.
+
+Saya juga tidak punya baseline tanpa agent, jadi saya tidak bisa mengatakan seberapa besar agent mempercepat pekerjaan saya. Yang bisa saya katakan: sepuluh task dalam sepuluh hari, dari orang yang baru pertama kali mengerjakan ini, hanya mungkin karena aturannya ditulis dan agent benar-benar membacanya.
+
+## Checklist untuk Membangun Evaluasi
+
+1. Tuliskan uji keadilan sebelum ide pertama.
+2. Jalankan uji aturan tertulis sebelum menyebut apa pun sangat sulit.
+3. Simpan setiap ide dan setiap verdict, lalu baca semuanya sebelum mengusulkan yang baru.
+4. Lakukan probe dengan tool sungguhan, beberapa keluarga model, dan beberapa run.
+5. Atribusikan setiap kegagalan dengan minimal pair.
+6. Minta agent baru melabeli data tanpa melihat kunci jawaban.
+7. Beri agent paralel kepemilikan yang berpagar: satu file, satu prefix.
+8. Pasang gerbang manusia untuk semua yang keluar dari mesin.
+9. Baca artefak mentahnya, dan sisir kegagalan infrastruktur sebelum menghitung.
+10. Publikasikan metodenya, jangan pernah task-nya.

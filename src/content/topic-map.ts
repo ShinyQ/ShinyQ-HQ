@@ -27,12 +27,12 @@ export type TopicSlug = (typeof TOPICS)[number];
 
 /** Post tags per topic. A tag belongs to one topic at most. */
 export const TOPIC_TAGS: Record<TopicSlug, readonly string[]> = {
-  "llm-evaluation": ["llm-evaluation", "evaluation", "shadow-mode", "testing"],
+  "llm-evaluation": ["llm-evaluation", "evaluation", "shadow-mode", "testing", "ai-benchmarks"],
   "azure-openai": ["azure-openai", "azure-openai-realtime"],
   "voice-ai": ["voice-ai", "latency"],
   "llm-reliability": ["llm-reliability", "structured-output"],
   "fraud-detection": ["fraud-detection"],
-  "ai-agents": ["ai-coding-agents", "spec-driven-development", "github-spec-kit", "code-review"],
+  "ai-agents": ["ai-coding-agents", "spec-driven-development", "github-spec-kit", "code-review", "multi-agent-workflow"],
   "sentiment-analysis": [],
   forecasting: [],
   teaching: ["tutorial"],
