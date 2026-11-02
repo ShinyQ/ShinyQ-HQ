@@ -257,6 +257,16 @@
     margin-top: var(--space-xs);
   }
 
+  /* Figures keep 45rem where the page has room (a diagram's column drawing reads at full size), centred on the text
+     column; their captions stay on the text measure. Wide drawings break out further (.arch-break). */
+  .prose-hq > figure {
+    margin-inline: min(0px, calc((100% - min(45rem, 100dvw - 2 * var(--gutter))) / 2));
+  }
+
+  .prose-hq > figure > figcaption {
+    padding-inline: max(0px, calc((100% - 38rem) / 2));
+  }
+
   .prose-hq :where(blockquote):not(:where(.not-prose, .not-prose *)) {
     position: relative;
     padding-left: calc(var(--space-md) + 2px);
