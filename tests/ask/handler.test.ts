@@ -343,7 +343,8 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
 
   it("serves a repeated first-turn question from the cache after a content deploy that leaves its context unchanged", async () => {
     let current = pack;
-    const { pack: deployed } = buildRepoPack("2026-10-30");
+    // The day after the base pack: the pack date is the newer of the content date and the live facts' asOf.
+    const { pack: deployed } = buildRepoPack(new Date(Date.parse(pack.packDate) + 86_400_000).toISOString().slice(0, 10));
     expect(deployed.packVersion).not.toBe(pack.packVersion);
     const { call, modelCalls } = setup({ source: () => ({ load: (env) => staticPackSource(current).load(env), packDate: async () => current.packDate }) });
     expect(doneOf(await frames(await call())).source).toBe("primary");

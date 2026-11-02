@@ -6,7 +6,7 @@ import { ASK_REPO_CITE, type AskLocale } from "./protocol";
  * public repository and the public live sites. Shared by the server checks (functions/_lib/checks.ts)
  * and the dock's markdown renderer; anything else renders as its label text.
  */
-export const ASK_SITE_ORIGINS: readonly string[] = ["https://kurniadi.pages.dev"];
+export const ASK_SITE_ORIGINS: readonly string[] = ["https://kurniadi.pages.dev", "https://shinyq.my.id"];
 
 /** Locale-less top pages an answer may always link to (the server also allows the retrieved chunks' paths). */
 export const ASK_LINK_PAGES: readonly string[] = ["/", "/labs", "/journey", "/library", "/contact", "/quick", "/cv"];

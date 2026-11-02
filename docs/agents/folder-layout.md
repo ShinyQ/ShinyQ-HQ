@@ -16,7 +16,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
 - `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
 - `content/safety-allowlist.txt`: allowed product names; they feed the Ask knowledge pack's `products` (the entity allowlist of the Ask output entity check).
-- `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only), written by `scripts/refresh-facts.ts`.
+- `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only; `github.calendar` holds the daily contribution levels and counts of the last year), written by `scripts/refresh-facts.ts`.
 - `content/generated/build-facts.json`: the build page's measured numbers (git, tests, CI jobs, budgets), written by `scripts/build-facts.ts` (CI and deploy builds refresh it).
 - `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
 - `content/generated/paper-pages.json`: paper PDF page image manifest (sizes, PDF sha256), written by `scripts/paper-pages.ts`.
@@ -266,6 +266,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/lib/og.tsx`, `og-layout.ts`, `og-assets.ts`, `og-encode.ts`, `og-cards.ts` (all in `src/lib/`): neon cinematic OG renderer, pure layout rules, build-time inputs (floor stills, photo, pod covers), JPEG encoder (baseline with a JFIF header, never progressive: link unfurlers), list of cards.
 - `src/lib/first-person.ts`: hasFirstPerson (owner rule: no first person in mottos, taglines and titles).
 - `src/lib/audio/`: procedural Web Audio engine + useAudio hook (see its README); `settings.ts` (storage keys, parsing, the one AudioContext factory) and `ambience.ts` (the per-floor ambience textures).
+- `src/lib/contributions.ts`: the GitHub contribution calendar type and pure helpers (`calendarDays`, `calendarWeeks`, `calendarTotal`, `busiestDay`, `longestStreak`, `levelCounts`); no zod, safe for client chunks.
 - `src/lib/day-night.ts`: the day and night preference (`hq:day-night`: readDayNight, setDayNight, subscribeDayNight, dayNightOn); imports nothing, safe for the HUD bundle.
 
 ### src/experience/
