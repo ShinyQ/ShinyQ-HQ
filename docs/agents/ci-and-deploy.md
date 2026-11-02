@@ -239,7 +239,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
 
 | Variable | Meaning | Source |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | canonical origin, default `https://kurniadi.pages.dev` | `vars.SITE_URL` |
+| `NEXT_PUBLIC_SITE_URL` | canonical origin: `https://shinyq.my.id` in production, default `https://kurniadi.pages.dev` | `vars.SITE_URL` (`deploy.yml`; in `ci.yml` the site build and the e2e shards, so `e2e/view-links.spec.ts` expects the built origin) |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Cloudflare Web Analytics, omitted when unset; only production builds in `deploy.yml` set it | `vars.CF_BEACON_TOKEN` |
 
 ## Audio

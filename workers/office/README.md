@@ -73,13 +73,13 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
    `GITHUB_WEBHOOK_SECRET`).
 3. Keychain (Mac): `security add-generic-password -s hq-office-ingest -a office-relay -w <OFFICE_INGEST_KEY>`.
 4. For each public repository to show (ShinyQ/ShinyQ-HQ first): Settings, Webhooks, Add webhook:
-   - Payload URL `https://kurniadi.pages.dev/api/office/github`, content type `application/json`, secret
+   - Payload URL `https://shinyq.my.id/api/office/github`, content type `application/json`, secret
      the `OFFICE_GITHUB_WEBHOOK_SECRET` value, SSL verification on;
    - events: Workflow runs, Workflow jobs, Pull requests, Pushes, Deployment statuses, Repositories (the
      `privatized` action hides a repository that turns private).
    GitHub has no user-level webhooks; a GitHub App installed on all repositories (Actions read, Pull requests read,
    Contents read, Deployments read, Metadata read) is the alternative with one webhook.
-5. Check: the webhook's Recent Deliveries shows `ping` with 204, and `curl -s https://kurniadi.pages.dev/api/office`
+5. Check: the webhook's Recent Deliveries shows `ping` with 204, and `curl -s https://shinyq.my.id/api/office`
    shows `"mode":"semi-live"`.
 
 ## Operations

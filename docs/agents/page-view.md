@@ -37,7 +37,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - Clipboard rejection or an unavailable API shows a localized polite status and a named, focusable read-only field with the exact captured canonical URL. Menu recovery stays in the failed action's `li`; page recovery stays outside the buttons. It never takes focus automatically. The latest attempt alone updates feedback, failure persists, and only success has a cleaned-up two-second reset timer. The Classic About email action follows the same contract with the raw email address.
   - Where: the case study header (`/labs/<slug>`), posts (`/blog/<slug>`, after the tags) and the room drawer's overflow menu.
   - Classic: `${SITE_URL}${path}?view=classic${hash}`. 3D: `${SITE_URL}${threeDPath(path)}`; gated routes keep their path, posts open `/{locale}/library`, everything else the Lobby. Other query parameters are dropped.
-  - `SITE_URL` is `https://kurniadi.pages.dev` unless `NEXT_PUBLIC_SITE_URL` is set at build.
+  - `SITE_URL` is `https://kurniadi.pages.dev` unless `NEXT_PUBLIC_SITE_URL` is set at build; production builds set it to `https://shinyq.my.id` (`vars.SITE_URL`).
   - A 3D link has no parameter, so a recipient whose remembered choice is Classic gets the Classic site (their "Default HQ view" setting applies); only `?view=` links override it.
 - **SEO:** canonical, `og:url` and the sitemap never carry `view`; the parameter only selects what a visitor sees.
 - **Preference API** for "Default HQ view": `getViewPreference`, `setViewPreference`, `subscribeViewPreference` in `view-pref.ts` (localStorage only). It decides new tabs and visits, not the current tab. An explicit link view takes priority.

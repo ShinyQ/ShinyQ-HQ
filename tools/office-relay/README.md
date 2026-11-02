@@ -3,7 +3,7 @@
 The local half of the L1 Agent Office (`docs/agents/office.md`): hooks of GitHub Copilot, Claude Code and OpenAI Codex
 call `office-relay hook <agent> <event>`, which turns the event into a tiny signed beat (agent, a hashed session id, a
 state, an activity type, and for allowlisted public repositories the repository, branch and a title from the branch
-name, and the number of active helpers) and posts it to `https://kurniadi.pages.dev/api/office/beat` from a detached
+name, and the number of active helpers) and posts it to `https://shinyq.my.id/api/office/beat` from a detached
 process. Prompts, commands, file paths, output and the raw session id never leave the machine; of sub-agents, only the
 number of active helpers leaves the machine.
 
@@ -51,7 +51,7 @@ file before writing anything: a file they cannot parse aborts the command with e
   outcome only).
 - `office-relay uninstall` removes the office entries, the Copilot file, the shim and `~/.hq-office-relay/office-relay.js`
   (other hooks stay, and so does the data in `~/.office-relay/`: salt, config, log, sessions).
-- Config: `~/.office-relay/config.json` `{ "endpoint": "https://kurniadi.pages.dev/api/office/beat", "allow": ["ShinyQ/*"] }`
+- Config: `~/.office-relay/config.json` `{ "endpoint": "https://shinyq.my.id/api/office/beat", "allow": ["ShinyQ/*"] }`
   (only `https://` endpoints are accepted). Only repositories in `allow` (and, on the server, only public ones) show a
   title; everything else is "Client project".
 

@@ -480,7 +480,7 @@ Every page is a static HTML page with its own search and share tags, so crawlers
 - Canonical: every page points at itself (`og:url` equals the canonical, checked by `og:check`); `/` (the script language redirect) points at `/en`, its x-default, with the same share card. hreflang `en`, `id` and `x-default` on every page and in the sitemap.
 - Share cards: 1200x630 baseline JPEGs with a JFIF header (`src/lib/og-encode.ts`), under 300 KB, with `og:image:secure_url`, type, size and alt. The tags sit in the first 8 KB of every page (`lateShareTags` in `scripts/og-meta.ts`).
 - Structured data (`src/lib/jsonld.ts`): `Person` (employer, Jakarta address, university, skills, LinkedIn, GitHub, Google Scholar, IEEE Xplore, Hugging Face and Medium) and `WebSite` on every page; `ProfilePage` on About (`/contact`); `CreativeWork` with `SoftwareSourceCode` parts (public repositories) on case studies; `BlogPosting` on posts; `TechArticle` on How this site was built (`/build`, dated by the build story and its facts snapshot); `BreadcrumbList` everywhere but home.
-- `robots.txt` allows everything and names the sitemap. The sitemap dates posts, Writing, Journey, Home, Quick view and `/build` from content (`lastModified` in `src/lib/routes.ts`; `/build` by its facts snapshot) and leaves other pages undated. The 404 page is `noindex`.
+- `robots.txt` allows everything and names the sitemap. The sitemap dates posts, Writing, Journey, Home, Quick view and `/build` from content (`lastModified` in `src/lib/routes.ts`; `/build` by its facts snapshot) and leaves other pages undated; every `lastmod` is a full `YYYY-MM-DD` day, and a month-only content date (Journey's newest role, for example) leaves the entry undated. The 404 page is `noindex`.
 - Search engine verification: `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` repository variables render the tags on `/`, `/en` and `/id` in production builds ([deploy guide](deploy.md#15-search-engines-and-link-previews)).
 - Checks: `bun run og:check` (every page), `e2e/seo.spec.ts` (fetches every entry point as LinkedInBot), and the post-deploy smoke (`/`, `/en`, `/id` as LinkedInBot against production).
 
@@ -551,7 +551,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Production
 
-- The Cloudflare Pages project `kurniadi` at https://kurniadi.pages.dev.
+- The Cloudflare Pages project `kurniadi` at https://shinyq.my.id (`kurniadi.pages.dev` redirects to it with a 308).
 - `deploy.yml` deploys every merge to `main`, each weekly facts merge and any dispatched commit on `main` (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`).
 - Fast path: a merge whose pull request was green on the same tree deploys at once (about 4 minutes); otherwise the deploy reuses CI's green complete result (`ci-full` artifact) for the commit, and runs the e2e shards itself only when none exists or with `-f rerun_e2e=true`.
 - The deploy job deploys the hq-office Worker, publishes the Ask knowledge pack to Workers KV, uploads with `wrangler pages deploy`, flips the pack pointer and smoke-checks production (`/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/en` with its script policy and the analytics beacon, cache headers, link previews); then the hq-stats Worker deploys. Any failure opens a `deploy-failed` issue.

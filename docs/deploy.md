@@ -7,18 +7,18 @@ The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function 
 | Item | Value |
 | --- | --- |
 | Production project | `kurniadi`, Direct Upload, production branch `main` |
-| Production URL | https://kurniadi.pages.dev |
+| Production URL | https://shinyq.my.id (`kurniadi.pages.dev` answers with a 308 redirect to it, section 7b) |
 | Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6`: unused since the PR preview job was removed (2026-11-01) |
 | Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
 | `production` environment secrets | `CLOUDFLARE_API_TOKEN` (the account-owned Cloudflare API token `hq-ci-deploy`: Cloudflare Pages Edit, Workers KV Storage Edit for the Ask knowledge pack, Workers Scripts Edit for the hq-office and hq-stats Workers, R2 access for the `GUIDES` binding), `GROQ_API_KEY`, `OFFICE_INGEST_KEY`, `OFFICE_GITHUB_WEBHOOK_SECRET` |
 | Repository secrets | `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` (section 3) |
-| Repository variables | `CF_PAGES_PROJECT`, `CF_ACCOUNT_ID`, `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); unset: `AUTO_DEPLOY_FACTS` (auto-deploy on), `STATS_WORKER_DEPLOY` and `OFFICE_WORKER_DEPLOY` (both Workers deploy from CI), `SITE_URL` (default origin) |
+| Repository variables | `CF_PAGES_PROJECT`, `CF_ACCOUNT_ID`, `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); `SITE_URL` = `https://shinyq.my.id` (since 2026-11-02); unset: `AUTO_DEPLOY_FACTS` (auto-deploy on), `STATS_WORKER_DEPLOY` and `OFFICE_WORKER_DEPLOY` (both Workers deploy from CI) |
 
 The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
 
 Notes:
 
-- Per-deployment URLs such as `https://<hash>.kurniadi.pages.dev` are behind an existing Cloudflare Access application (account level, not part of the Pages project). Only `kurniadi.pages.dev` itself is public.
+- Per-deployment URLs such as `https://<hash>.kurniadi.pages.dev` are behind an existing Cloudflare Access application (account level, not part of the Pages project). Only `kurniadi.pages.dev` itself is public, and it redirects to `shinyq.my.id` (section 7b); the redirect matches that exact host, so these URLs still reach Access.
 - Web Analytics: the manual-snippet site for `kurniadi.pages.dev` (created 2026-10-11) feeds `CF_BEACON_TOKEN`, which only production builds use (`deploy.yml`, or the manual command below). CI, screenshot and e2e builds never render the beacon, so test runs are not counted and the e2e cross-origin guard stays strict. Do not also turn on automatic Web Analytics for the Pages project, or every visit counts twice. The other Web Analytics site (`kurniadi.dev`, automatic) covers the custom domain zone.
 
 ## Deploy from GitHub Actions (preferred)
@@ -48,19 +48,19 @@ git switch main && git pull
 bun install --frozen-lockfile
 bun run typecheck && bun run lint && bun run test
 CF_BEACON_TOKEN=$(gh variable get CF_BEACON_TOKEN)
-NEXT_PUBLIC_SITE_URL=https://kurniadi.pages.dev NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun run build
+NEXT_PUBLIC_SITE_URL=https://shinyq.my.id NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun run build
 bunx wrangler pages deploy out --project-name=kurniadi --branch=main \
   --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
 NEXT_PUBLIC_CF_BEACON_TOKEN="$CF_BEACON_TOKEN" bun scripts/deploy-smoke.ts
 ```
 
-Run `bun run e2e` on a build without the beacon if you want the e2e suite: its cross-origin guard flags the analytics requests by design. `--branch=main` matches the production branch, so the upload goes live on `kurniadi.pages.dev` at once (previews get no Ask secrets, so Ask stays off there). Then run the checks in section 5, step 3.
+Run `bun run e2e` on a build without the beacon if you want the e2e suite: its cross-origin guard flags the analytics requests by design. `--branch=main` matches the production branch, so the upload goes live on production (`shinyq.my.id`) at once (previews get no Ask secrets, so Ask stays off there). Then run the checks in section 5, step 3.
 
 ## Overview
 
 | Trigger | Workflow | Cloudflare project | Result |
 | --- | --- | --- | --- |
-| Push to `main` (a merge) | `deploy.yml` (fast path, or after the complete `main` CI) and `ci.yml` (the complement of the PR run, or a full run) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`), smoke-checked |
+| Push to `main` (a merge) | `deploy.yml` (fast path, or after the complete `main` CI) and `ci.yml` (the complement of the PR run, or a full run) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (`https://shinyq.my.id`), smoke-checked |
 | Weekly facts PR merged (`refresh-facts.yml`), or manual run | `deploy.yml` (`workflow_dispatch`) | `CF_PAGES_PROJECT` (`kurniadi`) | Production, smoke-checked |
 | Red CI on a push to `main` | `rollback.yml` | `CF_PAGES_PROJECT` | Production rolled back when it serves the failing commit; `deploy-rollback` issue |
 | Every CI run | `ci.yml` jobs `Lighthouse shard n/N` and `Lighthouse CI` | none | Lighthouse budgets (blocking) on the planned URLs and reports as an artifact |
@@ -79,7 +79,7 @@ flowchart LR
   G -- no --> S[Notice, skip]
   G -- yes --> P[(Production project, branch main)]
   R --> P
-  P --> U[kurniadi.pages.dev, later kurniadi.dev]
+  P --> U[shinyq.my.id, kurniadi.pages.dev redirects]
 ```
 
 `ci.yml` runs typecheck, lint, unit tests, the secret scan and the build on every push to `main`, plus the heavy tests the merged PR's run skipped. `deploy.yml` runs its own production build, the e2e suite only without a reusable complete CI result, and a post-deploy smoke check, and opens a `deploy-failed` issue when anything fails.
@@ -160,7 +160,7 @@ Settings > Secrets and variables > Actions > Variables, or with `gh`:
 
 ```sh
 gh variable set CF_PAGES_PROJECT --body kurniadi
-gh variable set SITE_URL --body https://kurniadi.pages.dev     # optional
+gh variable set SITE_URL --body https://shinyq.my.id     # set since 2026-11-02
 gh variable set CF_BEACON_TOKEN --body <web-analytics-token>   # set on 2026-10-11
 gh variable set AUTO_DEPLOY_FACTS --body false                 # optional: stop the weekly auto-deploy
 ```
@@ -168,7 +168,7 @@ gh variable set AUTO_DEPLOY_FACTS --body false                 # optional: stop 
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `CF_PAGES_PROJECT` | Yes, to enable production deploys | Production Pages project name. While unset, `deploy.yml` builds and tests but skips the upload. |
-| `SITE_URL` | Optional | Public origin baked into canonical URLs, `hreflang`, sitemap, robots and OG URLs (`NEXT_PUBLIC_SITE_URL`). Defaults to `https://kurniadi.pages.dev`. Set to `https://kurniadi.dev` after the domain move. |
+| `SITE_URL` | Set | Public origin baked into canonical URLs, `hreflang`, sitemap, robots and OG URLs (`NEXT_PUBLIC_SITE_URL`), and the origin the smoke, uptime and rollback checks use: `https://shinyq.my.id` (section 7b). Unset falls back to `https://kurniadi.pages.dev`. |
 | `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
 | `GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console HTML tag token (the `content` value of `google-site-verification`), rendered on `/`, `/en` and `/id` by production builds. Section 15. |
@@ -188,7 +188,7 @@ The Content-Security-Policy in `public/_headers` already allows `static.cloudfla
 3. Verify (replace the host if you use another project):
 
 ```sh
-HOST=https://kurniadi.pages.dev
+HOST=https://shinyq.my.id
 curl -sI "$HOST/" | head -n1                         # 200, static language redirect page
 curl -sI "$HOST/en" | head -n1                       # 200
 curl -sI "$HOST/id" | head -n1                       # 200
@@ -210,7 +210,7 @@ By hand:
 
 - Fastest: Cloudflare dashboard > Workers & Pages > project > Deployments, pick an earlier production deployment, then Rollback to this deployment. No rebuild needed.
 - API (what `rollback.yml` calls): list with `GET /accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kurniadi/deployments?env=production`, then `curl -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kurniadi/deployments/<deployment id>/rollback`.
-- Same logic as the automation, locally: `GH_TOKEN=$(gh auth token) CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... bun scripts/rollback.ts pages --repo ShinyQ/ShinyQ-HQ --sha <bad commit> --project kurniadi --site https://kurniadi.pages.dev --dry-run true` (drop `--dry-run true` to roll back).
+- Same logic as the automation, locally: `GH_TOKEN=$(gh auth token) CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... bun scripts/rollback.ts pages --repo ShinyQ/ShinyQ-HQ --sha <bad commit> --project kurniadi --site https://shinyq.my.id --dry-run true` (drop `--dry-run true` to roll back).
 - Drill or rerun in Actions: `gh workflow run rollback.yml --ref main -f sha=<bad commit>` (dry run by default; `-f dry_run=false` rolls back for real).
 - hq-stats Worker: `cd workers/stats && bunx wrangler deployments list` then `bunx wrangler rollback <version id>`, or redeploy it from a good commit.
 - From GitHub: `gh workflow run deploy.yml --ref main -f sha=<earlier commit on main> -f reason=rollback`. Or revert the commit on `main` (the revert PR deploys on merge).
@@ -229,15 +229,19 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 
 ## 7b. Main address shinyq.my.id (owner decisions 2026-10-31 and 2026-11-02)
 
-`shinyq.my.id` becomes the canonical origin and `kurniadi.pages.dev` redirects to it (`kurniadi.dev` stays blocked in Indonesia, section 7). The 2026-10-31 plan named `kurniadi.my.id`, which is not the owner's domain; the 2026-11-02 decision corrects it. Status and the remaining steps, in this order:
+`shinyq.my.id` is the canonical origin and `kurniadi.pages.dev` redirects to it (`kurniadi.dev` stays blocked in Indonesia, section 7). The 2026-10-31 plan named `kurniadi.my.id`, which is not the owner's domain; the 2026-11-02 decision corrects it. The cutover finished on 2026-11-02, in this order:
 
 1. Done 2026-11-02: the zone `shinyq.my.id` is active on Cloudflare (Free plan). The registrar's nameservers moved from `ns1` and `ns2.idwebhost.id` to `amir.ns.cloudflare.com` and `ophelia.ns.cloudflare.com`. Its only record is the apex, a proxied CNAME to `kurniadi.pages.dev`; the domain has no mail records.
 2. Done 2026-11-02: the Pages project `kurniadi` has the custom domain `shinyq.my.id` (active), and `curl -sI https://shinyq.my.id/en` answers 200 from Cloudflare with the site's headers. There is no `www` host and no list names one: if it is wanted later, add a proxied `www` record and a zone Redirect Rule to the apex, so `www` never serves a page and needs no entry in the host lists.
-3. The host lists in git accept `shinyq.my.id`, next to `kurniadi.pages.dev` and `kurniadi.dev`: `ASK_ALLOWED_ORIGINS` in `wrangler.toml` (Ask, the RUM and the visit beacons), `WA_HOSTS` in `workers/stats/wrangler.toml` (shipped by the "hq-stats Worker" job of `deploy.yml`), `ASK_SITE_ORIGINS` in `src/ask/links.ts` (site links in Ask answers) and `TURNSTILE_DOMAINS` in `scripts/provision-ask.ts`. `tests/unit/site-hosts.test.ts` keeps them in step. After the deploy that ships a change to `TURNSTILE_DOMAINS`, run `bun scripts/provision-ask.ts` (dry run) and then with `--apply`: it sets the Turnstile widget's domains to that list. Without it, Ask on the new host fails the Turnstile check.
-4. Check: on `https://shinyq.my.id`, a `POST /api/ask` with `Origin: https://shinyq.my.id` passes the origin check (an empty body gets 400, not 403) and a question in the browser gets an answer; `POST /api/rum` and `POST /api/visit` answer 204; and the visit shows in `/api/stats` (`visits.d30`) within about a minute.
-5. `gh variable set SITE_URL --body https://shinyq.my.id`, then redeploy (`gh workflow run deploy.yml --ref main`): canonical URLs, `hreflang`, the sitemap, OG URLs and the uptime and smoke checks use the new origin. Update this page's "Production URL" row and the docs that name the production host in the same PR as the cutover.
-6. Move the GitHub webhook payload URL to `https://shinyq.my.id/api/office/github` (webhooks do not follow redirects) and the office relay endpoint on the owner's Mac to `https://shinyq.my.id/api/office/beat` (the relay's `DEFAULT_CONFIG` moves with it).
-7. Last: a Bulk Redirect from `kurniadi.pages.dev` to `https://shinyq.my.id`, status 308 (keeps the method of a POST), path and query preserved. It matches the exact host only, so per-deployment previews (`<hash>.kurniadi.pages.dev`) keep working. Keep `kurniadi.pages.dev` in the host lists.
+3. Done 2026-11-02: the host lists in git accept `shinyq.my.id`, next to `kurniadi.pages.dev` and `kurniadi.dev`: `ASK_ALLOWED_ORIGINS` in `wrangler.toml` (Ask, the RUM and the visit beacons), `WA_HOSTS` in `workers/stats/wrangler.toml` (shipped by the "hq-stats Worker" job of `deploy.yml`), `ASK_SITE_ORIGINS` in `src/ask/links.ts` (site links in Ask answers) and `TURNSTILE_DOMAINS` in `scripts/provision-ask.ts`. `tests/unit/site-hosts.test.ts` keeps them in step. After a deploy that ships a change to `TURNSTILE_DOMAINS`, run `bun scripts/provision-ask.ts` (dry run) and then with `--apply`: it sets the Turnstile widget's domains to that list. Without it, Ask on a new host fails the Turnstile check.
+4. Done 2026-11-02: on `https://shinyq.my.id`, a `POST /api/ask` with `Origin: https://shinyq.my.id` passes the origin check (an empty body gets 400, not 403) and a question in a person's browser gets an answer (a Playwright browser always fails Turnstile); `POST /api/rum` and `POST /api/visit` answer 204; and the visit shows in `/api/stats` (`visits.d30`) within about a minute.
+5. Done 2026-11-02: `SITE_URL` is `https://shinyq.my.id` (`gh variable set SITE_URL --body https://shinyq.my.id`, then `gh workflow run deploy.yml --ref main`): canonical URLs, `hreflang`, the sitemap, `robots.txt`, OG URLs and the smoke, uptime and rollback checks use it. The zone needed four settings first, or the smoke check fails (every GitHub runner request got 403) and the pages differ from what was tested:
+   - Bot Fight Mode and its JavaScript detections off (`cf bot-management update -z shinyq.my.id --body '{"fight_mode":false,"enable_js":false}'`): Bot Fight Mode challenges datacenter clients such as the smoke and uptime checks, and the detections inject an inline script the page script policy blocks;
+   - Email Obfuscation off: it rewrites the `mailto:` links and injects a script;
+   - Browser Cache TTL "Respect Existing Headers" (`0`): the default 4 hours overrides the site's shorter `Cache-Control` (the smoke check reads `/cv/*` and the other prefixes);
+   - like Rocket Loader and HTML minification (section 9), keep every zone feature that rewrites HTML off.
+6. Done 2026-11-02: the GitHub webhook of ShinyQ/ShinyQ-HQ delivers to `https://shinyq.my.id/api/office/github` (changed with `PATCH repos/ShinyQ/ShinyQ-HQ/hooks/<id>/config`, which keeps the secret; a webhook does not follow redirects), and the office relay on the owner's Mac posts to `https://shinyq.my.id/api/office/beat` (`~/.office-relay/config.json`; the relay's `DEFAULT_CONFIG` is the same URL). Check: the webhook's ping answers 204 and `office-relay status` shows `send 204` with the new endpoint.
+7. Done 2026-11-02: the account Bulk Redirect list `pages_dev_to_shinyq`, enabled by the account ruleset "Bulk redirects" (phase `http_request_redirect`), sends `kurniadi.pages.dev/` to `https://shinyq.my.id/` with status 308 (keeps the method of a POST), subpath matching, the path suffix and the query string kept, and subdomains not included. Per-deployment URLs (`<hash>.kurniadi.pages.dev`) are therefore untouched and still answer through their Access application. Keep `kurniadi.pages.dev` in the host lists. Check: `curl -sI https://kurniadi.pages.dev/en/labs/voice-ai-contact-center?view=classic` answers 308 with `location: https://shinyq.my.id/en/labs/voice-ai-contact-center?view=classic`.
 
 ## 8. Lighthouse CI
 
@@ -294,7 +298,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 
 | Kind | Name | Used by |
 |---|---|---|
-| Pages | `kurniadi` | Production, https://kurniadi.pages.dev |
+| Pages | `kurniadi` | Production, https://shinyq.my.id (custom domain; `kurniadi.pages.dev` redirects to it) |
 | Pages | `shinyq-hq` | Unused since the PR preview job was removed (2026-11-01); delete it or keep it for a future preview token |
 | KV | `shinyq-hq-ask` | Ask answer cache and rate-limit counters |
 | AI Gateway | `shinyq-hq` | Ask model calls (cache, logs, rate limit) |
@@ -308,14 +312,15 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | R2 | `hq-study-guides` | Study guide PDFs (private, no `r2.dev` URL, no custom domain), binding `GUIDES`, served by `/api/guides/<slug>` (section 19) |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
-| Zone | `shinyq.my.id` | The main address from the cutover in section 7b (active since 2026-11-02; the apex is the Pages custom domain); no mail |
+| Zone | `shinyq.my.id` | The main address from the cutover in section 7b (active since 2026-11-02; the apex is the Pages custom domain); no mail. Bot Fight Mode, its JavaScript detections and Email Obfuscation off, Browser Cache TTL respects the site's headers (section 7b step 5) |
+| Bulk Redirect | list `pages_dev_to_shinyq`, account ruleset "Bulk redirects" | 308 from the exact host `kurniadi.pages.dev` to `https://shinyq.my.id`, path and query kept (section 7b step 7) |
 | API tokens | `hq-ci-deploy` (`CLOUDFLARE_API_TOKEN`, `production` environment), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | Rotate each before it expires (the two `shinyq-hq` tokens on 2027-01-09; `docs/ask-runbook.md`) |
 
 ## 12. Performance beacon (RUM)
 
 `functions/api/rum.ts` (`POST /api/rum`) writes one point per sampled 3D session (25%, once per browser session) to the Analytics Engine dataset `perf_events` (binding `PERF_EVENTS` in `wrangler.toml`). Fields, buckets and the privacy note: appendix 06 section 4. Kill switch: set `RUM_ENABLED = "false"` in `wrangler.toml` and deploy; the Function then answers 204 and writes nothing.
 
-Check a deploy by hand: open `https://kurniadi.pages.dev/en?rum=1` in a normal browser (with Do Not Track and Global Privacy Control off), enter the tower, wait for explore, switch tabs; a `POST /api/rum` with status 204 appears in DevTools > Network. Points show up in SQL within a few minutes:
+Check a deploy by hand: open `https://shinyq.my.id/en?rum=1` in a normal browser (with Do Not Track and Global Privacy Control off), enter the tower, wait for explore, switch tabs; a `POST /api/rum` with status 204 appears in DevTools > Network. Points show up in SQL within a few minutes:
 
 ```sh
 curl -s "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/analytics_engine/sql" \
@@ -345,9 +350,9 @@ Cadence: the Worker runs every hour and uptime allows a snapshot at most 3 h old
 
 Deploy order and rollback: the Pages upload runs first; it binds `STATS` to the existing hq-stats Worker, and until the new Worker version is live (minutes later, job "hq-stats Worker") `/api/stats` serves the snapshot without the live part. A Pages rollback to a version before this change rejects visit pings (400) and serves no live part, so days during it read fewer visits; a Worker rollback to such a version drops the ledger's `cutover` on its next ledger write and rolls days up from Web Analytics, and the next new version detects the cutover again from the unstored days' pings.
 
-Deploys run in CI: the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit and `STATS_WORKER_DEPLOY` is unset, so `deploy.yml` job "hq-stats Worker" deploys the Worker and `rollback.yml` rolls it back. Manual deploy (fallback only, with `STATS_WORKER_DEPLOY=false`): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next hourly slot `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
+Deploys run in CI: the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit and `STATS_WORKER_DEPLOY` is unset, so `deploy.yml` job "hq-stats Worker" deploys the Worker and `rollback.yml` rolls it back. Manual deploy (fallback only, with `STATS_WORKER_DEPLOY=false`): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next hourly slot `curl -s https://shinyq.my.id/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
 
-Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Check the live count: note `curl -s https://kurniadi.pages.dev/api/stats | jq .visits.all`, open the site in a fresh tab on a phone (a new tab, not a reload), and within 2 minutes the same command shows one more. Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
+Check a deploy: `curl -sI https://shinyq.my.id/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://shinyq.my.id/api/visit` (405). Check the live count: note `curl -s https://shinyq.my.id/api/stats | jq .visits.all`, open the site in a fresh tab on a phone (a new tab, not a reload), and within 2 minutes the same command shows one more. Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
 
 ## 14. Repository protection (security S5, H2, H6; applied 2026-10-14)
 
@@ -368,25 +373,25 @@ What the build does is in [features.md](features.md#search-and-link-previews). T
 
 ### Google Search Console
 
-1. https://search.google.com/search-console > Add property > **URL prefix** `https://kurniadi.pages.dev/` (a Domain property needs a DNS TXT record, which a `pages.dev` subdomain cannot have).
+1. https://search.google.com/search-console > Add property > **URL prefix** `https://shinyq.my.id/` (or a **Domain** property `shinyq.my.id`, verified by a DNS TXT record in the Cloudflare zone; the older `https://kurniadi.pages.dev/` property now only sees redirects).
 2. Choose **HTML tag**, copy only the `content` value of `<meta name="google-site-verification" content="...">`.
-3. `gh variable set GOOGLE_SITE_VERIFICATION --body <content value>`, then deploy (`gh workflow run deploy.yml --ref main`). Check: `curl -s https://kurniadi.pages.dev/ | grep google-site-verification`.
+3. `gh variable set GOOGLE_SITE_VERIFICATION --body <content value>`, then deploy (`gh workflow run deploy.yml --ref main`). Check: `curl -s https://shinyq.my.id/ | grep google-site-verification`.
 4. Click **Verify**. Keep the variable: Google re-checks the tag from time to time.
-5. Sitemaps > add `sitemap.xml`. URL inspection > `https://kurniadi.pages.dev/en` > Request indexing (and `/id`).
+5. Sitemaps > add `sitemap.xml`. URL inspection > `https://shinyq.my.id/en` > Request indexing (and `/id`).
 
 Alternative without a deploy variable: download Google's HTML file (`google<token>.html`) into `public/`, commit it in a PR and deploy. Do not invent or reuse tokens.
 
 ### Bing Webmaster Tools
 
-1. https://www.bing.com/webmasters > Import from Google Search Console (fastest once Google is verified; nothing else to do), or Add a site `https://kurniadi.pages.dev/` and choose **HTML Meta Tag**.
+1. https://www.bing.com/webmasters > Import from Google Search Console (fastest once Google is verified; nothing else to do), or Add a site `https://shinyq.my.id/` and choose **HTML Meta Tag**.
 2. For the meta tag: `gh variable set BING_SITE_VERIFICATION --body <content of msvalidate.01>`, deploy, then Verify.
-3. Sitemaps > Submit `https://kurniadi.pages.dev/sitemap.xml`. Bing also feeds DuckDuckGo and Yahoo.
+3. Sitemaps > Submit `https://shinyq.my.id/sitemap.xml`. Bing also feeds DuckDuckGo and Yahoo.
 
 ### LinkedIn previews (Featured "Add link", posts)
 
 LinkedIn caches a preview per URL, including a failed one, and does not run JavaScript. After a deploy that changes share tags or cards:
 
-1. Open https://www.linkedin.com/post-inspector/ (signed in), paste the exact URL you will share (for example `https://kurniadi.pages.dev/en`), and Inspect. It shows the title, description, image and any error, and refreshes LinkedIn's cache for that URL.
+1. Open https://www.linkedin.com/post-inspector/ (signed in), paste the exact URL you will share (for example `https://shinyq.my.id/en`), and Inspect. It shows the title, description, image and any error, and refreshes LinkedIn's cache for that URL.
 2. If the Featured section still shows "We couldn't load a preview for this link", remove the link, wait a few minutes and add it again (the Featured section keeps its own copy).
 3. Prefer the locale URL (`/en` or `/id`): `/` answers with the same card but declares `/en` as its canonical, so LinkedIn may show `/en` anyway.
 
@@ -394,9 +399,9 @@ Check what LinkedIn's fetcher gets, from any machine:
 
 ```sh
 UA='LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)'
-curl -s -A "$UA" -o /dev/null -w '%{http_code} %{size_download}\n' https://kurniadi.pages.dev/en   # 200
-curl -s -A "$UA" https://kurniadi.pages.dev/en | head -c 8192 | grep -o 'property="og:[a-z:_]*"' | sort -u
-curl -sI -A "$UA" https://kurniadi.pages.dev/og/en.jpg | grep -iE '^(HTTP|content-type)'           # 200, image/jpeg
+curl -s -A "$UA" -o /dev/null -w '%{http_code} %{size_download}\n' https://shinyq.my.id/en   # 200
+curl -s -A "$UA" https://shinyq.my.id/en | head -c 8192 | grep -o 'property="og:[a-z:_]*"' | sort -u
+curl -sI -A "$UA" https://shinyq.my.id/og/en.jpg | grep -iE '^(HTTP|content-type)'           # 200, image/jpeg
 ```
 
 `deploy.yml` runs the same check after every deploy (`scripts/deploy-smoke.ts`, `UNFURL_PATHS`).
@@ -477,4 +482,4 @@ The study guide reader reads PDFs from the private R2 bucket `hq-study-guides` t
 - The bucket must exist before any deploy that carries the binding: Pages validates the bindings in `wrangler.toml` when `wrangler pages deploy` uploads, and a missing bucket fails the deploy. It exists (created 2026-10-19, with the four guides uploaded), so this matters only for a new account or project.
 - The deploy token (`CLOUDFLARE_API_TOKEN`) needs R2 access in this account (Account, Workers R2 Storage; Read should be enough, since CI only binds the bucket and never writes to it: uploads are done by the owner's `wrangler login`). Owner action: none if the token already has it; otherwise add the permission in My Profile > API Tokens > edit `hq-ci-deploy` (the token value stays the same) and rerun `gh workflow run deploy.yml --ref main`.
 - Keep the bucket private: never turn on its `r2.dev` URL or attach a custom domain. The Function is the only way in.
-- Check after a deploy: `curl -sI "https://kurniadi.pages.dev/api/guides/gh-600?v=<version>"` answers 200 with `application/pdf` and `accept-ranges: bytes` (the version is in `content/study-guides.json`). A 404 for every guide with "GUIDES binding missing" in the Function log means the binding did not apply.
+- Check after a deploy: `curl -sI "https://shinyq.my.id/api/guides/gh-600?v=<version>"` answers 200 with `application/pdf` and `accept-ranges: bytes` (the version is in `content/study-guides.json`). A 404 for every guide with "GUIDES binding missing" in the Function log means the binding did not apply.

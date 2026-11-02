@@ -22,6 +22,14 @@ const newest = (dates: string[], today = new Date().toISOString().slice(0, 10)) 
   dates.filter((d) => d.slice(0, today.length) <= today).reduce<string | undefined>((a, b) => (!a || b > a ? b : a), undefined);
 
 /**
+ * A sitemap `<lastmod>`: the day (`YYYY-MM-DD`) of a full date or date-time. A month-only date ("2026-10") gives none:
+ * Google Search Console reads it as an invalid date, and a guessed day would claim a change that never happened.
+ */
+export function sitemapDate(date: string | undefined): string | undefined {
+  return date && /^\d{4}-\d{2}-\d{2}(?:$|T)/.test(date) ? date.slice(0, 10) : undefined;
+}
+
+/**
  * `lastmod` from content dates, only where the date says when the page changed (W3C dates such as
  * "2026-10-12" or "2026-02"): a post by its date, Writing by its newest post, Journey by its newest
  * timeline date, and Home and Quick view (live facts, newest posts and roles) by the newest of the

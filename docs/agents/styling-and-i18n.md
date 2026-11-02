@@ -52,7 +52,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - Search titles are unique per locale, and so are share titles.
 - `og:url` always equals the canonical, and `/` declares `/en` as both (`src/app/(root)/layout.tsx`).
 - Search engine verification comes only from the `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` build variables (`searchVerification`, on `/`, `/en`, `/id`); never commit a token in code.
-- The sitemap's `lastmod` comes from content dates only (`lastModified` in `src/lib/routes.ts`).
+- The sitemap's `lastmod` comes from content dates only (`lastModified` in `src/lib/routes.ts`), always as a full `YYYY-MM-DD` day (`sitemapDate`); a month-only date leaves the entry undated (Search Console rejects it).
 
 ### Share cards
 

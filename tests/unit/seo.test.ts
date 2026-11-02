@@ -19,7 +19,7 @@ import {
   websiteJsonLd,
 } from "@/lib/jsonld";
 import { seoFor } from "@/lib/seo";
-import { allPagePaths, lastModified } from "@/lib/routes";
+import { allPagePaths, lastModified, sitemapDate } from "@/lib/routes";
 import {
   SITE_URL,
   languageAlternates,
@@ -138,6 +138,16 @@ describe("sitemap and robots", () => {
     }
     const entry = sitemap().find((e) => e.url === `${SITE_URL}/en/blog/${post.slug}`);
     expect(entry?.lastModified).toBe(post.date);
+  });
+
+  it("writes every sitemap lastmod as a full YYYY-MM-DD date and drops month-only dates (Search Console)", () => {
+    expect(sitemapDate("2026-10-09")).toBe("2026-10-09");
+    expect(sitemapDate("2026-11-02T01:17:46.588Z")).toBe("2026-11-02");
+    for (const bad of ["2026-10", "2026", "", "10/09/2026", undefined]) expect(sitemapDate(bad), String(bad)).toBeUndefined();
+    const entries = sitemap();
+    for (const e of entries) if (e.lastModified !== undefined) expect(e.lastModified, e.url).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const journey = entries.find((e) => e.url === `${SITE_URL}/en/journey`);
+    expect(journey?.lastModified).toBe(sitemapDate(lastModified("/journey")));
   });
 });
 

@@ -283,7 +283,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   session (`tests/relay/busy-session.ts`, about 300 hook events over ten minutes shaped like the relay log) and checks
   the cut, the final desk through `applyBeat`, a desk at most one window late, no rule-made thinking, and the rules.
 - Sender (`send.ts`): Keychain item `hq-office-ingest` (account `office-relay`), `X-Office-Signature`, 2 s timeout to
-  `https://kurniadi.pages.dev/api/office/beat` by default; logs the status only.
+  `https://shinyq.my.id/api/office/beat` by default; logs the status only.
 - Installer (`install.ts`): `~/.copilot/hooks/office.json`, merges `~/.claude/settings.json` and `~/.codex/hooks.json`
   (async handlers, backups, only entries containing `office-relay hook` are replaced); install and uninstall parse
   every file (and install builds the bundle) before writing and exit 1 on failure; uninstall also removes the program
