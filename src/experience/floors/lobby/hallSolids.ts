@@ -152,9 +152,29 @@ export function portraitRing(face: Face): Circle {
   return { x: face.origin.x + face.out.x * 0.02, y: ABOUT.disc.y, z: face.origin.z + face.out.z * 0.02, r: ABOUT.disc.r + 0.08, segments: 40, face };
 }
 
-/** Every neon line of the gallery as segment pairs: box edges, prism rims, circles and the beacon lattice. */
-export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = []): Float32Array {
+/**
+ * The shapes of one hall part (by their centre, `partOf`): the hall draws its parts as separate groups, each culled on its
+ * own (`HallView`), so a view that only reaches one part never draws the others' meshes.
+ */
+export function partShapes<K extends string>(shapes: HallShapes, partOf: (x: number, z: number) => K, part: K): HallShapes {
+  const mine = (p: { x: number; z: number }) => partOf(p.x, p.z) === part;
+  return { boxes: shapes.boxes.filter(mine), prisms: shapes.prisms.filter(mine), circles: shapes.circles.filter(mine) };
+}
+
+/** Every neon line of the gallery as segment pairs: box edges, prism rims, circles and (with `lattice`) the beacon lattice. */
+export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = [], lattice: boolean = true): Float32Array {
   const edges = boxEdgeBuffers(shapes.boxes);
+  if (!lattice) {
+    const round = [...shapes.circles, ...extra].flatMap(circleSegments);
+    const out = new Float32Array(edges.length + round.length);
+    out.set(edges, 0);
+    out.set(round, edges.length);
+    return out;
+  }
+  return withLattice(edges, [...shapes.circles, ...extra]);
+}
+
+function withLattice(edges: Float32Array, circles: readonly Circle[]): Float32Array {
   const b = contactBeacon();
   const lattice = latticeSegments(BEACON.mast.top - BEACON.base.h, 0.45, 0.14, 8);
   for (let k = 0; k < lattice.length; k += 3) {
@@ -162,7 +182,7 @@ export function hallLineBuffer(shapes: HallShapes, extra: readonly Circle[] = []
     lattice[k + 1] += BEACON.base.h;
     lattice[k + 2] += b.mast.z;
   }
-  const round = [...shapes.circles, ...extra].flatMap(circleSegments);
+  const round = circles.flatMap(circleSegments);
   const out = new Float32Array(edges.length + lattice.length + round.length);
   out.set(edges, 0);
   out.set(lattice, edges.length);

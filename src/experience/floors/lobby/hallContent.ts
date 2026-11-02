@@ -195,6 +195,20 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   return { labels: out, tile };
 }
 
+/**
+ * The hall's texts of one part (`HighlightsHall` draws one batch per part, `partOf` by each label's position). Each label
+ * keeps its tile index (every stat tile stands in the north part, so the other parts carry none).
+ */
+export function partTexts<K extends string>(texts: HallTexts, partOf: (x: number, z: number) => K, part: K): HallTexts {
+  const out: HallTexts = { labels: [], tile: [] };
+  texts.labels.forEach((label, i) => {
+    if (partOf(label.position[0], label.position[2]) !== part) return;
+    out.labels.push(label);
+    out.tile.push(texts.tile[i]);
+  });
+  return out;
+}
+
 export interface ShotQuad {
   /** Atlas cell (project order). */
   index: number;
