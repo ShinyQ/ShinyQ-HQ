@@ -14,7 +14,7 @@ import { postHandle } from "../scene/postHandle";
 import { useRingStats } from "../visits3d";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
 import type { HallLabels } from "./lobby/hallContent";
-import { HALL } from "./lobby/hallLayout";
+import { HALL, hallOfficeRoadDrawn } from "./lobby/hallLayout";
 import { HighlightsHall } from "./lobby/HighlightsHall";
 import { Lanes } from "./lobby/Lanes";
 import { atlasLayout, wallLogoSrcs } from "./lobby/logoAtlas";
@@ -29,7 +29,8 @@ import { VisitsStation } from "./lobby/VisitsStation";
 import { OfficeMount } from "./lobby/office/OfficeMount";
 import { officeRoad, type OfficeTranslate } from "./lobby/officeLayout";
 import { officeSign, wingBounds, wingSignHidden } from "./lobby/officeShell";
-import { parkRoadsDrawn } from "./lobby/parkLayout";
+import { WestStrip } from "./lobby/WestStrip";
+import { WEST_STRIP } from "./lobby/westStripLayout";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { animationSpeed } from "../scene/animationSpeed";
@@ -61,16 +62,16 @@ const REVEAL = {
   observatory: LOBBY.observatory,
   hall: { minX: HALL.zone.minX, maxX: HALL.zone.maxX, minZ: LOBBY.bounds.minZ, maxZ: LOBBY.bounds.maxZ },
   wing: wingBounds(),
+  westStrip: WEST_STRIP.rect,
 } satisfies Record<string, Rect>;
 
 /**
- * The office wing's lead road and plaza and the Proof Park roads and plaza (only between the plazas they join:
- * `parkRoadsDrawn`), drawn with the hall's road kit (`RoadMarkings`) in one mesh: the intro orbit and the office stop
- * already draw it, so the park roads add no draw call there.
+ * The office wing's lead road and plaza and the road from the office plaza into the Highlights Hall (only between the two
+ * plazas: `hallOfficeRoadDrawn`), drawn with the hall's road kit (`RoadMarkings`) in one mesh: the intro orbit and the
+ * office stop already draw it, so the hall road adds no draw call there.
  */
 const WING = officeRoad(LOBBY.officeWing);
-const PARK_ROAD = parkRoadsDrawn();
-const WING_ROAD = { roads: [WING.road, ...PARK_ROAD.roads], plazas: [WING.plaza, ...PARK_ROAD.plazas], spurs: [] };
+const WING_ROAD = { roads: [WING.road, hallOfficeRoadDrawn()], plazas: [WING.plaza], spurs: [] };
 
 /**
  * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays. Every session that boots on
@@ -151,7 +152,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
         </Suspense>
       </IntroReveal>
       {/*
-        Agent Office wing: its lead road, plaza and sign, with the Proof Park roads and plaza in the same road mesh (the
+        Agent Office wing: its lead road, plaza and sign, with the road into the Highlights Hall in the same road mesh (the
         hall's road kit and sign programs; on the full tier only once the composer exists, like the beacons, so no
         canvas-target variant compiles), the office shell always, the live office from its lazy chunk (floors/lobby/office/).
       */}
@@ -166,6 +167,8 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
         )}
         <OfficeMount tier={tier} t={labels.office} ready={composerLive} />
       </IntroReveal>
+      {/* The lit strip west of the office wing (decoration only; the holo stage program, so only once the composer is live). */}
+      <IntroReveal rect={REVEAL.westStrip}>{composerLive && <WestStrip tier={tier} reducedMotion={reducedMotion} />}</IntroReveal>
       {hall && (
         <IntroReveal rect={REVEAL.hall}>
           <HighlightsHall data={data} labels={labels.hall} tier={tier} />

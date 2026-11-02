@@ -8,10 +8,9 @@ import { buildEngineLayout, ENGINE } from "./floors/engine/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
-import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
+import { HALL, HALL_LAYOUT, hallOfficeRoad } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
 import { officeObstacles, officeRoad, officeStops, officeTall, officeTowerTall, officeWing, officeZone } from "./floors/lobby/officeLayout";
-import { PARK, parkArchPosts, parkPlaza, parkRoads, parkTall } from "./floors/lobby/parkLayout";
 import {
   KIOSK_AXIS,
   KIOSK_CENTER,
@@ -126,8 +125,8 @@ export const LOBBY = {
    */
   bounds: LOBBY_BOUNDS,
   /**
-   * The whole L1 slab (owner decision 2026-11-02, Proof Park): one 93 x 86 u rectangle from the Lobby's north edge to the
-   * office wing's south edge, the old notches west and east of the wing filled (the Benchmark Lab and Proof Park).
+   * The whole L1 slab (owner decision 2026-11-02): one 93 x 86 u rectangle from the Lobby's north edge to the office wing's
+   * south edge, the old notches west and east of the wing filled (the Highlights Hall's south half and a lit strip).
    * `FloorLayout.bounds` for L1, with no wings.
    */
   slab: { minX: LOBBY_BOUNDS.minX, maxX: LOBBY_BOUNDS.maxX, minZ: LOBBY_BOUNDS.minZ, maxZ: LOBBY_OFFICE_WING.rect.maxZ },
@@ -292,8 +291,6 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
           // Agent Office wing: the desk row (three touching boxes), the screen wall, the CI tower and the ship dock (floors/lobby/officeLayout.ts).
           ...officeObstacles(wing),
-          // Proof Park: the arch's posts, touching the gateway's south pillar and the contact station (floors/lobby/parkLayout.ts).
-          ...parkArchPosts(),
         ],
         LOBBY.spawn,
       ),
@@ -304,20 +301,21 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       // zones; the Visitor Observatory's door and the spawn and observatory views (floors/lobby/observatoryLayout.ts);
       // the elevator arrival view.
       doors: [...HALL_LAYOUT.doors, observatory.door],
-      // The office wing's lead road and plaza and the Proof Park roads and plaza join the hall's network as a second part (the
-      // park road joins the office lead road; the arch road stops short of the hall's), and `roadRoute` drives between the parts.
+      // The office wing's lead road and plaza and the road from the office plaza into the hall join the hall's network as a
+      // second part (the hall road joins the office lead road and ends inside the hall plaza, which links to the hall lead
+      // road only), and `roadRoute` drives between the parts.
       road: {
         ...HALL_LAYOUT.network,
-        roads: [...HALL_LAYOUT.network.roads, office.road, ...parkRoads()],
-        plazas: [...HALL_LAYOUT.network.plazas, office.plaza, parkPlaza()],
+        roads: [...HALL_LAYOUT.network.roads, office.road, hallOfficeRoad()],
+        plazas: [...HALL_LAYOUT.network.plazas, office.plaza],
       },
-      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan, PARK.zone],
+      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan, HALL.link],
       viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone(), officeZone(wing)],
       // Every Agent Office room drives to the office stop (the rooms have no door).
       stops: officeStops(wing),
       // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
-      // card), the observatory globe, the Agent Office screen wall and its CI tower column, the Proof Park arch's posts.
-      tall: [...hallTall(), LOBBY.observatory, officeTall(wing), officeTowerTall(wing), ...parkTall()],
+      // card), the observatory globe, the Agent Office screen wall and its CI tower column.
+      tall: [...hallTall(), LOBBY.observatory, officeTall(wing), officeTowerTall(wing)],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

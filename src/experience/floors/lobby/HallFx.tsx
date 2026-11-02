@@ -12,7 +12,7 @@ import { roverRuntime } from "../../rover/runtime";
 import type { GpuTier, Vec2 } from "../../types";
 import { gateSwept, markGateSwept, sweepProgress } from "./gateSweep";
 import { FOUNTAIN, gateCrossed } from "./hallGallery";
-import { curtainInstance, portalInstance, stageAttributes, type StageInstance } from "./hallStage";
+import { curtainInstance, portalInstances, stageAttributes, type StageInstance } from "./hallStage";
 
 const NO_RAYCAST = () => null;
 
@@ -110,7 +110,7 @@ export function StageRings({ instances, tier, reducedMotion }: { instances: read
 
 /** The work experience arch's lit opening: a still band of amber light, slow scanlines on the full tier. */
 export function StagePortal({ tier, reducedMotion }: { tier: GpuTier; reducedMotion: boolean }) {
-  const instances = useMemo(() => [portalInstance(tier)], [tier]);
+  const instances = useMemo(() => portalInstances(tier), [tier]);
   return <StageMesh name="hall-portal" base={square} instances={instances} additive={tier === "full"} animate={tier === "full" && !reducedMotion} />;
 }
 

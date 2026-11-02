@@ -16,12 +16,11 @@ import { precompileObject } from "../../scene/precompile";
 import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
-import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, SHOT_CELL, type HallAtlas, type HallLabels } from "./hallContent";
+import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, RESULT_ROWS, SHOT_CELL, TIER_TONE, type HallAtlas, type HallLabels } from "./hallContent";
 import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
-import { aboutFace, contactBeacon, gateSign, hallLights, statTiles } from "./hallGallery";
+import { aboutFace, contactBeacon, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
-import { PARK } from "./parkLayout";
 import { lightInstances, panelInstances, ringInstances } from "./hallStage";
 import { hallLineBuffer, hallShapes, portraitRing, solidBuffers, type HallShapes } from "./hallSolids";
 import { HIGHLIGHT_STAT_COUNT } from "./stations";
@@ -98,7 +97,7 @@ function HallSolids({ shapes }: { shapes: HallShapes }) {
 function HallLines({ shapes, tier }: { shapes: HallShapes; tier: GpuTier }) {
   const geometry = useMemo(() => {
     const g = new BufferGeometry();
-    g.setAttribute("position", new BufferAttribute(hallLineBuffer(shapes, [portraitRing(aboutFace())]), 3));
+    g.setAttribute("position", new BufferAttribute(hallLineBuffer(shapes, [portraitRing(aboutFace()), portraitRing(winsFace())]), 3));
     g.computeBoundingSphere();
     return g;
   }, [shapes]);
@@ -145,14 +144,11 @@ function HallReady({ children }: { children: ReactNode }) {
 }
 
 /**
- * Floor-local bounds of everything inside `HallView` (from the gateway arch east, the Proof Park arch included: shapes,
- * lights up to the spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
+ * Floor-local bounds of everything inside `HallView` (from the gateway arch east, the slab's full depth: shapes, lights up
+ * to the spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
  */
 const HALL_GRID = 6;
-const HALL_BOUNDS = new Box3(
-  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1),
-  new Vector3(HALL.zone.maxX + 1, 13, Math.max(HALL.zone.maxZ, PARK.arch.west.maxZ) + 1),
-);
+const HALL_BOUNDS = new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL.zone.maxZ + 1));
 
 /**
  * Hides the whole hall while its bounds are outside the view: the instanced lights, tiles and rings
@@ -203,10 +199,16 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   // Point-and-go: the stations are registry targets while the hall is mounted (the hall has no click handlers of its own).
   useEffect(() => registerExtraInteractables("L1", highlightsInteractables(HALL_LAYOUT, labels.stations)), [labels.stations]);
   const projectCount = data.highlights.projects.length;
-  const shapes = useMemo(() => hallShapes(projectCount), [projectCount]);
+  const resultCount = Math.min(MONOLITH.u.length, Math.ceil(data.highlights.results.length / RESULT_ROWS));
+  const shapes = useMemo(() => hallShapes(projectCount, resultCount), [projectCount, resultCount]);
   const texts = useMemo(() => hallTexts(data, labels, FONTS), [data, labels]);
-  const tiles = useMemo(() => statTiles(Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length)), [data.stats.length]);
-  const lights = useMemo(() => lightInstances(hallLights(tier, projectCount), tier), [tier, projectCount]);
+  const winTiers = data.highlights.wins.tiers;
+  // About me's stat tiles, then one wins tile per tier in its tier's tone (`hallTexts` rides their labels in this order).
+  const tiles = useMemo(
+    () => [...statTiles(Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length)), ...winsTiles(winTiers.length).map((t, i) => ({ ...t, tone: TIER_TONE[winTiers[i].tier] }))],
+    [data.stats.length, winTiers],
+  );
+  const lights = useMemo(() => lightInstances(hallLights(tier, projectCount, resultCount), tier), [tier, projectCount, resultCount]);
   const rings = useMemo(() => ringInstances(contactBeacon().pulses, HALL.tone.contact, tier), [tier]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
   const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);

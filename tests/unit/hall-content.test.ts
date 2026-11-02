@@ -16,7 +16,6 @@ import {
 import { podLiveLink } from "@/content/selectors";
 import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, onFace, statTiles, type Face } from "@/experience/floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
-import { PARK } from "@/experience/floors/lobby/parkLayout";
 import { hallLineBuffer, hallShapes, portraitRing, prismBuffers, solidBuffers } from "@/experience/floors/lobby/hallSolids";
 import type { HighlightStation } from "@/experience/floors/lobby/stations";
 import { experienceRows } from "@/experience/floors/lobby/stations";
@@ -27,12 +26,28 @@ const labels: HallLabels = {
   about: "About me",
   projects: "Top 3 projects",
   experience: "Work experience",
+  wins: "Wins",
+  now: "Now",
+  results: "Results",
   contact: "Contact",
+  winsTitle: (firsts) => `${firsts} first places`,
+  winsLine: (placings) => `${placings} competition placings`,
+  winsRing: "placings",
+  winsHint: "Open this station for every placing",
+  tiers: { gold: "1st place", silver: "2nd place", bronze: "3rd place", honor: "Finalists and honors" },
   employment: "Employment",
   freelance: "Freelance",
   more: (count) => `+${count} more`,
   visitLive: "Visit live site",
-  stations: { about: "Highlights: about me", projects: "Highlights: top projects", experience: "Highlights: work experience", contact: "Highlights: contact" },
+  stations: {
+    about: "Highlights: about me",
+    projects: "Highlights: top projects",
+    experience: "Highlights: work experience",
+    wins: "Highlights: wins",
+    now: "Highlights: now",
+    results: "Highlights: results",
+    contact: "Highlights: contact",
+  },
   cvHint: "CV",
   hall: "Highlights Hall",
 };
@@ -133,9 +148,9 @@ describe("Highlights Hall scenery", () => {
     expect(tile.filter((k) => k >= 0)).toHaveLength(8);
   });
 
-  it("builds the gallery solids and neon lines inside the hall (the Proof Park arch just south of it), clear of the door pads", () => {
+  it("builds the gallery solids and neon lines inside the hall, clear of the door pads", () => {
     const shapes = hallShapes(3);
-    const maxZ = Math.max(HALL.zone.maxZ, PARK.arch.west.maxZ);
+    const maxZ = HALL.zone.maxZ;
     const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms);
     expect(positions.length).toBe(normals.length);
     expect(Math.max(...indices)).toBeLessThan(positions.length / 3);
