@@ -29,6 +29,7 @@ import { VisitsStation } from "./lobby/VisitsStation";
 import { OfficeMount } from "./lobby/office/OfficeMount";
 import { officeRoad, type OfficeTranslate } from "./lobby/officeLayout";
 import { officeSign, wingBounds, wingSignHidden } from "./lobby/officeShell";
+import { parkRoadsDrawn } from "./lobby/parkLayout";
 import { MAX_FRAME_DT } from "../rover/controller";
 import { roverRuntime } from "../rover/runtime";
 import { animationSpeed } from "../scene/animationSpeed";
@@ -62,9 +63,13 @@ const REVEAL = {
   wing: wingBounds(),
 } satisfies Record<string, Rect>;
 
-/** The office wing's lead road and plaza, drawn with the hall's road kit (`RoadMarkings`). */
+/**
+ * The office wing's lead road and plaza and the Proof Park roads and plaza (only between the plazas they join:
+ * `parkRoadsDrawn`), drawn with the hall's road kit (`RoadMarkings`) in one mesh.
+ */
 const WING = officeRoad(LOBBY.officeWing);
-const WING_ROAD = { roads: [WING.road], plazas: [WING.plaza], spurs: [] };
+const PARK_ROAD = parkRoadsDrawn();
+const WING_ROAD = { roads: [WING.road, ...PARK_ROAD.roads], plazas: [WING.plaza, ...PARK_ROAD.plazas], spurs: [] };
 
 /**
  * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays. Every session that boots on
@@ -145,9 +150,9 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
         </Suspense>
       </IntroReveal>
       {/*
-        Agent Office wing: its lead road, plaza and sign (the hall's road kit and sign programs; on the full tier only once
-        the composer exists, like the beacons, so no canvas-target variant compiles), the office shell always, the live
-        office from its lazy chunk (floors/lobby/office/).
+        Agent Office wing: its lead road, plaza and sign, with the Proof Park roads and plaza in the same road mesh (the
+        hall's road kit and sign programs; on the full tier only once the composer exists, like the beacons, so no
+        canvas-target variant compiles), the office shell always, the live office from its lazy chunk (floors/lobby/office/).
       */}
       <IntroReveal rect={REVEAL.wing}>
         {composerLive && (

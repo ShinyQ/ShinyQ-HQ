@@ -21,6 +21,7 @@ import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "
 import { aboutFace, contactBeacon, gateSign, hallLights, statTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
+import { PARK } from "./parkLayout";
 import { lightInstances, panelInstances, ringInstances } from "./hallStage";
 import { hallLineBuffer, hallShapes, portraitRing, solidBuffers, type HallShapes } from "./hallSolids";
 import { HIGHLIGHT_STAT_COUNT } from "./stations";
@@ -144,11 +145,14 @@ function HallReady({ children }: { children: ReactNode }) {
 }
 
 /**
- * Floor-local bounds of everything inside `HallView` (from the gateway arch east: shapes, lights up to the
- * spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
+ * Floor-local bounds of everything inside `HallView` (from the gateway arch east, the Proof Park arch included: shapes,
+ * lights up to the spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
  */
 const HALL_GRID = 6;
-const HALL_BOUNDS = new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL.zone.maxZ + 1));
+const HALL_BOUNDS = new Box3(
+  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1),
+  new Vector3(HALL.zone.maxX + 1, 13, Math.max(HALL.zone.maxZ, PARK.arch.west.maxZ) + 1),
+);
 
 /**
  * Hides the whole hall while its bounds are outside the view: the instanced lights, tiles and rings

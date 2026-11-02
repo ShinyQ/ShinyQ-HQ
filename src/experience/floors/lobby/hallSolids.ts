@@ -1,6 +1,7 @@
 import { boxBuffers, boxEdgeBuffers, latticeSegments, type Box } from "../roof/solids";
 import { ABOUT, BEACON, contactBeacon, experienceArch, FOUNTAIN, monoliths, type Face } from "./hallGallery";
 import { gatePillars, HALL } from "./hallLayout";
+import { PARK, parkArchPosts } from "./parkLayout";
 
 /**
  * Pure buffers for the gallery solids (no three): boxes (turned or not) plus round prisms (the About me
@@ -111,7 +112,7 @@ export interface HallShapes {
 
 const PEDESTAL_SIDES = 28;
 
-/** Every solid of the gallery: gateway arch, pedestal, monoliths, experience arch, beacon and card. */
+/** Every solid of the gallery: gateway arch, Proof Park arch, pedestal, monoliths, experience arch, beacon and card. */
 export function hallShapes(projectCount: number): HallShapes {
   const g = HALL.gate;
   const boxes: Box[] = [];
@@ -120,6 +121,10 @@ export function hallShapes(projectCount: number): HallShapes {
   // Gateway arch: pillars and the lintel the rover drives under.
   for (const p of gatePillars()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: g.h });
   boxes.push({ x: g.x, z: (g.north.minZ + g.south.maxZ) / 2, y: g.h - g.lintel, w: g.depth, d: g.south.maxZ - g.north.minZ, h: g.lintel });
+  // Proof Park arch (parkLayout.ts): its posts and the lintel over the road from the hall plaza into the park.
+  const A = PARK.arch;
+  for (const p of parkArchPosts()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: A.h });
+  boxes.push({ x: (A.west.minX + A.east.maxX) / 2, z: (A.west.minZ + A.west.maxZ) / 2, y: A.h - A.lintel, w: A.east.maxX - A.west.minX, d: A.west.maxZ - A.west.minZ, h: A.lintel });
   // About me: two-step round pedestal; rims glow, the portrait gets a neon ring.
   const a = ABOUT.center;
   prisms.push({ x: a.x, z: a.z, y: 0, h: ABOUT.base.h, r: ABOUT.base.r, sides: PEDESTAL_SIDES });

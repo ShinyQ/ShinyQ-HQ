@@ -144,7 +144,7 @@ const rng = (seed: number) => {
 
 describe("a slab without wings behaves exactly as the single-rect code did", () => {
   const layouts = realLayouts();
-  // L1 carries the Agent Office wing (checked below, away from the joint).
+  // Every floor, L1 included since Proof Park (2026-11-02: one rect); the wing code is checked below on L1's old shape.
   for (const id of (Object.keys(layouts) as FloorId[]).filter((f) => !layouts[f].wings?.length)) {
     const layout = layouts[id];
     const { bounds } = layout;
@@ -213,16 +213,17 @@ describe("a slab without wings behaves exactly as the single-rect code did", () 
   }
 });
 
-describe("L1 with the Agent Office wing behaves as the single-rect code did away from the joint", () => {
-  const layout = realLayouts().L1;
-  const { bounds } = layout;
+describe("a slab with a wing (L1's shape before Proof Park: the Lobby and the Agent Office wing) behaves as the single-rect code did away from the joint", () => {
   const wing = LOBBY.officeWing.rect;
+  const layout = { ...realLayouts().L1, bounds: LOBBY.bounds, wings: [wing] };
+  const { bounds } = layout;
   /** Within `m` of the joint's span (the wing's north edge on the Lobby's south edge), where the wing opens the floor. */
   const nearJoint = (p: Vec2, m: number) => Math.abs(p.z - wing.minZ) <= m && p.x >= wing.minX - m && p.x <= wing.maxX + m;
 
-  it("has exactly the office wing", () => {
+  it("is the Lobby rect with exactly the office wing; the real L1 is now one rect", () => {
     expect(layout.wings).toEqual([wing]);
-    expect(layout.wings!.length).toBe(1);
+    expect(realLayouts().L1.wings ?? []).toEqual([]);
+    expect(realLayouts().L1.bounds).toEqual(LOBBY.slab);
   });
 
   it("keeps every navgrid cell of the main rect away from the joint", () => {

@@ -3,6 +3,7 @@ import type { SignSpec } from "../../fx/signLayout";
 import type { GpuTier, Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
 import { gatePillars, HALL, stationOf } from "./hallLayout";
+import { PARK } from "./parkLayout";
 import { LOBBY_SLAB } from "./slab";
 
 /**
@@ -288,6 +289,10 @@ export function hallLights(tier: GpuTier, projectCount: number = 3): LightInstan
   // Gateway arch: uplights on the inner faces of both pillars.
   const o = gateOpening();
   out.push(beam(o.x, o.minZ + 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2), beam(o.x, o.maxZ - 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2));
+  // Proof Park arch: the same uplights on the inner faces of its posts.
+  const A = PARK.arch;
+  const az = (A.west.minZ + A.west.maxZ) / 2;
+  out.push(beam(A.opening.minX + 0.4, az, A.h - 0.4, 0.2, 0.6, T.about, 0.2), beam(A.opening.maxX - 0.4, az, A.h - 0.4, 0.2, 0.6, T.about, 0.2));
   return out;
 }
 

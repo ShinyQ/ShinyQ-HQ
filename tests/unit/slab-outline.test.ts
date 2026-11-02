@@ -24,6 +24,13 @@ describe("slab outline", () => {
     }
   });
 
+  it("draws L1 (Proof Park, 2026-11-02) as one 93 x 86 u box: no wings, 12 edges", () => {
+    const l1 = realLayouts().L1;
+    expect(l1.wings ?? []).toEqual([]);
+    expect([l1.bounds.maxX - l1.bounds.minX, l1.bounds.maxZ - l1.bounds.minZ]).toEqual([93, 86]);
+    expect(slabOutline(l1, SLAB_THICKNESS).getAttribute("position").count).toBe(24);
+  });
+
   it("leaves the joint of an L-shaped slab out and stands a vertical edge on every turn", () => {
     const g = slabOutline({ bounds: { minX: -10, maxX: 10, minZ: -10, maxZ: 10 }, wings: [{ minX: -2, maxX: 6, minZ: 10, maxZ: 30 }] }, 1);
     const s = segments(g);
@@ -37,10 +44,9 @@ describe("slab outline", () => {
     expect(s).toContain("-2.0000,-1.0000,10.0000 -2.0000,0.0000,10.0000");
   });
 
-  it("draws L1 with the Agent Office wing as one T-shaped outline with no edge along the joint", () => {
-    const l1 = realLayouts().L1;
+  it("draws L1's shape before Proof Park (the Lobby and the Agent Office wing) as one T-shaped outline with no edge along the joint", () => {
     const wing = LOBBY.officeWing.rect;
-    expect(l1.wings).toEqual([wing]);
+    const l1 = { bounds: LOBBY.bounds, wings: [wing] };
     const s = segments(slabOutline(l1, SLAB_THICKNESS));
     // 8 outer edges (the Lobby's south edge in two pieces) at the top and the bottom, plus 8 turns.
     expect(s).toHaveLength(24);

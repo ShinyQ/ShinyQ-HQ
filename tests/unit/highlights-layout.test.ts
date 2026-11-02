@@ -17,7 +17,9 @@ describe("Highlights Hall layout", () => {
   it("extends the Lobby slab east and keeps the spawn and the elevator where they belong", () => {
     // More room (owner 2026-10-19): the slab is 54 u deep and the hall starts 5 u further east.
     expect(LOBBY.bounds).toEqual({ minX: -24, maxX: 69, minZ: -27, maxZ: 27 });
-    expect(l1.bounds).toEqual(LOBBY.bounds);
+    // Proof Park (owner 2026-11-02): the floor's slab is the whole rectangle down to the office wing's south edge.
+    expect(l1.bounds).toEqual(LOBBY.slab);
+    expect(l1.bounds).toEqual({ ...LOBBY.bounds, maxZ: 59 });
     expect(l1.spawn).toEqual(LOBBY.spawn);
     expect(l1.approach).toEqual({ x: -21, z: 0 });
   });
