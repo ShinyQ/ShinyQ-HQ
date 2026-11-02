@@ -396,6 +396,8 @@
   },
   "blog": {
     "back": "Kembali ke Tulisan",
+    "readingTime": "{minutes} menit baca",
+    "topics": "Topik",
     "tableLabel": "Tabel yang dapat digeser",
     "translationMissing": "Tulisan ini tersedia dalam {language}. Versi asli ditampilkan di sini.",
     "languageName": {
