@@ -302,7 +302,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   `E2E_PORT=<port> bun scripts/visual-gate.ts --base HEAD --profile strict|msaa|batching|release`
   - Builds the base ref in a sibling worktree.
   - `--head <ref>` compares another commit instead of the working tree (builds are cached per commit in sibling worktrees).
-  - Captures 3 devices (full 1440x900@2, full 2560x1440@1, lite 390x844) x 8 poses at fixed frame counts with a virtual frame clock (`e2e/vclock.ts`).
+  - Captures 3 devices (full 1440x900@2, full 2560x1440@1, lite 390x844) x 13 poses (the five floor arrivals, the Highlights Hall's south half, the intro and six rides) at fixed frame counts with a virtual frame clock (`e2e/vclock.ts`).
   - Runs on the real GPU on macOS (ANGLE Metal; `VISUAL_GATE_GPU=swiftshader` for the CI renderer).
   - Compares the working tree build within the profile's thresholds (strict: per-pixel 0.1, at most 0.1% of pixels).
   - About 20 minutes on an M-series Mac plus builds; one run at a time.

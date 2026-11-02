@@ -9,14 +9,19 @@ import {
   experienceArch,
   faceOf,
   FOUNTAIN,
+  FOUNTAIN_SOUTH,
+  FOUNTAINS,
   gateCrossed,
   gateOpening,
   hallLights,
   hallTall,
   monoliths,
   MONOLITH,
+  NOW_ARCH,
+  nowArch,
   onFace,
   statTiles,
+  winsFace,
 } from "@/experience/floors/lobby/hallGallery";
 import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
@@ -142,25 +147,33 @@ describe("Highlights Hall gallery: stations", () => {
 });
 
 describe("Highlights Hall gallery: lights and camera", () => {
-  it("lights every station and the fountain; lite gets fewer fountain beams; no light is real", () => {
+  it("lights every station and both fountains; lite gets fewer fountain beams; no light is real", () => {
     const full = hallLights("full");
     const lite = hallLights("lite");
+    // Only the north fountain's ring turns (the stage shader turns around one centre); the south ring stands still.
     expect(full.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.full);
     expect(lite.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.lite);
-    expect(full.filter((l) => l.kind === "cone")).toHaveLength(4);
+    expect(full.filter((l) => l.kind === "beam" && !l.spin && l.r0 === 0.14)).toHaveLength(FOUNTAIN.beams.full);
+    // A spotlight per station.
+    expect(full.filter((l) => l.kind === "cone")).toHaveLength(7);
     for (const l of full) {
       expect(l.alpha).toBeGreaterThan(0);
       expect(l.alpha).toBeLessThanOrEqual(0.6);
       expect(inside(l, HALL.zone)).toBe(true);
     }
-    // The fountain is light only: nothing blocks the plaza center.
+    // The fountains are light only: nothing blocks them, both stand on the plaza.
     const grid = buildNavGrid(l1, ROVER.radius);
-    expect(isWalkable(grid, { x: FOUNTAIN.x, z: FOUNTAIN.z })).toBe(true);
+    expect(FOUNTAINS).toEqual([FOUNTAIN, FOUNTAIN_SOUTH]);
+    for (const f of FOUNTAINS) {
+      expect(isWalkable(grid, { x: f.x, z: f.z })).toBe(true);
+      expect(Math.abs(f.z - HALL.plaza.z)).toBeLessThan(HALL.plaza.d / 2 - f.rings[1]);
+    }
   });
 
   it("puts every tall shape into the camera collision, so a low camera never sits inside one", () => {
     const tall = hallTall();
-    expect(tall.length).toBe(2 + 3 + 2 + 2);
+    // Gate pillars, project monoliths, experience arch pillars, now arch pillars, result monoliths, beacon mast and card.
+    expect(tall.length).toBe(2 + 3 + 2 + 2 + 3 + 2);
     for (const t of tall) expect(t.h).toBeGreaterThan(3.2);
     // The L1 layout carries them (`FloorLayout.tall`), so CameraDirector clamps against them.
     expect(l1.tall).toEqual([...tall, LOBBY.observatory, officeTall(LOBBY.officeWing), officeTowerTall(LOBBY.officeWing)]);
@@ -168,8 +181,29 @@ describe("Highlights Hall gallery: lights and camera", () => {
     const m = monoliths(3)[1];
     expect(cameraBlocked([m.box.x, 6, m.box.z], world)).toBe(true);
     expect(cameraBlocked([contactBeacon().mast.x, 8.5, contactBeacon().mast.z], world)).toBe(true);
+    const r = monoliths(3, "results")[1];
+    expect(cameraBlocked([r.box.x, 6, r.box.z], world)).toBe(true);
+    const now = nowArch().pillars[0];
+    expect(cameraBlocked([now.x, NOW_ARCH.h, now.z], world)).toBe(true);
     // Under the gate lintel, in the opening, the camera is free.
     expect(cameraBlocked([HALL.gate.x, 4, HALL.lead[0].z], world)).toBe(false);
+  });
+
+  it("stands the new stations' shapes inside their footprints, facing the plaza: wins pedestal, now arch, result monoliths", () => {
+    const inRect = (x: number, z: number, r: Rect) => x >= r.minX - 1e-6 && x <= r.maxX + 1e-6 && z >= r.minZ - 1e-6 && z <= r.maxZ + 1e-6;
+    const wins = stationOf("wins");
+    const w = winsFace();
+    expect(inRect(w.origin.x, w.origin.z, wins.rect)).toBe(true);
+    expect(w.out).toEqual({ x: -wins.facing.x, z: -wins.facing.z });
+    // The pedestal's base keeps clear of the pad.
+    expect(Math.hypot(w.origin.x - wins.pad.x, w.origin.z - wins.pad.z)).toBeGreaterThan(ABOUT.base.r + 0.9);
+    const now = stationOf("now");
+    for (const p of nowArch().pillars) expect(inRect(p.x, p.z, now.rect)).toBe(true);
+    const results = stationOf("results");
+    for (const m of monoliths(3, "results")) {
+      expect(inRect(m.box.x, m.box.z, results.rect)).toBe(true);
+      expect(m.face.out.z).toBeLessThan(0);
+    }
   });
 
   it("builds faces that read left to right toward `out`", () => {

@@ -107,12 +107,13 @@ describe("L1 outline (owner decisions 2026-11-02)", () => {
     expect(drawn.points[1]).toEqual({ x: P.center.x - P.w / 2, z: W.plaza.center.z });
   });
 
-  it("drives the loop: from the office into every hall station on the hall road, and the Lobby's hall and office drives as before", () => {
+  it("drives the loop: from the office into the hall's south half on the hall road, and the Lobby's hall and office drives as before", () => {
     for (const door of hallDoors) {
       const there = roadRoute(l1.road!, grid, W.stop, door.at, graph)!;
       expect(there.at(-1), door.room).toEqual(door.at);
-      // Out of the office plaza east along the hall road.
-      expect(there.some((p) => p.z === W.plaza.center.z && p.x > W.plaza.center.x + W.plaza.w / 2), door.room).toBe(true);
+      // Out of the office plaza east along the hall road to every station south of the hall lead road's line (the north
+      // stations are as close by the office lead road and the hall lead road).
+      if (door.at.z > HALL.lead[0].z) expect(there.some((p) => p.z === W.plaza.center.z && p.x > W.plaza.center.x + W.plaza.w / 2), door.room).toBe(true);
     }
     // The Lobby's drives keep their roads: into the hall at the hall lead road's west end, to the office stop down its lead.
     for (const door of hallDoors) expect(roadRoute(l1.road!, grid, l1.spawn, door.at, graph)![0], door.room).toEqual(HALL.lead[0]);

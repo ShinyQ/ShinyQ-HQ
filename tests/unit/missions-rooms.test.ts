@@ -87,10 +87,10 @@ describe("room catalog", () => {
     expect(byId.get("RF:cv")!.title.id).not.toBe(byId.get("RF:cv")!.title.en);
   });
 
-  it("adds the four Highlights Hall stations, each with a landing anchor for the static tier", () => {
+  it("adds the seven Highlights Hall stations, each with a Classic anchor for the static tier", () => {
     const hall = rooms.filter((r) => r.kind === "highlights");
-    expect(hall.map((r) => r.id)).toEqual(["L1:highlights-about", "L1:highlights-projects", "L1:highlights-experience", "L1:highlights-contact"]);
-    expect(hall.map((r) => r.path)).toEqual(["/#intro", "/#work", "/#journey", "/#contact"]);
+    expect(hall.map((r) => r.id)).toEqual(["L1:highlights-about", "L1:highlights-projects", "L1:highlights-experience", "L1:highlights-wins", "L1:highlights-now", "L1:highlights-results", "L1:highlights-contact"]);
+    expect(hall.map((r) => r.path)).toEqual(["/#intro", "/#work", "/#journey", "/quick#awards", "/#journey", "/labs#key-projects", "/#contact"]);
     for (const room of hall) {
       expect(room.floorPath).toBe(room.path);
       expect(room.surpriseWeight).toBe(0);

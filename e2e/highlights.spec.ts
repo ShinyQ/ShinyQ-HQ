@@ -37,8 +37,8 @@ import { FLOOR_SCENE_CAPS } from "./budgets";
 test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
- * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md): the passage past the
- * certification wall, the four stations as point-and-go targets and their drawers, cards that ride to
+ * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md; extended 2026-11-02): the passage past the
+ * certification wall, the seven stations as point-and-go targets and their drawers, cards that ride to
  * L3 and L2, live links, the highlights mission (the Rover menu and Cmd-K), the #highlights deep link, the static
  * anchors and the render budget. Expectations come from the dataset, never from slugs or counts.
  */
@@ -48,6 +48,13 @@ const STATIONS: readonly HighlightStation[] = HIGHLIGHT_STATIONS;
 const tour = content.missions.find((m) => m.id === "highlights")!;
 const featured = pickFeaturedPods(orderPods(content.floors.labs.pods as unknown as Pod[]));
 const roles = content.floors.careerArchive.entries.filter((e) => e.type === "job" || e.type === "freelance");
+/** The new stations' data (owner decision 2026-11-02), straight from the dataset. */
+const awards = content.awards;
+const firsts = awards.filter((a) => a.placement.en === "1st place");
+const running = roles.filter((e) => e.end === "present");
+const verifiedBeforeAfter = orderPods(content.floors.labs.pods as unknown as Pod[]).flatMap((pod) =>
+  pod.results.filter((r) => r.confidence === "verified" && /→|\sto\s/.test(r.value)).map((r) => ({ pod, r })),
+);
 /** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
 async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {
   return page.evaluate(() => (window as unknown as { __hq: { probes: { hallGate: { sweeps: number; active: boolean } } } }).__hq.probes.hallGate);
@@ -181,6 +188,40 @@ test.describe("Highlights Hall", () => {
     expect(errors).toEqual([]);
   });
 
+  test("the wins, now and results stations open from their deep links with the dataset's numbers, and a result rides to its case study", async ({ page }) => {
+    const errors = collectErrors(page);
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite#highlights-wins");
+    await waitForHQ(page);
+    await roomOpen(page, highlightRoom("wins"));
+    await expectRoverNear(page, stationOf("wins").pad);
+    let drawer = page.getByTestId("room-drawer");
+    // Every award, grouped by placement; the first places counted from the data.
+    await expect(drawer.getByRole("heading", { name: `${en.hall.tier.gold} (${firsts.length})` })).toBeVisible();
+    await expect(drawer.getByRole("listitem").filter({ hasText: awards[0].organizer })).not.toHaveCount(0);
+    await expect(drawer).toContainText(en.hall.winsSub.replace("{placings}", String(awards.length)).replace("{firsts}", String(firsts.length)));
+
+    await page.goto("/en?tier=lite&s=now#highlights-now");
+    await waitForHQ(page);
+    await roomOpen(page, highlightRoom("now"));
+    drawer = page.getByTestId("room-drawer");
+    await expect(drawer.getByTestId("highlight-card")).toHaveCount(running.length);
+    expect(await drawer.getByTestId("highlight-card").evaluateAll((els) => els.map((e) => e.getAttribute("data-room")).sort())).toEqual(running.map((e) => `L2:${e.slug}`).sort());
+
+    await page.goto("/en?tier=lite&s=results#highlights-results");
+    await waitForHQ(page);
+    await roomOpen(page, highlightRoom("results"));
+    drawer = page.getByTestId("room-drawer");
+    await expect(drawer.getByTestId("highlight-card")).toHaveCount(verifiedBeforeAfter.length);
+    for (const { r } of verifiedBeforeAfter.slice(0, 3)) await expect(drawer).toContainText(r.value);
+    const card = drawer.getByTestId("highlight-card").first();
+    expect(await card.getAttribute("data-room")).toBe(`L3:${verifiedBeforeAfter[0].pod.slug}`);
+    await card.click();
+    await waitForFloor(page, "L3", 90_000).catch(() => undefined);
+    await waitForRoom(page, `L3:${verifiedBeforeAfter[0].pod.slug}`);
+    expect(errors).toEqual([]);
+  });
+
   test("a project card rides to L3 and opens its pod", async ({ page }) => {
     await enterHQ(page);
     const drawer = await openStation(page, "projects");
@@ -255,6 +296,13 @@ test.describe("Highlights Hall", () => {
     for (const anchor of ["#intro", "#work", "#journey", "#contact"]) await expect(page.locator(anchor)).toHaveCount(1);
   });
 
+  test("the static tier maps the new stations to their Classic sections", async ({ page }) => {
+    await openPage(page, "/en/quick?tier=static");
+    await expect(page.locator("#awards")).toHaveCount(1);
+    await openPage(page, "/en/labs?tier=static");
+    await expect(page.locator("#key-projects")).toHaveCount(1);
+  });
+
   /**
    * The full tier only: it draws the lite scene plus its motes, 2 scene calls more at every spot (CI 2026-10-17:
    * spawn 86 and 84, gate 75 and 73, plaza 55 and 53). Lite L1 stays gated at the spawn (e2e/perf/floors.spec.ts),
@@ -264,8 +312,9 @@ test.describe("Highlights Hall", () => {
     // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });
-    // The gate spot stands 4 u west of the gateway arch (x 36 since Proof Park, 2026-11-02), clear of its pillars.
-    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }]) {
+    // The gate spot stands 4 u west of the gateway arch (x 36 since 2026-11-02), clear of its pillars; the last spot faces
+    // the south half from the plaza (the stations added 2026-11-02 and the south fountain).
+    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, stationOf("wins").pad]) {
       if (spot) await driveTo(page, spot);
       await waitForCameraSettle(page);
       const peaks = await expectRenderBudget(page);

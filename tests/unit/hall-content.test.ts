@@ -14,7 +14,7 @@ import {
   type HallLabels,
 } from "@/experience/floors/lobby/hallContent";
 import { podLiveLink } from "@/content/selectors";
-import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, onFace, statTiles, type Face } from "@/experience/floors/lobby/hallGallery";
+import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, NOW_ARCH, nowArch, onFace, statTiles, winsFace, winsTiles, type Face } from "@/experience/floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
 import { hallLineBuffer, hallShapes, portraitRing, prismBuffers, solidBuffers } from "@/experience/floors/lobby/hallSolids";
 import type { HighlightStation } from "@/experience/floors/lobby/stations";
@@ -64,12 +64,16 @@ interface Surface {
   d: number;
 }
 
-/** Every face that carries text: the About me pedestal and its tiles, the monoliths, the arch, the contact card. */
+/** Every face that carries text: the two pedestals and their tiles, the monoliths, the two arches, the contact card. */
 const SURFACES: Surface[] = [
   ...statTiles().map((t): Surface => ({ station: "about", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
   { station: "about", face: aboutFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
+  ...winsTiles().map((t): Surface => ({ station: "wins", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
+  { station: "wins", face: winsFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
   ...monoliths(3).map((m): Surface => ({ station: "projects", face: m.face, width: MONOLITH.w, y: [0.4, MONOLITH.h], d: 0.2 })),
+  ...monoliths(3, "results").map((m): Surface => ({ station: "results", face: m.face, width: MONOLITH.w, y: [0.4, MONOLITH.h], d: 0.2 })),
   { station: "experience", face: experienceArch().face, width: 2 * ARCH.pillar.to, y: [0.4, ARCH.h + ARCH.lintel], d: 0.2 },
+  { station: "now", face: nowArch().face, width: 2 * NOW_ARCH.pillar.to, y: [0.4, NOW_ARCH.h + NOW_ARCH.lintel], d: 0.2 },
   { station: "contact", face: contactBeacon().card.face, width: BEACON.card.w, y: [BEACON.card.y, BEACON.card.y + BEACON.card.h], d: 0.2 },
 ];
 
@@ -93,7 +97,18 @@ describe("Highlights Hall scenery", () => {
     for (const p of data.highlights.projects) expect(all).toContain(p.title);
     expect(all).toContain(experienceRows(data.career).employment[0].org);
     expect(all).toContain(data.roof.email);
+    // Wins: the counts from the awards; now: every current role; results: every value on a monolith (three per stone).
+    expect(all).toContain(String(data.highlights.wins.placings));
+    expect(all).toContain(labels.winsTitle(data.highlights.wins.firsts));
+    for (const t of data.highlights.wins.tiers) expect(all).toContain(String(t.count));
+    for (const r of data.highlights.now) expect(all).toEqual(expect.arrayContaining([r.org, r.role, r.period]));
+    for (const r of data.highlights.results.slice(0, 9)) expect(all).toEqual(expect.arrayContaining([r.value, r.label, r.project.toUpperCase()]));
     expect(all.every((t) => t.trim().length > 0)).toBe(true);
+  });
+
+  it("numbers the stations in the hall's order (about 01 to contact 07)", () => {
+    const eyebrows = texts.map((t) => t.text).filter((t) => /^0\d · /.test(t));
+    expect(eyebrows).toEqual(["01 · PROFILE", "02 · TOP 3 PROJECTS", "03 · WORK EXPERIENCE", "04 · WINS", "05 · NOW", "06 · RESULTS", "07 · CONTACT"].map((e) => e.replace("PROFILE", labels.about.toUpperCase())));
   });
 
   it("tags a project screenshot with Visit live site only when its L3 pod has an allowed live link", () => {
@@ -137,7 +152,7 @@ describe("Highlights Hall scenery", () => {
     expect(texts.map((t) => t.text)).not.toContain(labels.hall.toUpperCase());
   });
 
-  it("marks the stat tile labels so they drift with their tile", () => {
+  it("marks the stat tile labels so they drift with their tile: About me's four, then one wins tile per tier", () => {
     const { labels: all, tile } = hallTexts(data, labels, fonts);
     expect(tile).toHaveLength(all.length);
     for (let i = 0; i < 4; i++) {
@@ -145,7 +160,12 @@ describe("Highlights Hall scenery", () => {
       expect(own.map((t) => t.text)).toEqual([data.stats[i].value, data.stats[i].label]);
       for (const t of own) expect(t.yaw).toBeCloseTo(statTiles()[i].face.yaw);
     }
-    expect(tile.filter((k) => k >= 0)).toHaveLength(8);
+    data.highlights.wins.tiers.forEach(({ tier, count }, i) => {
+      const own = all.filter((_, k) => tile[k] === 4 + i);
+      expect(own.map((t) => t.text)).toEqual([String(count), labels.tiers[tier]]);
+      for (const t of own) expect(t.yaw).toBeCloseTo(winsTiles()[i].face.yaw);
+    });
+    expect(tile.filter((k) => k >= 0)).toHaveLength(8 + 2 * data.highlights.wins.tiers.length);
   });
 
   it("builds the gallery solids and neon lines inside the hall, clear of the door pads", () => {
@@ -165,7 +185,7 @@ describe("Highlights Hall scenery", () => {
         expect(Math.hypot(positions[k] - s.pad.x, positions[k + 2] - s.pad.z)).toBeGreaterThan(0.9);
       }
     }
-    const lines = hallLineBuffer(shapes, [portraitRing(aboutFace())]);
+    const lines = hallLineBuffer(shapes, [portraitRing(aboutFace()), portraitRing(winsFace())]);
     expect(lines.length % 6).toBe(0);
     expect(lines.length).toBeGreaterThan(shapes.boxes.length * 72);
     // Whole-hall triangle count stays small (the 30k frame budget is shared with the Lobby).

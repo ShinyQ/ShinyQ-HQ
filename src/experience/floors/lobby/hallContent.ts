@@ -162,10 +162,11 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
     const width = col.w - 0.6;
     const left = col.u - width / 2;
     const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: width };
-    add(now.face, left, 4.7, (role.type === "job" ? labels.employment : labels.freelance).toUpperCase(), fonts.mono, 0.2, CAREER_TONE[role.type], { ...row, letterSpacing: 0.12 });
-    add(now.face, left, 4.35, role.org, fonts.sansBold, 0.28, INK.title, { ...row, anchorY: "top", lineHeight: 1.15 });
-    add(now.face, left, 3.45, role.role, fonts.sans, 0.19, INK.body, { ...row, anchorY: "top", lineHeight: 1.25 });
-    add(now.face, left, 2.3, role.period, fonts.mono, 0.17, HALL.tone.now, row);
+    // The role and period read on a phone from the stop (owner, 2026-11-02): the role 0.26 u, the period 0.24 u.
+    add(now.face, left, 4.75, (role.type === "job" ? labels.employment : labels.freelance).toUpperCase(), fonts.mono, 0.22, CAREER_TONE[role.type], { ...row, letterSpacing: 0.12 });
+    add(now.face, left, 4.4, role.org, fonts.sansBold, 0.3, INK.title, { ...row, anchorY: "top", lineHeight: 1.15 });
+    add(now.face, left, 3.55, role.role, fonts.sans, 0.26, INK.body, { ...row, anchorY: "top", lineHeight: 1.2 });
+    add(now.face, left, 1.75, role.period, fonts.monoBold, 0.24, HALL.tone.now, row);
   });
 
   // 06 Results: three verified before and after results per monolith: the value, what it measures and its case study.

@@ -224,7 +224,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   return (
     <HallReady>
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
-      <RoadMarkings network={HALL_LAYOUT.network} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
+      <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView>
         <HallSolids shapes={shapes} />
         <HallLines shapes={shapes} tier={tier} />

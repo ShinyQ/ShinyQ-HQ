@@ -106,7 +106,14 @@ export interface HallStation {
 
 export interface HighlightsHallLayout {
   stations: HallStation[];
+  /**
+   * The routing network (`FloorLayout.road`): the lead road runs on to the spine, a road down the plaza's long axis, and a
+   * short approach road leads from the spine to every spur's start, so a drive between two stations crosses the plaza
+   * along it instead of through one hub at the plaza's centre (the hall runs the slab's full depth since 2026-11-02).
+   */
   network: RoadNetwork;
+  /** What the hall draws (`RoadMarkings`): the lead road up to the plaza, the plaza and the spurs; the spine stays unseen. */
+  drawn: RoadNetwork;
   doors: DoorTrigger[];
   obstacles: Rect[];
   viewZones: ViewZone[];
@@ -188,9 +195,17 @@ export function buildHighlightsHall(): HighlightsHallLayout {
   // Each spur starts 1 u inside the plaza, on the pad's line.
   const inside = (p: Vec2): Vec2 => ({ x: clamp(p.x, P.x - P.w / 2 + 1, P.x + P.w / 2 - 1), z: clamp(p.z, P.z - P.d / 2 + 1, P.z + P.d / 2 - 1) });
   const spurs: Spur[] = stations.map((s) => ({ room: s.room, from: inside(s.pad), to: s.pad, width: HALL.spurWidth, color: HALL.tone[s.station] }));
+  // Routing only: the spine from 1 u inside the plaza's north edge to 1 u inside its south edge, the lead road run on to it
+  // (a T junction), and an approach road from the spine to every spur's start (a T junction or the spine's end).
+  const top = P.z - P.d / 2 + 1;
+  const bottom = P.z + P.d / 2 - 1;
+  const spine: Road = { id: "hall-spine", points: [{ x: P.x, z: top }, { x: P.x, z: bottom }], width: ROAD.minWidth };
+  const leadOn: Road = { ...lead, points: [lead.points[0], { x: P.x, z: lead.points[lead.points.length - 1].z }] };
+  const approaches: Road[] = spurs.map((sp) => ({ id: `hall-to-${sp.room.slice(3)}`, points: [{ x: P.x, z: clamp(sp.from.z, top, bottom) }, { x: sp.from.x, z: sp.from.z }], width: ROAD.minWidth }));
   return {
     stations,
-    network: { roads: [lead], plazas: [plaza], spurs },
+    network: { roads: [leadOn, spine, ...approaches], plazas: [plaza], spurs },
+    drawn: { roads: [lead], plazas: [plaza], spurs },
     doors: stations.map((s) => ({ room: s.room, at: s.pad, facing: s.facing })),
     obstacles: [...stations.map((s) => s.rect), ...gatePillars()],
     viewZones: [{ id: "L1:highlights-entry", area: { ...HALL.entry }, yaw: -Math.PI / 2, zoom: 1.3 }, ...stations.map(stationZone)],
