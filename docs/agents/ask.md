@@ -107,7 +107,7 @@ All bindings and vars live in `wrangler.toml`.
 
 ### Entry points
 
-- The floating "Ask AI" launcher: Page View, bottom-left, mirroring Back to 3D; it steps aside while the home hero bar reaches its bottom band.
+- The floating "Ask AI" launcher: Page View, bottom-left, mirroring Back to 3D; it steps aside while the home hero bar reaches its bottom band. Below 64rem it shows only its spark icon, at the same height and left edge, while the visitor reads down (`html[data-scroll="down"]`, `.pv-ask` and `.pv-ask-label`, see [page-view.md](page-view.md#navigation)); the label returns on any scroll up.
 - The "Ask AI" pill at the far right of the 3D top bar, right of the highlighted Classic site button (both on their own row below 1024 px).
 - The home hero ask bar (`src/components/page/AskEntry.tsx`). About has no Ask section (owner decision).
 - The Cmd-K "Ask:" row.
