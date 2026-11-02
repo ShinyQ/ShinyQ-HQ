@@ -514,7 +514,8 @@ describe("answer cache (owner decision 2026-10-31: keyed on what the model sees)
     expect(key).toBe(await answerCacheKey({ locale: "en", route: "default", messages: first.messages, packDate: pack.packDate }));
     expect(JSON.parse(store.get(key) ?? "{}")).toEqual({ text: WORK });
 
-    const { pack: deployed } = buildRepoPack("2026-10-30");
+    // The day after the base pack: the pack date is the newer of the content date and the live facts' asOf.
+    const { pack: deployed } = buildRepoPack(new Date(Date.parse(pack.packDate) + 86_400_000).toISOString().slice(0, 10));
     expect(deployed.packVersion).not.toBe(pack.packVersion);
     expect(deployed.packDate).not.toBe(pack.packDate);
     const unrelated: KnowledgeChunk = { id: "zz-unrelated", type: "post", title: "Sourdough Starter Notes", text_en: "Feeding a sourdough starter twice a day with rye flour keeps it lively.", text_id: "Memberi makan ragi sourdough dua kali sehari dengan tepung gandum hitam.", keywords: ["sourdough", "rye"] };
