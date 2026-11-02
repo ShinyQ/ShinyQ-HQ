@@ -1,6 +1,7 @@
 /**
- * Weekly live facts (spec section 6.2): GitHub contributions and public repos, Hugging Face models
- * and downloads, and whether each certification credential URL still resolves.
+ * Weekly live facts (spec section 6.2): GitHub contributions (the total and the daily calendar of
+ * the last year) and public repos, Hugging Face models and downloads, and whether each
+ * certification credential URL still resolves.
  *
  *   bun scripts/refresh-facts.ts [--dry-run] [--date YYYY-MM-DD]
  *
@@ -12,7 +13,8 @@
  */
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { DynamicFactsSchema, type DynamicFacts } from "../src/content/dynamic-facts";
+import { ContributionCalendarSchema, DynamicFactsSchema, type DynamicFacts } from "../src/content/dynamic-facts";
+import { calendarTotal, type ContributionCalendar } from "../src/lib/contributions";
 
 export const FACTS_FILE = path.join(process.cwd(), "content", "generated", "dynamic-facts.json");
 const CONTENT_FILE = path.join(process.cwd(), "content", "site-content.json");
@@ -21,8 +23,15 @@ const CONTENT_FILE = path.join(process.cwd(), "content", "site-content.json");
 export const MAX_DROP = 0.5;
 
 export const CONTRIBUTIONS_QUERY = `query($login: String!) {
-  user(login: $login) { contributionsCollection { contributionCalendar { totalContributions } } }
+  user(login: $login) {
+    contributionsCollection {
+      contributionCalendar { totalContributions weeks { contributionDays { date contributionCount contributionLevel } } }
+    }
+  }
 }`;
+
+/** GitHub's ContributionLevel enum, in level order 0 to 4. */
+const GITHUB_LEVELS = ["NONE", "FIRST_QUARTILE", "SECOND_QUARTILE", "THIRD_QUARTILE", "FOURTH_QUARTILE"];
 
 /** "https://github.com/ShinyQ" -> "ShinyQ". */
 export function loginFromUrl(url: string | undefined, host: string): string | undefined {
@@ -42,10 +51,51 @@ function nonNegativeInt(value: unknown, what: string): number {
   return value;
 }
 
-export function parseContributions(json: unknown): number {
-  const data = json as { data?: { user?: { contributionsCollection?: { contributionCalendar?: { totalContributions?: unknown } } } }; errors?: { message?: string }[] };
+interface CalendarPayload {
+  data?: { user?: { contributionsCollection?: { contributionCalendar?: { totalContributions?: unknown; weeks?: unknown } } } };
+  errors?: { message?: string }[];
+}
+
+function calendarOf(json: unknown) {
+  const data = json as CalendarPayload;
   if (data.errors?.length) throw new Error(`GitHub GraphQL: ${data.errors.map((e) => e.message).join("; ")}`);
-  return nonNegativeInt(data.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions, "contribution total");
+  return data.data?.user?.contributionsCollection?.contributionCalendar;
+}
+
+export function parseContributions(json: unknown): number {
+  return nonNegativeInt(calendarOf(json)?.totalContributions, "contribution total");
+}
+
+const plusDay = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * The daily calendar in its compact form: the first date, one level digit and one count per day.
+ * Throws on an unknown level, a missing or repeated day, or counts that do not add up to the total.
+ */
+export function parseCalendar(json: unknown): ContributionCalendar {
+  const calendar = calendarOf(json);
+  const total = nonNegativeInt(calendar?.totalContributions, "contribution total");
+  if (!Array.isArray(calendar?.weeks)) throw new Error("GitHub calendar: expected weeks");
+  const days = (calendar.weeks as { contributionDays?: unknown }[]).flatMap((w) => (Array.isArray(w?.contributionDays) ? w.contributionDays : [])) as {
+    date?: unknown;
+    contributionCount?: unknown;
+    contributionLevel?: unknown;
+  }[];
+  if (days.length === 0) throw new Error("GitHub calendar: no days");
+  let levels = "";
+  const counts: number[] = [];
+  let expected = typeof days[0].date === "string" ? days[0].date : "";
+  for (const day of days) {
+    if (day.date !== expected) throw new Error(`GitHub calendar: expected date ${expected}, got ${JSON.stringify(day.date)}`);
+    const level = GITHUB_LEVELS.indexOf(day.contributionLevel as string);
+    if (level < 0) throw new Error(`GitHub calendar: unknown level ${JSON.stringify(day.contributionLevel)}`);
+    levels += level;
+    counts.push(nonNegativeInt(day.contributionCount, "contribution count"));
+    expected = plusDay(expected);
+  }
+  const parsed = ContributionCalendarSchema.parse({ start: days[0].date, levels, counts });
+  if (calendarTotal(parsed) !== total) throw new Error(`GitHub calendar: days add up to ${calendarTotal(parsed)}, not ${total}`);
+  return parsed;
 }
 
 export function parsePublicRepos(json: unknown): number {
@@ -64,7 +114,7 @@ export function isReachable(status: number): boolean {
 }
 
 export interface Fetched {
-  github?: { login: string; contributionsLastYear?: number; publicRepos?: number };
+  github?: { login: string; contributionsLastYear?: number; publicRepos?: number; calendar?: ContributionCalendar };
   huggingface?: { user: string; models?: number; downloads?: number };
   credentials?: { id: string; reachable: boolean }[];
 }
@@ -80,15 +130,26 @@ function guard(next: number | undefined, prev: number | undefined, label: string
 
 /**
  * Merges fresh values into the previous facts. A failed fetch (undefined) keeps the previous value;
- * a suspicious drop keeps it too. `asOf` changes only when a value changed.
+ * a suspicious drop keeps it too. The contribution total and the calendar travel together, so the
+ * calendar always adds up to the total: a missing or rejected calendar keeps the previous pair.
+ * `asOf` changes only when a value changed.
  */
 export function mergeFacts(prev: DynamicFacts | undefined, fetched: Fetched, today: string, warn: (message: string) => void = () => {}): { facts: DynamicFacts; changed: boolean } {
   const next: Omit<DynamicFacts, "asOf"> = {};
   const gh = fetched.github;
   if (gh) {
-    const contributionsLastYear = guard(gh.contributionsLastYear, prev?.github?.contributionsLastYear, "GitHub contributions", warn);
+    let contributionsLastYear = guard(gh.contributionsLastYear, prev?.github?.contributionsLastYear, "GitHub contributions", warn);
     const publicRepos = guard(gh.publicRepos, prev?.github?.publicRepos, "GitHub public repos", warn);
-    if (contributionsLastYear !== undefined && publicRepos !== undefined) next.github = { login: gh.login, contributionsLastYear, publicRepos };
+    let calendar = gh.calendar && calendarTotal(gh.calendar) === contributionsLastYear ? gh.calendar : undefined;
+    const prevGh = prev?.github;
+    if (!calendar && prevGh?.calendar) {
+      if (contributionsLastYear !== prevGh.contributionsLastYear) warn(`GitHub contribution calendar missing; keeping the previous total ${prevGh.contributionsLastYear} with its calendar.`);
+      calendar = prevGh.calendar;
+      contributionsLastYear = prevGh.contributionsLastYear;
+    }
+    if (contributionsLastYear !== undefined && publicRepos !== undefined) {
+      next.github = { login: gh.login, contributionsLastYear, publicRepos, ...(calendar && { calendar }) };
+    }
   } else if (prev?.github) next.github = prev.github;
 
   const hf = fetched.huggingface;
@@ -110,9 +171,11 @@ function stripAsOf(facts: DynamicFacts): Omit<DynamicFacts, "asOf"> {
   return { github: facts.github, huggingface: facts.huggingface, credentials: facts.credentials };
 }
 
-/** Two-space JSON with one credential per line, the committed format. */
+/** Two-space JSON with one credential per line and the calendar counts on one line, the committed format. */
 export function serializeFacts(facts: DynamicFacts): string {
-  const json = JSON.stringify(facts, null, 2).replace(/\{\n\s+("id": "[^"]+"),\n\s+("reachable": (?:true|false))\n\s+\}/g, "{ $1, $2 }");
+  const json = JSON.stringify(facts, null, 2)
+    .replace(/\{\n\s+("id": "[^"]+"),\n\s+("reachable": (?:true|false))\n\s+\}/g, "{ $1, $2 }")
+    .replace(/"counts": \[([\d,\s]*)\]/, (_, list: string) => `"counts": [${list.replace(/\s+/g, "")}]`);
   return `${json}\n`;
 }
 
@@ -162,19 +225,19 @@ async function main() {
   const ghLogin = loginFromUrl(content.floors.roof.contact.github, "github.com");
   if (ghLogin) {
     const token = githubToken();
+    const contributions = token
+      ? await attempt("GitHub contributions", async () =>
+          getJson("https://api.github.com/graphql", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ query: CONTRIBUTIONS_QUERY, variables: { login: ghLogin } }),
+          }),
+        )
+      : (console.log("::warning::No GITHUB_TOKEN; GitHub contributions keep the previous value."), undefined);
     fetched.github = {
       login: ghLogin,
-      contributionsLastYear: token
-        ? await attempt("GitHub contributions", async () =>
-            parseContributions(
-              await getJson("https://api.github.com/graphql", {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ query: CONTRIBUTIONS_QUERY, variables: { login: ghLogin } }),
-              }),
-            ),
-          )
-        : (console.log("::warning::No GITHUB_TOKEN; GitHub contributions keep the previous value."), undefined),
+      contributionsLastYear: contributions === undefined ? undefined : await attempt("GitHub contributions", async () => parseContributions(contributions)),
+      calendar: contributions === undefined ? undefined : await attempt("GitHub contribution calendar", async () => parseCalendar(contributions)),
       publicRepos: await attempt("GitHub public repos", async () =>
         parsePublicRepos(await getJson(`https://api.github.com/users/${ghLogin}`, token ? { headers: { Authorization: `Bearer ${token}` } } : {})),
       ),
