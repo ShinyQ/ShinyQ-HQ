@@ -73,7 +73,7 @@ describe("L4 topic index (Topic Constellation)", () => {
     }
     const agents = index.topics.find((t) => t.slug === "ai-agents")!;
     expect(agents.items.filter((i) => i.kind === "talk").every((i) => i.room === "L4:talks")).toBe(true);
-    expect(agents.items.find((i) => i.kind === "post")?.room).toBe("L4:spec-driven-development-with-ai-coding-agents");
+    expect(agents.items.filter((i) => i.kind === "post").map((i) => i.room)).toEqual(["L4:ten-very-hard-benchmark-tasks-in-ten-days", "L4:spec-driven-development-with-ai-coding-agents"]);
   });
 
   it("never lists an item twice in one topic", () => {
