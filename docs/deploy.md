@@ -227,17 +227,17 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 4. Optional: send `kurniadi.pages.dev` to the custom domain with a Cloudflare Bulk Redirect (Rules > Redirect Rules > Bulk Redirects, source `kurniadi.pages.dev`, target `https://kurniadi.dev`, preserve path and query). `_redirects` cannot do this because it cannot match on host names.
 5. Optional: redirect `www.kurniadi.dev` to the apex with a Redirect Rule in the zone.
 
-## 7b. Main address kurniadi.my.id (owner decision 2026-10-31)
+## 7b. Main address shinyq.my.id (owner decisions 2026-10-31 and 2026-11-02)
 
-`kurniadi.my.id` becomes the canonical origin and `kurniadi.pages.dev` redirects to it (`kurniadi.dev` stays blocked in Indonesia, section 7). Status and the remaining steps, in this order:
+`shinyq.my.id` becomes the canonical origin and `kurniadi.pages.dev` redirects to it (`kurniadi.dev` stays blocked in Indonesia, section 7). The 2026-10-31 plan named `kurniadi.my.id`, which is not the owner's domain; the 2026-11-02 decision corrects it. Status and the remaining steps, in this order:
 
-1. Done 2026-10-31: the zone `kurniadi.my.id` is on Cloudflare (status pending until step 2). Its records: the apex and `www` are proxied CNAMEs to `kurniadi.pages.dev`; mail stays as it was (Zoho MX 10, 20 and 50; the cPanel fallback MX 100 now targets `mail.kurniadi.my.id`; `mail` and `ftp` are DNS-only A records to the old host; SPF, DKIM and DMARC unchanged).
-2. Owner: at the registrar (PT Digital Registra Indonesia), replace the nameservers `ns1` to `ns4.ardetamedia.com` with `amir.ns.cloudflare.com` and `ophelia.ns.cloudflare.com`. The zone turns active once they propagate (minutes to a day; `cf zones list` shows the status).
-3. Done 2026-10-31: the Pages project has the custom domains `kurniadi.my.id` and `www.kurniadi.my.id` (pending until step 2 validates them), the Turnstile widget lists `kurniadi.my.id`, and `ASK_ALLOWED_ORIGINS` and the stats Worker's `WA_HOSTS` accept the new hosts.
-4. Check: `curl -sI https://kurniadi.my.id/en` answers 200 from Cloudflare with the site's headers, Ask answers on the new host, and a visit is counted.
-5. `gh variable set SITE_URL --body https://kurniadi.my.id`, then redeploy (`gh workflow run deploy.yml --ref main`): canonical URLs, `hreflang`, the sitemap, OG URLs and the uptime and smoke checks use the new origin. Update this page's "Production URL" row and the docs that name the production host in the same PR as the cutover.
-6. Move the GitHub webhook payload URL to `https://kurniadi.my.id/api/office/github` (webhooks do not follow redirects) and the office relay endpoint on the owner's Mac to `https://kurniadi.my.id/api/office/beat` (the relay's `DEFAULT_CONFIG` moves with it).
-7. Last: a Bulk Redirect from `kurniadi.pages.dev` to `https://kurniadi.my.id`, status 308 (keeps the method of a POST), path and query preserved. It matches the exact host only, so per-deployment previews (`<hash>.kurniadi.pages.dev`) keep working. Keep `kurniadi.pages.dev` in the allowed origins.
+1. Done 2026-11-02: the zone `shinyq.my.id` is active on Cloudflare (Free plan). The registrar's nameservers moved from `ns1` and `ns2.idwebhost.id` to `amir.ns.cloudflare.com` and `ophelia.ns.cloudflare.com`. Its only record is the apex, a proxied CNAME to `kurniadi.pages.dev`; the domain has no mail records.
+2. Done 2026-11-02: the Pages project `kurniadi` has the custom domain `shinyq.my.id` (active), and `curl -sI https://shinyq.my.id/en` answers 200 from Cloudflare with the site's headers. There is no `www` host and no list names one: if it is wanted later, add a proxied `www` record and a zone Redirect Rule to the apex, so `www` never serves a page and needs no entry in the host lists.
+3. The host lists in git accept `shinyq.my.id`, next to `kurniadi.pages.dev` and `kurniadi.dev`: `ASK_ALLOWED_ORIGINS` in `wrangler.toml` (Ask, the RUM and the visit beacons), `WA_HOSTS` in `workers/stats/wrangler.toml` (shipped by the "hq-stats Worker" job of `deploy.yml`), `ASK_SITE_ORIGINS` in `src/ask/links.ts` (site links in Ask answers) and `TURNSTILE_DOMAINS` in `scripts/provision-ask.ts`. `tests/unit/site-hosts.test.ts` keeps them in step. After the deploy that ships a change to `TURNSTILE_DOMAINS`, run `bun scripts/provision-ask.ts` (dry run) and then with `--apply`: it sets the Turnstile widget's domains to that list. Without it, Ask on the new host fails the Turnstile check.
+4. Check: on `https://shinyq.my.id`, a `POST /api/ask` with `Origin: https://shinyq.my.id` passes the origin check (an empty body gets 400, not 403) and a question in the browser gets an answer; `POST /api/rum` and `POST /api/visit` answer 204; and the visit shows in `/api/stats` (`visits.d30`) within about a minute.
+5. `gh variable set SITE_URL --body https://shinyq.my.id`, then redeploy (`gh workflow run deploy.yml --ref main`): canonical URLs, `hreflang`, the sitemap, OG URLs and the uptime and smoke checks use the new origin. Update this page's "Production URL" row and the docs that name the production host in the same PR as the cutover.
+6. Move the GitHub webhook payload URL to `https://shinyq.my.id/api/office/github` (webhooks do not follow redirects) and the office relay endpoint on the owner's Mac to `https://shinyq.my.id/api/office/beat` (the relay's `DEFAULT_CONFIG` moves with it).
+7. Last: a Bulk Redirect from `kurniadi.pages.dev` to `https://shinyq.my.id`, status 308 (keeps the method of a POST), path and query preserved. It matches the exact host only, so per-deployment previews (`<hash>.kurniadi.pages.dev`) keep working. Keep `kurniadi.pages.dev` in the host lists.
 
 ## 8. Lighthouse CI
 
@@ -298,7 +298,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | Pages | `shinyq-hq` | Unused since the PR preview job was removed (2026-11-01); delete it or keep it for a future preview token |
 | KV | `shinyq-hq-ask` | Ask answer cache and rate-limit counters |
 | AI Gateway | `shinyq-hq` | Ask model calls (cache, logs, rate limit) |
-| Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `kurniadi.dev`) |
+| Turnstile | `shinyq-hq-ask` | Ask anti-bot check (`kurniadi.pages.dev`, `shinyq.my.id`, `kurniadi.dev`; `TURNSTILE_DOMAINS`) |
 | Analytics Engine | `ask_events` | Anonymized Ask events (created on first write) |
 | Analytics Engine | `perf_events` | Anonymous performance beacon, one point per sampled 3D session (created on first write) |
 | Analytics Engine | `visit_events` | Public visit stats beacon: a visit ping per browser tab session and a mode ping per page lifetime (created on first write) |
@@ -308,7 +308,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | R2 | `hq-study-guides` | Study guide PDFs (private, no `r2.dev` URL, no custom domain), binding `GUIDES`, served by `/api/guides/<slug>` (section 19) |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
-| Zone | `kurniadi.my.id` | The main address from the cutover in section 7b (pending until the registrar's nameservers point at Cloudflare); mail on Zoho |
+| Zone | `shinyq.my.id` | The main address from the cutover in section 7b (active since 2026-11-02; the apex is the Pages custom domain); no mail |
 | API tokens | `hq-ci-deploy` (`CLOUDFLARE_API_TOKEN`, `production` environment), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | Rotate each before it expires (the two `shinyq-hq` tokens on 2027-01-09; `docs/ask-runbook.md`) |
 
 ## 12. Performance beacon (RUM)
