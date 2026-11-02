@@ -1,5 +1,7 @@
 "use client";
 
+// Client entry: loads the client sheet with this chunk (scripts/client-sheet/sources.ts).
+import "@/app/client-sheet.css";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 import { CV_FILE_NAME, CV_PAGES, cvDownloadName, cvPdfPath } from "@/lib/cv";

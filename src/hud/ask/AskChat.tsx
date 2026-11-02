@@ -1,5 +1,7 @@
 "use client";
 
+// Client entry: loads the client sheet with this chunk (scripts/client-sheet/sources.ts).
+import "@/app/client-sheet.css";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { prepareAsk } from "@/ask/client";

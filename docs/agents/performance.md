@@ -69,6 +69,31 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 - Guards: `tests/unit/floor-order.test.ts` (static import graph of those modules) and `scripts/check-client-chunks.ts` in `bun run build` (fails when a page chunk holds a layout's view zone id, `FLOOR_LAYOUT_MARKERS`).
 - The floor layouts (about 22 KB gzip) load only after the 3D gate, on the 3D main path; the 3D caps include them (owner decision, option A: [2026-10-19-floor-order-out-of-classic.md](../decisions/2026-10-19-floor-order-out-of-classic.md), with the measured numbers).
 
+### Classic and client stylesheets
+
+The Classic stylesheet (`src/app/globals.css`, render-blocking on every page, Lighthouse budget 20,480 B) holds only what
+the Classic pages can load; the utilities only the lazy client UI uses ship in a second sheet, `src/app/client-sheet.css`,
+which loads with that UI (CL-1, plan [2026-11-02-classic-css-split.md](../superpowers/plans/2026-11-02-classic-css-split.md)).
+
+- Client entries (`CLIENT_ENTRIES` in `scripts/client-sheet/sources.ts`): `Experience`, `PaletteHost`, `RoverTerminal`,
+  `AskChat`, `CvDialog`, `PaperDialog`, `CertDialog`. Each imports `@/app/client-sheet.css` first; Turbopack loads the
+  sheet with the entry's chunk group, appends its `<link>` after the Classic sheet and resolves `import()` only on its
+  `load`, so nothing paints unstyled. No Classic file may import it (`tests/unit/client-sheet.test.ts`).
+- `bun scripts/client-sheet/sources.ts` (first step of `build` and `dev`) writes `src/app/lazy-sources.css` (gitignored):
+  a `@source not` for each file the client entries reach and the Classic pages cannot (static, side-effect and dynamic
+  imports from `src/app/**`, `importClosure` in `scripts/ci-plan.ts`), whole folders where possible. `globals.css`
+  imports it, so the Classic sheet skips those utilities. A new lazy UI gets its own entry: add it to `CLIENT_ENTRIES`
+  and import the sheet; otherwise its files stay Classic (correct, only larger).
+- The loader (`scripts/client-sheet/loader.mjs`) runs the Tailwind loader on `globals.css` twice (as is, and without the
+  lazy-sources import) and keeps what the full sheet adds (`scripts/client-sheet/split.mjs`): the client's own rules,
+  the theme variables, `@property` rules and keyframes the Classic sheet lacks, and a copy of every Classic rule that the
+  full sheet orders after a kept rule it could override (same property family or side, same specificity, transitively).
+  Loaded after the Classic sheet, every element then gets the full sheet's cascade.
+- Measured at the split (2026-11-02): Classic sheet 20,047 to 14,980 B gzip (-5,067 B), client sheet 9,760 B gzip
+  (about 40% of it ordering copies). The 3D bytes gate counts scripts only; the client sheet shows in its CSS report.
+- Verified pixel-identical: computed styles of every element and screenshots against a `main` build on every exported page
+  and with each overlay open, plus the strict visual gate.
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf` (`bun run e2e:perf:nightly` adds the nightly-only L1 poses).
@@ -315,7 +340,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Every worker renders WebGL on the CPU, so more workers starve each other and make 3D tests time out; do not raise it.
   - Do not run two e2e suites at once on one machine.
 - Turbopack can serve stale CSS after large style or dependency changes: `rm -rf .next` before `verify:quick` if the export looks wrong.
-- Tailwind scans every file in the repo, docs included: a utility class written in a plan or a doc snippet ships in the stylesheet (budget 20,480 B). Use utilities the stylesheet already has.
+- Tailwind scans every shipped source (`globals.css` excludes docs, tests, e2e, scripts, workers and functions): a utility class written in a component ships in the Classic stylesheet (budget 20,480 B) when a Classic page can load that file. Use utilities the stylesheet already has.
 - B1 UI strings live in the 3D-only `engine` message namespace (`CLIENT_NAMESPACES`, not `LAYOUT_NAMESPACES`), so they never ride in the Classic pages' HTML (budget 82 KB). Read floor labels through `useFloorLabel`.
 - `e2e:*` serves `out/` from the last build, so rebuild after code changes (`verify:quick` does).
 

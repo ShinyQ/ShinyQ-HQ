@@ -1,5 +1,7 @@
 "use client";
 
+// Client entry: loads the client sheet with this chunk (scripts/client-sheet/sources.ts).
+import "@/app/client-sheet.css";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ACESFilmicToneMapping, type Material, type Scene as ThreeScene, type WebGLRenderer } from "three";
 import { useTranslations } from "next-intl";

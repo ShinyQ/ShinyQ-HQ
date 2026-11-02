@@ -30,6 +30,9 @@
 @source not "../../AGENTS.md";
 @source not "../../CLAUDE.md";
 @source not "../../README.md";
+/* Files only the lazy client UI loads (3D, HUD, palette, Rover menu, Ask chat, dialogs): their utilities ship in
+   client-sheet.css instead (bun scripts/client-sheet/sources.ts writes the list; docs/agents/performance.md). */
+@import "./lazy-sources.css";
 @import "./tokens.css";
 @import "./base.css" layer(base);
 @import "./pageview.css";

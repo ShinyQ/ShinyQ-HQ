@@ -1,0 +1,6 @@
+/*
+ * The client sheet: built by scripts/client-sheet/loader.mjs, which ignores this text. It holds the utilities only the
+ * lazy client UI uses (the 3D experience and its HUD, the palette, the Rover menu, the Ask chat, the CV, paper and cert
+ * dialogs), so the render-blocking Classic sheet (globals.css) leaves them out. Each client entry imports this file and
+ * Turbopack loads it with the entry's chunk, after the Classic sheet. Rules: docs/agents/performance.md.
+ */
