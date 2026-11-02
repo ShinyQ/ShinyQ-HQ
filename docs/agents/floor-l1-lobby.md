@@ -97,8 +97,8 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   - the road markings, one merged solid mesh, one line mesh, one `BatchedLabels`;
   - the screenshot atlas: black until it loads once the rover is east of `HALL.lazyX` (`shouldLoadShots`);
   - the portrait disc, the tiles, the lights, the portal, the beacon rings, the sign, and the curtain while it sweeps.
-- The new stations (2026-11-02) add no draw call: their solids and lines join the merged meshes, their tiles the panels, their lights the stage lights, the now arch's glow the portal mesh, their texts the one `BatchedLabels`.
-- `HallView` hides the instanced effects while the hall's bounds (the slab's full depth) are out of view.
+- The hall draws in three parts (2026-11-02), each its own `HallView` with its own merged solid mesh, line mesh, stage lights and text batch: the north part (north of S: the gateway arch, about me, top projects, work experience, wins, the north fountain; the tiles, screenshots and portrait, the work experience glow and the curtain), contact (the south-west corner: the beacon, its rings and card) and the south part (now, results, the south fountain; the now arch's glow). The north part tests its old view box on a 6 x 6 grid of cells; contact and the south part test a box per landmark, so a Lobby view that reaches only the contact beacon at the frame's edge (the spawn turned south) draws only contact, never the whole hall (the full-tier boost peak drawing it all was 33.7k triangles, over the 30k budget).
+- With every part in view the hall costs about 17 calls (main had 8) and about 9k triangles; L1 stays under 125 calls (the hall's south view from the wins stop: 46 full) and the ride peaks at or under main's.
 - `HallReady` precompiles and pins every program (`precompileObject`) once the scene draws into its final target, before the hall shows.
 - Shader materials are never culled by the ride cull ([3d-experience.md](3d-experience.md)).
 - The tall shapes are in the camera collision (`hallTall`, `FloorLayout.tall` on L1).

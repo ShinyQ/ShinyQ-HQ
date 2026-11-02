@@ -16,7 +16,7 @@ Owner decision: [2026-11-02](../../decisions/2026-11-02-highlights-hall-extensio
 
 - No em dashes; no first person in titles or signs; every user-facing string a message key in `messages/en.json` and `messages/id.json`.
 - Every number from the data: awards, verified case study results, timeline entries.
-- No new draw call, chunk or shader program; L1 under 125 scene calls; ride peaks unchanged; memory flat; reduced motion still.
+- No new chunk or shader program; L1 under 125 scene calls (the hall in three culled parts); ride peaks at or under main; memory flat; reduced motion still.
 
 ---
 
