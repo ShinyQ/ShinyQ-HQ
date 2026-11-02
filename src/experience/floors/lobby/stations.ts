@@ -4,11 +4,11 @@ import { REACTOR_ROOM, techFromHash } from "../labs/techHash";
 import { TOPICS_ROOM, topicFromHash } from "../library/topicHash";
 
 /**
- * L1 Highlights Hall stations (owner request, October 2026): a short walk-through gallery east of the
- * certification wall that sums up the tower. Ids and small helpers only, with type-only imports: the
+ * L1 Highlights Hall stations (owner request, October 2026; wins, now and results 2026-11-02): a short walk-through
+ * gallery east of the certification wall that sums up the tower. Ids and small helpers only, with type-only imports: the
  * gate reads the deep-link hash in the main bundle, the layout lives in hallLayout.ts.
  */
-export const HIGHLIGHT_STATIONS = ["about", "projects", "experience", "contact"] as const;
+export const HIGHLIGHT_STATIONS = ["about", "projects", "experience", "wins", "now", "results", "contact"] as const;
 export type HighlightStation = (typeof HIGHLIGHT_STATIONS)[number];
 
 /** How many headline stats the About station shows (the first ones in content order). */

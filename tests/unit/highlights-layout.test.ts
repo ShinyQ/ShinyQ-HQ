@@ -17,7 +17,7 @@ describe("Highlights Hall layout", () => {
   it("extends the Lobby slab east and keeps the spawn and the elevator where they belong", () => {
     // More room (owner 2026-10-19): the slab is 54 u deep and the hall starts 5 u further east.
     expect(LOBBY.bounds).toEqual({ minX: -24, maxX: 69, minZ: -27, maxZ: 27 });
-    // Proof Park (owner 2026-11-02): the floor's slab is the whole rectangle down to the office wing's south edge.
+    // One rectangle (owner 2026-11-02): the floor's slab runs down to the office wing's south edge, and so does the hall.
     expect(l1.bounds).toEqual(LOBBY.slab);
     expect(l1.bounds).toEqual({ ...LOBBY.bounds, maxZ: 59 });
     expect(l1.spawn).toEqual(LOBBY.spawn);
@@ -35,7 +35,29 @@ describe("Highlights Hall layout", () => {
   it("keeps the certification wall readable from the plaza: the passage runs south of it, the hall stands behind it", () => {
     const cert = l1.obstacles[2];
     for (const p of HALL.lead) expect(p.z - cert.maxZ).toBeGreaterThanOrEqual(ROVER.radius + 5);
-    for (const s of HALL_LAYOUT.stations) expect(s.rect.minX).toBeGreaterThan(cert.maxX + 5);
+    // Every station stands east of the wall, or (the south stations, since the hall runs the slab's depth) south of the
+    // Lobby's south edge line, out of the wall's sight line from the Lobby plaza.
+    for (const s of HALL_LAYOUT.stations) expect(s.rect.minX > cert.maxX + 5 || s.rect.minZ >= LOBBY.bounds.maxZ, s.room).toBe(true);
+  });
+
+  it("runs the hall the slab's full depth: seven stations on the slab edges, one plaza between them, the spine down its axis", () => {
+    expect(HALL.zone).toEqual({ minX: LOBBY.bounds.maxX - 37, maxX: LOBBY.bounds.maxX, minZ: LOBBY.slab.minZ, maxZ: LOBBY.slab.maxZ });
+    expect(HALL_LAYOUT.stations.map((s) => s.station)).toEqual([...HIGHLIGHT_STATIONS]);
+    // Every station touches a slab edge (north, east or south).
+    for (const s of HALL_LAYOUT.stations) expect([s.rect.minZ === LOBBY.slab.minZ, s.rect.maxX === LOBBY.slab.maxX, s.rect.maxZ === LOBBY.slab.maxZ].some(Boolean), s.room).toBe(true);
+    // The spine and the approach roads route only: the hall draws its lead road, plaza and spurs.
+    const spine = HALL_LAYOUT.network.roads.find((r) => r.id === "hall-spine")!;
+    expect(spine.points.every((p) => p.x === HALL.plaza.x)).toBe(true);
+    expect(HALL_LAYOUT.drawn.roads.map((r) => r.id)).toEqual(["hall-lead"]);
+    expect(HALL_LAYOUT.drawn.spurs).toEqual(HALL_LAYOUT.network.spurs);
+    // A drive between two stations follows the spine: no detour through the plaza's centre.
+    const graph = buildRoadGraph(l1.road!);
+    const grid = buildNavGrid(l1, ROVER.radius);
+    const wins = stationOf("wins").pad;
+    const now = stationOf("now").pad;
+    const route = roadRoute(l1.road!, grid, wins, now, graph)!;
+    expect(route.at(-1)).toEqual(now);
+    expect(Math.min(...route.map((p) => p.z))).toBeGreaterThanOrEqual(wins.z - 1e-9);
   });
 
   it("gives every station one door that faces into it, with its pad on open floor 1.1 u in front", () => {

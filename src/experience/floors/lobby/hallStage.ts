@@ -2,7 +2,7 @@ import { Color } from "three";
 import { neonColor } from "../../fx/materials";
 import type { GpuTier, Vec2 } from "../../types";
 import type { AtlasCell, ShotQuad } from "./hallContent";
-import { ARCH, experienceArch, gateOpening, onFace, type LightInstance, type StatTile } from "./hallGallery";
+import { ARCH, experienceArch, gateOpening, NOW_ARCH, nowArch, onFace, type LightInstance, type StatTile } from "./hallGallery";
 import { HALL } from "./hallLayout";
 
 /**
@@ -79,6 +79,15 @@ export function portalInstance(tier: GpuTier): StageInstance {
   return plane(STAGE_KIND.portal, onFace(arch.face, 0, ARCH.h / 2, -ARCH.depth / 2), arch.face.right, arch.opening.w, arch.opening.h, rgb(neonColor(HALL.tone.experience, 1.2, tier)), tier === "full" ? 1 : 0.85);
 }
 
+/** Both lit openings (work experience and now) in one draw. */
+export function portalInstances(tier: GpuTier): StageInstance[] {
+  const now = nowArch();
+  return [
+    portalInstance(tier),
+    plane(STAGE_KIND.portal, onFace(now.face, 0, NOW_ARCH.h / 2, -NOW_ARCH.depth / 2), now.face.right, now.opening.w, now.opening.h, rgb(neonColor(HALL.tone.now, 1.2, tier)), tier === "full" ? 0.8 : 0.7),
+  ];
+}
+
 /** Stat tile plates (neon rim in the hall's accent), screenshots and the portrait hologram (atlas cells). */
 export function panelInstances(tiles: readonly StatTile[], shots: readonly ShotQuad[], photo: ShotQuad, cells: readonly AtlasCell[], tier: GpuTier): StageInstance[] {
   const width = Math.max(1, ...cells.map((c) => c.x + c.w));
@@ -88,7 +97,7 @@ export function panelInstances(tiles: readonly StatTile[], shots: readonly ShotQ
   };
   const line = rgb(neonColor(HALL.tone.about, 1.4, tier));
   return [
-    ...tiles.map((t) => plane(STAGE_KIND.tile, onFace(t.face, 0, t.y, 0), t.face.right, t.w, t.h, line, 1, t.phase)),
+    ...tiles.map((t) => plane(STAGE_KIND.tile, onFace(t.face, 0, t.y, 0), t.face.right, t.w, t.h, t.tone ? rgb(neonColor(t.tone, 1.4, tier)) : line, 1, t.phase)),
     ...shots.map((q) => plane(STAGE_KIND.image, q.center, q.right, q.w, q.h, [1, 1, 1], 1, 0, rect(q))),
     plane(STAGE_KIND.portrait, photo.center, photo.right, photo.w, photo.h, rgb(new Color("#7dd3fc")), 1, 0, rect(photo)),
   ];
