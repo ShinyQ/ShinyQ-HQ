@@ -11,7 +11,7 @@ export interface RelayConfig {
   allow: string[];
 }
 
-export const DEFAULT_CONFIG: RelayConfig = { endpoint: "https://kurniadi.pages.dev/api/office/beat", allow: ["ShinyQ/*"] };
+export const DEFAULT_CONFIG: RelayConfig = { endpoint: "https://shinyq.my.id/api/office/beat", allow: ["ShinyQ/*"] };
 
 export interface RelayPaths {
   home: string;

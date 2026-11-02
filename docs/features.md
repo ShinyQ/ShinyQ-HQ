@@ -549,7 +549,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Production
 
-- The Cloudflare Pages project `kurniadi` at https://kurniadi.pages.dev.
+- The Cloudflare Pages project `kurniadi` at https://shinyq.my.id (`kurniadi.pages.dev` redirects to it with a 308).
 - `deploy.yml` deploys every merge to `main`, each weekly facts merge and any dispatched commit on `main` (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`).
 - Fast path: a merge whose pull request was green on the same tree deploys at once (about 4 minutes); otherwise the deploy reuses CI's green complete result (`ci-full` artifact) for the commit, and runs the e2e shards itself only when none exists or with `-f rerun_e2e=true`.
 - The deploy job deploys the hq-office Worker, publishes the Ask knowledge pack to Workers KV, uploads with `wrangler pages deploy`, flips the pack pointer and smoke-checks production (`/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/en` with its script policy and the analytics beacon, cache headers, link previews); then the hq-stats Worker deploys. Any failure opens a `deploy-failed` issue.
