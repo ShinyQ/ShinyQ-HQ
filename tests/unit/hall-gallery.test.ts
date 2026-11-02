@@ -20,7 +20,7 @@ import {
 } from "@/experience/floors/lobby/hallGallery";
 import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
-import { PARK, parkTall } from "@/experience/floors/lobby/parkLayout";
+import { parkTall } from "@/experience/floors/lobby/parkLayout";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
@@ -149,12 +149,10 @@ describe("Highlights Hall gallery: lights and camera", () => {
     expect(full.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.full);
     expect(lite.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.lite);
     expect(full.filter((l) => l.kind === "cone")).toHaveLength(4);
-    // Inside the hall, the Proof Park arch's uplights just south of it.
-    const zone = { ...HALL.zone, maxZ: PARK.arch.west.maxZ };
     for (const l of full) {
       expect(l.alpha).toBeGreaterThan(0);
       expect(l.alpha).toBeLessThanOrEqual(0.6);
-      expect(inside(l, zone)).toBe(true);
+      expect(inside(l, HALL.zone)).toBe(true);
     }
     // The fountain is light only: nothing blocks the plaza center.
     const grid = buildNavGrid(l1, ROVER.radius);

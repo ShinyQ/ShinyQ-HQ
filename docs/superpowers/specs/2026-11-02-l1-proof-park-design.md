@@ -65,8 +65,8 @@ the gateway still spans the lead road 3 u before the hall plaza.
   to 28.2: the west post touches the gateway's south pillar (x 35.4 to 36.6), the east post touches the contact
   station's south face at its west end (x 45 to 46.2). Opening x 36.6 to 45 (8.4 u), facing the hall plaza, with the
   park (and Contribution City's skyline, PR 3) seen through it.
-- Drawn with the hall's merged solids and line mesh (no new draw call), two uplights in the hall's instanced lights,
-  camera columns in `FloorLayout.tall`.
+- Drawn with the hall's merged solids and line mesh (no new draw call), camera columns in `FloorLayout.tall`. No
+  uplights: two more beams in the hall's instanced lights would add about 480 triangles to the elevator ride into L1.
 - The floating "PROOF PARK" sign over the lintel ships with the park in PR 3.
 
 ### 3.4 Roads
@@ -75,6 +75,9 @@ the gateway still spans the lead road 3 u before the hall plaza.
   start lies on the office lead road's driving width (3.5 u from its end at (3, 33)), a T junction, so the office and
   park roads are one network part. Drawn from the office plaza's east edge (x 12) to the park plaza's west edge, so its
   fill never doubles a plaza's.
+- Both park roads and the park plaza draw in the hall's road mesh (`RoadMarkings`), which the elevator rides into L1
+  already draw: in the office wing's road mesh they grew its bounds into the ride's view (4 more scene calls on the
+  full-tier ride from L2). They cost 3 calls at the office stop instead (40 to 43 on the full tier, cap 125).
 - `park-arch`, 8 u wide, on the arch's axis (x 40.8) from z 26 (5 u south of the hall lead road, so it never joins the
   hall's part) to the park plaza's centre. Drawn from the hall plaza's south edge (z 22) to the park plaza's north edge.
 - Park plaza, 22 x 16 u centred on the arch's axis (40.8, 36.5) (x 29.8 to 51.8, z 28.5 to 44.5, the office plaza's
@@ -94,7 +97,7 @@ the gateway still spans the lead road 3 u before the hall plaza.
 - The intro orbit and the spawn view (code unchanged; south-facing views show the larger floor, the intended change).
 - The office wing, its views, routes, stop and space rules; the hall, its stations, doors and deep links; the contact
   station's place. The hall gateway arch moves 2 u west (3.3), the hall's only change.
-- No new chunk, draw call, program or string.
+- No new chunk, program or string; the elevator rides draw what they drew (section 3.4: 3 more calls at the office stop).
 
 ## 4. Proof Park (PR 3, east notch)
 

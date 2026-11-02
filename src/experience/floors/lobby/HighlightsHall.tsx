@@ -21,7 +21,7 @@ import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "
 import { aboutFace, contactBeacon, gateSign, hallLights, statTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
-import { PARK } from "./parkLayout";
+import { PARK, parkRoadsDrawn } from "./parkLayout";
 import { lightInstances, panelInstances, ringInstances } from "./hallStage";
 import { hallLineBuffer, hallShapes, portraitRing, solidBuffers, type HallShapes } from "./hallSolids";
 import { HIGHLIGHT_STAT_COUNT } from "./stations";
@@ -149,6 +149,12 @@ function HallReady({ children }: { children: ReactNode }) {
  * lights up to the spotlight apexes). The lead road west of the arch and the gate sign draw outside it.
  */
 const HALL_GRID = 6;
+/**
+ * The hall's road network plus the Proof Park roads and plaza (only between the plazas they join, `parkRoadsDrawn`), in
+ * the hall's one road mesh: the elevator rides into L1 already draw it, so the park roads add no draw call there.
+ */
+const PARK_ROADS = parkRoadsDrawn();
+const HALL_ROADS = { ...HALL_LAYOUT.network, roads: [...HALL_LAYOUT.network.roads, ...PARK_ROADS.roads], plazas: [...HALL_LAYOUT.network.plazas, ...PARK_ROADS.plazas] };
 const HALL_BOUNDS = new Box3(
   new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1),
   new Vector3(HALL.zone.maxX + 1, 13, Math.max(HALL.zone.maxZ, PARK.arch.west.maxZ) + 1),
@@ -222,7 +228,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   return (
     <HallReady>
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
-      <RoadMarkings network={HALL_LAYOUT.network} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
+      <RoadMarkings network={HALL_ROADS} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView>
         <HallSolids shapes={shapes} />
         <HallLines shapes={shapes} tier={tier} />

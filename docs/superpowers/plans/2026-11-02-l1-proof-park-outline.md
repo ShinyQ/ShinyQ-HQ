@@ -14,8 +14,8 @@ but the hall gateway (2 u west).
 **Architecture:** A new pure, import-light module `floors/lobby/parkLayout.ts` (like `officeLayout.ts` and
 `hallLayout.ts`) holds the park's zone, arch, plaza and roads, derived from `LOBBY_SLAB`, `OFFICE_WING` and `HALL`.
 `config.ts` sets the L1 `bounds` to `LOBBY.slab` (no wings) and merges the arch posts, roads, plaza, road zone and
-camera columns. The arch draws with the hall's merged solids and instanced lights; the roads with the office wing's
-`RoadMarkings`. No new chunk, draw call, program or string.
+camera columns. The arch draws with the hall's merged solids and line mesh; the roads with the hall's `RoadMarkings`
+(already drawn by the rides into L1). No new chunk, program or string.
 
 **Tech Stack:** TypeScript, React Three Fiber, Vitest, Playwright, Bun.
 
@@ -69,11 +69,10 @@ it("meets every space rule", () => {
 
 **Files:**
 - Modify: `src/experience/floors/lobby/hallSolids.ts` (`hallShapes`: the arch posts and lintel)
-- Modify: `src/experience/floors/lobby/hallGallery.ts` (`hallLights`: two uplights; `hallTall` unchanged, the arch's columns come from `parkTall`)
-- Modify: `src/experience/floors/Lobby.tsx` (the drawn park roads in the wing's `RoadMarkings`)
+- Modify: `src/experience/floors/lobby/HighlightsHall.tsx` (the drawn park roads in the hall's `RoadMarkings`, `HALL_BOUNDS` over the arch)
 - Test: `tests/unit/hall-gallery.test.ts`, `tests/unit/hall-stage.test.ts`
 
-- [ ] **Step 1: Tests** that the solids hold three arch boxes on the posts and that the lights hold the arch uplights.
+- [ ] **Step 1: Tests** that the solids hold three arch boxes on the posts (no uplights: they would cost the rides about 480 triangles).
 - [ ] **Step 2: Implement** and run the hall tests.
 - [ ] **Step 3: Commit** `feat(l1): draw the Proof Park arch and roads`
 

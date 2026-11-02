@@ -272,9 +272,9 @@ Design: [`2026-11-02-l1-proof-park-design.md`](../superpowers/specs/2026-11-02-l
 | Park plaza `park` | 22 x 16 u centred (40.8, 36.5) (x 29.8 to 51.8, z 28.5 to 44.5) |
 
 - The gateway arch moved 2 u west (x 38 to 36) so the opening between its south pillar and the contact station is 8.4 u, room for an 8 u road; nothing else in the hall moved.
-- The arch draws with the hall: its posts and lintel in `hallShapes` (the merged solid mesh and line mesh), two uplights in `hallLights` (the instanced lights); `HALL_BOUNDS` (`HallView`) reaches its south face, so the posts never hide while in view. No new draw call or program.
+- The arch draws with the hall: its posts and lintel in `hallShapes` (the merged solid mesh and line mesh), no uplights (two more beams in `hallLights` would add about 480 triangles to the elevator ride into L1); `HALL_BOUNDS` (`HallView`) reaches its south face, so the posts never hide while in view. No new draw call or program.
 - Network parts: the hall keeps its own; the park joins the office's (`park-lead` starts on the office plaza's centre, inside the office lead road's driving width: a T junction). So Lobby drives into the hall still join the hall lead road at its west end, Lobby drives into the park follow the office lead and the park lead, and a drive between the hall and the park hops onto the arch road's north end and passes under the arch (`partsPath`). A hall drive to the office crosses the open floor from the hall lead road's west end onto the park road.
-- `roadZone` adds `PARK.zone`. The drawn roads join the office wing's `RoadMarkings` (one mesh) inside the wing's `IntroReveal`.
+- `roadZone` adds `PARK.zone`. The drawn roads and the park plaza join the hall's `RoadMarkings` (`HALL_ROADS` in `HighlightsHall.tsx`, one mesh), which the elevator rides into L1 already draw: in the office wing's road mesh they grew its bounds into the full-tier ride from L2 (4 more scene calls). Here they cost 3 calls at the office stop instead.
 
 ## Rover menu kiosk
 
