@@ -111,7 +111,7 @@ Workers Scripts Edit on the account.
 - Manual deploy (fallback only, with the owner's wrangler login and `STATS_WORKER_DEPLOY=false` set so CI
   does not fight it): from this folder, `bunx wrangler deploy` (this also
   registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next hourly slot,
-  `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
+  `curl -s https://shinyq.my.id/api/stats | jq .updatedAt` shows that slot's time. Set the
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
 - Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 3 h old

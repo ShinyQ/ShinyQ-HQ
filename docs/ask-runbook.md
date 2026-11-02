@@ -15,7 +15,7 @@ Operations guide for the "Ask the HQ" assistant. Design and threat model: [`docs
 | KV namespace | `shinyq-hq-ask`, binding `ASK_KV` (`ans2:` answers (`ans:` before 2026-10-31, expiring), `rl:` counters, `cb:until` breaker, `mb:<key>` per-model pauses, `pack:` knowledge pack, section 17) | `wrangler.toml` |
 | Analytics Engine | dataset `ask_events`, binding `ASK_EVENTS` | `wrangler.toml` |
 | AI Gateway | `shinyq-hq` (cache 7 days, logs on, 600 requests per day fixed window) | `scripts/provision-ask.ts` |
-| Turnstile | widget `shinyq-hq-ask`, invisible, `kurniadi.pages.dev` and `kurniadi.dev` | `scripts/provision-ask.ts`, site key in `wrangler.toml` |
+| Turnstile | widget `shinyq-hq-ask`, invisible, `kurniadi.pages.dev`, `shinyq.my.id` and `kurniadi.dev` | `scripts/provision-ask.ts`, site key in `wrangler.toml` |
 | Vars | `ASK_ENABLED`, `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_BACKUP_MODELS`, `ASK_GATEWAY_ID`, `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP`, `ASK_PACK_SOURCE` | `wrangler.toml` `[vars]` |
 | Secrets | `TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`, `GROQ_API_KEY` (optional) | `wrangler pages secret put` (production environment) |
 | Optional binding | `ASK_RL` rate limiter (`[[ratelimits]]`), commented out until Pages supports it | `wrangler.toml` |
@@ -36,7 +36,7 @@ What `--apply` does:
 
 1. AI Gateway `shinyq-hq`: `cache_ttl` 604800, `collect_logs` on, `log_management` 10000 with `DELETE_OLDEST` (the API minimum, see section 11), rate limit 600 per 86400 s (fixed). Billing mode stays the default `postpaid`, so calls count against the account's own Workers AI quota; no spend limit or Unified Billing is enabled.
 2. KV namespace `shinyq-hq-ask`, and its ID into `wrangler.toml`.
-3. Turnstile widget `shinyq-hq-ask` (invisible; `kurniadi.pages.dev`, `kurniadi.dev`), its public site key into `TURNSTILE_SITE_KEY`, and its secret piped into `TURNSTILE_SECRET`. `localhost` is deliberately not allowed (Cloudflare advises against local hostnames on production keys); for local work use the Turnstile test keys (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) in `.dev.vars`.
+3. Turnstile widget `shinyq-hq-ask` (invisible; `kurniadi.pages.dev`, `shinyq.my.id`, `kurniadi.dev`; `TURNSTILE_DOMAINS`), its public site key into `TURNSTILE_SITE_KEY`, and its secret piped into `TURNSTILE_SECRET`. `localhost` is deliberately not allowed (Cloudflare advises against local hostnames on production keys); for local work use the Turnstile test keys (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) in `.dev.vars`.
 4. Analytics Engine needs nothing: the dataset appears on the first write.
 
 Secrets (wrangler needs a login first: `bunx wrangler login`). Values are generated or fetched inside the pipe, never shown:
@@ -82,13 +82,13 @@ Local: `bun run build && bunx wrangler pages dev out` (put the test Turnstile ke
 ## 4. Production smoke test
 
 1. Deploy with `ASK_ENABLED = "true"` in a local, uncommitted `wrangler.toml` change, or flip it in a PR and deploy `main`.
-2. In a browser on https://kurniadi.pages.dev, open the Ask bar in the Home hero or the Ask AI button (Ask Rover Assistant) and ask the first question. This passes Turnstile and sets the `hq_ask` cookie (30 minutes, bound to your IP hash).
+2. In a browser on https://shinyq.my.id, open the Ask bar in the Home hero or the Ask AI button (Ask Rover Assistant) and ask the first question. This passes Turnstile and sets the `hq_ask` cookie (30 minutes, bound to your IP hash).
 3. Ask the other questions in the UI, or copy the `hq_ask` cookie value from the browser devtools (Application > Cookies) and use curl from the same network. `Origin` must be an allowed origin:
 
 ```sh
 ask() {
-  curl -sN https://kurniadi.pages.dev/api/ask \
-    -H 'Content-Type: application/json' -H 'Origin: https://kurniadi.pages.dev' \
+  curl -sN https://shinyq.my.id/api/ask \
+    -H 'Content-Type: application/json' -H 'Origin: https://shinyq.my.id' \
     -H "Cookie: hq_ask=$HQ_ASK" \
     --data "$(jq -n --arg q "$1" --arg l "${2:-en}" '{q: $q, locale: $l}')"
   echo

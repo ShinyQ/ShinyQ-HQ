@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://kurniadi.pages.dev"><img src="public/brand/rover-mark.svg" width="88" height="88" alt="ShinyQ HQ rover mark"></a>
+<a href="https://shinyq.my.id"><img src="public/brand/rover-mark.svg" width="88" height="88" alt="ShinyQ HQ rover mark"></a>
 
 # ShinyQ HQ
 
@@ -10,7 +10,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 
 [![CI](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
 [![Deploy](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml/badge.svg)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
-[![Live site](https://img.shields.io/badge/live-kurniadi.pages.dev-22d3ee?logo=cloudflarepages&logoColor=white)](https://kurniadi.pages.dev)
+[![Live site](https://img.shields.io/badge/live-shinyq.my.id-22d3ee?logo=cloudflarepages&logoColor=white)](https://shinyq.my.id)
 <br>
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
@@ -20,11 +20,11 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
 [![Bun](https://img.shields.io/badge/Bun-1.4.3-000000?logo=bun&logoColor=white)](https://bun.sh)
 
-**[Live site](https://kurniadi.pages.dev)** · **[Classic site](https://kurniadi.pages.dev/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
+**[Live site](https://shinyq.my.id)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
 <br>
 
-<a href="https://kurniadi.pages.dev">
+<a href="https://shinyq.my.id">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
     <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
@@ -64,11 +64,11 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 
 | | Floor | Route | What is there |
 |---|---|---|---|
-| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk, the Visitor Observatory and the Agent Office. Behind it, the Highlights Hall. |
-| <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://kurniadi.pages.dev/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
-| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
-| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, reader track shelves (one bay per theme, its best post face-out first), research, models and talks desks, the Topic Constellation and the Study Vault of certification study guides. |
-| <img src="docs/readme/floor-RF.jpg" width="300" alt="RF Roof deck"> | **RF Roof deck** | [`/en/contact`](https://kurniadi.pages.dev/en/contact) | Comms mast with the availability sign, contact station, CV kiosk and a courier drone. |
+| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://shinyq.my.id/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk, the Visitor Observatory and the Agent Office. Behind it, the Highlights Hall. |
+| <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://shinyq.my.id/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
+| <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://shinyq.my.id/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
+| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://shinyq.my.id/en/library) | Headline wall, reader track shelves (one bay per theme, its best post face-out first), research, models and talks desks, the Topic Constellation and the Study Vault of certification study guides. |
+| <img src="docs/readme/floor-RF.jpg" width="300" alt="RF Roof deck"> | **RF Roof deck** | [`/en/contact`](https://shinyq.my.id/en/contact) | Comms mast with the availability sign, contact station, CV kiosk and a courier drone. |
 
 Controls, floor-by-floor details and the full status log: **[docs/features.md](docs/features.md)**.
 
@@ -266,7 +266,7 @@ Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/perf
 
 ## Deploy
 
-Production is the Cloudflare Pages project `kurniadi` at [kurniadi.pages.dev](https://kurniadi.pages.dev).
+Production is the Cloudflare Pages project `kurniadi` at [shinyq.my.id](https://shinyq.my.id) (`kurniadi.pages.dev` redirects to it).
 `deploy.yml` runs on every merge to `main` (at once if the PR was green on the same tree, else after `main` CI), on dispatch and on the weekly facts merge: the `hq-office` Worker, `out/` plus `functions/`, a smoke check, then the `hq-stats` Worker. A red `main` CI rolls production back (`rollback.yml`).
 
 Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/deploy.md).
@@ -296,7 +296,7 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 
 **Kurniadi Ahmad Wijaya** · Forward Deployed AI Engineer
 
-[Website](https://kurniadi.pages.dev) · [LinkedIn](https://www.linkedin.com/in/kurniadiwijaya) · [GitHub](https://github.com/ShinyQ) · [Hugging Face](https://huggingface.co/ShinyQ)
+[Website](https://shinyq.my.id) · [LinkedIn](https://www.linkedin.com/in/kurniadiwijaya) · [GitHub](https://github.com/ShinyQ) · [Hugging Face](https://huggingface.co/ShinyQ)
 · [Medium](https://kurniadiahmadwijaya.medium.com/) · [Google Scholar](https://scholar.google.com/citations?user=u8OY1foAAAAJ)
 
 </div>

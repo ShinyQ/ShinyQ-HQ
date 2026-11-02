@@ -96,11 +96,10 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 
 ## Verify
 
-After a deploy (production is `https://kurniadi.pages.dev`; use `https://kurniadi.dev` once the custom domain
-serves the site):
+After a deploy (production is `https://shinyq.my.id`):
 
 ```sh
-SITE=https://kurniadi.pages.dev
+SITE=https://shinyq.my.id
 curl -sI "$SITE/api/guides/<slug>?v=<version>"
 curl -s -r 0-99 -o /dev/null -w "%{http_code}\n" "$SITE/api/guides/<slug>?v=<version>"
 curl -s -D - -o /dev/null -H 'Accept-Encoding: br, gzip' "$SITE/api/guides/<slug>?v=<version>"
