@@ -264,7 +264,8 @@ test.describe("Highlights Hall", () => {
     // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });
-    for (const spot of [null, { x: 20, z: 15 }, { x: 34, z: 13 }]) {
+    // The gate spot stands 4 u west of the gateway arch (x 36 since Proof Park, 2026-11-02), clear of its pillars.
+    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }]) {
       if (spot) await driveTo(page, spot);
       await waitForCameraSettle(page);
       const peaks = await expectRenderBudget(page);
@@ -316,7 +317,7 @@ test.describe("Highlights Hall", () => {
     await chooseMotion(page, "system");
     await enterHQ(page);
     expect(await page.evaluate(() => (window as unknown as InteractWindow).__hq.store.getState().reducedMotion)).toBe(true);
-    await driveTo(page, { x: 34, z: 13 });
+    await driveTo(page, { x: gateOpening().x - 4, z: 13 });
     await waitForCameraSettle(page);
     const peaks = await expectRenderBudget(page);
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
