@@ -26,12 +26,21 @@ const nextConfig: NextConfig = {
       "bidi-js": "./src/experience/bidiLtr.ts",
     },
     rules: {
-      "*.css": {
-        // CSS modules (the study guide reader's styles) skip Tailwind and keep Next's scoped class names.
-        condition: { not: { path: /\.module\.css$/ } },
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
+      "*.css": [
+        {
+          // CSS modules (the study guide reader's styles) skip Tailwind and keep Next's scoped class names; the client
+          // sheet has its own loader.
+          condition: { not: { path: /(\.module|\/client-sheet)\.css$/ } },
+          loaders: ["@tailwindcss/turbopack"],
+          as: "*.css",
+        },
+        {
+          // The lazy client UI's utilities (scripts/client-sheet/loader.mjs, docs/agents/performance.md).
+          condition: { path: /^src\/app\/client-sheet\.css$/ },
+          loaders: ["./scripts/client-sheet/loader.mjs"],
+          as: "*.css",
+        },
+      ],
     },
   },
 };

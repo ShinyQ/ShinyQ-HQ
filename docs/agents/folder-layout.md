@@ -94,6 +94,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
 - `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
 - `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+- `scripts/client-sheet/`: the Classic and client stylesheets (part of `build` and `dev`, see [performance.md](performance.md#classic-and-client-stylesheets)): `sources.ts` writes `src/app/lazy-sources.css` (the files only the client entries load), `loader.mjs` is the Turbopack loader of `src/app/client-sheet.css`, `split.mjs` computes that sheet.
 - `scripts/build-shapes.ts`: the floating hologram shapes (part of `build` and `dev`): converts the vendored Lucide icons and expands the sculpture recipes into `public/shapes/<floor>.<hash>.json`, removing stale files; fails on an unknown or duplicate id.
 - `scripts/ask-pack.ts`: publishes the knowledge pack to Workers KV and flips, pins or rolls back its pointer (deploy.yml, rollback.yml; runbook section 17).
 - `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
@@ -164,6 +165,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/app/(root)/`: "/" language redirect (own root layout).
 - `src/app/[locale]/`: all localized routes (root layout with <html lang>), including `build/page.tsx` (the `/build` story page from `content/build-story.json` and the build facts).
 - `src/app/global-not-found.tsx`: 404.html.
+- `src/app/globals.css` (the Classic stylesheet, with `tokens.css`, `base.css`, `pageview.css`, `landing.css`, `hud-shared.css`), `src/app/client-sheet.css` (the client sheet, built by `scripts/client-sheet/loader.mjs`) and `src/app/lazy-sources.css` (generated, gitignored).
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
 - `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content, one file per floor: /data/rooms/{locale}-{floor}.json (L1 to RF) and /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), each fetched with a `?v=` content hash, /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).

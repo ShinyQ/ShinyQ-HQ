@@ -1,5 +1,7 @@
 "use client";
 
+// Client entry: loads the client sheet with this chunk (scripts/client-sheet/sources.ts).
+import "@/app/client-sheet.css";
 import { useMemo } from "react";
 import { CommandPalette, type CommandPaletteProps } from "./CommandPalette";
 import type { HudAction } from "./hudActions";

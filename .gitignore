@@ -43,3 +43,6 @@ e2e/perf/*-snapshots/
 
 # Floating hologram shapes (bun scripts/build-shapes.ts, run by build and dev): content-hashed, rebuilt every build.
 /public/shapes/
+
+# Classic sheet's lazy-only sources (bun scripts/client-sheet/sources.ts, run by build and dev): rebuilt every build.
+/src/app/lazy-sources.css

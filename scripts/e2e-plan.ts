@@ -313,6 +313,8 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
   // Shared tokens (.glass, .glass-solid) style both the HUD and the pages.
   { test: /^src\/app\/globals\.css$/, specs: ["drawer-solid", "pageview", "static-routes"] },
+  // The client sheet (the lazy client UI's utilities) and its build: the HUD, the drawer, the overlays and the Classic pages.
+  { test: /^src\/app\/client-sheet\.css$|^scripts\/client-sheet\//, specs: ["drawer-solid", "experience", "hud", "pageview", "static-routes"] },
 
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
@@ -408,7 +410,7 @@ export function e2eShardsFor(seconds: number): number {
 const ALSO_RULES: Rule[] = [
   // The phone-first 3D design (e2e/phone-first.spec.ts): the bottom boot card, the docked Rover line and the band stepping aside, the phone tour, the L1 landing view and the camera it primes.
   {
-    test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared)\.css$/,
+    test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared|client-sheet)\.css$|^scripts\/client-sheet\//,
     specs: ["phone-first"],
   },
   // Time Travel on /journey: the section, its selector and island, the page that mounts it, the captions it reads, the Motion setting it follows and its UI strings.

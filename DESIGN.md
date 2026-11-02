@@ -34,7 +34,8 @@ The spacing scale (`--space-2xs` 4px to `--space-3xl` 96px), the type roles (`--
 `--text-title`, `--text-body`, `--text-meta`; the hero name, section heads and leads set their clamps in
 `pageview.css`), the container (`--container` 1440px, `--gutter` 64/24/16px, `--gap-columns` 32px), the section gaps
 (120, 144, 176px, smaller on phones) and `--dur-micro` (120ms) live in `tokens.css`. The global stylesheet has a
-20,480 B gzip budget: a new token or class replaces bytes, it never only adds them.
+20,480 B gzip budget: a new token or class replaces bytes, it never only adds them. Utilities only the lazy client UI
+uses (3D, HUD, dialogs) ship in `client-sheet.css` instead.
 
 ## Type
 

@@ -31,6 +31,7 @@ describe("ci-plan classify", () => {
     ["messages/en.json", "ui"],
     ["public/brand/portrait.webp", "ui"],
     ["scripts/csp-hashes.ts", "ui"],
+    ["scripts/client-sheet/split.mjs", "ui"],
     ["functions/api/ask.ts", "functions"],
     ["workers/stats/src/index.ts", "functions"],
     ["e2e/pageview.spec.ts", "e2e"],

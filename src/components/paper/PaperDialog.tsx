@@ -1,5 +1,7 @@
 "use client";
 
+// Client entry: loads the client sheet with this chunk (scripts/client-sheet/sources.ts).
+import "@/app/client-sheet.css";
 import { useTranslations } from "next-intl";
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { previewCitations, type PaperCitations, type PaperDocumentRef, type PaperPreview } from "@/content/citation";
