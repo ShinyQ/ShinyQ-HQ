@@ -75,9 +75,10 @@ the gateway still spans the lead road 3 u before the hall plaza.
   start lies on the office lead road's driving width (3.5 u from its end at (3, 33)), a T junction, so the office and
   park roads are one network part. Drawn from the office plaza's east edge (x 12) to the park plaza's west edge, so its
   fill never doubles a plaza's.
-- Both park roads and the park plaza draw in the hall's road mesh (`RoadMarkings`), which the elevator rides into L1
-  already draw: in the office wing's road mesh they grew its bounds into the ride's view (4 more scene calls on the
-  full-tier ride from L2). They cost 3 calls at the office stop instead (40 to 43 on the full tier, cap 125).
+- Both park roads and the park plaza draw in the office wing's road mesh (`RoadMarkings`), which the intro orbit and
+  the office stop already draw. Measured against the hall's road mesh (full tier, scene calls, main / wing mesh / hall
+  mesh): intro 116 / 115 / 120, office stop 40 / 40 / 43, the ride from L2 99 / 103 / 99 (its worst whole frame 120 of
+  150). The wing mesh costs the least.
 - `park-arch`, 8 u wide, on the arch's axis (x 40.8) from z 26 (5 u south of the hall lead road, so it never joins the
   hall's part) to the park plaza's centre. Drawn from the hall plaza's south edge (z 22) to the park plaza's north edge.
 - Park plaza, 22 x 16 u centred on the arch's axis (40.8, 36.5) (x 29.8 to 51.8, z 28.5 to 44.5, the office plaza's
@@ -97,7 +98,7 @@ the gateway still spans the lead road 3 u before the hall plaza.
 - The intro orbit and the spawn view (code unchanged; south-facing views show the larger floor, the intended change).
 - The office wing, its views, routes, stop and space rules; the hall, its stations, doors and deep links; the contact
   station's place. The hall gateway arch moves 2 u west (3.3), the hall's only change.
-- No new chunk, program or string; the elevator rides draw what they drew (section 3.4: 3 more calls at the office stop).
+- No new chunk, program or string; the full-tier ride from L2 draws the park roads (section 3.4: 4 more calls, 103).
 
 ## 4. Proof Park (PR 3, east notch)
 
