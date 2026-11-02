@@ -41,7 +41,8 @@ uses (3D, HUD, dialogs) ship in `client-sheet.css` instead.
 
 - Display: Archivo condensed, weight 800, tracking -0.015em, `text-wrap: balance`. Hero name `pv-d-xl`, page titles
   `pv-d-l`, section heads `pv-h2` (52px at 1440), item titles `pv-h3`, figures `pv-num` (weight 700, tabular).
-- Body: Inter 16px, line-height 1.65; leads `pv-lead` at 52ch; prose 65ch.
+- Body: Inter 16px, line-height 1.65; leads `pv-lead` at 52ch; prose 65ch. Posts read in the ink token on one 38rem
+  measure (`pv-read`) shared by the title, the meta and the body.
 - Labels, captions and meta: `pv-meta`, Inter 14px in sentence case, untracked. Never mono, never capitals, never an
   eyebrow over a heading.
 - Mono (`--font-mono`): dates (`pv-date`) and code only.
@@ -69,7 +70,9 @@ uses (3D, HUD, dialogs) ship in `client-sheet.css` instead.
 ## Motion
 
 Still by default: colour transitions at `--dur-micro`, no loops, no entrance, no scroll effects. The Motion setting
-(`html[data-motion]`) and `prefers-reduced-motion` collapse every transition.
+(`html[data-motion]`) and `prefers-reduced-motion` collapse every transition. Two scroll responses, both for reading
+(owner decision 2026-11-02): below 64rem the header slides away while reading down and back on any scroll up, and a
+post draws a 2 px progress line; reduced motion makes the first instant and hides the second.
 
 ## Exports
 

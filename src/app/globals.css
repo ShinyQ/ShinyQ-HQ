@@ -217,33 +217,56 @@
     text-decoration-color: var(--color-cyan);
   }
 
+  /* Post body (blog/[slug]): the ink token at 16 px on a 28 px line, paragraphs a line apart, the column (.pv-read) is
+     the measure. Section heads take the display face so a long post scans by its chapters. */
   .prose-hq {
-    color: var(--color-ink-2);
+    color: var(--color-ink);
     font-size: 16px;
     line-height: 28px;
   }
 
   .prose-hq > * + * {
-    margin-top: 1.1em;
-  }
-
-  /* About 70 characters a line in Inter (the ch unit is the wide digit zero, so a rem cap holds the measure). */
-  .prose-hq > :where(p, ul, ol) {
-    max-width: 36rem;
+    margin-top: 1.5em;
   }
 
   .prose-hq :where(h2, h3):not(:where(.not-prose, .not-prose *)) {
     color: var(--color-ink);
-    font-weight: 700;
-    margin-top: 1.8em;
+    text-wrap: balance;
   }
 
-  .prose-hq :where(h2):not(:where(.not-prose, .not-prose *)) {
-    font-size: 22px;
-    line-height: 30px;
+  .prose-hq > h2 {
+    margin-top: var(--space-2xl);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-stretch: 90%;
+    font-size: var(--text-title);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
   }
 
-  /* Quotes: a glowing violet dot on the first line, in the same 18 px gutter the old edge rule used (R5 P10). */
+  .prose-hq > h3 {
+    margin-top: var(--space-xl);
+    font-weight: 600;
+  }
+
+  .prose-hq > :is(h2, h3) + * {
+    margin-top: var(--space-sm);
+  }
+
+  .prose-hq :where(li + li) {
+    margin-top: var(--space-xs);
+  }
+
+  /* Figures keep 45rem where the page has room (a diagram's column drawing reads at full size), centred on the text
+     column; their captions stay on the text measure. Wide drawings break out further (.arch-break). */
+  .prose-hq > figure {
+    margin-inline: min(0px, calc((100% - min(45rem, 100dvw - 2 * var(--gutter))) / 2));
+  }
+
+  .prose-hq > figure > figcaption {
+    padding-inline: max(0px, calc((100% - 38rem) / 2));
+  }
+
   .prose-hq :where(blockquote):not(:where(.not-prose, .not-prose *)) {
     position: relative;
     padding-left: calc(var(--space-md) + 2px);
@@ -280,7 +303,7 @@
 
   .prose-hq :where(ol):not(:where(.not-prose, .not-prose *)) {
     list-style: decimal;
-    padding-left: 1.25rem;
+    padding-left: 1.75rem;
   }
 
   .prose-hq :where(code):not(:where(.not-prose, .not-prose *)) {
@@ -293,6 +316,27 @@
   .prose-hq :where(pre):not(:where(.not-prose, .not-prose *)),
   .prose-table {
     overflow-x: auto;
+  }
+
+  /* Code: blocks sit in a paper-2 well that scrolls sideways; inline code gets a quiet chip. */
+  .prose-hq > pre {
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-paper-2);
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .prose-hq > pre code {
+    font-size: 1em;
+    overflow-wrap: normal;
+  }
+
+  .prose-hq :not(pre) > code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: var(--color-surface-2);
   }
 
   /* Markdown tables (the MDX table override wraps each in this scroll region): ruled rows, tabular figures. */

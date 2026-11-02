@@ -35,7 +35,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - **Drawer page links** (Read case study, Read post, Open page) point at the Classic page with `?view=classic` and carry `data-hq-view="page"`. The target never equals the URL the room pushed (a same-URL navigation would keep the 3D route mounted), and new tabs open Classic too.
 - **Share buttons** (`ShareLinks`, `src/components/ShareLinks.tsx`): "Copy Classic link" and "Copy 3D link" (copied state "Link copied", announced politely).
   - Clipboard rejection or an unavailable API shows a localized polite status and a named, focusable read-only field with the exact captured canonical URL. Menu recovery stays in the failed action's `li`; page recovery stays outside the buttons. It never takes focus automatically. The latest attempt alone updates feedback, failure persists, and only success has a cleaned-up two-second reset timer. The Classic About email action follows the same contract with the raw email address.
-  - Where: the case study header (`/labs/<slug>`), posts (`/blog/<slug>`, after the tags) and the room drawer's overflow menu.
+  - Where: the case study header (`/labs/<slug>`, `variant="page"`), the end of a post (`/blog/<slug>`, `variant="row"`: compact `pv-tool` buttons after a visible "Share" label, the group still named "Share") and the room drawer's overflow menu.
   - Classic: `${SITE_URL}${path}?view=classic${hash}`. 3D: `${SITE_URL}${threeDPath(path)}`; gated routes keep their path, posts open `/{locale}/library`, everything else the Lobby. Other query parameters are dropped.
   - `SITE_URL` is `https://kurniadi.pages.dev` unless `NEXT_PUBLIC_SITE_URL` is set at build; production builds set it to `https://shinyq.my.id` (`vars.SITE_URL`).
   - A 3D link has no parameter, so a recipient whose remembered choice is Classic gets the Classic site (their "Default HQ view" setting applies); only `?view=` links override it.
@@ -67,6 +67,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   linking home; never the owner's name, owner decision 2026-10-27), the four sections with their floor codes, then
   the Rover menu and the visible ⌘K search pill (`HudLaunchers`, `pv-tool`) and the language switch. The current
   section carries a bottom rule in its floor colour.
+- Below 64rem (the two-row phone and tablet header) the header hides while the visitor reads down and returns on any
+  scroll up, near the top of the page or when focus enters it (owner decision 2026-11-02, every Classic page).
+  `HeaderAutoHide` (`src/components/HeaderAutoHide.tsx`, one passive scroll listener, 24 px of travel before it flips)
+  sets `html[data-scroll="down"]`; `pageview.css` slides `.pv-header` with `transform` (no layout shift), moves the
+  tablet `pv-filters` bar up with it, and turns the Ask pill (`.pv-ask`) into its round icon at the same height
+  (`.pv-ask-label` hidden; the button keeps its `aria-label`). Reduced motion makes both instant. Desktop keeps the
+  one-row header in place.
 - The footer is only links and the copyright line, no name (owner decision 2026-10-27): Pages (the sections, Quick
   view, How this site was built and the CV dialog, `cv-open-footer`), Elsewhere (the email and the profiles), then
   "© {year} ShinyQ HQ" under a hairline.
@@ -138,8 +145,20 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Page intros (`PageIntro`): no floor eyebrow; the title on seven columns, an aside on four.
 - Journey entries (`/journey/<slug>`) and posts (`/blog/<slug>`) are Long Documents: a breadcrumb (`case.breadcrumb`,
   Journey / the entry's type) instead of the eyebrow, the 3D room (`L2:<slug>`, `case.room`) in the facts row, chapter
-  gaps at the section scale, Previous and Next without arrows. Post prose holds about 70 characters a line
-  (`.prose-hq > p` capped at 36rem); the date is a `<time>` under the title.
+  gaps at the section scale, Previous and Next without arrows.
+- Posts (`/blog/<slug>`, reading revamp 2026-11-02): one centred measure (`.pv-read`, 38rem, about 68 characters) for
+  the head, the body and the end. The head is the crumb, the title (`pv-post-title`, at most 52 px) and one meta line:
+  the `<time>`, the reading time (`blog.readingTime`, 220 words a minute, `readingMinutes`) and the languages. The body
+  (`.prose-hq`) is the ink token at 16 px on 28 px lines with a line of space between paragraphs, h2 in the display
+  face, code in a framed `paper-2` well. The Neon Grid behind a post stops at 520 px, before the text.
+  - "On this page" (`CaseToc`, `case.onThisPage`) sits in the right gutter from 1280 px, listing the h2s
+    (`remarkPostHeadings` gives each a slug id at build), the current one lit. With `avoid=".arch-break"` it hides
+    while a wide architecture figure crosses its band, so figures keep their full breakout width; focus inside keeps
+    it. Without JavaScript it is plain anchor links.
+  - A 2 px reading progress line in the Writing floor colour (`--color-white`) runs along the top, driven by the
+    article's own view timeline (CSS only, `animation-range: contain`); browsers without scroll timelines and reduced
+    motion show none.
+  - The end: Topics (the tags), the share row and Back to Writing, under a hairline.
 - `/cv`: the title, the intro, then page 1 beside "2 pages, PDF" and the two actions at the top of their column, so View
   CV is in the 1280 x 800 first screen (`cv-card`, `cv-read`, `cv-download`, `cv-cover-image` kept), then the
   [closing section](#closing-section) without View CV.
