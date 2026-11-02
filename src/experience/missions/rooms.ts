@@ -52,6 +52,9 @@ export type StructuralRoom =
   | "highlightsProjects"
   | "highlightsExperience"
   | "highlightsContact"
+  | "highlightsWins"
+  | "highlightsNow"
+  | "highlightsResults"
   | "reactor"
   | "topics"
   | "visits"
@@ -97,12 +100,15 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
   add({ floor: "L1", slug: "stats", kind: "lobby", title: labels.stats, keywords: content.stats.map((s) => s.label.en), path: "/#stats", floorPath: "/#stats", surpriseWeight: 0 });
   add({ floor: "L1", slug: "skills", kind: "lobby", title: labels.skills, keywords: content.skills.flatMap((g) => g.items), path: "/#skills", floorPath: "/#skills", surpriseWeight: 0 });
   add({ floor: "L1", slug: "certifications", kind: "lobby", title: labels.certifications, keywords: content.certifications.flatMap((c) => [c.name, c.issuer, c.code ?? ""]).filter(Boolean), path: "/#certifications", floorPath: "/#certifications", surpriseWeight: 0 });
-  // L1 Highlights Hall: four stations behind the certification wall. The static tier shows the landing's matching section.
+  // L1 Highlights Hall: seven stations behind the certification wall. The static tier shows the matching Classic section.
   const featured = pickFeaturedPods(orderPods(content.floors.labs.pods));
   const hall = ["highlights", "sorotan", "summary", "ringkasan"];
   add({ floor: "L1", slug: "highlights-about", kind: "highlights", title: labels.highlightsAbout, subtitle: content.profile.headline, keywords: [...hall, "about", "tentang", content.profile.name], path: "/#intro", floorPath: "/#intro", surpriseWeight: 0 });
   add({ floor: "L1", slug: "highlights-projects", kind: "highlights", title: labels.highlightsProjects, keywords: [...hall, "top projects", "proyek", ...featured.map((p) => p.title.en)], path: "/#work", floorPath: "/#work", surpriseWeight: 0 });
   add({ floor: "L1", slug: "highlights-experience", kind: "highlights", title: labels.highlightsExperience, keywords: [...hall, "experience", "pengalaman", "employment", "pekerjaan", "freelance"], path: "/#journey", floorPath: "/#journey", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-wins", kind: "highlights", title: labels.highlightsWins, keywords: [...hall, "wins", "prestasi", "awards", "penghargaan", "competitions", "kompetisi", "juara", "hackathon", "placings"], path: "/quick#awards", floorPath: "/quick#awards", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-now", kind: "highlights", title: labels.highlightsNow, keywords: [...hall, "now", "saat ini", "current", "sekarang", "role", "peran", ...content.floors.careerArchive.entries.filter((e) => e.end === "present").map((e) => e.org)], path: "/#journey", floorPath: "/#journey", surpriseWeight: 0 });
+  add({ floor: "L1", slug: "highlights-results", kind: "highlights", title: labels.highlightsResults, keywords: [...hall, "results", "hasil", "impact", "dampak", "metrics", "metrik", "case studies", "studi kasus"], path: "/labs#key-projects", floorPath: "/labs#key-projects", surpriseWeight: 0 });
   add({ floor: "L1", slug: "highlights-contact", kind: "highlights", title: labels.highlightsContact, subtitle: content.floors.roof.availability, keywords: [...hall, "contact", "kontak", "email", "cv"], path: "/#contact", floorPath: "/#contact", surpriseWeight: 0 });
 
   // L2 Career Archive

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { compilePost } from "@/components/blog/compile";
+import { readingMinutes } from "@/components/blog/headings";
 import { JsonLd } from "@/components/JsonLd";
 import { ShareLinks } from "@/components/ShareLinks";
+import { CaseToc } from "@/components/page/CaseToc";
 import { CrumbLink } from "@/components/page/Layout";
+import { QuietLink } from "@/components/QuietLink";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
 import { LOCALES } from "@/content/schema";
@@ -38,38 +41,61 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   const t = await getTranslations({ locale, namespace: "blog" });
   const tw = await getTranslations({ locale, namespace: "writing" });
   const tc = await getTranslations({ locale, namespace: "common" });
-  const { content } = await compilePost(found.source, slug, found.locale, t("tableLabel"));
+  const tcase = await getTranslations({ locale, namespace: "case" });
+  const { content, headings } = await compilePost(found.source, slug, found.locale, t("tableLabel"));
 
+  // One reading measure (.pv-read) for the head, the body and the end; the contents sit in the right gutter from 1280 px.
   return (
     <>
       <JsonLd data={pageJsonLd(locale, `/blog/${slug}`)} />
-      <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14" lang={found.locale}>
-        <div className="mx-auto max-w-[720px]">
+      <article className="pv-post pv-wrap" lang={found.locale}>
+        <div className="pv-progress" aria-hidden="true" />
+        <header className="pv-read pt-6 sm:pt-10 lg:pt-14">
           <p lang={locale}>
             <CrumbLink crumb={{ href: "/library", label: tw("title") }} />
           </p>
-          <h1 className="pv-d-l mt-6 text-[length:var(--text-display-s)]">{post.title[found.locale]}</h1>
-          <p className="pv-meta mt-5 flex flex-wrap gap-x-4" lang={locale}>
+          <h1 className="pv-d-l pv-post-title mt-4">{post.title[found.locale]}</h1>
+          <p className="pv-meta mt-5 flex flex-wrap gap-x-5 gap-y-1" lang={locale}>
             <time dateTime={post.date} className="pv-date">
               {formatDate(post.date, locale)}
             </time>
+            <span>{t("readingTime", { minutes: readingMinutes(found.source) })}</span>
             <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(", ")}</span>
           </p>
-          <ul className="pv-tags mt-6">
-            {post.tags.map((tag) => (
-              <li key={tag}>{tag}</li>
-            ))}
-          </ul>
-          <div className="mt-6" lang={locale}>
-            <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied"), failed: tc("linkCopyFailed") }} />
-          </div>
           {found.locale !== locale && (
-            <p role="note" lang={locale} className="card mt-8 border-amber/40 px-4 py-3 text-sm text-amber">
+            <p role="note" lang={locale} className="card mt-6 border-amber/40 px-4 py-3 text-sm text-amber">
               {t("translationMissing", { language: t(`languageName.${found.locale}`) })}
             </p>
           )}
-          <div className="prose-hq mt-10 border-t border-line pt-10">{content}</div>
+        </header>
+        <div className="pv-post-body">
+          <div className="prose-hq pv-read">{content}</div>
+          {headings.length > 1 && (
+            <aside className="pv-post-toc" lang={locale}>
+              <div className="sticky top-24">
+                <CaseToc items={headings} label={tcase("onThisPage")} avoid=".arch-break" />
+              </div>
+            </aside>
+          )}
         </div>
+        <footer className="pv-read pv-post-end" lang={locale}>
+          {post.tags.length > 0 && (
+            <div>
+              <p className="pv-meta">{t("topics")}</p>
+              <ul className="pv-tags mt-3">
+                {post.tags.map((tag) => (
+                  <li key={tag}>{tag}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <ShareLinks variant="row" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied"), failed: tc("linkCopyFailed") }} />
+          <p>
+            <QuietLink href="/library" className="pv-go pv-uline">
+              {t("back")}
+            </QuietLink>
+          </p>
+        </footer>
       </article>
     </>
   );

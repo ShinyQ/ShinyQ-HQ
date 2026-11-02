@@ -12,7 +12,8 @@ type ShareCopyState =
 
 export interface ShareLinksProps {
   labels: { group: string; classic: string; threeD: string; copied: string; failed: string };
-  variant?: "page" | "menu";
+  /** `page`: two buttons (case studies); `row`: a compact row under a visible "Share" label (posts); `menu`: drawer items. */
+  variant?: "page" | "row" | "menu";
   /** Class for each menu item button (the drawer's `MENU_ITEM`). */
   itemClassName?: string;
 }
@@ -57,7 +58,7 @@ export function ShareLinks({ labels, variant = "page", itemClassName }: ShareLin
     </div>
   );
 
-  const buttonClassName = variant === "menu" ? itemClassName : "pv-btn pv-btn-ghost";
+  const buttonClassName = variant === "menu" ? itemClassName : variant === "row" ? "pv-tool" : "pv-btn pv-btn-ghost";
   const classicButton = (
     <button type="button" className={buttonClassName} onClick={() => void copy("classic")}>
       <span aria-live="polite">{state.status === "copied" && state.kind === "classic" ? labels.copied : labels.classic}</span>
@@ -74,6 +75,14 @@ export function ShareLinks({ labels, variant = "page", itemClassName }: ShareLin
       <li>{classicButton}{state.status === "failed" && state.kind === "classic" && recovery}</li>
       <li>{threeDButton}{state.status === "failed" && state.kind === "threeD" && recovery}</li>
     </>
+  );
+  if (variant === "row") return (
+    <div role="group" aria-label={labels.group} className="flex flex-wrap items-center gap-2">
+      <span aria-hidden="true" className="pv-meta mr-2">{labels.group}</span>
+      {classicButton}
+      {threeDButton}
+      {recovery}
+    </div>
   );
   return (
     <div role="group" aria-label={labels.group} className="flex flex-wrap gap-3">

@@ -502,6 +502,64 @@
     box-shadow: 0 0 20px -8px var(--color-violet);
   }
 
+  /* A post (blog/[slug]): one reading measure for its head, body and end, centred; the contents in the right gutter. */
+  .pv-read {
+    max-width: 38rem;
+    margin-inline: auto;
+  }
+
+  .pv-post-title {
+    font-size: clamp(2.25rem, 2vw + 1.5rem, 3.25rem);
+  }
+
+  .pv-post-body {
+    margin-top: var(--space-xl);
+  }
+
+  .pv-post-toc {
+    display: none;
+  }
+
+  @media (min-width: 80rem) {
+    .pv-post-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 38rem) minmax(0, 1fr);
+      column-gap: var(--gap-columns);
+    }
+
+    .pv-post-body > .pv-read {
+      grid-column: 2;
+      width: 100%;
+    }
+
+    .pv-post-toc {
+      display: block;
+      grid-column: 3;
+      justify-self: end;
+      width: 13rem;
+    }
+  }
+
+  /* The contents step aside while a wide figure passes under them (CaseToc `avoid`); focus inside keeps them. */
+  .pv-toc {
+    transition:
+      opacity 200ms var(--ease-standard),
+      visibility 200ms;
+  }
+
+  .pv-toc[data-covered]:not(:focus-within) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .pv-post-end {
+    display: grid;
+    gap: var(--space-xl);
+    margin-top: var(--space-3xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--color-line);
+  }
+
   .pv-tags {
     display: flex;
     flex-wrap: wrap;
@@ -515,6 +573,90 @@
     border-radius: 6px;
     border: 1px solid var(--color-line);
     color: var(--color-ink-2);
+  }
+}
+
+/* A post keeps the Neon Grid behind its head only: the text reads on still paper. */
+@layer base {
+  body:has(.pv-post)::before {
+    height: 520px;
+  }
+}
+
+/* Reading progress of a post, driven by its own scroll (no script); where scroll timelines are missing it never shows. */
+.pv-progress {
+  display: none;
+}
+
+@supports (animation-timeline: view()) {
+  .pv-post {
+    view-timeline: --pv-post block;
+  }
+
+  .pv-progress {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 40;
+    height: 2px;
+    background: var(--color-white);
+    transform-origin: 0 50%;
+    pointer-events: none;
+    animation: pv-progress linear both;
+    animation-timeline: --pv-post;
+    animation-range: contain;
+    @variant motion-reduce {
+      display: none;
+    }
+  }
+
+  @keyframes pv-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+/* Phones and tablets: reading down slides the header away and turns the Ask pill into its icon; any scroll up brings
+   both back (HeaderAutoHide, owner decision 2026-11-02). Unlayered, so they win over the utilities they adjust. */
+@media (width < 64rem) {
+  .pv-header {
+    transition: transform 200ms var(--ease-standard);
+  }
+
+  :root[data-scroll="down"] .pv-header:not(:focus-within) {
+    transform: translateY(-100%);
+  }
+
+  /* The pill's left padding already centres its icon in a circle of its height, so only the width changes: nothing
+     inside it moves (no layout shift). */
+  :root[data-scroll="down"] .pv-ask {
+    width: 3rem;
+    padding-right: 0;
+  }
+
+  :root[data-scroll="down"] .pv-ask-label {
+    display: none;
+  }
+}
+
+@media (40rem <= width < 64rem) {
+  :root[data-scroll="down"] .pv-ask {
+    width: 3.5rem;
+  }
+}
+
+/* The sticky filter bar under the tablet header follows it up. */
+@media (48rem <= width < 64rem) {
+  .pv-filters {
+    transition: transform 200ms var(--ease-standard);
+  }
+
+  :root[data-scroll="down"] .pv-filters {
+    transform: translateY(-110px);
   }
 }
 

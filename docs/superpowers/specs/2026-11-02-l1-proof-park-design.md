@@ -1,6 +1,6 @@
 # L1 Proof Park: One Rectangle, Contribution City, Podium of Wins, Benchmark Lab (design)
 
-Status: approved 2026-11-02 (owner, [decision](../../decisions/2026-11-02-l1-proof-park.md)); plans `2026-11-02-l1-proof-park-outline.md` (PR 2), then one plan per later PR; PR 2 in review in #390.
+Status: PR 2 (the outline) shipped in #390 (a4038219), 2026-11-02; the rest superseded 2026-11-02: the owner rejected the Proof Park look and the Highlights Hall was extended into the area instead ([decision](../../decisions/2026-11-02-highlights-hall-extension.md), plan `2026-11-02-highlights-hall-extension.md`). Sections 4 and 5 are history.
 
 Owner request: "So as you know the L1 was not realy square because the addition of agent office im thinking of how can
 we make it square by adding some wow things into it or expand highlights so its fully square and think and become as

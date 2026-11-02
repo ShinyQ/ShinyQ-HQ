@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getContact, getContent, getPods, getProfile, getPublicRepos, getSideProjects, getStats, getTimeline } from "@/content/load";
-import { highlightEntries } from "@/content/highlights";
+import { getAwards, getContact, getContent, getPods, getProfile, getPublicRepos, getSideProjects, getStats, getTimeline } from "@/content/load";
+import { beforeAfterResults, currentRoles, highlightEntries, winCounts, winTiers } from "@/content/highlights";
 import { pickFeaturedPods } from "@/content/pageview";
 import { buildRoomViews } from "@/content/room-views";
 import { podView } from "@/content/room-views/labs";
@@ -259,7 +259,30 @@ describe("Highlights Hall room views", () => {
       const items = contact.sections.flatMap((s) => s.items ?? []);
       expect(items.some((i) => i.href === `mailto:${getContact().email}`)).toBe(true);
       expect(items.some((i) => i.href?.endsWith(".pdf"))).toBe(true);
-      expect([about, projects, experience, contact].map((v) => v.next)).toEqual(["L1:highlights-projects", "L1:highlights-experience", "L1:highlights-contact", undefined]);
+      // Wins: every award grouped by tier, the counts from the data (never typed in).
+      const wins = views["L1:highlights-wins"];
+      const tiers = winTiers(getAwards()).filter((t) => t.awards.length > 0);
+      expect(wins.metrics.map((m) => Number(m.value))).toEqual(tiers.map((t) => t.awards.length));
+      expect(wins.sections.slice(1).map((s) => s.items?.length)).toEqual(tiers.map((t) => t.awards.length));
+      expect(wins.sections.flatMap((s) => s.items ?? [])).toHaveLength(getAwards().length);
+      expect(wins.subtitle).toContain(String(winCounts(getAwards()).firsts));
+      // Now: the roles still running, riding to their L2 room.
+      const now = views["L1:highlights-now"];
+      expect(now.cards?.map((c) => c.room)).toEqual(currentRoles().map((e) => `L2:${e.slug}`));
+      // Results: every verified before and after result, riding to its case study.
+      const results = views["L1:highlights-results"];
+      const ba = beforeAfterResults();
+      expect(results.cards?.map((c) => c.title)).toEqual(ba.map((r) => r.result.value));
+      expect(results.cards?.map((c) => c.room)).toEqual(ba.map((r) => `L3:${r.pod.slug}`));
+      expect([about, projects, experience, wins, now, results, contact].map((v) => v.next)).toEqual([
+        "L1:highlights-projects",
+        "L1:highlights-experience",
+        "L1:highlights-wins",
+        "L1:highlights-now",
+        "L1:highlights-results",
+        "L1:highlights-contact",
+        undefined,
+      ]);
     }
   });
 });

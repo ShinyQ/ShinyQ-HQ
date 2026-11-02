@@ -1,6 +1,6 @@
 # Classic CSS Split (CL-1) Implementation Plan
 
-Status: in review
+Status: shipped in #392 (7ea0eab4), 2026-11-02
 
 Owner request: the blog reading revamp needs room in the Classic stylesheet (61 B left under its 20,480 B Lighthouse
 cap), so the owner chose to free room first with CL-1 from the Phase 1 performance report: move the styles only the

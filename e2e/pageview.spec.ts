@@ -946,3 +946,114 @@ test.describe("Quick view brief (owner decision 2026-11-01)", () => {
     expect(screens, "a short brief, not the whole site").toBeLessThan(24);
   });
 });
+
+test.describe("reading a post", () => {
+  const POST = "/en/blog/ten-very-hard-benchmark-tasks-in-ten-days";
+  const WIDE_FIGURE_POST = "/en/blog/why-the-better-fraud-engine-shipped-in-shadow-mode";
+  const contents = (page: Page) => page.getByRole("navigation", { name: en.case.onThisPage });
+  /** Scrolls in steps, one frame apart, so the page sees a run of scroll events like a reader's swipe (instant: the
+   *  site's smooth scroll-behavior would let each step cancel the last). */
+  const scrollSteps = async (page: Page, dy: number, steps = 8) => {
+    for (let i = 0; i < steps; i++) {
+      await page.evaluate((d) => new Promise((done) => {
+        window.scrollBy({ top: d, behavior: "instant" });
+        requestAnimationFrame(() => requestAnimationFrame(done));
+      }), dy / steps);
+    }
+  };
+
+  test("one centred column for the head, the body and the end, with its contents beside it from 1280 px", async ({ page, browser }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openPage(page, staticTier(POST));
+    const columns = await page.locator("article .pv-read").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width)]; }));
+    expect(columns).toHaveLength(3);
+    for (const box of columns) expect(box).toEqual(columns[0]);
+    expect(Math.abs(columns[0][0] * 2 + columns[0][1] - 1440)).toBeLessThanOrEqual(2);
+    await expect(page.locator(".prose-hq > p").first()).toHaveCSS("font-size", "16px");
+    await expect(page.locator(".prose-hq > p").first()).toHaveCSS("color", "rgb(244, 244, 245)");
+    await expect(page.locator("article header .pv-meta")).toContainText(/\d+ min read/);
+
+    const ids = await page.locator(".prose-hq > h2").evaluateAll((hs) => hs.map((h) => h.id));
+    expect(ids.length).toBeGreaterThan(1);
+    const links = contents(page).getByRole("link");
+    expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(ids.map((id) => `#${id}`));
+    await links.nth(2).click();
+    await expect(page).toHaveURL(new RegExp(`#${ids[2]}$`));
+    await expect(links.nth(2)).toHaveAttribute("aria-current", "true");
+    // Desktop keeps its one-row header in place while reading.
+    expect((await page.locator("header.pv-header").boundingBox())!.y).toBe(0);
+    await expect(page.getByRole("group", { name: en.common.share }).getByRole("button")).toHaveCount(2);
+    await expectNoSeriousViolations(page);
+
+    const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 900 } });
+    const plain = await noScript.newPage();
+    await plain.goto(staticTier(POST));
+    expect(await contents(plain).getByRole("link").evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(ids.map((id) => `#${id}`));
+    await noScript.close();
+  });
+
+  test("the contents step aside while a wide diagram passes under them", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openPage(page, staticTier(WIDE_FIGURE_POST));
+    const nav = contents(page);
+    await expect(nav).toBeVisible();
+    const top = await page.locator(".arch-break").first().evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+    await page.evaluate((y) => window.scrollTo(0, y - 200), top);
+    await expect(nav).toHaveAttribute("data-covered", "");
+    await expect(nav).toBeHidden();
+    await page.evaluate((y) => window.scrollTo(0, y + 1400), top);
+    await expect(nav).not.toHaveAttribute("data-covered");
+    await expect(nav).toBeVisible();
+  });
+
+  test("on a phone the header hides while reading down, the Ask pill turns into its icon, and nothing shifts", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("**/api/ask", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ASK_ON) }));
+    await page.addInitScript(() => {
+      const w = window as unknown as { __shift: number };
+      w.__shift = 0;
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) if (!entry.hadRecentInput) w.__shift += entry.value;
+      }).observe({ type: "layout-shift", buffered: true });
+    });
+    await openPage(page, staticTier(POST));
+    const html = page.locator("html");
+    const header = page.locator("header.pv-header");
+    const launcher = page.getByTestId("ask-launcher");
+    await expect(launcher).toBeVisible();
+    const before = (await page.evaluate(() => (window as unknown as { __shift: number }).__shift)) ?? 0;
+
+    await scrollSteps(page, 1200);
+    await expect(html).toHaveAttribute("data-scroll", "down");
+    await expect.poll(async () => (await header.boundingBox())!.y + (await header.boundingBox())!.height).toBeLessThanOrEqual(0);
+    await expect.poll(async () => { const b = (await launcher.boundingBox())!; return Math.round(b.width) === Math.round(b.height); }).toBe(true);
+    await expect(launcher).toHaveAccessibleName(en.ask.dock.launcherLabel);
+
+    await scrollSteps(page, -200, 4);
+    await expect(html).not.toHaveAttribute("data-scroll");
+    await expect.poll(async () => (await header.boundingBox())!.y).toBe(0);
+    await expect(launcher).toContainText(en.ask.dock.launcher);
+
+    // Scrolling itself shifts nothing (the header slides with transform, the pill keeps its height and icon).
+    expect(await page.evaluate(() => (window as unknown as { __shift: number }).__shift)).toBe(before);
+
+    // Tabbing into the hidden header (its skip link comes first) brings it back.
+    await scrollSteps(page, 600);
+    await expect(html).toHaveAttribute("data-scroll", "down");
+    await page.keyboard.press("Tab");
+    await expect(header.getByRole("link").first()).toBeFocused();
+    await expect.poll(async () => (await header.boundingBox())!.y).toBe(0);
+  });
+
+  test("under reduced motion the phone header shows and hides at once", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openPage(page, staticTier(POST));
+    const header = page.locator("header.pv-header");
+    expect(await header.evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThan(0.001);
+    await scrollSteps(page, 1200);
+    await expect(page.locator("html")).toHaveAttribute("data-scroll", "down");
+    await expect.poll(async () => (await header.boundingBox())!.y + (await header.boundingBox())!.height).toBeLessThanOrEqual(0);
+    await expect(page.locator(".pv-progress")).toBeHidden();
+  });
+});

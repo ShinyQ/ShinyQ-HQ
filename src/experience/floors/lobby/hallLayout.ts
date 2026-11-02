@@ -9,21 +9,30 @@ import { HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "./stat
 /** Hall west edge and the slab's half depth (floors/lobby/slab.ts): every hall position below is an offset from them. */
 const X0 = LOBBY_SLAB.hallX;
 const Z = LOBBY_SLAB.halfZ;
-/** The lead road's line: 6 u in from the old south slab edge (S), where the gateway's south pillar ends. */
+/** The lead road's line: 6 u in from the Lobby's south edge line (S), where the gateway's south pillar ends. */
 const LEAD_Z = Z - 6;
+/** The floor's south edge (the office wing's): the hall runs the slab's full depth (owner decision 2026-11-02). */
+const SOUTH = Z + OFFICE_WING.depth;
+/** The office plaza's centre, where the road from the office into the hall starts (a T junction with the office lead road). */
+const OFFICE_PLAZA = { x: OFFICE_WING.x, z: Z + OFFICE_WING.plaza.z, w: OFFICE_WING.plaza.w } as const;
 
 /**
- * L1 Highlights Hall (owner request, October 2026; more room 2026-10-19): the Lobby slab grows east from
- * `LOBBY_SLAB.hallX` by 36 u. A lead road leaves the Lobby south of the certification wall (which stays
- * untouched and readable from the plaza) into the hall plaza. Four stations stand flush with the slab edges,
- * facing the plaza, in this order: about me (north-west), top projects (north-east), work experience (east),
- * contact (south). Pure: the floor layout, the scenery and the e2e tests read it.
+ * L1 Highlights Hall (owner request, October 2026; more room 2026-10-19; the slab's full depth 2026-11-02): the Lobby
+ * slab grows east from `LOBBY_SLAB.hallX` by 36 u, and the hall runs from the north slab edge to the floor's south edge.
+ * A lead road leaves the Lobby south of the certification wall (which stays untouched and readable from the plaza) into
+ * the hall plaza, and a second road comes in from the Agent Office plaza. Seven stations stand flush with the slab edges,
+ * facing the plaza, in this order: about me (north-west), top projects (north-east), work experience, wins and now (east),
+ * results (south-east), contact (south-west). Pure: the floor layout, the scenery and the e2e tests read it.
  * Checked by tests/unit/highlights-layout.test.ts (space rules with the real Lobby).
  */
 export const HALL = {
   maxX: X0 + 36,
+  /** The floor's south edge, where the hall's south stations stand. */
+  south: SOUTH,
   /** Drives that start or end in here follow the hall road (`FloorLayout.roadZone`); east of the cert wall. */
-  zone: { minX: X0 - 1, maxX: X0 + 36, minZ: -Z, maxZ: Z },
+  zone: { minX: X0 - 1, maxX: X0 + 36, minZ: -Z, maxZ: SOUTH },
+  /** The open floor between the Agent Office wing and the hall, which the office road crosses (`FloorLayout.roadZone`). */
+  link: { minX: OFFICE_WING.maxX, maxX: X0 - 1, minZ: Z, maxZ: SOUTH },
   /**
    * Starts 6 u east of the Agent Office wing's east edge (`OFFICE_WING.maxX`, the wing hangs off the south slab edge), so the
    * road's driving width keeps 6 u from the wing's north-east corner (owner, 2026-10-19).
@@ -32,23 +41,29 @@ export const HALL = {
     { x: OFFICE_WING.maxX + 6, z: LEAD_Z },
     { x: X0 + 8, z: LEAD_Z },
   ],
-  /** The plaza keeps 8 u to the north stations, 2 u to the contact station and 3 u to the experience arch. */
-  plaza: { x: X0 + 18, z: 3, w: 24, d: 2 * Z - 16 },
+  /** The plaza runs the hall's depth: 8 u from the north stations, 6 u from the south ones and 3 u from the east ones. */
+  plaza: { x: X0 + 18, z: (-Z + 11 + SOUTH - 9) / 2, w: 24, d: SOUTH - 9 - (-Z + 11) },
   stations: {
     about: { minX: X0 + 4, maxX: X0 + 14, minZ: -Z, maxZ: -Z + 3 },
     projects: { minX: X0 + 20, maxX: X0 + 36, minZ: -Z, maxZ: -Z + 3 },
     experience: { minX: X0 + 33, maxX: X0 + 36, minZ: -8, maxZ: 10 },
-    contact: { minX: X0 + 12, maxX: X0 + 26, minZ: Z - 3, maxZ: Z },
+    wins: { minX: X0 + 33, maxX: X0 + 36, minZ: Z - 11, maxZ: Z - 1 },
+    now: { minX: X0 + 33, maxX: X0 + 36, minZ: Z + 5, maxZ: Z + 19 },
+    results: { minX: X0 + 20, maxX: X0 + 36, minZ: SOUTH - 3, maxZ: SOUTH },
+    contact: { minX: X0, maxX: X0 + 14, minZ: SOUTH - 3, maxZ: SOUTH },
   },
   /** Unit direction from each door pad into its station. */
   facing: {
     about: { x: 0, z: -1 },
     projects: { x: 0, z: -1 },
     experience: { x: 1, z: 0 },
+    wins: { x: 1, z: 0 },
+    now: { x: 1, z: 0 },
+    results: { x: 0, z: 1 },
     contact: { x: 0, z: 1 },
   },
-  /** Station hues, matching the drawer accents (green, violet, amber, blue). */
-  tone: { about: "#34d399", projects: "#a78bfa", experience: "#fbbf24", contact: "#60a5fa" },
+  /** Station hues, matching the drawer accents (green, violet, amber, pink, white, cyan, blue). */
+  tone: { about: "#34d399", projects: "#a78bfa", experience: "#fbbf24", wins: "#f472b6", now: "#e5e7eb", results: "#22d3ee", contact: "#60a5fa" },
   padInset: 1.1,
   spurWidth: 4,
   panel: { h: 6, plinth: 0.35, depth: 0.3 },
@@ -56,16 +71,17 @@ export const HALL = {
   entry: { minX: X0, maxX: X0 + 8, minZ: LEAD_Z - 4, maxZ: LEAD_Z + 4 },
   /**
    * Gateway arch over the lead road where it enters the plaza (gallery rebuild, October 2026): two
-   * pillars (the north one stays clear of the cert wall, the south one reaches the old south edge, where the Proof
-   * Park arch's west post touches it), a lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above
-   * it (nothing on the floor). At x 36 (owner decision 2026-11-02, from 38): the opening from its south pillar to the
-   * contact station is 8.4 u, so the park's arch road fits (parkLayout.ts).
+   * pillars (the north one stays clear of the cert wall, the south one reaches the Lobby's south edge line), a lintel the
+   * rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor). At x 36 since
+   * 2026-11-02 (from 38).
    */
   gate: { x: X0 + 3, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
   /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
-  zoom: { about: 1, projects: 1.45, experience: 1.5, contact: 1.27 },
+  zoom: { about: 1, projects: 1.45, experience: 1.5, wins: 1, now: 1.2, results: 1.45, contact: 1.27 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */
-  height: { about: 6.4, projects: 7.6, experience: 7.4, contact: 9.6 },
+  height: { about: 6.4, projects: 7.6, experience: 7.4, wins: 6.4, now: 6.4, results: 7.6, contact: 9.6 },
+  /** The road from the office plaza: 8 u wide on the office plaza's line, ending 2 u inside the hall plaza's west edge. */
+  officeRoad: { z: OFFICE_PLAZA.z, from: OFFICE_PLAZA.x, to: X0 + 8, width: ROAD.minWidth },
   /** Screenshots load once the rover is east of here on L1. */
   lazyX: X0 - 10,
 } as const;
@@ -90,7 +106,14 @@ export interface HallStation {
 
 export interface HighlightsHallLayout {
   stations: HallStation[];
+  /**
+   * The routing network (`FloorLayout.road`): the lead road runs on to the spine, a road down the plaza's long axis, and a
+   * short approach road leads from the spine to every spur's start, so a drive between two stations crosses the plaza
+   * along it instead of through one hub at the plaza's centre (the hall runs the slab's full depth since 2026-11-02).
+   */
   network: RoadNetwork;
+  /** What the hall draws (`RoadMarkings`): the lead road up to the plaza, the plaza and the spurs; the spine stays unseen. */
+  drawn: RoadNetwork;
   doors: DoorTrigger[];
   obstacles: Rect[];
   viewZones: ViewZone[];
@@ -137,6 +160,23 @@ function stationZone(s: HallStation): ViewZone {
   };
 }
 
+/**
+ * The road from the Agent Office plaza into the hall (routing): it starts on the office plaza's centre, on the office lead
+ * road's driving width (a T junction), so it joins the office's network part; it ends inside the hall plaza, which links to
+ * the hall lead road only, so the hall keeps its own part and Lobby drives into the hall still join the lead road at its west
+ * end. A drive between the office and the hall hops between the parts (`partsPath`).
+ */
+export function hallOfficeRoad(): Road {
+  const R = HALL.officeRoad;
+  return { id: "hall-office", points: [{ x: R.from, z: R.z }, { x: R.to, z: R.z }], width: R.width };
+}
+
+/** The office road as drawn (`RoadMarkings`): from the office plaza's east edge to the hall plaza's west edge, so no road fill doubles a plaza's. */
+export function hallOfficeRoadDrawn(): Road {
+  const R = HALL.officeRoad;
+  return { id: "hall-office", points: [{ x: OFFICE_PLAZA.x + OFFICE_PLAZA.w / 2, z: R.z }, { x: HALL.plaza.x - HALL.plaza.w / 2, z: R.z }], width: R.width };
+}
+
 /** The gateway arch pillars (obstacles; the opening between them carries the lead road). */
 export function gatePillars(): Rect[] {
   const g = HALL.gate;
@@ -155,9 +195,17 @@ export function buildHighlightsHall(): HighlightsHallLayout {
   // Each spur starts 1 u inside the plaza, on the pad's line.
   const inside = (p: Vec2): Vec2 => ({ x: clamp(p.x, P.x - P.w / 2 + 1, P.x + P.w / 2 - 1), z: clamp(p.z, P.z - P.d / 2 + 1, P.z + P.d / 2 - 1) });
   const spurs: Spur[] = stations.map((s) => ({ room: s.room, from: inside(s.pad), to: s.pad, width: HALL.spurWidth, color: HALL.tone[s.station] }));
+  // Routing only: the spine from 1 u inside the plaza's north edge to 1 u inside its south edge, the lead road run on to it
+  // (a T junction), and an approach road from the spine to every spur's start (a T junction or the spine's end).
+  const top = P.z - P.d / 2 + 1;
+  const bottom = P.z + P.d / 2 - 1;
+  const spine: Road = { id: "hall-spine", points: [{ x: P.x, z: top }, { x: P.x, z: bottom }], width: ROAD.minWidth };
+  const leadOn: Road = { ...lead, points: [lead.points[0], { x: P.x, z: lead.points[lead.points.length - 1].z }] };
+  const approaches: Road[] = spurs.map((sp) => ({ id: `hall-to-${sp.room.slice(3)}`, points: [{ x: P.x, z: clamp(sp.from.z, top, bottom) }, { x: sp.from.x, z: sp.from.z }], width: ROAD.minWidth }));
   return {
     stations,
-    network: { roads: [lead], plazas: [plaza], spurs },
+    network: { roads: [leadOn, spine, ...approaches], plazas: [plaza], spurs },
+    drawn: { roads: [lead], plazas: [plaza], spurs },
     doors: stations.map((s) => ({ room: s.room, at: s.pad, facing: s.facing })),
     obstacles: [...stations.map((s) => s.rect), ...gatePillars()],
     viewZones: [{ id: "L1:highlights-entry", area: { ...HALL.entry }, yaw: -Math.PI / 2, zoom: 1.3 }, ...stations.map(stationZone)],

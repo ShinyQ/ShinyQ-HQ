@@ -19,7 +19,8 @@ if (process.platform === "darwin" && process.env.VISUAL_GATE_GPU !== "swiftshade
 
 type Device = { name: string; width: number; height: number; dpr: number; tier: "full" | "lite"; touch: boolean; info?: boolean };
 /** Ride poses capture `after` frames after the ride reaches `stage` (default: 24 frames into the dolly). */
-type Pose = { name: string; kind: "settled" | "intro" | "ride"; path: string; to?: string; stage?: "boarding" | "moving" | "opening"; after?: number };
+/** `closeRoom`: the path deep links a room; the capture closes its drawer first. */
+type Pose = { name: string; kind: "settled" | "intro" | "ride"; path: string; to?: string; stage?: "boarding" | "moving" | "opening"; after?: number; closeRoom?: true };
 type Limits = { threshold: number; maxDiffPixelRatio: number };
 
 const DEVICES: readonly Device[] = [
@@ -36,6 +37,8 @@ const POSES: readonly Pose[] = [
   { name: "l3-labs", kind: "settled", path: "/en/labs" },
   { name: "l4-library", kind: "settled", path: "/en/library" },
   { name: "rf-contact", kind: "settled", path: "/en/contact" },
+  // The Highlights Hall's south half (owner decision 2026-11-02): the results station's view, its drawer closed.
+  { name: "l1-hall-south", kind: "settled", path: "/en#highlights-results", closeRoom: true },
   // Captured under reduced motion: 30 frames into the intro's fade into the follow view.
   { name: "intro-still", kind: "intro", path: "/en" },
   { name: "ride-up-l1-l2", kind: "ride", path: "/en", to: "L2" },
@@ -95,7 +98,8 @@ async function open(browser: Browser, device: Device, pose: Pose) {
   }
   // The Ask teaser runs on real-time timers: it must never decide what a capture shows.
   await page.addInitScript(() => sessionStorage.setItem("hq:ask-teaser", "1"));
-  await page.goto(`${pose.path}?tier=${device.tier}`);
+  const [path, hash] = pose.path.split("#");
+  await page.goto(`${path}?tier=${device.tier}${hash ? `#${hash}` : ""}`);
   return { context, page };
 }
 
@@ -123,6 +127,15 @@ async function stepTo(page: Page, frame: number) {
 async function settle(page: Page, pose: Pose) {
   await page.getByTestId("hq").waitFor({ timeout: 120_000 });
   if (pose.kind === "settled") {
+    if (pose.closeRoom) {
+      // A build without the room lands in the plain explore view instead.
+      const roomOrLive = () => {
+        const s = (window as unknown as Partial<HQ>).__hq?.store.getState();
+        return s?.phase === "room" || (s?.phase === "explore" && ((window as unknown as Partial<HQ>).__hq?.rover.drawCalls ?? 0) > 0);
+      };
+      await driveUntil(page, roomOrLive, { maxFrames: SETTLE_FRAME, batch: 10 });
+      if ((await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().phase)) === "room") await page.keyboard.press("Escape");
+    }
     await driveUntil(page, live, { maxFrames: SETTLE_FRAME, batch: 10 });
     await waitForQuiet(page);
     await stepTo(page, SETTLE_FRAME);

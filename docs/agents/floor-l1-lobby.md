@@ -1,9 +1,9 @@
 # L1 Lobby
 
-The L1 Lobby floor: the certification wall, the Highlights Hall, the Agent Office, Proof Park, the Rover menu kiosk and the Lobby camera views.
+The L1 Lobby floor: the certification wall, the Highlights Hall, the Agent Office, the west strip, the Rover menu kiosk and the Lobby camera views.
 Index: [AGENTS.md](../../AGENTS.md).
 
-Layout (owner, more room 2026-10-19; Proof Park 2026-11-02): L1 is one 93 x 86 u rectangle, `LOBBY.slab` (x -24 to 69, z -27 to 59), the floor's `FloorLayout.bounds` with no wings ([Proof Park](#proof-park)). `LOBBY.bounds` is the Lobby and hall part north of S (`LOBBY_SLAB` in `floors/lobby/slab.ts`: x from -24, z from -27 to 27, the hall from x = 33), centered on the elevator axis; S (z 27, the old south edge) is the line the office wing, the hall stations and the observatory derive from. The hologram stays at (6, 0); the lane ring is r 13.5 and the stats ring r 11. Every obstacle pair clears 6 u (`spaceViolations` finds nothing on L1) and the walkway between the lane ring and each wall or the kiosk is at least 6 u (`tests/unit/lobby-layout.test.ts`). Positions derive from `LOBBY` and `LOBBY_SLAB`, so colliders, bounds, stops, the minimap and deep links follow them.
+Layout (owner, more room 2026-10-19; one rectangle 2026-11-02): L1 is one 93 x 86 u rectangle, `LOBBY.slab` (x -24 to 69, z -27 to 59), the floor's `FloorLayout.bounds` with no wings ([One rectangle](#one-rectangle)). `LOBBY.bounds` is the Lobby and hall part north of S (`LOBBY_SLAB` in `floors/lobby/slab.ts`: x from -24, z from -27 to 27, the hall from x = 33), centered on the elevator axis; S (z 27, the old south edge) is the line the office wing, the hall stations and the observatory derive from. The hologram stays at (6, 0); the lane ring is r 13.5 and the stats ring r 11. Every obstacle pair clears 6 u (`spaceViolations` finds nothing on L1) and the walkway between the lane ring and each wall or the kiosk is at least 6 u (`tests/unit/lobby-layout.test.ts`). Positions derive from `LOBBY` and `LOBBY_SLAB`, so colliders, bounds, stops, the minimap and deep links follow them.
 
 Related: floor rules shared by every floor live in [floors.md](floors.md); the Visitor Observatory (`L1:visits`) is described in [stats.md](stats.md) and [hud-and-drawer.md](hud-and-drawer.md).
 
@@ -51,20 +51,25 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 
 ### Layout
 
-- Every hall position is an offset from `LOBBY_SLAB` (`hallX` 33, `halfZ` 27): the slab runs to x = 69.
-- A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from the south edge, 8 u clear of the wall; from x = 24, 6 u east of the Agent Office wing's east edge) into a 24 x 38 u plaza (8 u to the north stations, 2 u to contact, 3 u to the experience arch).
+- Every hall position is an offset from `LOBBY_SLAB` (`hallX` 33, `halfZ` 27): the slab runs to x = 69. Since 2026-11-02 (owner decision [2026-11-02](../decisions/2026-11-02-highlights-hall-extension.md)) the hall runs the slab's full depth, from the north edge (z -27) to the floor's south edge (`HALL.south`, z 59): `HALL.zone` x 32 to 69.
+- A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from S, 8 u clear of the wall; from x = 24, 6 u east of the Agent Office wing's east edge) into a 24 x 70 u plaza (x 39 to 63, z -16 to 50: 8 u to the north stations, 6 u to the south ones, 3 u to the east ones).
   - The certification wall stays untouched and readable from the plaza.
-- Four stations sit flush with the slab edges, rooms `L1:highlights-*`:
+- A second road enters the hall from the Agent Office plaza (`HALL.officeRoad`, `hallOfficeRoad`, 8 u wide on z 36.5 from the office plaza's centre to x 41, inside the hall plaza), so the Lobby, the office and the hall form a loop. It joins the office's network part (a T junction with the office lead road); the hall keeps its own, so a Lobby drive into the hall still joins the hall lead road at its west end (`partsPath` hops between the parts).
+- Routing inside the hall (`HALL_LAYOUT.network`): the lead road runs on to the spine (`hall-spine`, the plaza's long axis at x 51) and a short approach road leads from the spine to every spur's start, so a drive between two stations follows the plaza instead of one hub at its centre. The hall draws only the lead road, the plaza and the spurs (`HALL_LAYOUT.drawn`).
+- Seven stations sit flush with the slab edges, rooms `L1:highlights-*`, numbered 01 to 07 in this order (`HIGHLIGHT_STATIONS`):
 
-  | Station | Position |
-  |---|---|
-  | about me | north-west |
-  | top projects | north-east |
-  | work experience | east |
-  | contact | south |
+  | Station | Footprint | Shape |
+  |---|---|---|
+  | about me | north, x 37 to 47 | pedestal |
+  | top projects | north, x 53 to 69 | three monoliths |
+  | work experience | east, z -8 to 10 | lit arch |
+  | wins | east, z 16 to 26 | pedestal |
+  | now | east, z 32 to 46 | lit arch (smaller) |
+  | results | south, x 53 to 69 | three monoliths |
+  | contact | south, x 33 to 47 | beacon and card |
 
 - Each station has a door pad 1.1 u in front and a camera zone that faces it.
-- `FloorLayout.roadZone` limits the L1 road to drives into or out of the hall or the [Agent Office wing](#agent-office) (`routeUsesRoad`), so Lobby trips keep the navgrid.
+- `FloorLayout.roadZone` limits the L1 road to drives into or out of the hall, the floor between the office wing and the hall (`HALL.link`) or the [Agent Office wing](#agent-office) (`routeUsesRoad`), so Lobby trips keep the navgrid.
 
 ### Scenery (a gallery)
 
@@ -74,12 +79,15 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   - The four stat tiles stand in an arc and drift on the full tier; their texts move through the `BatchedLabels` handle.
 - Top projects: three monolith screens in a shallow arc.
 - Work experience: a lit arch (columns on the pillars, the title on the lintel, an amber glow in the opening).
-- Contact: beside a signal beacon with pulsing rings and a floating card.
-- Gateway arch over the lead road at x = 36 (moved 2 u west for the [Proof Park](#proof-park) arch road, 2026-11-02):
+- Wins: the About me pedestal shape (`winsFace`), the number of awards and honors in the ring, the first places and the total over it, and one tile per placement tier (1st, 2nd, 3rd place, finalists and honors) in its tier's tone, drifting with About me's (`winsTiles`).
+- Now: the work experience arch, smaller (`NOW_ARCH`): the employment role on the left pillar, the freelance one on the right (org, role, period), a white glow in the opening.
+- Results: the top projects' monoliths on the south edge (`monoliths(n, "results")`), three results per stone (value, what it measures, the case study), "+N more" when there are more than nine.
+- Contact: beside a signal beacon with pulsing rings and a floating card, on the south edge.
+- Gateway arch over the lead road at x = 36 (2 u west of its first place since 2026-11-02):
   - pillars are obstacles; the rover drives under the lintel;
   - the floating "Highlights Hall" sign (`FloatingSigns`, `gateSign`); nothing is written on the floor;
   - a light curtain sweeps once per browser session on the first eastward pass (`gateCrossed`, `sessionStorage["hq:hall-gate"]`, probe `__hq.probes.hallGate`), never under reduced motion.
-- A light fountain (light only) marks the plaza center.
+- Two light fountains (light only) mark the middle of the north half (z 3, its ring turning) and of the south half (z 38, its ring still: the stage shader turns every spinning beam around one centre, `uCenter`).
 - Fake spotlight cones, uplights and glow pools are one instanced mesh; no real lights on any tier.
 
 ### Rendering
@@ -89,7 +97,9 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   - the road markings, one merged solid mesh, one line mesh, one `BatchedLabels`;
   - the screenshot atlas: black until it loads once the rover is east of `HALL.lazyX` (`shouldLoadShots`);
   - the portrait disc, the tiles, the lights, the portal, the beacon rings, the sign, and the curtain while it sweeps.
-- `HallView` hides the instanced effects while the hall's bounds are out of view.
+- The hall draws in three parts (2026-11-02), each its own `HallView` with its own merged solid mesh, line mesh, stage lights and text batch: the north part (north of S: the gateway arch, about me, top projects, work experience, wins, the north fountain; the tiles, screenshots and portrait, the work experience glow and the curtain), contact (the south-west corner: the beacon, its rings and card) and the south part (now, results, the south fountain; the now arch's glow). The north part tests its old view box on a 6 x 6 grid of cells; contact and the south part test a box per landmark, so a Lobby view that reaches only the contact beacon at the frame's edge (the spawn turned south) draws only contact, never the whole hall (the full-tier boost peak drawing it all was 33.7k triangles, over the 30k budget).
+- With every part in view the hall costs about 17 calls (main had 8) and about 9k triangles; L1 stays under 125 calls (the hall's south view from the wins stop: 46 full).
+- Measured against the main build before the extension (perf lane, settled spawn view): full 102 scene calls and 24.4k triangles (main 97 and 22.9k), lite 100 and 21.2k (95 and 19.7k); programs unchanged (62 full, 42 lite). Rides that arrive on L1 peak at or under main's; rides that leave it carry the spawn view's 5 calls (the worst whole ride frame 122 of 150, full L1 to B1). The highest ride triangle peak stays under main's (28,405 against 28,413).
 - `HallReady` precompiles and pins every program (`precompileObject`) once the scene draws into its final target, before the hall shows.
 - Shader materials are never culled by the ride cull ([3d-experience.md](3d-experience.md)).
 - The tall shapes are in the camera collision (`hallTall`, `FloorLayout.tall` on L1).
@@ -102,12 +112,17 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 
 - Projects come from `pickFeaturedPods` (the landing's three).
 - Experience comes from timeline entries of type `job` and `freelance`, newest first (`highlightEntries`, `experienceRows`).
+- Wins come from `awards` (`winTiers`, `winCounts` in `src/content/highlights.ts`): an award's tier is its English placement (1st, 2nd, 3rd place, every other placing an honor); every count is derived. The station reads "awards and honors" (the Lobby's stat tile counts the 20 placings; the 4 finalist and Top 100 honors make 24).
+- Results come from the case studies (`beforeAfterResults`): only results with `confidence: "verified"` whose value reads as a before and after ("→" or " to "), in site order, each with its case study (`L3:<slug>`); side-by-side comparisons ("6 vs 18") and single numbers stay out. Today 10 results from 7 case studies.
+- Now comes from the timeline entries still running (`currentRoles`: `end: "present"`, employment first): Metrodata and LILT today, with their timeline text.
+- The 3D payload carries them in `ExperienceData.highlights` (`wins`, `results`, `now`); the drawers (`buildHighlightsViews`) list every award grouped by tier, every role as a card to its L2 room and every result as a card to its case study.
 - The work experience columns use the career type labels (`common.type.job` "Employment", `common.type.freelance`).
 - A project with `podLiveLink` gets "Visit live site": a tag in 3D, a `LiveSiteLink` in the drawer.
 
 ### Deep links and point-and-go
 
-- `/{locale}#highlights(-<station>)` opens a station (`gateStartRoom` in the gate).
+- `/{locale}#highlights(-<station>)` opens a station (`gateStartRoom` in the gate), the new ones included (`#highlights-wins`, `#highlights-now`, `#highlights-results`).
+- Cmd-K lists all seven; the static tier opens the matching Classic section (`/#intro`, `/#work`, `/#journey`, `/quick#awards`, `/#journey`, `/labs#key-projects`, `/#contact`).
 - An open station keeps `/{locale}` (`hasPage` false).
 - The stations are point-and-go targets `L1:station:highlights-<station>` (kind `station`, `open-room`), registered by `HighlightsHall` with `registerExtraInteractables` (`hallInteract.ts`); see [floors.md](floors.md).
 - The registry's L1 built-ins do not derive targets from L1 doors.
@@ -122,7 +137,7 @@ The office has its own south wing of the L1 slab ([owner decision](../decisions/
 
 | Item | Offsets from S |
 |---|---|
-| Wing rect (`LOBBY.officeWing.rect`: a zone for the road, the ghost outline and the reveal; the slab is one rect since [Proof Park](#proof-park)) | x -12 to 18, z S to S + 32 |
+| Wing rect (`LOBBY.officeWing.rect`: a zone for the road, the ghost outline and the reveal; the slab is one rect since [2026-11-02](#one-rectangle)) | x -12 to 18, z S to S + 32 |
 | Lead road `office-lead` (8 u, inside the plaza's x -3 to 9) | x 3 (x -1 to 7), z S - 8 to S + 6 |
 | Lead span (`leadSpan`, in `roadZone`) | x -1 to 7, z S - 8 to S |
 | Wing plaza `office` | 18 x 16 centred (3, S + 9.5) |
@@ -250,31 +265,21 @@ Design: [2026-10-20-agent-office-revamp-design.md](../superpowers/specs/2026-10-
 - Unit: `lobby-office`, `office-rows-visibility`, `office-rooms`, `office-model`, `office-poll`, `office-visual`, `office-rig`, `office-atlas`, `office-frame`, `office-view`, `office-wall`, `office-runtime`, `office-chip-placement`, `office-chunk`, `office-live`, `office-interact`, `office-chunk-graph`, `office-signal`, `office-watch`, `office-watch-loader`, `office-beacon`, `office-beacon-view`, `office-crew-summary`, `office-drones`, `office-crew-fx` (the tower's lanes), `office-pipeline` (the diff rules, the baseline, staleness, the queue), `office-pipeline-fx` (the effects' instances, the ceiling, reduced motion), `office-replay` (the engine: reconstruction equal to the live rules, compression bounds, empty and truncated days), `office-replay-feed` (the controller: loads, loops, seeks, reduced motion, stale loads), `office-replay-link` (the idle loop rule, the source switch, live events), `office-replay-chunk` and `office-tiles`; jsdom: `tests/hud/OfficeChips.test.tsx` (the pill and the ring dots too), `tests/hud/OfficeBody.test.tsx` (the CI drawer and the replay badge and section too), `tests/hud/ReplayControls.test.tsx`. E2E: `e2e/office.spec.ts` with snapshots from `e2e/office-fixtures.ts` (the live layer mounts at idle without moving the rover; from the lane ring's south point, the view turned south with `turnCameraTo`, the office is in view, far, polls `far` and the crew steps at most about 4 times a second of scene clock with `bob` above 0; a ten-desk snapshot draws ten crew probes, the back-row asker's flag, a back-row Rover's drones and the beacon on the floor just past the riser; the ship-it pipeline from v4 snapshots built for the current time by `shipStep` and `deployed`: 24 lanes for the busy pipeline and part A's anonymous lanes for a v3 body on `?v=4`, a burst, a packet from back-row desk 6, a package and the stack following `today.prsMerged`, none of the moving ones under reduced motion, the deploy beam for about 8 s of scene clock from the spawn through the watch's v3 and in view through the scene's v4 (never for a deploy over 30 s old, which also leaves the beacon chunk unloaded), and the CI tower's click opening `L1:office-ci` with its runs and jobs; the day replay with `/api/office/history` answered from fixtures: the idle loop starts on an all-asleep fixture, shows the label, the tiles and the banner and ends on a live awake snapshot or a live event, the drawer's controls, reduced motion stepping, an unavailable history, and the chunks loading lazily: the replay chunk by the idle loop or the press, the controls chunk by the press only); perf: the L1 and B1 gates load the office first, plus the office stop, the spawn turned toward the wing and the ring's south point, each with a burst playing and the deploy beam running while the draw calls are read, and at the stop the lite frame rate with the effects against the still office and the GPU objects flat across live switches, plus the replay chunk's and controls chunk's bytes, the replay looping at the same stops (no program added, the GPU objects flat across loops and a seek) ([performance.md](performance.md)).
 - Owner captures: `bun scripts/office-shots.ts` (not committed; `ring-south` is the always-live view from the lane ring).
 
-## Proof Park
+## One rectangle
 
-Design: [`2026-11-02-l1-proof-park-design.md`](../superpowers/specs/2026-11-02-l1-proof-park-design.md), owner decision [2026-11-02](../decisions/2026-11-02-l1-proof-park.md). Code: `floors/lobby/parkLayout.ts` (pure and import-light, like `officeLayout.ts`: `PARK`, `parkArchPosts`, `parkTall`, `parkPlaza`, `parkRoads`, `parkRoadsDrawn`). Tests: `tests/unit/l1-proof-park-layout.test.ts`.
+Owner decisions [2026-11-02](../decisions/2026-11-02-l1-proof-park.md) (the outline) and [2026-11-02](../decisions/2026-11-02-highlights-hall-extension.md) (the hall fills it). Tests: `tests/unit/l1-outline-layout.test.ts`, `tests/unit/highlights-stations.test.ts`.
 
-### Outline
-
-- L1 is one rectangle, `LOBBY.slab` (x -24 to 69, z -27 to 59, 93 x 86 u): the L1 `FloorLayout.bounds`, no `wings`. The navgrid, collision, camera clamp, space rules, slab mesh (one box), minimap (the plain rect) and ride cull read it through `nav/slab.ts`; `slabBox` is the same box as the old Lobby rect plus the office wing, so the tower frame and the grid fade did not move.
+- L1 is one rectangle, `LOBBY.slab` (x -24 to 69, z -27 to 59): the L1 `FloorLayout.bounds`, no `wings`. The navgrid, collision, camera clamp, space rules, slab mesh (one box), minimap (the plain rect) and ride cull read it through `nav/slab.ts`; `slabBox` is the same box as the old Lobby rect plus the office wing, so the tower frame and the grid fade did not move.
 - Why one rect: wings model slabs that are not rectangles ([floors.md](floors.md#multi-rect-slabs-wings)); two notch wings beside the office wing would put three rects on the corners (-12, 27) and (18, 27), which the slab code forbids.
-- The old notches: east of the office wing (x 18 to 69, z 27 to 59, `PARK.zone`) is Proof Park; west of it (x -24 to -12) the Benchmark Lab's alcove (PR 4). The Lobby's south-east corner (x 18 to 35.4 along z 27) opens onto the park as plain floor.
-- Obstacles that touched the old edges (the observatory, the gateway's south pillar, the contact station, the office's CI tower and dock corners) now have open floor beyond them, which the 6 u rules allow; `spaceViolations` on the real L1 is empty.
+- The old notches: east of the office wing, the Highlights Hall's south half (x 33 to 69) and the open floor between it and the wing (`HALL.link`, x 18 to 32, crossed by the office road); west of the wing, the [west strip](#west-strip).
+- Obstacles that touched the old edges (the observatory, the gateway's south pillar, the office's CI tower and dock corners) now have open floor beyond them, which the 6 u rules allow; `spaceViolations` on the real L1 is empty.
 
-### Arch and roads
+## West strip
 
-| Item | Where |
-|---|---|
-| Arch posts (obstacles, camera columns 7.4 u) | x 35.4 to 36.6 (touching the gateway's south pillar) and x 45 to 46.2 (touching the contact station), z 27 to 28.2 |
-| Arch opening, lintel | x 36.6 to 45 (8.4 u), the lintel 1 u at y 6.4 to 7.4 |
-| `park-arch` road (8 u) | on the arch's axis x 40.8, from z 26 (5 u south of the hall lead road's line) to the park plaza's centre; drawn from the hall plaza's south edge (z 22) to the park plaza's north edge |
-| `park-lead` road (8 u) | from the office plaza's centre (3, 36.5) east to the park plaza's centre; drawn from the office plaza's east edge (x 12) to the park plaza's west edge |
-| Park plaza `park` | 22 x 16 u centred (40.8, 36.5) (x 29.8 to 51.8, z 28.5 to 44.5) |
+Code: `floors/lobby/westStripLayout.ts` (pure, `WEST_STRIP`, `westStripLights`), `floors/lobby/WestStrip.tsx`.
 
-- The gateway arch moved 2 u west (x 38 to 36) so the opening between its south pillar and the contact station is 8.4 u, room for an 8 u road; nothing else in the hall moved.
-- The arch draws with the hall: its posts and lintel in `hallShapes` (the merged solid mesh and line mesh), no uplights (two more beams in `hallLights` would add about 480 triangles to the elevator ride into L1); `HALL_BOUNDS` (`HallView`) reaches its south face, so the posts never hide while in view. No new draw call or program.
-- Network parts: the hall keeps its own; the park joins the office's (`park-lead` starts on the office plaza's centre, inside the office lead road's driving width: a T junction). So Lobby drives into the hall still join the hall lead road at its west end, Lobby drives into the park follow the office lead and the park lead, and a drive between the hall and the park hops onto the arch road's north end and passes under the arch (`partsPath`). A hall drive to the office crosses the open floor from the hall lead road's west end onto the park road.
-- `roadZone` adds `PARK.zone`. The drawn roads and the park plaza join the office wing's `RoadMarkings` (`WING_ROAD` in `Lobby.tsx`, one mesh, inside the wing's `IntroReveal`), which the intro orbit and the office stop already draw. Measured on the full tier (scene calls, main / wing mesh / the hall's road mesh): intro 116 / 115 / 120, office stop 40 / 40 / 43, the ride from L2 99 / 103 / 99; the wing mesh costs the least.
+- The strip west of the Agent Office wing (x -24 to -12, z 27 to 59) is decoration only (owner decision 2026-11-02): a row of light columns with glow pools along the west edge (x -20.5, every 4 u, cyan and violet), no content and no obstacle, so the rover drives through and the space rules are untouched.
+- One instanced draw on the hall's stage lights program (`StageLights`): no new program. Mounted by `Lobby.tsx` in its own `IntroReveal`, once the full tier's composer is live; hidden during elevator rides and while its bounds are out of view; still under reduced motion.
 
 ## Rover menu kiosk
 
