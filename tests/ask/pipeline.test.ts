@@ -209,10 +209,20 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("Kurniadi mencatat 425 ms dalam drill PoC, dua kali lebih cepat daripada ACS yang setara.", id).pass).toBe(false);
   });
 
-  it("has 114 unique items with a 111 pass threshold", () => {
-    expect(golden.items).toHaveLength(114);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(114);
-    expect(golden.passThreshold).toBe(111);
+  it("requires the merged share for the first ten days of benchmark work", () => {
+    const en = golden.items.find((i) => i.id === "q115") as GoldenItem;
+    const id = golden.items.find((i) => i.id === "q116") as GoldenItem;
+    expect(scoreGolden("Kurniadi opened ten tasks as pull requests in his first ten days; half of them are already merged.", en).pass).toBe(true);
+    expect(scoreGolden("Kurniadi opened ten tasks as pull requests in his first ten days.", en).pass).toBe(false);
+    expect(scoreGolden("Kurniadi opened ten tasks in ten days, and all ten merged; half of them landed in the hardest band.", en).pass).toBe(false);
+    expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task sebagai pull request, dan separuhnya sudah di-merge.", id).pass).toBe(true);
+    expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task sebagai pull request.", id).pass).toBe(false);
+  });
+
+  it("has 116 unique items with a 113 pass threshold", () => {
+    expect(golden.items).toHaveLength(116);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(116);
+    expect(golden.passThreshold).toBe(113);
   });
 
   it("scores the in-progress AB-100 as not earned", () => {

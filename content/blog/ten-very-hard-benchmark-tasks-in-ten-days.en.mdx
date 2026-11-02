@@ -1,0 +1,163 @@
+---
+title: "Ten Very Hard Benchmark Tasks in Ten Days"
+date: "2026-11-02"
+excerpt: "First AI benchmark job: ten Indonesian tasks in ten days, half merged, most rated very hard, the top band. Over 300 ideas killed. The method, not the tasks."
+tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workflow", "case-study"]
+readingTime: "12 min"
+---
+
+On 24 October 2026 I started freelancing as an AI benchmark engineer. I had never built a benchmark task before. In the first ten days I opened ten tasks as pull requests. Half of them are already merged, and most of them landed very hard, the top difficulty band.
+
+I build Indonesian-language tasks for Terminal-Bench, a public benchmark for AI coding agents. In each task, an agent gets a terminal, realistic Indonesian workplace files and an instruction written in Indonesian. It has to write a program that does the job. Hidden tests then grade the output, including on data the agent never saw. Frontier models from OpenAI, Google and Anthropic run every task many times, and their pass rate decides which difficulty band it lands in.
+
+I can't show you a single task. The data belongs to the client, and a benchmark task stops working once it is published: the next models can learn the answer instead of the skill. So this post is about the method, not the tasks. It covers what "very hard" means when the bar is fairness, the workspace that let agents pick up the work in a minute, the funnel that killed most ideas, and how I kept more than seventy AI sessions from stepping on each other.
+
+## Learning the job from merged work
+
+Being new, I did not start with ideas. I started by reading. Before the first task, I had agents collect the merged and rejected tasks in my language, their review threads and the asks reviewers kept repeating. I turned that into a short playbook: what got tasks merged, what got them closed, and the questions each reviewer tends to ask.
+
+That reading is where I learned that the hard part of this job is not making models fail. It is making them fail fairly.
+
+## Hard for the model, fair for a human
+
+The fastest way to build a task that models fail is to cheat: hide a rule nobody could guess, grade against a private word list, or leave the instruction ambiguous. Reviewers reject all three, and they are right to. A benchmark that punishes guessing measures luck.
+
+The bar I work to has two halves.
+
+The first is a fairness test. Imagine a second engineer who never sees the tests or the answer key. With only the instruction, the files in the environment and conventions any native Indonesian adult knows, they must be able to pass every hidden check. If a check needs anything beyond those three, it is unfair and it goes.
+
+The second is a plain-words test. Write the language rule the task depends on into the instruction, in plain words, and run the models again. If spelling it out makes them pass, the task was testing whether the model had been told, not whether it understood.
+
+Between the two there is a narrow window. Here is an illustration, deliberately far from my tasks and from language: sorting software version strings.
+
+- **Given away.** The instruction says "compare the numbers between the dots one by one". Every model passes. The task tests reading.
+- **Unfair.** The hidden data uses a suffix scheme that no visible file shows and no common convention defines. A careful human fails too, so reviewers reject it.
+- **Fair, but easy.** Nothing is stated. The visible files show 1.9 sorted before 1.10, and the hidden data has new versions. Any developer derives the rule, and so does every model, because it knows the convention cold.
+
+A very hard task has to be fair like the third version and still beat the models after the rule is written out. Most ideas cannot do both.
+
+### Where the difficulty comes from
+
+I can't say what makes any one of my tasks hard; that would hand the answer to the next model. What I can share is the general shape, which held across every probe:
+
+- **Knowing is not doing.** Early on, I asked models questions about the language directly, with no tools. They answered almost everything correctly. The same models then failed the task, because an agent writing a program generalises from the sample files in front of it instead of applying what it knows. Knowledge was rarely the bottleneck. Applying it inside a program was.
+- **The grader reruns on data the agent never saw.** A program that only handles the visible examples looks right and fails.
+- **Plausible code versus what a native would do.** The failures that count are the ones where the code is reasonable to an engineer and wrong to any native speaker.
+
+And what does not work, from the ideas I killed (categories only):
+
+- conventions models know cold: famous lists, textbook grammar, fixed scales;
+- anything the visible examples teach in one pass;
+- difficulty that comes from hidden vocabulary, which disappears as soon as the task is made fair;
+- engineering depth on its own. A very hard task needs real terminal work, but wrapping a convention the models already know inside a bigger setup added work, not failures.
+
+## A workspace an agent can pick up in sixty seconds
+
+AI agents did much of the research, building and checking in parallel sessions, and every new session starts with no memory. The workspace is written for that reader. An agent first reads a short entry file, which points to three more:
+
+```text
+workspace/
+  AGENTS.md          entry point: read START-HERE, STATUS, RULES, in that order
+  START-HERE.md      60-second orientation and a read order per job
+  STATUS.md          live state: open pull requests, my to-dos, the list of research rounds
+  RULES.md           every rule once, in one line, with its source
+  IDEA-BACKLOG.md    every idea ever raised, its gates and its verdict
+  specs/             one design per task, one report per research round
+  archive/           verbatim history, read only when needed
+  tools/             local checks
+  task-repo/         the upstream clone
+  wt-<task>/         one git worktree per task
+```
+
+A few rules keep it useful:
+
+- **Every rule appears once, in one line, with its source.** The source is the review, the failed probe or the decision that created it. When a lesson changes a rule, the line changes; the long story goes into a spec or the archive. By day six, the original instructions file mixed the current rules with their history. I split it into this digest layer and moved the full history, verbatim, into the archive. The rulebook now holds more than a hundred one-line rules.
+- **Status changes after every event**: a review, a push, a calibration result, a round opening or closing. Any agent can tell what is live without reading a transcript.
+- **No idea is ever deleted.** Every idea stays in the backlog with its verdict and the gates it failed. Before proposing anything, an agent reads all of it, so nothing is proposed twice.
+- **Ownership is written down.** Each research round owns one spec file and one prefix for its backlog rows, so parallel agents never edit the same lines. This rule came from a collision: early on, two researcher sessions from different model families both claimed the same round after the same handoff.
+
+If this looks familiar, it is the constitution idea from [spec-driven development with AI coding agents](/en/blog/spec-driven-development-with-ai-coding-agents), applied to research instead of code: decisions live in files, not in chat history.
+
+## The funnel
+
+Every idea takes the same path, and almost all of them die on it.
+
+<Architecture diagram="idea-funnel" caption="From idea to merged task. Most ideas stop at the first two checks." />
+
+1. **Idea.** From my own sense of how Indonesians actually write and work, from agent research, or from the backlog.
+2. **Paper screen.** Ten gates before anything runs. Is it already taken, in any language's tasks or reserved ideas? Would every native agree on every answer? Does the instruction or a file give the answer away? Can it be graded without a private list? Can every ambiguity be ruled out in one honest sentence?
+3. **Agentic probe.** A minimal prototype, then real agent runs with tools in a sandbox: three model families, three runs each. A question without tools is not a probe; it misled me in both directions.
+4. **Failure attribution.** Every failure is replayed as a minimal pair: change only the language feature and see whether the failure flips. A failure that survives the change is a generic coding error and does not count.
+5. **Build**, in its own git worktree.
+6. **Independent answer check.** A fresh session that never saw my answer key labels a batch of ordinary inputs. Every disagreement is either a bug in my key or a gap in my instruction. I repeat with new writers until they converge. About 30 of the 70 subagents across my sessions did nothing but this kind of blind checking.
+7. **Local judges.** The repository's LLM-judged checks, run on my machine with three models. All three must pass every check before a push.
+8. **My instruction, my approval.** I write the instruction and approve every commit and push.
+9. **Submit, calibrate, review.** The benchmark's own runs set the difficulty; human reviewers decide what merges.
+
+In ten days that meant twenty numbered research rounds and more than 330 ideas in the backlog. Over 300 were killed, on paper or by a probe. Ten became pull requests.
+
+A high kill rate is the point. A NO-GO backed by evidence is a win: it costs far less than a pull request that dies in review.
+
+## Parallel agents without chaos
+
+The sessions ran in the GitHub Copilot app, with the Copilot CLI for probes and local checks. This is how they were organised:
+
+<Architecture diagram="agent-organisation" caption="One coordinator, fenced lanes, independent researchers and a human gate on everything that leaves the machine." />
+
+- **One coordinator.** A Claude session plans each round, splits it into lanes, checks every result on disk and merges findings into the docs. It reports to me; lanes report to it. The latest coordinator created 28 child sessions in about 54 hours.
+- **Lanes with fences.** A round usually has three lanes, each a child session with its own angle, its own spec file and its own backlog prefix. Lanes write only in their own section; the coordinator writes the consensus.
+- **Kickoff prompts that stand alone.** Every lane starts from one message with five parts: my request quoted word for word, the decisions already made (marked "do not reopen"), the spec sections that are the source of truth, numbered steps, and limits such as a container cap per lane and no edits to shared docs or other worktrees.
+- **Short messages.** Lead with the ask or the verdict, skip acknowledgements, and allow at most two round-trips on any disagreement before the coordinator decides or brings it to me.
+- **Decisions come to me as options.** In those 54 hours the coordinator asked me 101 questions. 83 were a pick from two to four options with one marked as recommended, and 25 were about a commit, push or pull request. My own messages were short; a lot of them just said "continue".
+- **Other model families as independent researchers.** Separate GPT, Gemini and Grok sessions proposed and attacked ideas. In one round, three agents from three families each proposed ideas alone, then red-teamed the other two agents' ideas, then converged on at most three to probe. Different families miss different things, which is the point. That round also taught me a lesson: it killed all 18 of its ideas in 34 minutes with questions asked without tools, and a later round showed that this kind of kill was not evidence.
+- **A read-only red team.** One session's only job was to attack a task under review, with no write access to its worktree.
+- **Automations, honestly.** I scheduled two researchers (one reading academic sources, one real-world practice) and a verifier. In one day they ran six times, rejected 57 leads and proposed nothing that survived, so I paused them. The automation that earned its keep was boring: a refresh of every open and merged task in my language, every 12 hours, which caught collisions with other contributors early. The ideas that became tasks started from my own native intuition; the agents stress-tested them.
+
+## Human gates
+
+AI drafted a lot. I decided everything that left the machine.
+
+- **No commit, push or pull request without my explicit OK.** Agents stop and ask. Before a build pushed, the coordinator re-checked the result on disk and said so in its go message.
+- **I write every instruction.** I write it in my own Indonesian and paste it in. The coordinator may suggest mechanical fixes only, and the build applies my text byte for byte, checked with a checksum. The agent lists the sentences the tests depend on, so my edits do not break them.
+- **Indonesian facts need primary sources**: the official dictionary, the spelling guide and real usage, never a search summary. I ran the dictionary checks myself, and when a reading could not be verified, it was not quoted.
+- **Review findings are reproduced before any reply.** Then I fix the behaviour, rerun every check and recalibrate after any change to the tests, the answer key or the instruction. I never make a task harder in response to a correctness review; the corrected task's own result stands. Once, a review went from read to a push-ready fix in 14 minutes.
+- **Learn from other people's reviews too.** When another contributor's task was closed, I checked the reason against all my open tasks and prepared answers before any reviewer asked.
+
+## Reading failures
+
+Most of my mistakes were in reading results, not in building tasks.
+
+- **Separate language failures from coding failures.** Only failures that flip on the Indonesian feature are evidence; the rest are generic errors any task could produce.
+- **Count once per trial.** A failed run is one miss, however many tracebacks it prints.
+- **Recompute without the most-missed item.** If one row makes the whole score, the score is about that row.
+- **Sweep for infrastructure deaths first.** A network drop that kills a run looks exactly like a failure and makes an idea look harder. At about twenty parallel containers, 13 of 144 probe runs timed out from my own load; I now keep it near nine.
+- **Read the raw artifact, not the summary.** Bot summaries cited rows no trial missed and called a crash a design choice. Each group of failures is described by what its scripts really did, not by one blanket theory.
+
+## What I would keep and change
+
+I would keep the digest layer, the kill-early habit, real agentic probes, the independent answer check and the human gates.
+
+Some things I would change:
+
+- **Fairness first, difficulty second.** A stricter fairness rule arrived on day seven, and I re-audited every task and idea against it. Ideas that looked very hard were often hard only because something was hidden. The fairness check now comes before the first probe.
+- **Make the blind checkers truly independent.** My answer-key checkers never saw the key, but they came from the same model family as the agent that wrote it. They can share its blind spots. The next version mixes families.
+- **Budget the probes.** Nine agent runs per idea, plus reruns, add up, and they are noisy. I now run the cheap plain-words variant first.
+- **Plan for bad nights.** One evening, network drops caused 59 session errors across five sessions, and I typed "continue" 64 times by hand. Sessions also lost context when their history was compacted.
+- **Keep the rulebook honest.** The digest grew back: the normalized rulebook is now larger than the file it replaced, and I relaxed gates three times mid-flight. Each relaxation was a recorded decision, but the file needs pruning, not only appending.
+- **Seed the automations.** Two empty runs suggested the open brief was the problem. The next version starts from concrete seeds.
+- **An approval is not a merge.** Half of my tasks are still waiting for review, and a review can still close them.
+
+I also have no baseline without agents, so I can't say how much faster they made me. What I can say is that ten tasks in ten days, from someone doing this for the first time, depended on writing the rules down and making the agents read them.
+
+## A checklist for building evaluations
+
+1. Write the fairness test down before the first idea.
+2. Run the plain-words test before calling anything very hard.
+3. Keep every idea and every verdict, and read them before proposing.
+4. Probe with real tools, several model families and several runs.
+5. Attribute every failure with a minimal pair.
+6. Have a fresh agent label data without your answer key.
+7. Give parallel agents fenced ownership: one file, one prefix.
+8. Keep a human gate on everything that leaves the machine.
+9. Read the raw artifacts, and sweep infrastructure deaths before you count.
+10. Publish the method, never the task.
