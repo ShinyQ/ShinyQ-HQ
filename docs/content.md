@@ -35,6 +35,13 @@ post-local migration figure compares the old and new media paths. Results retain
 the reduced-PoC scope, sample sizes and failed setup gate; the ACS harness reference
 bypasses the ACS media plane and is not a controlled migration-speedup comparison.
 
+The bilingual `ten-very-hard-benchmark-tasks-in-ten-days` post belongs to **Engineering
+with AI Agents**. It teaches the method, never a task: no client or benchmark-vendor
+name beyond the public Terminal-Bench, no task names, data, mechanisms or per-task
+scores. Its only outcome numbers are aggregates (ten tasks, half merged, most in the
+hardest band); its process numbers come from the owner's workspace. Its two
+post-local figures show the idea funnel and the agent organisation.
+
 ### Reader tracks
 
 The L4 Writing floor shelves the posts by reader track, one bookshelf bay per track (owner decision [2026-10-25](decisions/2026-10-25-l4-reader-tracks.md); the floor in [`agents/floor-l4-library.md`](agents/floor-l4-library.md)).

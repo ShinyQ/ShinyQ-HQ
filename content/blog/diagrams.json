@@ -1,4 +1,419 @@
 {
+  "ten-very-hard-benchmark-tasks-in-ten-days": {
+    "idea-funnel": {
+      "nodes": [
+        {
+          "id": "ideas",
+          "label": {
+            "en": "Ideas",
+            "id": "Ide"
+          },
+          "sublabel": {
+            "en": "Native intuition and agent research",
+            "id": "Intuisi penutur asli dan riset agent"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "paper",
+          "label": {
+            "en": "Paper screen",
+            "id": "Saringan awal"
+          },
+          "sublabel": {
+            "en": "Ten gates before any run",
+            "id": "Sepuluh gate sebelum run apa pun"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "backlog",
+          "label": {
+            "en": "Idea backlog",
+            "id": "Backlog ide"
+          },
+          "sublabel": {
+            "en": "Every NO-GO kept with its reason",
+            "id": "Setiap NO-GO disimpan beserta alasannya"
+          },
+          "layer": 1,
+          "row": 1,
+          "kind": "data"
+        },
+        {
+          "id": "probe",
+          "label": {
+            "en": "Agentic probe",
+            "id": "Probe agentic"
+          },
+          "sublabel": {
+            "en": "Three model families, real tools",
+            "id": "Tiga keluarga model, tool sungguhan"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "attribution",
+          "label": {
+            "en": "Failure check",
+            "id": "Cek kegagalan"
+          },
+          "sublabel": {
+            "en": "Does the miss flip on the language?",
+            "id": "Apakah gagalnya berbalik pada fitur bahasa?"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "build",
+          "label": {
+            "en": "Build",
+            "id": "Build"
+          },
+          "sublabel": {
+            "en": "One git worktree per task",
+            "id": "Satu git worktree per task"
+          },
+          "layer": 4,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "answer-check",
+          "label": {
+            "en": "Answer check",
+            "id": "Cek kunci jawaban"
+          },
+          "sublabel": {
+            "en": "Fresh writers, no answer key",
+            "id": "Penulis baru, tanpa kunci jawaban"
+          },
+          "layer": 5,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "judges",
+          "label": {
+            "en": "Local judges",
+            "id": "Juri lokal"
+          },
+          "sublabel": {
+            "en": "Three models, all must pass",
+            "id": "Tiga model, semuanya harus lolos"
+          },
+          "layer": 6,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "owner",
+          "label": {
+            "en": "Owner gate",
+            "id": "Gerbang pemilik"
+          },
+          "sublabel": {
+            "en": "Writes the instruction, approves every push",
+            "id": "Menulis instruksi, menyetujui setiap push"
+          },
+          "layer": 7,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "calibration",
+          "label": {
+            "en": "Calibration and review",
+            "id": "Kalibrasi dan review"
+          },
+          "sublabel": {
+            "en": "Benchmark runs, then human reviewers",
+            "id": "Run benchmark, lalu reviewer manusia"
+          },
+          "layer": 8,
+          "row": 0,
+          "kind": "external"
+        },
+        {
+          "id": "merged",
+          "label": {
+            "en": "Merged",
+            "id": "Merged"
+          },
+          "layer": 9,
+          "row": 0,
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "ideas",
+          "to": "paper"
+        },
+        {
+          "from": "paper",
+          "to": "probe",
+          "label": "GO"
+        },
+        {
+          "from": "paper",
+          "to": "backlog",
+          "label": "NO-GO"
+        },
+        {
+          "from": "probe",
+          "to": "backlog",
+          "label": "NO-GO"
+        },
+        {
+          "from": "probe",
+          "to": "attribution"
+        },
+        {
+          "from": "attribution",
+          "to": "build",
+          "label": "GO"
+        },
+        {
+          "from": "build",
+          "to": "answer-check"
+        },
+        {
+          "from": "answer-check",
+          "to": "judges"
+        },
+        {
+          "from": "judges",
+          "to": "owner"
+        },
+        {
+          "from": "owner",
+          "to": "calibration",
+          "label": {
+            "en": "pull request",
+            "id": "pull request"
+          }
+        },
+        {
+          "from": "calibration",
+          "to": "merged",
+          "label": "merge"
+        }
+      ]
+    },
+    "agent-organisation": {
+      "nodes": [
+        {
+          "id": "owner",
+          "label": {
+            "en": "Owner",
+            "id": "Pemilik"
+          },
+          "sublabel": {
+            "en": "Decides and approves every push",
+            "id": "Memutuskan dan menyetujui setiap push"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "coordinator",
+          "label": {
+            "en": "Coordinator",
+            "id": "Sesi koordinasi"
+          },
+          "sublabel": {
+            "en": "Claude session: plans rounds, checks results",
+            "id": "Sesi Claude: menyusun ronde, memeriksa hasil"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "docs",
+          "label": {
+            "en": "Workspace docs",
+            "id": "Dokumen workspace"
+          },
+          "sublabel": {
+            "en": "Status, rules, backlog, specs",
+            "id": "Status, aturan, backlog, spec"
+          },
+          "layer": 1,
+          "row": 1,
+          "kind": "data"
+        },
+        {
+          "id": "researchers",
+          "label": {
+            "en": "Other model families",
+            "id": "Keluarga model lain"
+          },
+          "sublabel": {
+            "en": "GPT, Gemini and Grok sessions",
+            "id": "Sesi GPT, Gemini, dan Grok"
+          },
+          "layer": 1,
+          "row": 2,
+          "kind": "ai"
+        },
+        {
+          "id": "lanes",
+          "label": {
+            "en": "Research lanes",
+            "id": "Lane riset"
+          },
+          "sublabel": {
+            "en": "Usually three per round, each with its own spec and row prefix",
+            "id": "Biasanya tiga per ronde, masing-masing dengan spec dan prefix baris sendiri"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "probe",
+          "label": {
+            "en": "Probe sandbox",
+            "id": "Sandbox probe"
+          },
+          "sublabel": {
+            "en": "Three model families, real tools",
+            "id": "Tiga keluarga model, tool sungguhan"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "service"
+        },
+        {
+          "id": "build",
+          "label": {
+            "en": "Build session",
+            "id": "Sesi build"
+          },
+          "sublabel": {
+            "en": "One worktree per task",
+            "id": "Satu worktree per task"
+          },
+          "layer": 4,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "red-team",
+          "label": {
+            "en": "Red team",
+            "id": "Red team"
+          },
+          "sublabel": {
+            "en": "Read-only, attacks the task",
+            "id": "Read-only, menyerang task"
+          },
+          "layer": 5,
+          "row": 0,
+          "kind": "ai"
+        },
+        {
+          "id": "verifier",
+          "label": {
+            "en": "Verifier",
+            "id": "Verifier"
+          },
+          "sublabel": {
+            "en": "Fresh session, no answer key",
+            "id": "Sesi baru, tanpa kunci jawaban"
+          },
+          "layer": 5,
+          "row": 1,
+          "kind": "ai"
+        },
+        {
+          "id": "repo",
+          "label": {
+            "en": "Task repository",
+            "id": "Repositori task"
+          },
+          "sublabel": {
+            "en": "Pull requests, after the owner's OK",
+            "id": "Pull request, setelah disetujui pemilik"
+          },
+          "layer": 6,
+          "row": 1,
+          "kind": "external"
+        }
+      ],
+      "edges": [
+        {
+          "from": "owner",
+          "to": "coordinator",
+          "label": {
+            "en": "decisions",
+            "id": "keputusan"
+          }
+        },
+        {
+          "from": "coordinator",
+          "to": "docs",
+          "label": {
+            "en": "updates",
+            "id": "memperbarui"
+          }
+        },
+        {
+          "from": "researchers",
+          "to": "docs",
+          "label": {
+            "en": "own rows",
+            "id": "baris sendiri"
+          }
+        },
+        {
+          "from": "coordinator",
+          "to": "lanes",
+          "label": {
+            "en": "brief",
+            "id": "brief"
+          }
+        },
+        {
+          "from": "lanes",
+          "to": "probe",
+          "label": {
+            "en": "prototypes",
+            "id": "prototipe"
+          }
+        },
+        {
+          "from": "probe",
+          "to": "build",
+          "label": "GO"
+        },
+        {
+          "from": "build",
+          "to": "red-team"
+        },
+        {
+          "from": "build",
+          "to": "verifier"
+        },
+        {
+          "from": "verifier",
+          "to": "repo",
+          "label": "push"
+        }
+      ]
+    }
+  },
   "aria-acs-to-livekit": {
     "migration": {
       "nodes": [
