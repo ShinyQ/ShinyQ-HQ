@@ -631,10 +631,11 @@
     transform: translateY(-100%);
   }
 
+  /* The pill's left padding already centres its icon in a circle of its height, so only the width changes: nothing
+     inside it moves (no layout shift). */
   :root[data-scroll="down"] .pv-ask {
     width: 3rem;
-    padding: 0;
-    justify-content: center;
+    padding-right: 0;
   }
 
   :root[data-scroll="down"] .pv-ask-label {

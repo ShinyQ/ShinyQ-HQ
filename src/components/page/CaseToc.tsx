@@ -12,7 +12,8 @@ function stuckTop(el: HTMLElement): number {
 }
 
 /**
- * "On this page" links with scroll-spy; without IntersectionObserver they stay plain anchors. `avoid` (a selector, the
+ * "On this page" links with scroll-spy (case study chapters, post headings); without IntersectionObserver they stay
+ * plain anchors. `avoid` (a selector, the
  * posts' wide figures) hides the list while a matching element crosses the band it is stuck in, so a wide figure is
  * never drawn under it; focus inside the list keeps it shown (CSS).
  */
@@ -22,18 +23,19 @@ export function CaseToc({ items, label, avoid, children }: { items: readonly { i
   const nav = useRef<HTMLElement>(null);
   const ids = items.map((item) => item.id).join(" ");
 
+  // The current item is the last target whose top is above 40% of the viewport. The observer (targets entering or
+  // leaving the top 40%) only says when to look again, so a fast jump past a short heading still lands on it.
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id);
-      },
-      { rootMargin: "-30% 0px -60% 0px" },
-    );
-    for (const id of ids.split(" ")) {
-      const section = document.getElementById(id);
-      if (section) observer.observe(section);
-    }
+    const targets = ids.split(" ").flatMap((id) => document.getElementById(id) ?? []);
+    const pick = () => {
+      const line = window.innerHeight * 0.4;
+      let current: string | null = null;
+      for (const target of targets) if (target.getBoundingClientRect().top <= line) current = target.id;
+      setActive(current);
+    };
+    const observer = new IntersectionObserver(pick, { rootMargin: "0px 0px -60% 0px" });
+    for (const target of targets) observer.observe(target);
     return () => observer.disconnect();
   }, [ids]);
 
