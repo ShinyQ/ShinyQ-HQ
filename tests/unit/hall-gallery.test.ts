@@ -20,6 +20,7 @@ import {
 } from "@/experience/floors/lobby/hallGallery";
 import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
+import { parkTall } from "@/experience/floors/lobby/parkLayout";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
@@ -77,13 +78,13 @@ describe("Highlights Hall gallery: gateway arch", () => {
   });
 
   it("fires the curtain only for an eastward pass inside the opening", () => {
-    // The gate stands at x 38 over the lead road (z 21).
-    expect(HALL.gate.x).toBe(38);
-    expect(gateCrossed({ x: 35, z: 21 }, { x: 39, z: 21 })).toBe(true);
-    expect(gateCrossed({ x: 39, z: 21 }, { x: 35, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 35, z: 11 }, { x: 39, z: 11 })).toBe(false);
-    expect(gateCrossed({ x: 36, z: 21 }, { x: 37.9, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 37.9, z: 21 }, { x: 38, z: 21 })).toBe(true);
+    // The gate stands at x 36 over the lead road (z 21) (owner decision 2026-11-02, from 38: room for the Proof Park arch road).
+    expect(HALL.gate.x).toBe(36);
+    expect(gateCrossed({ x: 33, z: 21 }, { x: 37, z: 21 })).toBe(true);
+    expect(gateCrossed({ x: 37, z: 21 }, { x: 33, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 33, z: 11 }, { x: 37, z: 11 })).toBe(false);
+    expect(gateCrossed({ x: 34, z: 21 }, { x: 35.9, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 35.9, z: 21 }, { x: 36, z: 21 })).toBe(true);
   });
 });
 
@@ -163,7 +164,7 @@ describe("Highlights Hall gallery: lights and camera", () => {
     expect(tall.length).toBe(2 + 3 + 2 + 2);
     for (const t of tall) expect(t.h).toBeGreaterThan(3.2);
     // The L1 layout carries them (`FloorLayout.tall`), so CameraDirector clamps against them.
-    expect(l1.tall).toEqual([...tall, LOBBY.observatory, officeTall(LOBBY.officeWing), officeTowerTall(LOBBY.officeWing)]);
+    expect(l1.tall).toEqual([...tall, LOBBY.observatory, officeTall(LOBBY.officeWing), officeTowerTall(LOBBY.officeWing), ...parkTall()]);
     const world: CameraWorld = { obstacles: l1.obstacles, bounds: l1.bounds, floorY: 0, tall };
     const m = monoliths(3)[1];
     expect(cameraBlocked([m.box.x, 6, m.box.z], world)).toBe(true);

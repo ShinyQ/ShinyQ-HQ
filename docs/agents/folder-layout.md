@@ -353,6 +353,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
   - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT, stationOf, gatePillars).
+  - parkLayout.ts (Proof Park, pure and import-light: `PARK`, the arch posts, camera columns, plaza and roads, routed and drawn; see [floor-l1-lobby.md](floor-l1-lobby.md#proof-park)).
   - hallGallery.ts (gallery shapes: faces, pedestal and tiles, monoliths, lit arch, beacon, gateway arch, fountain, lights, `hallTall`, `gateCrossed`).
   - hallSolids.ts (merged boxes, prisms and neon lines), hallContent.ts (labels, screenshot atlas).
   - hallStage.ts (stage effect instances for the holo program's `stage` mode), gateSweep.ts (`hq:hall-gate`), hallInteract.ts (station targets).

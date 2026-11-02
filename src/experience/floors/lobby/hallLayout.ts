@@ -9,7 +9,7 @@ import { HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "./stat
 /** Hall west edge and the slab's half depth (floors/lobby/slab.ts): every hall position below is an offset from them. */
 const X0 = LOBBY_SLAB.hallX;
 const Z = LOBBY_SLAB.halfZ;
-/** The lead road's line: 6 u in from the south slab edge, so the gateway's south pillar touches the edge. */
+/** The lead road's line: 6 u in from the old south slab edge (S), where the gateway's south pillar ends. */
 const LEAD_Z = Z - 6;
 
 /**
@@ -56,10 +56,12 @@ export const HALL = {
   entry: { minX: X0, maxX: X0 + 8, minZ: LEAD_Z - 4, maxZ: LEAD_Z + 4 },
   /**
    * Gateway arch over the lead road where it enters the plaza (gallery rebuild, October 2026): two
-   * pillars (the south one touches the slab edge, the north one stays clear of the cert wall), a
-   * lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor).
+   * pillars (the north one stays clear of the cert wall, the south one reaches the old south edge, where the Proof
+   * Park arch's west post touches it), a lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above
+   * it (nothing on the floor). At x 36 (owner decision 2026-11-02, from 38): the opening from its south pillar to the
+   * contact station is 8.4 u, so the park's arch road fits (parkLayout.ts).
    */
-  gate: { x: X0 + 5, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
+  gate: { x: X0 + 3, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
   /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
   zoom: { about: 1, projects: 1.45, experience: 1.5, contact: 1.27 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */

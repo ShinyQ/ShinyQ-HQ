@@ -5,6 +5,7 @@ import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { buildFloorLayouts, kioskRect, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
 import { signPlate } from "@/experience/fx/signLayout";
 import { HALL } from "@/experience/floors/lobby/hallLayout";
+import { PARK } from "@/experience/floors/lobby/parkLayout";
 import {
   isOfficeRoom,
   OFFICE,
@@ -75,11 +76,12 @@ const pocketCells = (layout: Floor, spawn: Vec2 = LOBBY.spawn, area: Rect = W.re
 const sameRect = (a: Rect, b: Rect) => a.minX === b.minX && a.maxX === b.maxX && a.minZ === b.minZ && a.maxZ === b.maxZ;
 
 describe("Agent Office wing (owner decision 2026-10-20)", () => {
-  it("is one named wing derived from the Lobby's south edge: the L1 slab gains it, the main rect stays", () => {
+  it("is one named wing derived from the Lobby's south edge, inside the one-rect L1 slab (Proof Park, 2026-11-02)", () => {
     expect(W).toEqual(officeWing(S));
     expect(W.rect).toEqual({ minX: -12, maxX: 18, minZ: S, maxZ: S + 32 });
-    expect(l1.bounds).toEqual(LOBBY.bounds);
-    expect(l1.wings).toEqual([W.rect]);
+    expect(l1.bounds).toEqual(LOBBY.slab);
+    expect(l1.wings ?? []).toEqual([]);
+    expect(LOBBY.slab).toEqual({ ...LOBBY.bounds, maxZ: W.rect.maxZ });
     expect(W.stop).toEqual({ x: 3, z: S + 16.5 });
     expect(W.plaza.center).toEqual({ x: 3, z: S + 9.5 });
     expect(W.leadSpan).toEqual({ ...leadRect(W), maxZ: S });
@@ -135,10 +137,10 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(W.lead.to).toBeGreaterThan(plaza.center.z - plaza.d / 2);
     expect(W.lead.to).toBeLessThan(plaza.center.z);
     expect(rectGap(r, kioskRect())).toBeGreaterThanOrEqual(SPACE_RULES.clear);
-    // The road network carries it, and the road zone covers the wing and the lead's span in the Lobby.
+    // The road network carries it, and the road zone covers the wing and the lead's span in the Lobby (and Proof Park).
     expect(l1.road!.roads).toContainEqual(road);
     expect(l1.road!.plazas).toContainEqual(plaza);
-    expect(l1.roadZone).toEqual([HALL.zone, W.rect, W.leadSpan]);
+    expect(l1.roadZone).toEqual([HALL.zone, W.rect, W.leadSpan, PARK.zone]);
     // The intro reveal rect: the wing reaching north over the lead road (narrower than the wing).
     expect(r.minX).toBeGreaterThanOrEqual(W.rect.minX);
     expect(r.maxX).toBeLessThanOrEqual(W.rect.maxX);
@@ -297,13 +299,14 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(route.some((p) => p.x === W.lead.x && p.z >= W.lead.to - 1e-9)).toBe(true);
     const back = roadRoute(l1.road!, grid, W.stop, l1.approach, graph)!;
     expect(back.some((p) => p.x === W.lead.x && Math.abs(p.z - W.lead.from) < 1e-9)).toBe(true);
-    // From the hall: out along the hall road, then in along the wing road.
+    // From the hall: out along the hall road to its west end, then across the open floor (the old notch, Proof Park
+    // 2026-11-02) onto the park road, which runs west into the office plaza.
     const about = l1.doors!.find((d) => d.room === "L1:highlights-about")!.at;
     const across = roadRoute(l1.road!, grid, about, W.stop, graph)!;
     const hallEnd = across.findIndex((p) => p.x === HALL.lead[0].x && p.z === HALL.lead[0].z);
-    const wingIn = across.findIndex((p) => p.x === W.lead.x && p.z < S);
+    const parkIn = across.findIndex((p) => p.z === W.plaza.center.z && p.x > W.lead.x);
     expect(hallEnd).toBeGreaterThanOrEqual(0);
-    expect(wingIn).toBeGreaterThan(hallEnd);
+    expect(parkIn).toBeGreaterThan(hallEnd);
     expect(across.at(-1)).toEqual(W.stop);
   });
 
@@ -320,11 +323,12 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
       expect(isWalkable(grid, p), JSON.stringify(p)).toBe(false);
   });
 
-  it("is on the slab the minimap and point-and-go read: the wing's floor counts, the corners beside it do not", () => {
-    expect(slabRects(l1)).toEqual([LOBBY.bounds, W.rect]);
+  it("is on the slab the minimap and point-and-go read: since Proof Park (2026-11-02) the floor beside it counts too", () => {
+    expect(slabRects(l1)).toEqual([LOBBY.slab]);
     expect(inSlab(W.stop, l1)).toBe(true);
-    expect(inSlab({ x: W.rect.minX - 1, z: S + 5 }, l1)).toBe(false);
-    expect(inSlab({ x: W.rect.maxX + 1, z: S + 5 }, l1)).toBe(false);
+    expect(inSlab({ x: W.rect.minX - 1, z: S + 5 }, l1)).toBe(true);
+    expect(inSlab({ x: W.rect.maxX + 1, z: S + 5 }, l1)).toBe(true);
+    expect(inSlab({ x: W.stop.x, z: W.rect.maxZ + 1 }, l1)).toBe(false);
   });
 
   it("names the rooms, stops every office drive at the stop and turns the camera south there", () => {

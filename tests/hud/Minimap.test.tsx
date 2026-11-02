@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { buildExperienceData } from "@/content/experience";
-import { buildFloorLayouts } from "@/experience/config";
+import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { setOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
 import { loadOfficeWatch } from "@/experience/floors/lobby/office/watchLoader";
 import { interactRuntime } from "@/experience/interact/runtime";
@@ -62,8 +62,8 @@ describe("Minimap", () => {
     expect(svg).toHaveAttribute("viewBox", "-22 -22 44 44");
     expect(svg.querySelector("[data-map='rover']")?.getAttribute("transform")).toContain("rotate(180)");
     expect(svg.querySelectorAll("[data-map='room']")).toHaveLength(2);
-    // L1 carries the Agent Office wing: the slab is one group (filled path and outline), checked below.
-    expect(svg.querySelector("[data-map='slab']")).not.toBeNull();
+    // L1 is one rect since Proof Park (2026-11-02): no slab group (a slab with a wing is checked below).
+    expect(svg.querySelector("[data-map='slab']")).toBeNull();
   });
 
   it("draws a plain slab (no wing) as one rounded rect with no slab group", () => {
@@ -76,10 +76,14 @@ describe("Minimap", () => {
     expect(screen.getByTestId("minimap").querySelector("[data-map='slab']")).toBeNull();
   });
 
-  it("draws a slab with a wing (L1's office wing) as one filled path and an outline without the joint", () => {
-    const b = layouts.L1.bounds;
-    expect(layouts.L1.wings).toEqual([{ minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 32 }]);
-    mount();
+  it("draws a slab with a wing (L1's shape before Proof Park: the Lobby and the office wing) as one filled path and an outline without the joint", () => {
+    const b = LOBBY.bounds;
+    const winged = { ...layouts, L1: { ...layouts.L1, bounds: b, wings: [{ minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 32 }] } };
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <Minimap data={data} layouts={winged} size="desktop" />
+      </NextIntlClientProvider>,
+    );
     const slab = screen.getByTestId("minimap").querySelector("[data-map='slab']")!;
     const paths = slab.querySelectorAll("path");
     expect(paths).toHaveLength(2);

@@ -16,6 +16,7 @@ import {
 import { podLiveLink } from "@/content/selectors";
 import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, onFace, statTiles, type Face } from "@/experience/floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
+import { PARK } from "@/experience/floors/lobby/parkLayout";
 import { hallLineBuffer, hallShapes, portraitRing, prismBuffers, solidBuffers } from "@/experience/floors/lobby/hallSolids";
 import type { HighlightStation } from "@/experience/floors/lobby/stations";
 import { experienceRows } from "@/experience/floors/lobby/stations";
@@ -132,8 +133,9 @@ describe("Highlights Hall scenery", () => {
     expect(tile.filter((k) => k >= 0)).toHaveLength(8);
   });
 
-  it("builds the gallery solids and neon lines inside the hall, clear of the door pads", () => {
+  it("builds the gallery solids and neon lines inside the hall (the Proof Park arch just south of it), clear of the door pads", () => {
     const shapes = hallShapes(3);
+    const maxZ = Math.max(HALL.zone.maxZ, PARK.arch.west.maxZ);
     const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms);
     expect(positions.length).toBe(normals.length);
     expect(Math.max(...indices)).toBeLessThan(positions.length / 3);
@@ -141,7 +143,7 @@ describe("Highlights Hall scenery", () => {
       expect(positions[k]).toBeGreaterThanOrEqual(HALL.zone.minX - 1e-3);
       expect(positions[k]).toBeLessThanOrEqual(HALL.zone.maxX + 1e-3);
       expect(positions[k + 2]).toBeGreaterThanOrEqual(HALL.zone.minZ - 1e-3);
-      expect(positions[k + 2]).toBeLessThanOrEqual(HALL.zone.maxZ + 1e-3);
+      expect(positions[k + 2]).toBeLessThanOrEqual(maxZ + 1e-3);
       for (const s of HALL_LAYOUT.stations) {
         // Above the rover's height nothing matters; below, solids keep 0.9 u from every door pad.
         if (positions[k + 1] > 2) continue;
