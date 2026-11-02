@@ -89,7 +89,7 @@ Limits checked 2026-10-24 (hourly cadence):
 |---|---|---|
 | `STATS_KV` | KV binding | namespace `STATS_KV` (same id as the Pages binding) |
 | `WA_SITE_TAG` | var | Web Analytics siteTag of kurniadi.pages.dev |
-| `WA_HOSTS` | var | `kurniadi.pages.dev,kurniadi.my.id,www.kurniadi.my.id,kurniadi.dev` |
+| `WA_HOSTS` | var | `kurniadi.pages.dev,shinyq.my.id,kurniadi.dev` |
 | `WA_TOKEN` | secret | read-only Account Analytics token (GitHub environment secret `CF_STATS_TOKEN`, analytics only, 90 days; `CF_EVAL_TOKEN` until it exists) |
 | `WA_ACCOUNT_ID` | secret | Cloudflare account id (GitHub secret `CLOUDFLARE_ACCOUNT_ID`) |
 
