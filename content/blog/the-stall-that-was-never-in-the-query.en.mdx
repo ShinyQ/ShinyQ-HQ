@@ -43,13 +43,13 @@ I needed a measurement that could separate query cost from everything else. Grap
 
 That query took 21.4 to 25.6 seconds. The same endpoint rejected an unauthorized request in 0.84 seconds.
 
-No projection, page size or index can explain 21 seconds for a request that reads nothing. The rejection was fast because it was refused before doing any work; the authorized request waited before it was admitted.
+The zero-row request made row retrieval a poor explanation for the 21-second wait. The fast rejection narrowed it further: the delay was on the authorized request path, not simply the cost of reaching the endpoint.
 
-A second measurement showed where the delay was charged. Three identical queries took 23 seconds when run together and 66 seconds when run one after another. A processing cost would add up the same way in both cases. This looked like a delay charged once per request, at submission.
+A second measurement helped locate it. Three identical queries took 23 seconds when run together and 66 seconds when run one after another. That timing alone could also fit concurrent processing. Together with the zero-row query and the slow static files, though, it pointed to a wait at admission rather than time spent scanning rows.
 
 That pattern matches Fabric's documented interactive delay, one of the stages of capacity throttling. F2 has 2 capacity units. By my arithmetic at the time, one page making about 14 GraphQL requests could use roughly 70 seconds of the whole capacity's budget.
 
-The indexes did consume capacity. Dropping them removed one consumer for long enough that the capacity's carried-forward overuse burned down. The recovery was real; my explanation for it was wrong. The indexes stayed retired on their own merits, about 82 ms a page against a stall of about 20 s, and I corrected the performance document.
+The indexes did consume capacity. My explanation after the probes was that dropping them had temporarily reduced pressure while the capacity's carried-forward overuse burned down. I could not verify that directly in capacity metrics. The recovery was real; attributing the stall to query execution was wrong. The indexes stayed retired on their own merits, about 82 ms a page against a stall of about 20 s, and I corrected the performance document.
 
 The trap is worth writing down. "This static file does not touch the database" does not rule the database out when both share a capacity that throttles as a whole.
 
@@ -67,13 +67,13 @@ The larger capacity removed the stall. Whether to pay for it was a cost decision
 
 **Stop sending rows when the page needs totals.** In September, three pages showed no plan at all at their default filters. The default window held 83,824 rows, and a guard that refuses reads over 50,000 detailed rows stopped them. The guard was correct: a truncated read would understate every total. The page never needed the rows. It needed a fold per store and SKU pair, so the read now streams through an accumulator and the browser receives about 3,000 pair aggregates instead. A test still asserts that a materializing read of the same volume is refused.
 
-Measuring that read showed where the time went. Payload bytes were about 99.7% of wall clock, and server compute was 45 to 61 ms. The same 83,824 rows took 1.57 s at one column, 4.48 s at five and 21.79 s at eighteen. On this stack, column width was the lever that worked.
+Measuring that read showed where the time went. Payload transfer accounted for about 99.7% of wall-clock time, while server compute was 45 to 61 ms. The same 83,824 rows took 1.57 s at one column, 4.48 s at five and 21.79 s at eighteen. On this stack, column width was the lever that worked.
 
 All of this passed with fixtures. The fixtures held far fewer rows and never built a projection, so they could not fail the way live mode did. The fixture repository now projects too.
 
 **Keep the capacity awake, on purpose.** After an idle night, the first GraphQL request took 6.61 s against a steady 0.16 to 0.48 s. I measured the idle tolerance at between 16 and 25 minutes, so a scheduled job sends the same zero-row probe every 10 minutes during business hours on weekdays. It holds no Azure credentials, because it needs none.
 
-The trade-off is written at the top of the workflow file. An idle database releases its compute, so idle time costs nothing. A ping every ten minutes prevents that release and turns zero idle cost into a continuous one. That is defensible during business hours and not overnight, and widening the window is a cost decision for the capacity owner. It also does not solve cold starts: in the same session, a 9.91 s stall landed five minutes after a successful ping.
+The trade-off is written at the top of the workflow file. An idle database releases its compute; a ping every ten minutes prevents that release and keeps using capacity. I limited it to business hours rather than keeping it warm overnight, and widening the window remains a cost decision for the capacity owner. It also does not guarantee a warm response: in the same session, a 9.91 s stall landed five minutes after a successful ping.
 
 ## Real data, the same lesson
 

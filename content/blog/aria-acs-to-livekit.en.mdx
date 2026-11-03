@@ -8,7 +8,7 @@ readingTime: "9 min"
 
 I led ARIA's move from Azure Communication Services (ACS) to self-hosted LiveKit at Metrodata. In a live proof-of-concept drill, returning a call from the operator to the AI took 425 ms at the median across 20 rounds. That is a measured result on the new path. I do not have a matched ACS-to-LiveKit comparison that isolates a migration speedup.
 
-The migration started with a support deadline and a product decision. ARIA needed browser voice calls, AI responses and human takeover. It did not need a telephone network connection or a dependency on Teams. I wanted to keep the agent's orchestration while replacing the part carrying the audio.
+The support deadline made me revisit what ARIA actually needed: browser voice calls, AI responses and human takeover. It did not need a telephone network connection or a dependency on Teams. The migration could stay focused on the part carrying the audio, rather than becoming a rewrite of the agent.
 
 ## The Deadline Applied to Our Calling Scenario
 
@@ -33,7 +33,7 @@ Read each row from the browser toward the model:
 3. Adapter workers joined the room as the AI participant and exposed audio through `MediaLink`. The Python bridge still owned tools, knowledge retrieval, escalation and conversation state.
 4. Azure OpenAI Realtime still generated the spoken response. The change did not move ARIA's orchestration into the LiveKit Agents framework.
 
-That separation limited the migration's reach. I could replace join credentials, media envelopes, callbacks and channel-specific dependencies without rewriting how a knowledge search or escalation worked.
+That separation gave me a way to review the migration in pieces. Join credentials, media envelopes, callbacks and channel-specific dependencies could change without also changing how a knowledge search or escalation worked. A connected call and a correct agent response were still separate things to verify.
 
 It also made failure more explicit. After ACS removal, an unavailable production media channel refused new calls instead of silently choosing a different transport.
 
@@ -93,11 +93,13 @@ The live window was a reduced PoC exercise, not a production service-level measu
 | Operator takeover and hand-back, four calls with five rounds each | 20 successful rounds; caller-heard hand-back P50 425 ms, P95 2.4 s; resume line cached in 19 rounds | A long tail remained, and later consent-flow drills exposed further failures |
 | Call setup during the window | 70 of 74 setups succeeded, 94.6%, against a 99% target | The setup gate failed; deployment overlaps, cold start and a relay publication failure were among the causes |
 
+Hand-back and turn latency answer different questions. The 425 ms result measures the caller hearing the AI resume; with the resume line cached in 19 rounds, it is not a measure of how quickly the model could generate a new answer. That distinction matters when deciding which part of the call path still needs work.
+
 The older ACS reference recorded turn latency P50 2701 ms and P95 4325 ms over 30 turns. Its emulator fed the backend directly, bypassing the actual ACS media plane. The agent settings and test conditions also differed from the LiveKit calls.
 
 Putting those figures beside the LiveKit results does not isolate a transport gain. I cannot honestly turn them into an "ACS to LiveKit was X% faster" headline. The new path was measured and met useful drill goals; the causal before-and-after number is missing.
 
-The largest practical change was in-session hand-back with a cached resume line, alongside the ability to drain nodes and recover calls onto another node. Those are changes to the complete call path, not benefits attributable to a media server alone.
+For me, the most useful changes were in-session hand-back with a cached resume line, the ability to drain nodes, and recovery onto another node. Each depended on coordination between the browser, backend and media layer. None was a benefit I could attribute to the media server alone.
 
 Cost changed shape too: a metered call-provider component was replaced by infrastructure we operate. The repository has planning estimates, but no matched billed before-and-after result I can publish as savings. Certificates, patching, capacity and incident response remain work someone must own.
 
@@ -105,6 +107,6 @@ Cost changed shape too: a metered call-provider component was replaced by infras
 
 The broader 900 ms turn-P50 goal was still unmet. Real-microphone validation and wider-network coverage were deferred.
 
-Turn-taking also remained unfinished. In a later live start-hold experiment, cut-offs went from 8 of 15 utterances to 9 of 15. That small sample showed no improvement. I covered the interruption mechanism and that negative result in [How We Made a Voice Agent Interruptible](/en/blog/making-a-voice-agent-interruptible); it should not be counted again as a migration gain.
+Turn-taking also remained unfinished. In a later live start-hold experiment, cut-offs went from 8 of 15 utterances to 9 of 15. That small sample showed no improvement. I covered the interruption mechanism and that negative result in [Making a Voice Agent Interruptible](/en/blog/making-a-voice-agent-interruptible); it should not be counted again as a migration gain.
 
 I directed AI coding agents for much of the implementation, then reviewed and merged their work. The migration gave ARIA a self-hosted media path, measured cached hand-back in the recorded drills, and explicit recovery and operational controls. It did not establish a production latency or cost advantage over ACS. The remaining setup and real-microphone checks still needed a larger validation window.

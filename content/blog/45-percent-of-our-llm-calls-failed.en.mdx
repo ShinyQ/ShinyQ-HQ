@@ -1,14 +1,14 @@
 ---
-title: "45% of Our LLM Calls Failed: What the Error Strings Told Us"
+title: "Why 45% of a CV Screening Batch Failed"
 date: "2026-10-09"
 excerpt: "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded."
 tags: ["llm-reliability", "structured-output", "azure-openai", "testing", "case-study"]
 readingTime: "6 min"
 ---
 
-About 45% of the screening evaluations in my batch returned nothing usable. Not a low fit score. No result.
+In one 22-pair CV screening run, about 45% of evaluations returned nothing usable. Not a low fit score: no result. I fixed two failure mechanisms, but I have no recorded rerun of that batch.
 
-This was early in building an AI CV screening platform at Metrodata. The batch had 22 candidate and job pairs: 2 job posts by 11 candidates.
+This was early in building an AI CV screening platform at Metrodata. The batch combined 2 job posts with 11 candidates.
 
 The percentage told me how often the pipeline broke, not why. Reading the actual errors gave me two bugs I could work on.
 
@@ -40,15 +40,15 @@ I grouped the failures by error message instead:
 - `Response missing required keys: {'fitScore'}`
 - `Invalid control character at: line 15 column 95`
 
-There were only those two strings. Two different messages usually point to two different mechanisms.
+Every failure in the batch had one of those two messages. That gave me two concrete places to investigate instead of one vague category of "bad JSON".
 
 ## String one: the answer ran out of room
 
 `fitScore` was the last key in the output schema. That position mattered. Randomly dropped fields would mean random missing keys. A consistently missing final key pointed to truncation: the answer stopping before it got there, rather than the model "forgetting" a field. That was my reasoning, not a measurement.
 
-The configuration explained it. Reasoning effort was high, the prompt asked for 10 to 15 sentences of rationale, and I had not set an explicit output token ceiling.
+The configuration made truncation plausible. Reasoning effort was high, the prompt asked for 10 to 15 sentences of rationale, and I had not set an explicit output token ceiling.
 
-On a reasoning model, hidden reasoning tokens and the visible answer share the output budget. Long reasoning plus a long rationale used it up mid-JSON. The last field never arrived.
+On a reasoning model, hidden reasoning tokens and the visible answer share the output budget. Long reasoning plus a long rationale can exhaust that budget before the JSON is complete. That fit the missing final field, although the error string alone could not prove where the tokens went.
 
 Reasoning effort therefore affects the output budget as well as quality. I also needed to set an explicit output-token limit.
 
@@ -94,7 +94,9 @@ def escape_controls(raw: str) -> str:
 
 The important part is `in_str`. Replacing every newline would also change valid whitespace between keys. Tracking quotes and escapes keeps the repair inside string values.
 
-JSON mode reduces failures; it does not replace defensive parsing. The quote-aware extractor and bounded retries handle the rest. Retries also need to stay honest: count every attempt's tokens, cap the attempts, and re-raise the error so the next layer can decide what to do.
+These layers address different failures. JSON mode constrains syntax, but it does not guarantee that every required field arrives before the output limit. The extractor can find an object, and the control-character repair can make a string parseable; neither can reconstruct the missing end of a truncated answer.
+
+Retries also need to stay honest: count every attempt's tokens, cap the attempts, and re-raise the error so the next layer can decide what to do.
 
 ## Turning the failures into tests
 

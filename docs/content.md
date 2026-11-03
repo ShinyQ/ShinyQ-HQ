@@ -30,6 +30,23 @@ How the site's content is stored, checked and published. The authoritative rules
 - A technical post can show an architecture figure: `<Architecture pod="<pod-slug>" caption="..." />` reuses a case study's diagram, and `<Architecture diagram="<id>" caption="..." />` draws a post-local one from `content/blog/diagrams.json` (keyed by post slug, then diagram id; each value has the pod `architecture` shape: nodes with layer, row and kind, plus edges). Props are strings only, and the tag is self-closing with double-quoted props, so `tests/content/post-diagrams.test.ts` can read it. Follow each figure with a numbered walkthrough of the flow, put the same tags in both locales (only the caption is translated), and note that an unknown pod or diagram fails the build and that test (which also flags unused diagrams). Diagrams are drawn at build time as inline SVG (boxes and arrows; dashed for `async` edges): left to right from 1100 px when the drawing fits (a post figure may extend past the text column), top to bottom below that and on phones. An optional node `group` (for example "Cloudflare") draws a frame around its nodes; keep a group on neighbouring layers and rows so the frame holds only its members. The group name sits above the frame's top-left corner, or further along the top when an edge runs through that corner. `tests/unit/diagram-layout.test.ts` fails when a post diagram has crossing edges in any layout, or when any edge, node or edge label touches a group name.
 - Check an edit quickly with `bun run validate:content`.
 
+### English-only editorial passes
+
+The [approved English rewrite](superpowers/specs/2026-11-03-english-editorial-rewrite-design.md)
+covers the dataset, hosted English articles, approved perspectives, build story,
+guide metadata, diagram labels, interface and accessibility copy, Rover guidance
+and visible Ask copy. Retain clear passages and official names. Explain the
+problem, decisions and limits using existing public evidence, without adding
+unmeasured outcomes.
+
+Keep Indonesian values, shared fallbacks, document assets and the complete
+Sun/Moon essay family unchanged. Align article frontmatter with registry metadata
+before testing. Rebuild the knowledge pack, refresh changed embeddings using
+`bun scripts/ask-embed.ts --cli`, and check retrieval and existing pack budgets.
+Use a coverage ledger and compare Indonesian source and generated output against
+the recorded base. Screenshots support reading review; they do not replace
+source, metadata, evidence or preservation checks.
+
 The bilingual `aria-acs-to-livekit` case study belongs to **AI in Production**. Its
 post-local migration figure compares the old and new media paths. Results retain
 the reduced-PoC scope, sample sizes and failed setup gate; the ACS harness reference

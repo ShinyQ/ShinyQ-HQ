@@ -88,6 +88,13 @@ The hard rules in full, the editorial voice and title rules for content, and the
 - Preserve facts, measurement caveats, negative results, team credit, official names, citations, code, URLs and identifiers.
 - Never use promotional hype or AI-detector scores as editorial evidence.
 
+For an English-only editorial pass, leave Indonesian sources and their rendered
+fallbacks unchanged. Review the full source inventory, not just changed files.
+Add depth through supported constraints, decisions and limits, not invented
+outcomes or longer labels. Shared unlocalized prose stays unchanged if editing
+it would also change Indonesian output. Preserve historical measurement dates
+and counts, and refresh Ask embeddings through the existing authenticated tool.
+
 | Context | Voice |
 |---|---|
 | Navigation and actions | Short, literal, action-led, usually pronoun-free |

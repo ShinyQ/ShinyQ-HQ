@@ -77,7 +77,7 @@
     {
       "id": "work-stack",
       "topic": "work",
-      "q": { "en": "Which backend technologies does he list?", "id": "Teknologi backend apa saja yang dia cantumkan?" },
+      "q": {       "en": "Which backend technologies does he use?", "id": "Teknologi backend apa saja yang dia cantumkan?" },
       "tags": ["skills", "software"],
       "followUps": ["work-best", "career-skills", "work-github"],
       "expect": ["skills-backend"]
@@ -93,7 +93,7 @@
     {
       "id": "work-github",
       "topic": "work",
-      "q": { "en": "What are his public GitHub repos?", "id": "Apa saja repo GitHub publiknya?" },
+      "q": {             "en": "What are his public GitHub repos?", "id": "Apa saja repo GitHub publiknya?" },
       "tags": ["github", "work"],
       "followUps": ["work-side", "work-best", "contact-channels"],
       "expect": ["repos"]
@@ -134,7 +134,7 @@
     {
       "id": "ai-fraud",
       "topic": "ai",
-      "q": { "en": "How did the fraud review cut false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
+      "q": {       "en": "How did he reduce fraud review false positives?", "id": "Bagaimana platform fraud review menurunkan false positive?" },
       "tags": ["ai", "fraud", "documents"],
       "followUps": ["ai-shadow", "ai-documents", "ai-voice"],
       "expect": ["project-fraud-review-platform"]
@@ -305,7 +305,7 @@
     {
       "id": "career-skills",
       "topic": "career",
-      "q": { "en": "What engineering skills does he list?", "id": "Keahlian engineering apa saja yang dia cantumkan?" },
+      "q": {       "en": "What are his engineering skills?", "id": "Keahlian engineering apa saja yang dia cantumkan?" },
       "tags": ["skills"],
       "followUps": ["work-stack", "career-certs", "ai-agents"],
       "expect": ["skills-*"]
@@ -428,7 +428,7 @@
     {
       "id": "contact-problem-callcenter",
       "topic": "contact",
-      "q": { "en": "Our call center can't keep up. His approach?", "id": "Call center kami kewalahan. Bagaimana pendekatannya?" },
+      "q": {       "en": "How would he improve our busy call center?", "id": "Call center kami kewalahan. Bagaimana pendekatannya?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-latency", "contact-reach", "work-best"],
       "expect": ["project-voice-ai-contact-center", "contact"]
@@ -452,7 +452,7 @@
     {
       "id": "contact-problem-fraud",
       "topic": "contact",
-      "q": { "en": "Our fraud checks are manual. His approach?", "id": "Cek fraud kami masih manual. Bagaimana pendekatannya?" },
+      "q": {                   "en": "Our fraud checks are manual. His approach?", "id": "Cek fraud kami masih manual. Bagaimana pendekatannya?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-docs", "contact-reach", "work-best"],
       "expect": ["project-automotive-fraud-dashboard", "contact"]
@@ -476,7 +476,7 @@
     {
       "id": "persp-review",
       "topic": "perspectives",
-      "q": { "en": "What are his AI-agent code review principles?", "id": "Apa prinsipnya saat review kode dari AI agent?" },
+      "q": {             "en": "What are his AI-agent code review principles?", "id": "Apa prinsipnya saat review kode dari AI agent?" },
       "tags": ["perspectives", "agents"],
       "followUps": ["persp-agents", "persp-reliability", "work-security"],
       "expect": ["principles", "project-agent-orchestrated-delivery"]
@@ -524,7 +524,7 @@
     {
       "id": "persp-open-models",
       "topic": "perspectives",
-      "q": { "en": "Open or closed models for enterprise?", "id": "Model open-source atau closed untuk enterprise?" },
+      "q": {       "en": "How does he choose models for enterprise?", "id": "Model open-source atau closed untuk enterprise?" },
       "tags": ["perspectives", "ai"],
       "followUps": ["persp-indo-llm", "persp-hype", "ai-solutions-assistant"],
       "expect": ["perspective-open-vs-closed-models"]
@@ -532,7 +532,7 @@
     {
       "id": "persp-ai-indonesia",
       "topic": "perspectives",
-      "q": { "en": "How far is AI adoption in Indonesia?", "id": "Sejauh mana adopsi AI di Indonesia?" },
+      "q": {       "en": "What does he see in Indonesian AI adoption?", "id": "Sejauh mana adopsi AI di Indonesia?" },
       "tags": ["perspectives", "ai"],
       "followUps": ["persp-build-indonesia", "persp-ai-regulation", "persp-compete"],
       "expect": ["perspective-ai-adoption-indonesia"]
@@ -644,7 +644,7 @@
     {
       "id": "about-books",
       "topic": "about",
-      "q": { "en": "Which books shaped him?", "id": "Buku apa yang membentuk cara berpikirnya?" },
+      "q": {       "en": "Which books shaped his thinking?", "id": "Buku apa yang membentuk cara berpikirnya?" },
       "tags": ["perspectives"],
       "followUps": ["about-anime", "persp-hype", "about-growth"],
       "expect": ["perspective-books-and-anime"]
@@ -797,7 +797,7 @@
     {
       "id": "site-classic",
       "topic": "site",
-      "q": { "en": "Is there a version of this site without 3D?", "id": "Apakah ada versi situs ini tanpa 3D?" },
+      "q": {       "en": "Can I use this site without 3D?", "id": "Apakah ada versi situs ini tanpa 3D?" },
       "tags": ["work"],
       "followUps": ["site-share", "site-3d"],
       "expect": ["site-build"]
@@ -805,7 +805,7 @@
     {
       "id": "site-share",
       "topic": "site",
-      "q": { "en": "Can I share a link to a page of this site?", "id": "Bisakah saya membagikan tautan halaman situs ini?" },
+      "q": {       "en": "Can I share a page from this site?", "id": "Bisakah saya membagikan tautan halaman situs ini?" },
       "tags": ["work"],
       "followUps": ["site-classic", "site-floors", "contact-reach"],
       "expect": ["site-build"]

@@ -24,6 +24,12 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 
 ## Status
 
+English editorial coverage includes the full public content and interface,
+including accessibility, Rover guidance, visible Ask responses and metadata.
+The [content guide](content.md#english-only-editorial-passes) describes the
+evidence and preservation checks. Indonesian, documents, the protected essay,
+layout and application behaviour are outside this English-only rewrite.
+
 | Phase | Scope | State |
 |---|---|---|
 | 0 | Scaffold, content schema, public-safe dataset, static pages, CV PDF, CI | Done |

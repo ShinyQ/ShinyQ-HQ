@@ -140,7 +140,7 @@ test.describe("desktop", () => {
     );
     await page.locator("#guides").getByTestId("guide-read").first().click();
     const dialog = page.getByRole("dialog", { name: FIRST.title.en });
-    await expect(dialog.getByRole("alert")).toContainText("could not be opened", { timeout: 30_000 });
+    await expect(dialog.getByRole("alert")).toContainText("The study guide didn't open. Try again or download the PDF.", { timeout: 30_000 });
     await expect(dialog.getByTestId("guide-download")).toBeVisible();
     broken = false;
     await dialog.getByTestId("guide-retry").click();
@@ -161,7 +161,7 @@ test.describe("desktop", () => {
     });
     await page.locator("#guides").getByTestId("guide-read").first().click();
     const dialog = page.getByRole("dialog", { name: FIRST.title.en });
-    await expect(dialog.getByRole("alert")).toContainText("could not be opened", { timeout: 20_000 });
+    await expect(dialog.getByRole("alert")).toContainText("The study guide didn't open. Try again or download the PDF.", { timeout: 20_000 });
     expect(blocked, "the worker entry was never requested: did its chunk name change?").toBeGreaterThan(0);
     broken = false;
     await dialog.getByTestId("guide-retry").click();

@@ -16,7 +16,7 @@
       "id": "spec-before-code",
       "question": { "en": "Why do you write a spec before any code?", "id": "Kenapa spec ditulis sebelum kode?" },
       "answer": {
-        "en": "Agents write plausible code quickly, but an agent cannot tell me whether an approval engine matches the business process. So I define what correct means first: a numbered spec with acceptance criteria, plus a constitution with the rules every agent follows. Fixing a contradiction in a document costs an afternoon; fixing it after it becomes a migration costs far more.",
+        "en": "An agent can write plausible code quickly, but that does not tell me whether an approval engine matches the business process. I define correctness first: a numbered spec with acceptance criteria and a constitution setting the rules every agent follows. A contradiction is easier to fix in a document than after it has shaped a database migration.",
         "id": "Agent dapat menulis kode yang tampak masuk akal dengan cepat, tetapi tidak dapat memastikan apakah approval engine sudah sesuai dengan proses bisnisnya. Karena itu saya menetapkan kriteria kebenarannya lebih dulu: spec bernomor dengan acceptance criteria, serta constitution berisi aturan untuk setiap agent. Memperbaiki pertentangan dalam dokumen cukup satu sore; jika sudah telanjur menjadi migration, perbaikannya jauh lebih mahal."
       },
       "tags": ["spec-driven-development", "ai-agents"],
@@ -27,7 +27,7 @@
       "id": "ai-coding-agents",
       "question": { "en": "How do you work with AI coding agents?", "id": "Bagaimana alur kerja bersama AI coding agent?" },
       "answer": {
-        "en": "I give agents a numbered spec, and they implement much of the code in parallel, each in its own git worktree. I stay responsible for the design, the review, verification in a deployed environment and the merge decision. What I carry between projects is not the idea of letting agents write code. It is making the work explicit enough to review, and checking that the tests really ran before I trust a green result.",
+        "en": "I give agents a numbered spec and separate git worktrees so they can implement in parallel. I remain responsible for design, review, verification in a deployed environment and the merge decision. The useful habit is not simply letting agents write code. It is making each task clear enough to review and checking that the tests actually ran before trusting a green result.",
         "id": "Saya memberi agent spec bernomor, lalu mereka mengerjakan sebagian besar kode secara paralel di git worktree masing-masing. Saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan keputusan merge. Di setiap proyek, saya menjabarkan pekerjaan agar dapat di-review dan memastikan test benar-benar berjalan sebelum memercayai hasil CI yang hijau. Kebiasaan itulah yang saya pertahankan saat memakai agent untuk menulis kode."
       },
       "tags": ["ai-agents", "code-review"],
@@ -116,7 +116,7 @@
       "id": "llm-reliability",
       "question": { "en": "How do you make LLM features reliable in production?", "id": "Bagaimana menjaga fitur LLM tetap andal di production?" },
       "answer": {
-        "en": "I start from the actual error strings, not the failure percentage, because two different messages usually mean two different bugs. Then I layer the fix: structured output mode, explicit token and time limits, defensive parsing, and bounded retries that count every attempt. Reasoning effort is a budget setting too, not only a quality setting.",
+        "en": "I start with the actual error messages rather than the aggregate failure rate. Different errors may need different fixes. From there, I combine structured output, explicit token and time limits, defensive parsing and bounded retries that account for every attempt. Reasoning effort also belongs in the budget: more reasoning can change latency and cost, not just answer quality.",
         "id": "Saya mulai dengan membaca pesan error yang muncul karena dua pesan berbeda biasanya berasal dari dua bug berbeda; persentase kegagalan saja tidak cukup. Perbaikannya kemudian saya susun berlapis: mode structured output, batas token dan waktu yang jelas, defensive parsing, serta retry terbatas dengan setiap percobaan tetap dihitung. Pengaturan reasoning effort memengaruhi anggaran sekaligus kualitas."
       },
       "tags": ["reliability", "llm", "testing"],
@@ -130,7 +130,7 @@
       "id": "metrics-context",
       "question": { "en": "How should engineers report results?", "id": "Bagaimana seharusnya engineer melaporkan hasil?" },
       "answer": {
-        "en": "With how each number was measured: in the lab, offline or live, and with the sample size. A small A/B test can show a gap that repeats, but it cannot support percentiles or confidence intervals. I would rather publish a narrower claim I can defend than a before-and-after number I never measured.",
+        "en": "State how the number was measured, whether in the lab, offline or live, and include the sample size. A small A/B test can reveal a repeatable gap without establishing reliable population percentiles or confidence intervals. I would rather publish a narrow claim I can defend than imply a before-and-after comparison I never ran.",
         "id": "Dengan menjelaskan cara setiap angka diukur: di lab, secara offline, atau live, beserta ukuran sampelnya. A/B test kecil bisa menunjukkan selisih yang berulang, tetapi tidak cukup untuk persentil atau confidence interval. Saya lebih memilih klaim yang lebih sempit tetapi bisa saya pertanggungjawabkan daripada angka sebelum dan sesudah yang tidak pernah saya ukur."
       },
       "tags": ["metrics", "evaluation"],
@@ -186,7 +186,7 @@
       "id": "changing-requirements",
       "question": { "en": "How do you work with clients and product owners when requirements change?", "id": "Bagaimana bekerja dengan klien dan product owner saat kebutuhan berubah?" },
       "answer": {
-        "en": "I turn the change into a new numbered spec first, so everyone sees a document diff before a code diff. When a revised business process moved our vendor portal from delivery documents to purchase orders, the new specs showed which acceptance criteria were superseded, and agents got bounded tasks against them. Each spec that replaces earlier work should also say which code to delete.",
+        "en": "I update the numbered spec before changing the code, so the business change is visible first. When the vendor portal moved from delivery documents to purchase orders, the new specs identified the acceptance criteria they replaced and gave agents bounded tasks. A replacement spec should also say which old code to remove; otherwise both versions of the process can linger.",
         "id": "Saya menuangkan perubahan itu ke spec bernomor yang baru terlebih dahulu, sehingga semua orang melihat perubahan dokumen sebelum perubahan kode. Ketika proses bisnis yang direvisi memindahkan pusat portal vendor kami dari dokumen penerimaan barang ke purchase order, spec baru menunjukkan acceptance criteria mana yang digantikan, dan agent mendapat tugas yang jelas batasnya. Setiap spec yang menggantikan pekerjaan sebelumnya juga harus menyebutkan kode mana yang perlu dihapus."
       },
       "tags": ["teamwork", "spec-driven-development"],
@@ -221,7 +221,7 @@
       "id": "great-week",
       "question": { "en": "What does a great working week look like for you?", "id": "Seperti apa minggu kerja yang ideal?" },
       "answer": {
-        "en": "A great week gives me enough uninterrupted time to understand a difficult problem, define what correct means, and deliver something meaningful. Quick coordination happens asynchronously; meetings are for decisions that genuinely need discussion. By Friday, I want fewer unresolved risks, clearer documentation and a working improvement. A busy calendar or a large number of commits is not the same thing as progress.",
+        "en": "I want enough uninterrupted time to understand a difficult problem, define what correct means and deliver a useful improvement. Quick coordination can happen asynchronously; meetings are for decisions that need discussion. By Friday, fewer unresolved risks and clearer documentation matter more to me than a busy calendar or a large commit count.",
         "id": "Dalam minggu kerja yang ideal, saya punya cukup waktu tanpa gangguan untuk memahami masalah sulit, menetapkan kriteria hasil yang benar, dan menyelesaikan pekerjaan yang berarti. Koordinasi singkat dilakukan secara asinkron; rapat dipakai untuk keputusan yang memang perlu didiskusikan. Pada hari Jumat, saya ingin risiko yang belum terselesaikan berkurang, dokumentasi lebih jelas, dan ada perbaikan yang sudah berjalan. Kalender padat atau commit yang banyak belum menunjukkan kemajuan."
       },
       "tags": ["work-style", "productivity"],
@@ -315,7 +315,7 @@
       "id": "keeping-up-with-ai",
       "question": { "en": "How do you keep up with AI without drowning in hype?", "id": "Bagaimana mengikuti perkembangan AI tanpa tenggelam dalam hype?" },
       "answer": {
-        "en": "I follow developments through problems I actually need to solve. I read the documentation, try the capability against a representative workload, and compare it with the existing approach. My questions are fairly consistent: does it improve quality, latency, cost or maintainability? What failure modes does it introduce? If I cannot answer those, it is an interesting experiment, not yet a reason to change production.",
+        "en": "I use the problems in front of me as a filter. I read the documentation, try a new capability on a representative workload and compare it with what already works. Does it improve quality, latency, cost or maintainability? What new failures does it introduce? Until I can answer those questions, it is an experiment rather than a reason to change production.",
         "id": "Saya mengikuti perkembangan lewat masalah yang memang perlu saya selesaikan. Saya membaca dokumentasinya, mencoba kemampuannya pada workload yang representatif, lalu membandingkannya dengan pendekatan yang sudah ada. Pertanyaan saya tetap sama: apakah kualitasnya membaik, latensi atau biaya berkurang, atau maintenance menjadi lebih mudah? Risiko kegagalan baru apa yang muncul? Jika belum terjawab, saya menganggapnya eksperimen menarik yang belum cukup menjadi alasan untuk mengubah production."
       },
       "tags": ["ai-industry", "learning"],
@@ -335,7 +335,7 @@
       "id": "open-vs-closed-models",
       "question": { "en": "Open-source versus closed models: where do you stand for enterprise use?", "id": "Model open-source atau closed: bagaimana posisinya untuk penggunaan enterprise?" },
       "answer": {
-        "en": "I'm not ideological about it. I would choose based on workload quality, licensing, data handling, latency, total cost, and who will operate the system. Managed models are often the simplest route to a dependable enterprise application. Open-weight models can provide valuable deployment control and customization, but that comes with operational responsibility. I would keep the application boundaries clear enough to change providers without pretending every model behaves identically.",
+        "en": "I choose for the workload, not a side: quality, licensing, data handling, latency, total cost and who will operate it. A managed model is often the simplest route to a dependable enterprise application. Open-weight models offer more deployment control and customization, but someone has to operate them. I keep provider boundaries clear while recognizing that a model change still needs evaluation.",
         "id": "Saya tidak terpaku pada salah satu pilihan. Saya mempertimbangkan kualitas pada workload yang dituju, lisensi, penanganan data, latensi, total biaya, dan siapa yang mengoperasikan sistemnya. Managed model sering menjadi cara paling sederhana untuk membangun aplikasi enterprise yang andal. Model open-weight dapat memberi kendali deployment dan kustomisasi, sekaligus menambah tanggung jawab operasional. Batas antarkomponen aplikasi perlu cukup jelas agar provider dapat diganti, dengan tetap memperhitungkan perbedaan perilaku setiap model."
       },
       "tags": ["ai-industry", "llm", "enterprise"],

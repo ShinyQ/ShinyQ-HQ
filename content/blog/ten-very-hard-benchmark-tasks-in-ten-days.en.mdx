@@ -6,11 +6,11 @@ tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workf
 readingTime: "12 min"
 ---
 
-On 24 October 2026 I started freelancing as an AI benchmark engineer. I had never built a benchmark task before. In the first ten days I opened ten tasks as pull requests. Half of them are already merged, and most of them landed very hard, the top difficulty band.
+On 24 October 2026 I started freelancing as an AI benchmark engineer. I had never built a benchmark task before. In the first ten days I opened ten tasks as pull requests. By the time I published this article, five had merged. Most were rated very hard, the benchmark's highest difficulty band.
 
 I build Indonesian-language tasks for Terminal-Bench, a public benchmark for AI coding agents. In each task, an agent gets a terminal, realistic Indonesian workplace files and an instruction written in Indonesian. It has to write a program that does the job. Hidden tests then grade the output, including on data the agent never saw. Frontier models from OpenAI, Google and Anthropic run every task many times, and their pass rate decides which difficulty band it lands in.
 
-I can't show you a single task. The data belongs to the client, and a benchmark task stops working once it is published: the next models can learn the answer instead of the skill. So this post is about the method, not the tasks. It covers what "very hard" means when the bar is fairness, the workspace that let agents pick up the work in a minute, the funnel that killed most ideas, and how I kept more than seventy AI sessions from stepping on each other.
+I can't show you a single task. The data belongs to the client, and publishing the task would risk teaching future models the answer instead of testing the skill. So this post is about the method, not the tasks: how I checked fairness, rejected ideas early, and kept more than seventy AI sessions from stepping on each other.
 
 ## Learning the job from merged work
 
@@ -28,11 +28,11 @@ The first is a fairness test. Imagine a second engineer who never sees the tests
 
 The second is a plain-words test. Write the language rule the task depends on into the instruction, in plain words, and run the models again. If spelling it out makes them pass, the task was testing whether the model had been told, not whether it understood.
 
-Between the two there is a narrow window. Here is an illustration, deliberately far from my tasks and from language: sorting software version strings.
+Between the two there is a narrow window. Here is an illustration, not a benchmark result, deliberately far from my tasks and from language: sorting software version strings.
 
-- **Given away.** The instruction says "compare the numbers between the dots one by one". Every model passes. The task tests reading.
+- **Given away.** The instruction says "compare the numbers between the dots one by one". A pass shows that the model followed the supplied comparison rule, not that it inferred one.
 - **Unfair.** The hidden data uses a suffix scheme that no visible file shows and no common convention defines. A careful human fails too, so reviewers reject it.
-- **Fair, but easy.** Nothing is stated. The visible files show 1.9 sorted before 1.10, and the hidden data has new versions. Any developer derives the rule, and so does every model, because it knows the convention cold.
+- **Fair, but easy.** Nothing is stated. The visible files show 1.9 sorted before 1.10, and the hidden data has new versions. The examples expose a familiar convention; success would say little about handling an unfamiliar one.
 
 A very hard task has to be fair like the third version and still beat the models after the rule is written out. Most ideas cannot do both.
 
@@ -40,7 +40,7 @@ A very hard task has to be fair like the third version and still beat the models
 
 I can't say what makes any one of my tasks hard; that would hand the answer to the next model. What I can share is the general shape, which held across every probe:
 
-- **Knowing is not doing.** Early on, I asked models questions about the language directly, with no tools. They answered almost everything correctly. The same models then failed the task, because an agent writing a program generalises from the sample files in front of it instead of applying what it knows. Knowledge was rarely the bottleneck. Applying it inside a program was.
+- **Knowing is not doing.** Early on, I asked models questions about the language directly, with no tools. They answered almost everything correctly, yet the same models failed when asked to write a program. Explaining a rule and implementing it beyond the visible examples were different tests. The direct answers were not reliable evidence that an agent could do the task.
 - **The grader reruns on data the agent never saw.** A program that only handles the visible examples looks right and fails.
 - **Plausible code versus what a native would do.** The failures that count are the ones where the code is reasonable to an engineer and wrong to any native speaker.
 
@@ -89,7 +89,7 @@ Every idea takes the same path, and almost all of them die on it.
 3. **Agentic probe.** A minimal prototype, then real agent runs with tools in a sandbox: three model families, three runs each. A question without tools is not a probe; it misled me in both directions.
 4. **Failure attribution.** Every failure is replayed as a minimal pair: change only the language feature and see whether the failure flips. A failure that survives the change is a generic coding error and does not count.
 5. **Build**, in its own git worktree.
-6. **Independent answer check.** A fresh session that never saw my answer key labels a batch of ordinary inputs. Every disagreement is either a bug in my key or a gap in my instruction. I repeat with new writers until they converge. About 30 of the 70 subagents across my sessions did nothing but this kind of blind checking.
+6. **Independent answer check.** A fresh session that never saw my answer key labels a batch of ordinary inputs. I treat every disagreement as a reason to recheck the key and the instruction, not as proof that the checker is wrong. I repeat with new writers until they converge. About 30 of the 70 subagents across my sessions did nothing but this kind of blind checking.
 7. **Local judges.** The repository's LLM-judged checks, run on my machine with three models. All three must pass every check before a push.
 8. **My instruction, my approval.** I write the instruction and approve every commit and push.
 9. **Submit, calibrate, review.** The benchmark's own runs set the difficulty; human reviewers decide what merges.

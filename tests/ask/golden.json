@@ -116,7 +116,7 @@
     {"id": "q112", "lang": "id", "q": "Tools data science apa saja yang dipakai Kurniadi?", "facts": ["pandas", "scikit-learn"], "expect": {"any": ["pandas", "scikit-learn", "pytorch"]}},
     {"id": "q113", "lang": "en", "q": "What does Kurniadi do at LILT AI?", "facts": ["LILT AI", "Terminal-Bench"], "expect": {"any": ["terminal-bench", "terminal bench", "benchmark"]}},
     {"id": "q114", "lang": "id", "q": "Apa yang dikerjakan Kurniadi di LILT AI?", "facts": ["LILT AI", "Terminal-Bench"], "expect": {"any": ["terminal-bench", "terminal bench", "benchmark"]}},
-    {"id": "q115", "lang": "en", "q": "How did Kurniadi's first ten days as a benchmark engineer go?", "facts": ["ten tasks", "Half of them are already merged"], "expect": {"any": ["ten tasks", "10 tasks"], "any2": ["half", "five of", "5 of"], "none": ["all merged", "all of them merged", "all ten merged"]}},
+    {"id": "q115", "lang": "en", "q": "How did Kurniadi's first ten days as a benchmark engineer go?", "facts": ["ten tasks", "By the time I published this article, five had merged"], "expect": {"any": ["ten tasks", "10 tasks"], "any2": ["half", "five of", "5 of", "five had merged"], "none": ["all merged", "all of them merged", "all ten merged"]}},
     {"id": "q116", "lang": "id", "q": "Bagaimana sepuluh hari pertama Kurniadi sebagai benchmark engineer?", "facts": ["sepuluh task", "Separuhnya sudah di-merge"], "expect": {"any": ["sepuluh task", "10 task"], "any2": ["separuh", "setengah", "lima di antaranya", "5 di antaranya"], "none": ["semuanya sudah di-merge", "semua sudah merged"]}}
   ]
 }

@@ -1,16 +1,16 @@
 ---
-title: "How We Made a Voice Agent Interruptible"
+title: "Making a Voice Agent Interruptible"
 date: "2026-10-09"
 excerpt: "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
 
-Our voice agent took about two seconds to react when a caller interrupted it during a knowledge search. Two seconds is a long time to keep talking after someone has asked you to stop.
+During a knowledge search, our voice agent kept talking for about two seconds after a caller interrupted. Moving the search off the receive loop cut that delay to roughly 0.2 seconds in a controlled harness, n=4 calls per arm. Later live cut-off tests showed no improvement.
 
-I lead this realtime contact-center agent at Metrodata. I fixed two separate barge-in bugs, and a controlled A/B on the knowledge-search path measured roughly 0.2 seconds afterward. That test had just n=4 calls per arm. It showed a clear difference in that path, not that we had solved turn-taking.
+I lead this realtime contact-center agent at Metrodata. I fixed two separate barge-in bugs: one in playback tracking and one in the receive loop. Two seconds is a long time to keep talking after someone has asked you to stop, but a faster stop on one path does not mean turn-taking is solved.
 
-Later experiments showed why that distinction matters: some changes failed the criteria set before testing, and the live cut-off rate did not improve.
+That distinction mattered in later experiments. Some changes failed the criteria set before testing; others could not be tested cleanly enough to reach a verdict.
 
 ## What barge-in means for a speech-to-speech agent
 
@@ -65,7 +65,7 @@ I do not have a separate before-and-after measurement for this fix. It shipped a
 
 The two-second delay came from the knowledge search tool. It ran inline on the provider receive loop, the coroutine reading every event from the realtime model.
 
-While that loop awaited search results, it could not read the event saying the caller had started speaking. We had made the part responsible for listening wait for I/O.
+While that loop awaited search results, it could not read the event saying the caller had started speaking. We had made the part responsible for listening wait for I/O. The fix did not need to make search faster. It needed to let the interruption event reach the code that could stop it.
 
 I moved each tool call into its own cancellable asyncio task, under one 2.5 s time budget. The change also added a single response gate, allowing only one response in flight, and made hand-off to a human operator non-blocking. Again, this is a simplified sketch:
 
@@ -76,7 +76,7 @@ task = asyncio.create_task(
 # on barge-in: task.cancel()
 ```
 
-Now the receive loop keeps listening during a search, and barge-in cancels the task. I chose one budget rather than nested timeouts so there is one limit to reason about. When it expires, the agent moves on instead of stalling.
+Now the receive loop keeps listening during a search, and barge-in cancels the task. I chose one budget rather than nested timeouts so there is one limit to reason about. Cancellation handles a caller who interrupts; the deadline handles a search that takes too long even when nobody interrupts. When the budget expires, the agent moves on instead of stalling.
 
 ## How I measured it
 

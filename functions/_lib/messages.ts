@@ -8,19 +8,19 @@ export const MESSAGES = {
     id: "Informasi itu belum tersedia di situs ini. Coba tanyakan proyek, pengalaman kerja, atau tulisan Kurniadi.",
   },
   decline: {
-    en: "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views, plus what his work shows on related engineering questions. Try asking about one of those.",
+    en: "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views, plus related engineering questions his work can answer. Try asking about one of those.",
     id: "Saya hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, pandangan tertulisnya, serta pertanyaan engineering terkait yang dapat dijawab dari karyanya. Coba tanyakan salah satunya.",
   },
   restricted: {
-    en: "I can't share client names or private details. Projects for clients are described by sector on this site.",
+    en: "I can't share client names or private details. Browse the Work page for client projects described by sector.",
     id: "Saya tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
   },
   fallback: {
-    en: "A reliable answer is not available right now. Search with Cmd-K or Ctrl-K, or browse the Work and Journey pages.",
+    en: "A reliable answer isn't available right now. Search with Cmd-K or Ctrl-K, or browse the Work and Journey pages.",
     id: "Saat ini belum ada jawaban yang dapat diandalkan. Cari lewat Cmd-K atau Ctrl-K, atau buka halaman Karya dan Perjalanan.",
   },
   private: {
-    en: "I only cover Kurniadi's work and the views he has written down. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site.",
+    en: "I only cover Kurniadi's work and written views. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site. Try asking about his projects or career.",
     id: "Saya hanya membahas pekerjaan Kurniadi dan pandangan yang dia tuliskan. Topik pribadi seperti keluarga, hubungan, kesehatan, agama, politik partisan, dan penghasilan tidak ada di situs ini.",
   },
   others: {
@@ -29,31 +29,31 @@ export const MESSAGES = {
   },
   // "What can you do?" (owner request 2026-10-15) and "Who are you?": fixed, no model call, Rover introduces itself (2026-10-19). Also the scope a decline points back to.
   capabilities: {
-    en: "I'm Rover, the guide robot of ShinyQ HQ, and I answer questions about Kurniadi Ahmad Wijaya's projects, skills, career, writing, availability, this site and his written views, in English or Indonesian, with links to the source on this site. I don't cover his private life, partisan politics, religion, pay or opinions about other people, and I don't write code or answer general questions.",
+    en: "I'm Rover, ShinyQ HQ's guide robot, and I answer in English or Indonesian about Kurniadi Ahmad Wijaya's projects, skills, career, writing, availability, this site and his written views, with links to source pages here. I don't cover his private life, partisan politics, religion, pay or opinions about other people, and I don't write code or answer general questions.",
     id: "Saya Rover, robot pemandu ShinyQ HQ yang menjawab pertanyaan tentang proyek, keahlian, karier, tulisan, ketersediaan, dan pandangan tertulis Kurniadi Ahmad Wijaya serta situs ini, dalam bahasa Inggris atau Indonesia dengan tautan sumber di situs ini. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang lain, serta tidak menulis kode atau menjawab pertanyaan umum.",
   },
   // Lead intent when the model's answer cannot be shown (failed checks, a fit claimed without a match, a model refusal).
   lead: {
-    en: "Kurniadi considers freelance and part-time software and AI engineering projects alongside his full-time role, subject to capacity. Send a short message describing the project to discuss fit; his contact details are below.",
+    en: "Kurniadi considers freelance and part-time software and AI engineering projects alongside his full-time role, as capacity allows. To discuss fit, send him a short project overview using the contact details below.",
     id: "Kurniadi terbuka untuk mempertimbangkan proyek freelance dan paruh waktu di bidang software dan AI engineering, sesuai kapasitas di luar pekerjaan penuh waktunya. Kirim gambaran singkat proyek untuk membahas kecocokannya melalui kontak di bawah.",
   },
   // Lead intent that asks for a price or a rate: no numbers, contact instead.
   leadRates: {
-    en: "Rates and timelines are not published on this site; they depend on scope and available capacity alongside Kurniadi's full-time role. Send a short message describing the freelance or part-time project to discuss it; his contact details are below.",
+    en: "Rates and timelines aren't published here; they depend on project scope and Kurniadi's capacity alongside his full-time role. To discuss a freelance or part-time project, send him a short overview using the contact details below.",
     id: "Tarif dan estimasi waktu tidak dicantumkan di situs ini. Keduanya bergantung pada lingkup pekerjaan dan kapasitas di luar pekerjaan penuh waktu Kurniadi. Kirim pesan singkat tentang proyek freelance atau paruh waktunya untuk dibahas; detail kontaknya ada di bawah.",
   },
   // A request to speak as Kurniadi or anyone else, or to take another persona (owner decision 2026-10-19).
   persona: {
-    en: "I'm Rover, so I can't speak for Kurniadi or take on another persona; I only talk about him in the third person. Ask about his work and I'll answer from this site.",
+    en: "I'm Rover, not Kurniadi, and I can't take on another persona. Ask about his work and I'll answer from this site, referring to him in the third person.",
     id: "Saya Rover, jadi saya tidak bisa berbicara mewakili Kurniadi atau berperan sebagai orang lain; saya hanya menyebutnya sebagai orang ketiga. Tanyakan tentang karyanya, dan saya jawab berdasarkan isi situs ini.",
   },
   noView: {
-    en: "Kurniadi hasn't shared a written view on that on this site.",
+    en: "Kurniadi hasn't shared a written view on that here.",
     id: "Kurniadi belum membagikan pandangan tertulis tentang hal itu di situs ini.",
   },
   // General questions with no link to Kurniadi or this site (owner decision 2026-10-24): no model call, topic pills follow.
   offtopic: {
-    en: "I can't help with that one: I only answer questions about Kurniadi and this site. Try one of the questions below about his projects, his views on AI or his career.",
+    en: "I only answer questions about Kurniadi and this site. Try a question below about his projects, written views on AI or career.",
     id: "Saya tidak bisa membantu soal itu: saya hanya menjawab pertanyaan tentang Kurniadi dan situs ini. Coba salah satu pertanyaan di bawah tentang proyek, pandangannya soal AI, atau kariernya.",
   },
 } as const satisfies Record<string, Record<AskLocale, string>>;

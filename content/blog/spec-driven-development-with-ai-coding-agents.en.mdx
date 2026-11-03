@@ -6,9 +6,9 @@ tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-r
 readingTime: "6 min"
 ---
 
-I built a vendor management portal in about six weeks as the only engineer on the repository. AI coding agents wrote most of the code. I opened all 179 pull requests and merged 142 of them.
+I built a vendor management portal in about six weeks as the only engineer on the repository. AI coding agents wrote most of the code. I opened all 179 pull requests and merged 142 of them. CI still missed a skipped integration tier and two sign-in bugs, and I did not measure a productivity gain.
 
-That last part is both how the work got done and the weakest part of the process: there was no second human reviewer.
+The weakest part of that workflow was that I approved every merge: there was no second human reviewer.
 
 The project ran from 21 August to 4 October 2026, for Metrodata. It handles vendor onboarding, purchase orders, delivery acceptance, invoices with tax verification and multi-step approvals. The stack is FastAPI, PostgreSQL and Next.js, deployed to Azure App Service. By the end, it had 51 numbered specs, 21 backend domains and 109 Alembic migrations.
 
@@ -55,7 +55,7 @@ That meant one shared PO workspace for vendors and internal staff, replacing doc
 
 I wrote new numbered specs for these changes. The purchase-order pivot landed between 9 and 16 September. Removing the approval matrix used an expand and contract migration, keeping existing data readable while the new routing took over.
 
-The useful part, for me, was seeing a document diff before a code diff. I could identify superseded acceptance criteria and give agents bounded tasks against the new spec. The ledger guard checked that work linked back to a requirement and flagged anything that did not.
+The useful part, for me, was seeing a document diff before a code diff. I could identify superseded acceptance criteria and give agents bounded tasks against the new spec. The ledger guard checked that work linked back to a requirement and flagged anything that did not. That made the claimed scope reviewable; it did not prove the implementation satisfied the requirement.
 
 That is my reasoning, not a measured time saving. I have no counterfactual.
 
@@ -84,7 +84,7 @@ The integration tier needed a database URL. If it was missing, pytest skipped th
 
 Running the full suite against real PostgreSQL produced 45 failures and 301 errors, of which 5 were real defects. I fixed those 5, made the database requirement explicit, and corrected what CI claimed to check.
 
-A skipped tier looked like a passed tier. An agent iterating against that feedback had no way to know the difference.
+A skipped tier looked like a passed tier. The agent's feedback loop rewarded a green run, and my review treated that green as evidence of database coverage. Neither was justified until CI required the database and actually ran the tests.
 
 ### The cookie worked until it carried real permissions
 
@@ -98,11 +98,11 @@ I tried chunking the cookie, then compression, which was unavailable on the edge
 
 After Entra ID sign-in, the callback returned 200. The next session check returned 401: "session does not exist".
 
-From a second database connection, I could see that the rows did exist, just too late. The FastAPI dependency owning the transaction committed during teardown. In the pinned version, teardown ran after the response was sent. The browser beat the commit.
+Watching from a second database connection, I could see the rows become visible, just too late for the session check. The FastAPI dependency owning the transaction committed during teardown. In the pinned version, teardown ran after the response was sent. The browser beat the commit.
 
 This affected every write endpoint, not just login. The fix commits before sending the response and fails loudly if that step is missing.
 
-None of these was a spec gap. They came from CI configuration, a browser limit and a framework lifecycle, details the specs did not describe. The agents followed the tests I gave them. When that environment was wrong, they inherited the mistake.
+More detailed feature specs alone would not have caught these. I needed checks for what CI actually executed, fixtures shaped like real sessions, and a test of the deployed sign-in sequence. The agents followed the tests I gave them. When that environment was wrong, they inherited the mistake, and my merge review did not catch it.
 
 ## What I would keep and change
 

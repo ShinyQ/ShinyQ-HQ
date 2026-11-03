@@ -18,7 +18,7 @@ describe("mottos and taglines", () => {
 
   it("carry the owner's motto", () => {
     expect(content.profile.subheadline).toEqual({
-      en: "Built production-grade AI and software for banking, fintech and enterprise.",
+      en: "AI and software built for the demands of banking, fintech and enterprise.",
       id: "Membangun AI dan software kelas production untuk perbankan, fintech, dan enterprise.",
     });
   });

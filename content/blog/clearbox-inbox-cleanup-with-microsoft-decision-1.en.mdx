@@ -1,14 +1,14 @@
 ---
-title: "Clearbox: Inbox Triage with Microsoft-Decision-1"
+title: "Clearbox: Triage with Microsoft-Decision-1"
 date: "2026-10-16"
 excerpt: "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox."
 tags: ["microsoft-decision-1", "microsoft-foundry", "cloudflare-workers", "evaluation", "case-study"]
 readingTime: "14 min"
 ---
 
-Clearbox is a self-hosted inbox assistant I built for my own Gmail and Outlook accounts. Microsoft-Decision-1 on Microsoft Foundry scores each email as trash, archive, keep or unsure. Code applies guardrails and adds up to three reasons, then groups suggestions by sender with a confidence band. Only approved suggestions move to Trash or Archive, never permanent deletion. Clearbox offers Undo for 24 hours; recovery through the mail provider follows its own policy.
+Clearbox is a self-hosted inbox assistant I built for my own Gmail and Outlook accounts. Microsoft-Decision-1 on Microsoft Foundry scores each email as trash, archive, keep or unsure. Code applies guardrails and adds up to three reasons, then groups suggestions by sender with a confidence band. Nothing moves without approval, and approved messages go to Trash or Archive, never permanent deletion. Clearbox offers Undo for 24 hours; recovery through the mail provider follows its own policy. The evaluation in this post covered 40 synthetic emails, not an inbox.
 
-The code is public under the MIT license at [github.com/ShinyQ/Clearbox](https://github.com/ShinyQ/Clearbox), and the project has its own room on the [Labs floor](/en/labs/clearbox). The repository holds 179 commits from 15 and 16 October 2026, and a fresh clone passes 1,589 automated tests. This post covers the use case, why I picked a decision model instead of a chatbot, the architecture in detail, and what I learned. It also says what I have not measured yet.
+The code is public under the MIT license at [github.com/ShinyQ/Clearbox](https://github.com/ShinyQ/Clearbox), and the project has its own room on the [Labs floor](/en/labs/clearbox). At the snapshot described here, the repository held 179 commits from 15 and 16 October 2026, and a fresh clone passed 1,589 automated tests. The design question was not just whether a model could recognize unwanted mail. It was how to make sorting useful without treating a confident prediction as permission to act.
 
 ## The use case: a weekly Clean up
 
@@ -29,7 +29,7 @@ Four rules shape that session:
 
 ## Why a decision model, not a chatbot
 
-Sorting email is classification. For each email I need one of four labels and a number I can put a threshold on. A hostile email should not get to decide what moves, which is why approval and guardrails belong in code. I do not need prose from the model.
+Sorting email is a classification problem. For each message I need one of four labels and a probability I can compare with a threshold. I do not need the model to write a persuasive explanation. A hostile email may still influence the model's decision, so approval and guardrails have to live outside it.
 
 Microsoft-Decision-1 is built for that kind of task. [Microsoft Learn](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) describes it as a model for classification, routing, ranking, grading and binary decisions that does not generate a free-form response or a written rationale. Instead, it returns a typed, numerical decision. A request carries a `state` (text or JSON) and typed questions:
 
@@ -94,6 +94,8 @@ The core is a pure TypeScript package with no Cloudflare, Hono or DOM imports. E
 
 Approvals and overrides feed the next round of suggestions. Every approval, override or Clean up writes a label and updates the sender and domain priors, and Undo reverses that update. Each night, a calibration job reads the newest 500 labels. Once at least 50 of them would have been trash suggestions at 0.80, it tries every threshold from 0.80 to 0.99 and keeps the smallest one with at least 20 supporting labels and at least 98% agreement with my trash decisions. If none qualifies, the threshold goes to 0.99. The Insights page shows that agreement against the 98% target.
 
+That target is agreement with my labels, not an independent judgment that an email is safe to discard. A mistaken approval can become evidence for later suggestions too. Review and Undo therefore remain part of the feedback loop, even after enough labels exist to calibrate the threshold.
+
 ## Scanning on the Free plan
 
 Clearbox runs on Cloudflare Workers Free, and that constraint shaped the scanner more than anything else. The limits below describe the 16 October 2026 setup; provider quotas can change.
@@ -120,7 +122,7 @@ Most of Clearbox's safety lives outside the model.
 
 ## Costs and limits
 
-For the 16 October 2026 setup, Cloudflare Workers, D1, Cron Triggers, Workers Logs and Access ran on free plans, with no API call charge for Gmail or Microsoft Graph. Microsoft-Decision-1 billed input tokens only, including the question texts, not output tokens. I budgeted 450 to 800 input tokens per email. The live evaluation used fewer: about 387 tokens on average and 412 at most.
+For the 16 October 2026 setup, Cloudflare Workers, D1, Cron Triggers, Workers Logs and Access ran on free plans, with no API call charge for Gmail or Microsoft Graph. Microsoft-Decision-1 billed input tokens only, including the question texts, not output tokens. I budgeted 450 to 800 input tokens per email. The synthetic evaluation against the live model deployment used fewer: about 387 tokens on average and 412 at most.
 
 The limits I accept:
 
@@ -141,7 +143,7 @@ The limits I accept:
 - **Calibration:** 15% of suggestions came back unsure, with an expected calibration error of 0.096 and a Brier score of 0.069.
 - **Robustness:** shuffling the option order flipped no decision. Across 80 calls, latency was 368 ms at p50 and 404 ms at p95, with no failures.
 
-Read it for what it is. The guardrails and the threshold traded recall for precision, which is the trade I want for trash. But 40 synthetic emails cannot prove a 98% target: the 77.2% lower bound is the honest number. The emails are synthetic, not my inbox, and I have no production precision yet. The nightly calibration only moves the threshold once 50 trash suggestions have been decided; until then it stays at 0.80. When I recorded the live checks, my Gmail account was connected and Outlook was not yet.
+The useful result is the trade-off: guardrails and the threshold reduced recall to protect trash precision, which is the direction I want. But 40 synthetic emails cannot prove a 98% target; the Wilson lower bound was only 77.2%. The emails are synthetic, not my inbox, and I have no production precision yet. The nightly calibration only moves the threshold once 50 trash suggestions have been decided; until then it stays at 0.80. When I recorded the live checks, my Gmail account was connected and Outlook was not yet.
 
 ## Lessons learned
 

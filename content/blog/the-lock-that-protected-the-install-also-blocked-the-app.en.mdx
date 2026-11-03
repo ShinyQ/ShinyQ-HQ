@@ -8,9 +8,9 @@ readingTime: "7 min"
 
 After the first real test installs of four AI products, every AI call failed. In one product, every analysis ended with 401 PermissionDenied from Document Intelligence, Azure OpenAI and Prompt Shields. The app's managed identities held the right roles.
 
-The cause was a lock that was doing its job. A managed application's resource group is locked so that nobody except the publisher can change it. That includes the app itself.
+The lock was doing its job. Under the read-only policy, the app's managed identities were subject to the same deny assignment as other non-publisher identities. I had checked their role assignments, but those roles could not override a deny.
 
-These were test installs in a test subscription. The packages are Marketplace-ready and validated by real installs, but no offer has been created in Partner Center yet, and nothing in this post ran for a paying customer.
+These were test installs in a test subscription. The packages had been prepared for Marketplace and validated by real installs, but no offer had been created in Partner Center yet, and nothing in this post ran for a paying customer.
 
 ## Four products, one install per customer
 
@@ -78,7 +78,9 @@ The shape looks like this. It is an illustration, not a production file:
 }
 ```
 
-The part that took me longest to accept: an exception is not scoped to the app. It lifts the deny assignment for every principal. RBAC still decides who may act. A customer cannot create role assignments inside the managed resource group, so a data action exception matters mostly for identities that already hold a role there. Control actions are riskier, because the customer may hold roles on the subscription. Every entry widens what anyone with the right role can do inside an installation the publisher is responsible for.
+The part that took me longest to accept was that an exception is not scoped to the app. It lifts the deny assignment for that action for every principal; it does not grant permission by itself. RBAC still decides who may act.
+
+A customer cannot create role assignments inside the managed resource group, so a data action exception matters mostly for identities that already hold a role there. Control actions are riskier, because the customer may hold roles on the subscription. I had to review each exception together with the roles that could use it, not just ask whether it made the app work.
 
 So the lists had to stay short, and a build check keeps them short. In MII E-Recruitment the package build rejects an entry without a reason, any Authorization or Key Vault action, tag writes, a bare wildcard, app-settings writes and the code-publish action. The rules are product-specific. Pris.AI keeps one Key Vault write, because its setup flow stores the key of the customer's GitHub App, and that entry carries its reason like the others.
 
@@ -117,7 +119,7 @@ All test resources were torn down afterwards.
 
 ## Where it stands
 
-The packages are Marketplace-ready and validated by real Service Catalog test installs. Metrodata is enrolled in Partner Center, but the offers have not been created or certified yet. Metering is implemented in all four products, switched off by default, and has never called the live Metering API, because no offer exists yet.
+The packages are prepared for Marketplace and have passed real Service Catalog test installs. That is an installation result, not Marketplace certification. Metrodata is enrolled in Partner Center, but the offers have not been created or certified yet. Metering is implemented in all four products, switched off by default, and has never called the live Metering API, because no offer exists yet.
 
 Several checks are still open: interactive checks on an installed instance (first admin sign-in with MFA and live AI flows), the CreateUiDefinition portal sandbox, and upgrade and rollback rehearsals for three of the four products. The Pris.AI install notes say it plainly: a green automated check does not prove each exception end to end. A real scan and a chat turn on an installed instance do.
 
