@@ -148,7 +148,7 @@ describe("EngineBody (B1 station drawers)", () => {
         "Visits since launch": "520",
         "Ask questions since launch": "97",
       });
-      expect(root.textContent).not.toContain("offline right now");
+      expect(root.textContent).not.toContain("The live feed is offline");
       expect(root.textContent).toContain("Live now");
       expect(screen.getByRole("heading", { name: "How it reads" })).toBeInTheDocument();
       expect(root.querySelector("a[href*='/build']")).toBeNull();
@@ -165,7 +165,7 @@ describe("EngineBody (B1 station drawers)", () => {
       const root = reactor();
       expect(root.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
       expect(tiles(root)).toEqual({ "Visits since launch": "520", "Ask questions since launch": "97" });
-      expect(root.textContent).toContain("The live feed is offline right now");
+      expect(root.textContent).toContain("The live feed is offline, so the core shows its idle glow. Check back in a minute.");
       expect(root.textContent).not.toContain("Live now");
       cleanup();
       feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW - 10 * 60_000 } satisfies OfficeFeed;
@@ -192,7 +192,7 @@ describe("EngineBody (B1 station drawers)", () => {
         expect(live()).toBe("true");
         act(() => vi.advanceTimersByTime(1));
         expect(live()).toBe("false");
-        expect(view.container.textContent).toContain("The live feed is offline right now");
+        expect(view.container.textContent).toContain("The live feed is offline, so the core shows its idle glow. Check back in a minute.");
         expect(view.container.textContent).not.toContain("Live now");
         expect(vi.getTimerCount()).toBe(1);
         view.unmount();

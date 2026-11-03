@@ -65,7 +65,7 @@
             "id": "Cek kegagalan"
           },
           "sublabel": {
-            "en": "Does the miss flip on the language?",
+            "en": "Does language change the result?",
             "id": "Apakah gagalnya berbalik pada fitur bahasa?"
           },
           "layer": 3,
@@ -93,7 +93,7 @@
             "id": "Cek kunci jawaban"
           },
           "sublabel": {
-            "en": "Fresh writers, no answer key",
+            "en": "Fresh solvers, no answer key",
             "id": "Penulis baru, tanpa kunci jawaban"
           },
           "layer": 5,
@@ -893,7 +893,7 @@
             "id": "Guardrail"
           },
           "sublabel": {
-            "en": "Set a ceiling: keep or archive at most",
+            "en": "Limit actions to keep or archive",
             "id": "Membatasi tindakan: maksimal keep atau archive"
           },
           "layer": 2,
@@ -946,7 +946,7 @@
             "id": "Gabungkan"
           },
           "sublabel": {
-            "en": "Sender prior, flags, ceiling, tau_delete",
+            "en": "Combine priors, flags, limits, tau_delete",
             "id": "Prior pengirim, flag, batas, tau_delete"
           },
           "layer": 6,

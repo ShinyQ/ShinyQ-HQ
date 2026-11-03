@@ -33,7 +33,7 @@ describe("Topic Constellation payloads", () => {
     expect(voice.label).toBe("Voice AI");
     expect(voice.items).toEqual([
       { room: "L4:aria-acs-to-livekit", title: "Moving ARIA From ACS to LiveKit", kind: "post" },
-      { room: "L4:making-a-voice-agent-interruptible", title: "How We Made a Voice Agent Interruptible", kind: "post" },
+      { room: "L4:making-a-voice-agent-interruptible", title: "Making a Voice Agent Interruptible", kind: "post" },
     ]);
     const teaching = buildRoomViews("id")["L4:topics"].topics!.topics.find((t) => t.slug === "teaching")!;
     expect(teaching.label).toBe("Mengajar dan mentoring");

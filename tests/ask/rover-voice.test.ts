@@ -261,7 +261,7 @@ describe("adjacent grounded questions: pipeline", () => {
   it("turns an unsourced answer into the no-view reply, naming the closest title only when it is on topic", async () => {
     const onTopic = await ask("When should a voice agent be interrupted?", "Voice agents should be interrupted whenever the caller sneezes.");
     expect(onTopic).toMatchObject({ outcome: "unknown", reason: "unsourced", cite: "/blog/making-a-voice-agent-interruptible" });
-    expect(onTopic.text).toContain('The closest written source is "How We Made a Voice Agent Interruptible", on his blog.');
+    expect(onTopic.text).toContain('The closest written source is "Making a Voice Agent Interruptible", on his blog.');
     const offTopic = await ask("When is blockchain a bad idea for data storage?", "Blockchain is slow for storage.");
     expect(offTopic).toMatchObject({ outcome: "unknown", reason: "unsourced" });
     expect(offTopic.cite).toBeUndefined();

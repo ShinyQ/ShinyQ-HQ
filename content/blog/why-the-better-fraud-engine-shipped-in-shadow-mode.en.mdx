@@ -1,14 +1,14 @@
 ---
-title: "Why the Better Fraud Engine Shipped in Shadow Mode"
+title: "Why the Fraud Engine Stayed in Shadow Mode"
 date: "2026-10-09"
 excerpt: "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
 ---
 
-On noisy-clean procurement packets in the development gold set, I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
+In offline evaluation, false positives on the noisy-clean slice of the development gold set fell from 36.4% to 9.1%. High-risk recall fell from 1.000 to 0.841 in the same development evaluation, so the new engine shipped only in shadow mode.
 
-That was the result on noisy but clean procurement packets in the development gold set. High-risk recall went the other way: 1.000 to 0.841. The engine missed more of the packets it needed to catch.
+It was better at leaving noisy but clean procurement packets alone. It was also missing more of the packets it needed to catch. The lower false-positive rate was not enough to justify giving it control of the verdict.
 
 I finished this second-generation risk engine in late September 2026 for our internal AI document review platform at Metrodata. Before the evaluation, I had written down a release gate for recall. The engine failed it. So I shipped it in production shadow mode: it runs beside the live pipeline, stores its output, and never shows that output to users.
 
@@ -18,7 +18,7 @@ The platform reviews transaction document packets: invoices, receipts, purchase 
 
 The early versions struggled with packets that were clean but administratively messy. A missing stamp. An odd date format. A page scanned at an angle. The model treated that noise as fraud.
 
-My concern was trust. If a reviewer knows a packet is fine and sees a red flag anyway, why would they trust the next flag? My reasoning was that a false positive on a clean packet costs more trust than one missed flag. I did not measure that.
+My concern was trust. If a reviewer knows a packet is fine and sees a red flag anyway, why would they trust the next flag? I thought avoidable false alarms could make genuine warnings easier to dismiss. I did not measure that effect. It was a reason to study false positives, not evidence that losing recall would be acceptable.
 
 That is why I kept noisy-but-clean inputs as their own evaluation slice. An average across all packets can hide exactly the problem I was trying to fix.
 
@@ -70,9 +70,9 @@ I compared engine v2, baseline N1, with the best LLM pipeline, baseline B2, offl
 - High-risk recall: 1.000 to 0.841.
 - Held-out set v0.3: FPR 50.0% to 0.0%, but High-risk recall only 0.429.
 
-The engine was more precise. It also missed High-risk packets that the old pipeline caught. Held-out recall of 0.429 showed that this was not just a development-set fluke. Gate G3, the High-risk recall gate, failed.
+The engine raised fewer false alarms. It also missed High-risk packets that the old pipeline caught. Held-out recall of 0.429 made it harder to dismiss the recall loss as a development-set problem. Gate G3, the High-risk recall gate, failed.
 
-My interpretation was that the thresholds improved precision at the expense of recall. While tuning them, I had focused too narrowly on false positives. Writing the gates before the run mattered here. Without them, the better FPR could have talked me into releasing a worse system.
+My interpretation was that the thresholds suppressed false positives at the expense of recall. While tuning them, I had focused too narrowly on false positives. Writing the gates before the run mattered here. Without them, the better FPR could have talked me into releasing a worse system.
 
 There is a sample-size caveat too. Some slices are small. The noisy-clean rates move in steps consistent with about eleven packets, so one packet shifts the rate by roughly nine points. That is my inference; the exact slice size is not recorded here.
 
@@ -124,6 +124,6 @@ This is my reasoning, not a recorded plan. Before giving engine v2 control of th
 - Noisy-clean FPR to stay well below the current pipeline on both sets.
 - Fail-open to stay at 0%.
 - Shadow verdicts to agree with reviewer decisions on real packets. That needs more real cases than the platform has today.
-- Every disagreement between the engines reviewed by hand, because each one is either a missed fraud or a false alarm avoided.
+- Every disagreement between the engines reviewed by hand. A changed verdict could mean a missed fraud or a false alarm avoided; I would not assume either engine was right.
 
 I put held-out numbers beside development numbers for a reason: that 0.429 recall told me more than any development metric. One good run on development is encouraging, but it is not the bar I set for letting the engine decide.

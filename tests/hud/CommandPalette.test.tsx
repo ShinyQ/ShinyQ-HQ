@@ -222,7 +222,7 @@ describe("CommandPalette", () => {
   it("shows the empty state when nothing matches", async () => {
     const { user } = setup();
     await user.type(input(), "zzqqxx");
-    expect(screen.getByRole("status")).toHaveTextContent('No results for "zzqqxx"');
+    expect(screen.getByRole("status")).toHaveTextContent('No match. Edit "zzqqxx"');
     expect(screen.queryAllByRole("option")).toHaveLength(0);
     expect(input()).toHaveAttribute("aria-expanded", "false");
   });

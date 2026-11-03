@@ -315,7 +315,7 @@ describe("approach checks", () => {
   });
 
   it("passes a view that cites a retrieved written view", () => {
-    const r = check(`${outlineOnly()} In his view, "Design for Recovery" matters: he plans for failures and builds a recovery path rather than assume the system will always work. ${invitation}`);
+    const r = check(`${outlineOnly()} In his view, "Design for Recovery" matters: he works out what happens when a dependency fails, a process crashes or a release goes wrong, then builds a way to recover. ${invitation}`);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.cites).toContain(pack.chunks.find((c) => c.id === "principles")?.url);
   });

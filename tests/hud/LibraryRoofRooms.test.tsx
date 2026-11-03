@@ -166,7 +166,7 @@ describe("Roof rooms in the drawer", () => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
     const drawer = open("RF:contact");
     expect(drawer).toHaveTextContent(roof.availability.en);
-    expect(within(drawer).getByRole("link", { name: "Email me" })).toHaveAttribute("href", `mailto:${roof.contact.email}`);
+    expect(within(drawer).getByRole("link", { name: "Email Kurniadi" })).toHaveAttribute("href", `mailto:${roof.contact.email}`);
     for (const label of ["LinkedIn", "GitHub", "Hugging Face", "Medium", "Google Scholar", "IEEE Xplore"]) {
       expect(within(drawer).getByRole("link", { name: new RegExp(`^${label}`) })).toHaveAttribute("target", "_blank");
     }

@@ -98,7 +98,7 @@
     "featuredShots": "{count, plural, one {# screenshot} other {# screenshots}}",
     "hero": {
       "enter3d": "Enter the 3D HQ",
-      "enter3dHint": "Drive a rover through the five-floor tower"
+      "enter3dHint": "Drive a rover through all five floors"
     },
     "ticker": {
       "live": "Live"
@@ -138,11 +138,11 @@
     "round": "Round {n}",
     "inProgress": "In progress",
     "prCount": "{count, plural, one {# merged pull request} other {# merged pull requests}}",
-    "prList": "Pull requests of round {n}",
+    "prList": "Pull requests in round {n}",
     "before": "Before",
     "after": "After",
     "gate": "Gate",
-    "checks": "What it checks and its budget",
+    "checks": "Checks and limits",
     "budget": "Budget",
     "blocksMerge": "Blocks merge",
     "reportsOnly": "Reports only",
@@ -166,11 +166,11 @@
     "b1": {
       "quoted": "Titles and quotes here come straight from the repository, in English.",
       "decisions": "Decision Log",
-      "decisionsLead": "{count, plural, one {# owner decision so far} other {# owner decisions so far}}, one file each in the repository. The busiest areas, then the latest:",
+      "decisionsLead": "{count, plural, one {# owner decision so far} other {# owner decisions so far}}, each kept in its own repository file. The most active areas, followed by recent decisions:",
       "areaCount": "{area} ({count})",
       "decisionMeta": "{area}, {date}",
       "plans": "Plans and Specs",
-      "plansLead": "Every change starts as a written plan in the repository. The ones that shipped last:",
+      "plansLead": "Plans and specs live in the repository. These are the most recently shipped:",
       "planMeta": "Pull request #{n}",
       "dropped": "Dropped Plans",
       "tiles": {
@@ -193,12 +193,12 @@
     },
     "reactor": {
       "title": "The Reactor",
-      "subtitle": "The live heart of the build: CI, deploys, agents and visits in one machine.",
+      "subtitle": "CI jobs, deploys, agent sessions and visits, shown in one machine.",
       "howItReads": "How it reads",
-      "segments": "Ring segments are the jobs of the latest CI runs, in the Agent Office tower's colors: violet running (a light chases around the ring), green done, red failed, dim grey queued.",
+      "segments": "The ring shows jobs from the latest CI runs, using the Agent Office tower's colors: violet running (with a moving light), green done, red failed and dim grey queued.",
       "flash": "A white flash is a production deploy.",
       "sparks": "Orbiting sparks are AI agent sessions awake in the Agent Office.",
-      "pulse": "The pulse speed follows the visits and Ask questions since launch.",
+      "pulse": "The pulse speed reflects total visits and Ask questions since launch.",
       "idle": "A calm idle glow means offline, no data yet or reduced motion.",
       "polls": "It checks for new data only while you are on B1.",
       "live": "Live now",
@@ -210,7 +210,7 @@
       "noDeploy": "None recent",
       "visits": "Visits since launch",
       "asks": "Ask questions since launch",
-      "offline": "The live feed is offline right now, so the core shows its calm idle glow."
+      "offline": "The live feed is offline, so the core shows its idle glow. Check back in a minute."
     }
   },
   "journey": {
@@ -233,7 +233,7 @@
   },
   "timeTravel": {
     "title": "Time Travel",
-    "lead": "Each building is a year of the journey, from the first school projects to today. Pick a year, or play the whole journey.",
+    "lead": "Each building marks a year, from the first school projects to today. Pick a year or play through the journey.",
     "skyline": "The journey as a skyline, one building per year",
     "slider": "Year",
     "play": "Play the journey",
@@ -250,7 +250,7 @@
   },
   "labs": {
     "title": "Labs",
-    "intro": "Software, AI and data case studies with my contribution and results: software since 2019, data and ML since 2021, and enterprise AI since 2026.",
+    "intro": "Software, AI and data case studies showing my contributions and results: software since 2019, data and ML since 2021, enterprise AI since 2026.",
     "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",
     "aiIntro": "Enterprise AI platforms with evaluation gates before release.",
     "dataIntro": "NLP, forecasting, optimization and data collection from my public repositories.",
@@ -265,7 +265,7 @@
     "why": "Why",
     "lesson": "Lesson",
     "engineering": {
-      "title": "Engineering detail",
+      "title": "Engineering details",
       "limits": "Known limits",
       "post": "In depth"
     },
@@ -298,7 +298,7 @@
         "devops": "DevOps"
       },
       "ringsLabel": "Tech groups",
-      "techsLabel": "Techs in {ring}",
+      "techsLabel": "Technologies in {ring}",
       "count": "{count, plural, =1 {# project} other {# projects}}",
       "uses": "{count, plural, =1 {1 project uses {tech}} other {# projects use {tech}}}",
       "projects": "Projects using {tech}",
@@ -321,7 +321,7 @@
     "download": "Download PDF",
     "close": "Close the reader",
     "loading": "Opening the study guide",
-    "error": "The study guide could not be opened.",
+    "error": "The study guide didn't open. Try again or download the PDF.",
     "domains": "Exam domains",
     "edition": "Edition {date}",
     "independent": "Independent study material, not an official exam guide."
@@ -345,9 +345,9 @@
       "dataset": "Dataset"
     },
     "research": "Research",
-    "researchIntro": "My peer-reviewed papers and BSc thesis publication.",
+    "researchIntro": "My peer-reviewed papers and published BSc thesis.",
     "guides": "Study guides",
-    "guidesIntro": "The study guides written while preparing each certification exam, readable right here.",
+    "guidesIntro": "Study guides written while I prepared for each certification exam. Read them here.",
     "authors": "Authors",
     "doi": "DOI",
     "pdf": "PDF",
@@ -410,12 +410,12 @@
     "intro": "Get in touch about software and AI engineering.",
     "channels": "Contact links",
     "cvTitle": "CV kiosk",
-    "cvIntro": "Read my CV here, or download the PDF.",
+    "cvIntro": "Read my CV here or download the PDF.",
     "location": "Location"
   },
   "cv": {
     "title": "CV",
-    "intro": "My CV PDF stays the same when the site language changes. Read it here, zoom in or download it.",
+    "intro": "The CV PDF is the same in both site languages. Read it here, zoom in or download it.",
     "view": "View CV",
     "close": "Close CV",
     "pages": "{count, plural, one {# page} other {# pages}}",
@@ -462,7 +462,7 @@
   },
   "reader": {
     "loading": "Opening the PDF",
-    "error": "The PDF could not be opened.",
+    "error": "PDF didn't open. Try again.",
     "retry": "Try again",
     "download": "Download PDF",
     "chapters": "Chapters",
@@ -474,12 +474,12 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "fitWidth": "Fit width",
-    "pageFailed": "This page could not be drawn."
+    "pageFailed": "Page failed. Try again."
   },
   "notFound": {
     "kicker": "404 · Off the map",
     "title": "Rover took a wrong turn",
-    "body": "This floor isn't on the map. Here are three good ways back.",
+    "body": "This page isn't on the map. Here are three ways back.",
     "cv": "View the CV",
     "cvHint": "Experience, skills and contact",
     "work": "See the work",
@@ -494,7 +494,7 @@
   },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
-    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom; zoom all the way in to see through the rover's eyes, where WASD drives where you look, and zoom out to return. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, its call pads or PageUp and PageDown to change floors. Classic site shows the portfolio as a regular website.",
+    "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover over a glowing object (a door, the elevator pad, a board) to see its name, then click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom. Zoom all the way in to see through the rover's eyes: WASD then drives in the direction you look. Zoom out to return. The view turns toward displays as you approach; rotate it yourself to take control. Use the elevator, its call pads or PageUp and PageDown to change floors. Classic site shows the portfolio as a regular website.",
     "floor": "Floor",
     "elevator": "Elevator",
     "goToFloor": "{floor} {label}: go to floor ({name})",
@@ -528,7 +528,7 @@
       },
       "tutorial": {
         "label": "Replay the tutorial",
-        "hint": "Rover shows you around the HQ again."
+        "hint": "Rover explains the HQ controls again."
       },
       "hints": {
         "label": "Hints",
@@ -565,7 +565,7 @@
     "menuTitle": "Menu",
     "boost": "Boost",
     "controls": "Controls",
-    "loadFailed": "Could not load this panel.",
+    "loadFailed": "This panel didn't load. Select Retry to try again.",
     "retry": "Retry",
     "map": {
       "open": "Map",
@@ -593,9 +593,9 @@
     "bootStart": "Boot rover",
     "bootContact": "Contact",
     "retry3d": "Retry 3D",
-    "staticNotice": "3D is unavailable. Showing the classic site.",
+    "staticNotice": "3D is unavailable. Showing the Classic site.",
     "kioskTitle": "rover@hq:~$ ./rover-menu",
-    "kioskHint": "Select the kiosk or the rover for the Rover menu",
+    "kioskHint": "Select the kiosk or rover to open the Rover menu",
     "statusHello": "hello!",
     "rooms": {
       "profile": "Profile hologram",
@@ -646,7 +646,7 @@
       "label": "Search projects, writing, rooms, years and actions",
       "placeholder": "Find projects, writing or places in HQ",
       "results": "Results",
-      "empty": "No results for \"{query}\"",
+      "empty": "No match. Edit \"{query}\"",
       "groups": {
         "missions": "Rover menu",
         "recent": "Recent",
@@ -800,7 +800,7 @@
     "flow": "Data flow",
     "flowTo": "to",
     "flowAsyncTo": "sends asynchronously to",
-    "noArchitecture": "No architecture diagram for this room.",
+    "noArchitecture": "No diagram is available. See this room's overview instead.",
     "onFloor": "On {floor}",
     "seeOnL3": "Read the case study in Labs",
     "seeOnL2": "View the career entry",
@@ -833,7 +833,7 @@
       "placings": "Competition results",
       "models": "Hugging Face models",
       "readPost": "Read post",
-      "emailMe": "Email me",
+      "emailMe": "Email Kurniadi",
       "copyEmail": "Copy email",
       "copied": "Email copied ^_^",
       "copyFailed": "Could not copy the email address. Use {email}.",
@@ -896,13 +896,13 @@
   },
   "ask": {
     "thinking": "Rover is thinking . . .",
-    "asOf": "Rover's AI answer from this site, as of {date}",
+    "asOf": "Rover (AI), based on this site as of {date}",
     "privacyTitle": "Privacy",
-    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to five earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
+    "privacy": "Cloudflare Workers AI processes questions and answers, with Groq (zero data retention) as a backup if Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked before questions reach AI processing or logs. Unanswered questions are kept privately for up to 3 months, with the same masking, to identify missing topics; only counts and topics are published. This tab keeps the chat for the browser session. Up to five earlier exchanges may accompany a follow-up, with signatures checked before use. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Don't share personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
-      "offline": "Rover is resting. The CV and the work pages answer most questions.",
-      "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
+      "offline": "Ask AI is offline. Try the CV or Work pages.",
+      "fallback": "No answer is available. Search or open the Work and Journey pages."
     },
     "palette": {
       "row": "Ask: \"{q}\"",
@@ -918,7 +918,7 @@
       "close": "Close chat",
       "newChat": "New chat",
       "threadLabel": "Conversation",
-      "welcome": "Hi, I'm Rover! Ask about Kurniadi's work, projects, career, approach or how to reach him. I answer with AI from this site. Pick a topic or type a question.",
+      "welcome": "I'm Rover! Ask about Kurniadi's work, projects, career, approach or how to reach him. I answer from this site using AI. Pick a topic or type a question.",
       "you": "You",
       "hq": "Rover",
       "startersLabel": "Try asking",
@@ -961,7 +961,7 @@
     },
     "hero": {
       "label": "Ask AI about my work",
-      "placeholder": "Ask anything about my work",
+      "placeholder": "Ask about Kurniadi's work",
       "submit": "Ask",
       "topicsLabel": "Or start with"
     }
@@ -977,7 +977,7 @@
     "more": "+{count} more in the drawer",
     "cvHint": "Open this station to read the CV",
     "fullProfile": "Read the full profile",
-    "openProject": "Open in the Labs",
+    "openProject": "Open in Labs",
     "openRole": "Open on the Career Road",
     "wins": "Wins",
     "winsSub": "{placings} awards and honors, {firsts} first places",
@@ -988,9 +988,9 @@
     "winsIntro": "Every competition award and honor, by placement, with its organizer and month.",
     "tierCount": "{tier} ({count})",
     "now": "Now",
-    "nowSub": "The roles still running, from the Career Road",
+    "nowSub": "Current roles, also shown on the Career Road",
     "results": "Results",
-    "resultsSub": "Verified before and after numbers from the case studies",
+    "resultsSub": "Before-and-after figures reported in the case studies",
     "tier": { "gold": "1st place", "silver": "2nd place", "bronze": "3rd place", "honor": "Finalists and honors" }
   },
   "certs": {
@@ -1045,9 +1045,9 @@
       "skip": "Skip tutorial",
       "skipped": "No problem. Replay the tutorial from Settings anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
-      "moveCoarse": "Drag the joystick to drive. Tap the Boost button (or double-tap the joystick); tap again to turn boost off.",
-      "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
-      "pointGoCoarse": "Or tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
+      "moveCoarse": "Drag the joystick to drive. Tap the Boost button or double-tap the joystick. Tap again to turn boost off.",
+      "pointGoFine": "Point at a glowing object to see its name, then click it. I'll drive you there. Try it!",
+      "pointGoCoarse": "Tap a glowing object to select it, then tap it again or tap Go. I'll drive you there. Try it!",
       "moved": "Nice driving!",
       "cameraFine": "Drag or use Q and E to look around. Scroll to zoom, all the way in to see through my eyes!",
       "cameraCoarse": "Drag or twist two fingers to look around. Pinch to zoom, all the way in to see through my eyes!",
@@ -1055,8 +1055,8 @@
       "roverMenu": "Not sure where to go? Open the Rover menu for shortcuts around HQ.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
-      "closingShort": "That's the basics! Replay the full tutorial from Settings anytime.",
-      "pointGoPhone": "Tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
+      "closingShort": "Those are the basics. Replay the full tutorial from Settings anytime.",
+      "pointGoPhone": "Tap a glowing object to select it, then tap it again or tap Go. I'll drive you there. Try it!",
       "movedPhone": "Nice driving! Drag on the lower left to steer yourself, and tap the Boost button to speed up.",
       "floorChip": "Tap the floor chip up here to ride the elevator to another floor.",
       "tilt": "Tip: turn your screen sideways for a wider view of the tower."
@@ -1088,7 +1088,7 @@
         "timeConsole": "The time console: beam to any year, or back to the elevator.",
         "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry.",
         "vault": "The Study Vault: {name}'s certification study guides as books. Pick one to read it.",
-        "track": "A shelf of posts on one theme, the best one first."
+        "track": "A shelf of posts on one theme. Open it to choose an article."
       },
       "go": {
         "open": "Open",
@@ -1225,7 +1225,7 @@
   "stats": {
     "title": "Visits",
     "observatory": "Visitor Observatory",
-    "intro": "Visits counted by the site itself and AI question totals: today live, earlier days refreshed every hour.",
+    "intro": "Live counts for today's visits and AI questions, with earlier days refreshed hourly.",
     "approx": "about {n}",
     "window": {
       "d30": "Last 30 days, including today",
@@ -1266,11 +1266,11 @@
       "note": "Share of page loads that used the 3D tower or the Classic site, from the site's own beacon (automated browsers are not counted). A page load that used both views counts on both sides."
     },
     "topicsTitle": "Questions by topic",
-    "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
+    "topicsNote": "Share of questions with an assigned topic, classified automatically from the answer.",
     "chipsTitle": "Suggested questions",
     "chipsNote": "The most picked suggested questions (up to five) and how often each was picked. Visitor-entered text is not shown in these stats.",
     "chipCount": "{count, plural, one {{n} pick} other {{n} picks}}",
-    "noChips": "No suggested question picked for this topic yet.",
+    "noChips": "No suggested questions picked here yet. Try another topic.",
     "map": {
       "label": "World map with {n, plural, one {# highlighted country} other {# highlighted countries}}",
       "caption": "{window}: countries with at least one page view. Dots only, no numbers per country."
@@ -1290,7 +1290,7 @@
       "questions": "questions asked",
       "topFloor": "most explored: {floor}",
       "split": "3D {threeD}% · Classic {classic}%",
-      "source": "Own visit counter + Cloudflare Web Analytics"
+      "source": "Site visit counter + Cloudflare Web Analytics"
     }
   },
   "office": {
@@ -1301,7 +1301,7 @@
     "helpers": "{n, plural, one {# helper} other {# helpers}}",
     "classic": {
       "title": "Live Agent Office",
-      "intro": "The AI coding agents Kurniadi works with, shown live: what each one is doing right now, plus public GitHub activity. The same office stands in a wing of the 3D Lobby.",
+      "intro": "Live activity from the AI coding agents Kurniadi works with, alongside public GitHub updates. Visit the same office in a wing of the 3D Lobby.",
       "loading": "Opening the office...",
       "loadingNote": "The agents at their desks, today's numbers and the latest public GitHub activity, refreshed while this card is on screen.",
       "live": "Live",
@@ -1309,17 +1309,17 @@
       "semiLive": "Semi-live: no agent is reporting, public GitHub activity only",
       "resting": "Resting: the office is not reporting right now",
       "offline": "Offline: showing the last known activity",
-      "offlineEmpty": "The live office is quiet right now. See recent work in Writing and Work.",
+      "offlineEmpty": "The live office is unavailable. See recent work in Writing or Work.",
       "updated": "updated {time}",
       "asOf": "as of {time}",
       "counts": { "active": "Active", "thinking": "Thinking", "waiting": "Waiting", "asleep": "Asleep" },
       "agents": "At the desks",
-      "noAgents": "Every Rover is asleep.",
+      "noAgents": "Every Rover is asleep. Check back later.",
       "extra": "+{count, plural, one {# more session} other {# more sessions}}",
       "moreDesks": "+{n, plural, one {# more desk} other {# more desks}}",
       "idle": "{n, plural, =0 {No desks idle} one {# desk idle} other {# desks idle}}",
       "github": "Latest on GitHub",
-      "noGithub": "Nothing public yet today.",
+      "noGithub": "No public activity today. Check back later.",
       "today": "Today: {tasks, plural, one {# task} other {# tasks}} done, {prs, plural, one {# PR} other {# PRs}} merged, {green} of {runs, plural, one {# CI run} other {# CI runs}} green",
       "todayNoCi": "Today: {tasks, plural, one {# task} other {# tasks}} done, {prs, plural, one {# PR} other {# PRs}} merged",
       "status": { "running": "Running", "success": "Passed", "failure": "Failed", "merged": "Merged", "opened": "Opened", "pushed": "Pushed" }
@@ -1335,7 +1335,7 @@
       "githubTitle": "GitHub board",
       "mode": { "live": "LIVE", "semi": "SEMI-LIVE", "off": "RESTING", "offline": "OFFLINE" },
       "wall": { "control": "MISSION CONTROL", "active": "ACTIVE", "thinking": "THINKING", "waiting": "WAITING", "asleep": "ASLEEP", "now": "Now", "resting": "Every agent is resting. Public GitHub work is on the board.", "today": "Today: tasks done {tasks} · PRs merged {prs} · CI green {green} of {runs}", "github": "GITHUB", "githubSub": "Public repositories", "empty": "No public activity yet" },
-      "drawer": { "agent": "Agent", "activity": "Activity", "task": "Task", "repo": "Repository", "since": "In this state", "updated": "Last update", "recent": "Recent activity", "agents": "Agents", "today": "Today", "tasksDone": "Tasks done", "prsMerged": "PRs merged", "ciGreen": "CI runs green", "none": "Nothing right now", "offline": "The office is offline. This is the last known activity.", "offlineEmpty": "The office is offline right now. Try again in a few minutes.", "loading": "Connecting to the live office.", "disabled": "The live office is off right now.", "untitled": "No title shared" },
+      "drawer": { "agent": "Agent", "activity": "Activity", "task": "Task", "repo": "Repository", "since": "In this state", "updated": "Last update", "recent": "Recent activity", "agents": "Agents", "today": "Today", "tasksDone": "Tasks done", "prsMerged": "PRs merged", "ciGreen": "CI runs green", "none": "Nothing right now", "offline": "The office is offline. This is the last known activity; check back in a few minutes.", "offlineEmpty": "The office is offline right now. Try again in a few minutes.", "loading": "Connecting to the live office.", "disabled": "The live office is off right now. Browse Work or Writing instead.", "untitled": "No title shared" },
       "crew": {
         "title": "Crew now",
         "line": "Desk {n}: {agent} is {state}{helpers, select, none {} other { with {helpers}}}{time, select, none {} other {, since {time}}}",
@@ -1370,7 +1370,7 @@
         "footer": "Replay of {day}. Live updates return when an agent starts working.",
         "unavailable": "Replay unavailable",
         "partial": "Partial day",
-        "empty": "No activity"
+        "empty": "No activity for this day. Choose another day."
       },
       "ci": {
         "runs": "Latest runs",
@@ -1402,7 +1402,7 @@
       "nightly": "Nightly performance runs",
       "sessions": "{count} sampled 3D sessions since launch",
       "source": "Anonymous performance beacon and the site's own visit counter. Today live, earlier days every hour.",
-      "offline": "Current numbers are unavailable."
+      "offline": "Current numbers are unavailable. Check back in a minute."
     },
     "explore": {
       "lt3s": "under 3 s",

@@ -3,14 +3,14 @@
   "published": "2026-10-17",
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
-    "en": "ShinyQ HQ was built in the open by AI coding agents working from written specs and plans. Kurniadi reviewed the changes and approved each merge. This page follows the build from its blueprint to the checks required before release.",
+    "en": "AI coding agents built ShinyQ HQ in the open from written specs and plans. Kurniadi reviewed their changes and approved each merge. This page explains the architecture, the decisions behind it and the checks a change must pass before release.",
     "id": "ShinyQ HQ dibangun secara terbuka oleh AI coding agent berdasarkan spec dan rencana tertulis. Kurniadi meninjau perubahan dan menyetujui setiap merge. Halaman ini mengikuti proses pembangunannya, dari cetak biru hingga pemeriksaan wajib sebelum rilis."
   },
   "stations": {
     "blueprint": {
       "title": { "en": "The Blueprint", "id": "Cetak Biru" },
       "summary": {
-        "en": "The whole system on one map: who writes the code, where it ships, and what runs when a visitor opens the site.",
+        "en": "One map of the system: who writes and reviews the code, where it runs and what happens when a visitor opens the site.",
         "id": "Seluruh sistem dalam satu peta: siapa yang menulis kode, di mana hasilnya di-deploy, dan apa yang berjalan saat pengunjung membuka situs."
       },
       "architecture": {
@@ -150,7 +150,7 @@
           "id": "Setiap halaman disiapkan sebagai HTML statis dan dihosting di Cloudflare Pages. Situs klasik tidak memerlukan WebGL atau server runtime Next.js."
         },
         {
-          "en": "The 3D tower mounts on the client on top of those pages and never replaces their content.",
+          "en": "The browser adds the 3D tower on top of those pages. It never replaces their content, so the Classic site remains available without WebGL.",
           "id": "Menara 3D dipasang di sisi klien di atas halaman-halaman itu dan tidak pernah menggantikan isinya."
         },
         {
@@ -162,7 +162,7 @@
           "id": "Cron Worker merangkum statistik kunjungan ke KV setiap dua jam. Statistik publik menampilkan jumlah dan topik, bukan log mentah atau pertanyaan yang diketik pengunjung."
         },
         {
-          "en": "The Agent Office runs live. Hooks in GitHub Copilot, Claude Code and Codex call a relay on the owner's Mac, which sends only each session's state and activity type; code, prompts and file paths never leave the machine.",
+          "en": "The Agent Office receives live updates from hooks in GitHub Copilot, Claude Code and Codex. A relay on the owner's Mac sends each session's state and activity type, not its code, prompts or file paths.",
           "id": "Agent Office berjalan live. Hook di GitHub Copilot, Claude Code, dan Codex memanggil relay di Mac pemilik, yang hanya mengirim status dan jenis aktivitas tiap sesi; kode, prompt, dan path file tidak pernah keluar dari mesin itu."
         },
         {
@@ -170,7 +170,7 @@
           "id": "Worker hq-office tidak memiliki rute publik: Pages Functions mengaksesnya lewat service binding. Durable Object-nya menyimpan sepuluh meja, jalur CI yang dilaporkan webhook GitHub, dan replay delapan hari."
         },
         {
-          "en": "Ask reads its knowledge pack from Workers KV, checked by its hash, with a small bundled fallback. Gemma 4 on Workers AI answers first; Mistral Small 3.1 and two free Groq tiers take over when a tier fails.",
+          "en": "Ask loads a hash-checked knowledge pack from Workers KV and keeps a small bundled fallback. Gemma 4 on Workers AI answers first; Mistral Small 3.1 and two free Groq tiers provide fallback model paths.",
           "id": "Ask membaca knowledge pack dari Workers KV setelah memeriksa hash-nya, dengan fallback kecil yang disertakan dalam bundle. Gemma 4 di Workers AI menjawab lebih dulu; Mistral Small 3.1 dan dua tier Groq gratis menjadi cadangan jika tier sebelumnya gagal."
         },
         {
@@ -435,28 +435,28 @@
     "agents": {
       "title": { "en": "Working with AI Agents", "id": "Bekerja dengan AI Agent" },
       "summary": {
-        "en": "Agents write the code; the human owns the decisions. A coordinator splits the work across parallel sessions, and every change follows the same loop, with its spec and plan committed to the repository.",
+        "en": "Agents write the code, but the human remains responsible for the decisions. A coordinator divides the work across parallel sessions. Each change follows a documented loop, with its spec and plan kept in the repository.",
         "id": "Agent menulis kode; manusia bertanggung jawab atas keputusan. Koordinator membagi pekerjaan ke beberapa sesi paralel, dan setiap perubahan mengikuti alur yang sama, dengan spec dan rencananya tersimpan di repositori."
       },
       "steps": [
         {
           "title": { "en": "Coordinator", "id": "Koordinator" },
           "text": {
-            "en": "A coordinator chat holds the owner's requests and decisions. It splits the work into features and starts one project session per feature, each in its own git worktree and branch, so parallel work never collides, and it keeps at most two CI runs in flight.",
+            "en": "A coordinator chat keeps the owner's requests and decisions together. It starts one project session per feature, each with its own git worktree and branch to separate parallel changes, and keeps at most two CI runs in flight.",
             "id": "Chat koordinator menyimpan permintaan dan keputusan pemilik. Koordinator membagi pekerjaan per fitur dan membuka satu sesi proyek untuk setiap fitur, masing-masing dengan git worktree dan branch sendiri agar pekerjaan paralel tidak bertabrakan, serta membatasi CI hingga dua run bersamaan."
           }
         },
         {
           "title": { "en": "Spec", "id": "Spec" },
           "text": {
-            "en": "A brainstorm with the agent ends in a written design spec that states what to build and why, with the owner's content decisions as the final word.",
+            "en": "The owner and agent work through the design before writing a spec that explains what to build and why. The owner's content decisions take precedence.",
             "id": "Diskusi bersama agent menghasilkan spec desain tertulis: apa yang akan dibangun dan alasannya. Keputusan konten pemilik tetap menjadi acuan akhir."
           }
         },
         {
           "title": { "en": "Plan", "id": "Rencana" },
           "text": {
-            "en": "The spec becomes a step-by-step plan in the repository: small tasks, exact files, tests written first and the commands that prove each step.",
+            "en": "The spec becomes a plan with small tasks, exact files, tests to write first and commands that verify each step. The plan stays in the repository with the implementation.",
             "id": "Spec dijabarkan menjadi rencana di repositori: tugas kecil, file yang akan diubah, pengujian yang ditulis lebih dulu, serta perintah untuk memverifikasi setiap langkah."
           }
         },
@@ -477,7 +477,7 @@
         {
           "title": { "en": "Owner Gates", "id": "Tahap Persetujuan Pemilik" },
           "text": {
-            "en": "The owner reviews at fixed gates: the spec, any list that needs approval (the Rejected Designs on this floor went through one), screenshots across phone, tablet and desktop for a visual change, and finally the merge.",
+            "en": "The owner reviews the spec, any list requiring approval, screenshots on phone, tablet and desktop for visual changes, and the final merge. The Rejected Designs on this floor went through that approval process too.",
             "id": "Pemilik meninjau pada tahap yang sudah ditentukan: spec, daftar yang memerlukan persetujuan (termasuk Desain yang Ditolak di lantai ini), screenshot ponsel, tablet, dan desktop untuk perubahan visual, lalu merge."
           }
         },
@@ -498,7 +498,7 @@
     "gates": {
       "title": { "en": "The Gates", "id": "Pemeriksaan Kualitas" },
       "summary": {
-        "en": "Automated checks that decide whether a change may merge. Each one states what it checks and the number it enforces.",
+        "en": "The checks a change must pass before it can merge, with their scope and enforced limits shown together.",
         "id": "Pemeriksaan otomatis yang wajib lolos sebelum perubahan digabungkan. Setiap pemeriksaan menjelaskan cakupan dan batas yang diterapkan."
       },
       "gates": [
@@ -773,7 +773,7 @@
         {
           "title": { "en": "Output Checks", "id": "Pemeriksaan Output" },
           "text": {
-            "en": "Every answer is checked before it reaches the visitor: no secrets or prompt leaks, numbers grounded in the retrieved context, links only to pages it retrieved, and an opinion only when a written source exists.",
+            "en": "Before an answer reaches the visitor, checks look for secrets and prompt leaks, verify numbers against retrieved context, restrict links to supported pages and require a written source for opinions.",
             "id": "Setiap jawaban diperiksa sebelum sampai ke pengunjung: tanpa rahasia atau bocoran prompt, angka sesuai konteks yang diambil, tautan hanya ke halaman yang diambil, dan opini hanya jika ada sumber tertulis."
           }
         },
@@ -787,7 +787,7 @@
         {
           "title": { "en": "Memory and Follow-Ups", "id": "Memori dan Pertanyaan Lanjutan" },
           "text": {
-            "en": "The last 5 turns travel with each question, signed with HMAC so they cannot be forged. The answer streams in, and its follow-up questions are picked in the browser from the answer's tags, not by the model.",
+            "en": "Each question can carry the last 5 turns, with HMAC signatures used to verify them. The reply streams into the panel. The browser then chooses follow-up questions from the answer's tags rather than asking the model to invent them.",
             "id": "Lima giliran terakhir ikut dikirim bersama setiap pertanyaan, ditandatangani dengan HMAC agar tidak bisa dipalsukan. Jawaban dikirim secara streaming, dan pertanyaan lanjutannya dipilih di browser dari tag jawaban, bukan oleh model."
           }
         },
@@ -803,7 +803,7 @@
     "rejected": {
       "title": { "en": "Rejected Designs", "id": "Desain yang Ditolak" },
       "summary": {
-        "en": "Ideas that were tried or proposed and then dropped, each with the reason.",
+        "en": "Not every idea became part of the site. These were proposed or tried, then set aside for the reasons shown.",
         "id": "Ide yang pernah dicoba atau diusulkan lalu dibatalkan, masing-masing dengan alasannya."
       },
       "ideas": [
@@ -903,7 +903,7 @@
             "id": "Memasang scene 3D sebagai komponen React lazy di balik Suspense."
           },
           "reason": {
-            "en": "A lazy component suspends once even when its chunk is already loaded, and React holds the retry, so the first frame came about 250 ms later.",
+            "en": "Even with its chunk already loaded, the lazy component suspended once and waited for React's retry. That delayed the first frame by about 250 ms.",
             "id": "Komponen lazy tetap mengalami suspend sekali meski chunk-nya sudah dimuat, lalu React menunda percobaan render ulang, sehingga frame pertama muncul sekitar 250 ms lebih lambat."
           },
           "pr": 268
@@ -929,7 +929,7 @@
             "id": "Turun ke 30 fps hanya pada bagian tampilan lantai yang tenang saat Rover diam."
           },
           "reason": {
-            "en": "It added 2.0 KB gzip to the 3D session and broke both caps; one idle frame rate per floor does the job.",
+            "en": "The extra checks added 2.0 KB gzip and exceeded both 3D download caps. A single idle frame rate per floor achieved the needed behaviour with less code.",
             "id": "Fitur itu menambah 2,0 KB gzip ke sesi 3D dan melewati kedua batas; satu frame rate idle per lantai sudah cukup."
           },
           "pr": 259
