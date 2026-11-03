@@ -463,11 +463,17 @@ describe("OfficeLazy", () => {
 
   it("loads the panel only near the viewport and hides the section when the office is disabled", async () => {
     const io = stubObserver();
-    const fetcher = vi.fn(async () => new Response(JSON.stringify(OFFICE_FIXTURES.disabled), { status: 200, headers: { "content-type": "application/json" } }));
+    // No wall-clock waits: the panel chunk and the first /api/office answer are promises the test holds, so each step
+    // settles inside act (the real chunk loads in e2e/office-classic.spec.ts).
+    const chunk = Promise.resolve(OfficePanel);
+    const load = vi.fn(() => chunk);
+    const body = Promise.resolve(OFFICE_FIXTURES.disabled);
+    const answer = Promise.resolve({ status: 200, json: () => body } as unknown as Response);
+    const fetcher = vi.fn(() => answer);
     vi.stubGlobal("fetch", fetcher);
     render(
       <OfficeShell>
-        <OfficeLazy locale="en" labels={labels} />
+        <OfficeLazy locale="en" labels={labels} load={load} />
       </OfficeShell>,
     );
     const section = screen.getByTestId("office-section");
@@ -475,19 +481,31 @@ describe("OfficeLazy", () => {
     expect(section).toHaveAttribute("data-status", "idle");
     expect(screen.getByText(labels.loading).parentElement!.className).toBe(OFFICE_RESERVE.en);
     expect(screen.getByText(labels.loadingNote).parentElement).toBe(screen.getByText(labels.loading).parentElement);
+    expect(load).not.toHaveBeenCalled();
     expect(fetcher).not.toHaveBeenCalled();
+    // Near the viewport: the chunk loads, and act commits the panel and runs its mount effect, which creates the
+    // panel's own observers. Firing again before that effect reached no observer and left the feed idle (#378).
     io.fire(true);
-    // The panel is a lazy import and its first fetch resolves after it: a loaded CI runner took over the 1 s default.
-    await waitFor(() => expect(screen.getByTestId("office-panel")).toBeTruthy(), { timeout: 5_000 });
+    await act(() => chunk);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "idle");
+    expect(io.margins()).toEqual(["100% 0px", undefined]);
+    // In view: the panel's observer starts the poller; awaiting what it awaits (the response, then its body) settles
+    // its first fetch inside act.
     io.fire(true);
-    await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled"), { timeout: 5_000 });
+    await act(async () => {
+      await answer;
+      await body;
+    });
+    expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled");
     // On screen: held with the switched-off line, so nothing below moves.
     expect(section).toBeVisible();
     expect(screen.getByRole("status").textContent).toBe(labels.disabled);
+    // Off screen: the panel reports the switched-off office and the shell hides the section.
     io.fire(false);
-    await waitFor(() => expect(section).toHaveAttribute("data-status", "disabled"));
+    expect(section).toHaveAttribute("data-status", "disabled");
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher).toHaveBeenCalledWith("/api/office?v=3", expect.objectContaining({ credentials: "omit" }));
     expect(section).not.toBeVisible();
-    // Above the 5 s waits for the lazy panel: a loaded CI runner hit the 5 s default test timeout.
-  }, 15_000);
+  });
 });
