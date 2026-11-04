@@ -19,8 +19,8 @@ import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, partTexts, RESULT_ROWS, SHOT_CELL, TIER_TONE, type HallAtlas, type HallLabels } from "./hallContent";
-import { GateCurtain, StageLights, StageMotes, StagePanels, StagePortal, StageRings, StageShell } from "./HallFx";
-import { aboutFace, contactBeacon, gateOpening, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
+import { GateCurtain, StageFlat, StageLights, StagePanels, StagePortal, StageRings, StageShell } from "./HallFx";
+import { aboutFace, contactBeacon, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
 import { hallPremiumState, inHall, loadHallPremium, shouldLoadHallPremium, useHallPremium } from "./hallPremium/chunk";
@@ -179,13 +179,12 @@ const around = (r: { minX: number; maxX: number; minZ: number; maxZ: number }, p
  * Floor-local view boxes of each part. The north part keeps the whole area from the gateway arch east (shapes, lights up
  * to the spotlight apexes), tested on a 6 x 6 grid of cells. The south part tests a box per landmark (now, results) and
  * the band its ceiling ribs span, so the empty plaza floor, which a Lobby view facing south reaches at the frame's edge,
- * never draws it; contact tests a box around its station. The gate tunnel (rings, runway, packets) is its own part around
+ * never draws it; contact tests a box around its station. The runway and its packets are their own part around
  * the lead road. The lead road's markings and the gate sign draw outside them.
  */
-const GATE_O = gateOpening();
 const GATE_BOX = new Box3(
-  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 0.6 - (SHELL.ring.count - 1) * SHELL.ring.gap - SHELL.runway.west - 1, -0.5, (GATE_O.minZ + GATE_O.maxZ) / 2 - SHELL.ring.r - 0.5),
-  new Vector3(HALL.plaza.x + 1, SHELL.ring.y + SHELL.ring.r + 0.5, (GATE_O.minZ + GATE_O.maxZ) / 2 + SHELL.ring.r + 0.5),
+  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - SHELL.runway.west - 1, -0.5, HALL.lead[0].z - 2),
+  new Vector3(HALL.plaza.x + 1, 1, HALL.lead[0].z + 2),
 );
 const HALL_VIEW: Record<HallPart, Box3[]> = {
   north: [new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL_SPLIT + 1))],
@@ -197,8 +196,8 @@ const HALL_VIEW: Record<HallPart, Box3[]> = {
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
-/** The gate tunnel's instances (its own view part); every other shell instance stands in a hall part. */
-const GATE_KINDS: readonly number[] = [STAGE_KIND.gateRing, STAGE_KIND.runway, STAGE_KIND.packet];
+/** The runway's instances (their own view part along the lead road); every other shell instance stands in a hall part. */
+const GATE_TAGS: readonly (string | undefined)[] = ["runway", "packet"];
 /** The portrait and the wins rings both stand in the north part; the others have none. */
 const RINGS: Record<HallPart, readonly Circle[]> = { north: [portraitRing(aboutFace()), portraitRing(winsFace())], contact: [], south: [] };
 
@@ -283,12 +282,9 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const shell = useMemo(() => {
     const all = hallShellInstances(tier);
     const at = (i: StageInstance) => [i.at[0], i.at[2]] as const;
-    const motes = all.filter((i) => i.stage[0] === STAGE_KIND.mote);
-    return {
-      gate: all.filter((i) => GATE_KINDS.includes(i.stage[0])),
-      parts: byPart(all.filter((i) => i.stage[0] !== STAGE_KIND.mote && !GATE_KINDS.includes(i.stage[0])), at),
-      motes: byPart(motes, at),
-    };
+    const arc = (i: StageInstance) => i.stage[0] === STAGE_KIND.rib || i.stage[0] === STAGE_KIND.halo;
+    const inParts = all.filter((i) => !GATE_TAGS.includes(i.tag));
+    return { gate: all.filter((i) => GATE_TAGS.includes(i.tag)), arcs: byPart(inParts.filter(arc), at), flat: byPart(inParts.filter((i) => !arc(i)), at) };
   }, [tier]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
   const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);
@@ -329,8 +325,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
         {premium && <premium.HallPremium part="north" {...inside} countUp={countUp} />}
         <HallSolids shapes={shapes.north} />
-        <StageShell instances={shell.parts.north} reducedMotion={reducedMotion} />
-        <StageMotes instances={shell.motes.north} reducedMotion={reducedMotion} />
+        <StageShell instances={shell.arcs.north} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.north} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.north} tier={tier} extra={RINGS.north} lattice={false} />
         <StageLights instances={lights.north} tier={tier} reducedMotion={reducedMotion} />
         {/* Every stat tile (About me and wins) stands in the north half, so the tile texts ride the north batch. */}
@@ -346,8 +342,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <HallView boxes={HALL_VIEW.contact} grid={HALL_GRID.contact} name="highlights-hall-view-contact">
         {premium && <premium.HallPremium part="contact" {...inside} />}
         <HallSolids shapes={shapes.contact} />
-        <StageShell instances={shell.parts.contact} reducedMotion={reducedMotion} />
-        <StageMotes instances={shell.motes.contact} reducedMotion={reducedMotion} />
+        <StageShell instances={shell.arcs.contact} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.contact} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.contact} tier={tier} extra={RINGS.contact} lattice />
         <StageLights instances={lights.contact} tier={tier} reducedMotion={reducedMotion} />
         <StageRings instances={rings} tier={tier} reducedMotion={reducedMotion} />
@@ -358,8 +354,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <HallView boxes={HALL_VIEW.south} grid={HALL_GRID.south} name="highlights-hall-view-south">
         {premium && <premium.HallPremium part="south" {...inside} />}
         <HallSolids shapes={shapes.south} />
-        <StageShell instances={shell.parts.south} reducedMotion={reducedMotion} />
-        <StageMotes instances={shell.motes.south} reducedMotion={reducedMotion} />
+        <StageShell instances={shell.arcs.south} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.south} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.south} tier={tier} extra={RINGS.south} lattice={false} />
         <StageLights instances={lights.south} tier={tier} reducedMotion={reducedMotion} />
         <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.south} />
@@ -367,9 +363,9 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
           <BatchedLabels labels={texts.south.labels} name="highlights-labels-south" />
         </Suspense>
       </HallView>
-      {/* The gate tunnel: three rings in front of the arch, the runway and its packets (one draw), hidden off view. */}
+      {/* The runway into the hall and its packets (one draw), hidden off view. */}
       <HallView boxes={[GATE_BOX]} grid={3} name="highlights-hall-view-gate">
-        <StageShell instances={shell.gate} reducedMotion={reducedMotion} name="hall-gate-shell" />
+        <StageFlat instances={shell.gate} reducedMotion={reducedMotion} name="hall-runway" />
       </HallView>
       {/* The floating gateway sign (shared FloatingSigns: holo plate plus batched text) turns to the camera, so it stays outside HallView. */}
       <Suspense fallback={null}>

@@ -16,7 +16,7 @@ import { writePerfEntry } from "./helpers";
  * (one program is drawn in some mounts only), so an exact program baseline across remounts is not stable.
  */
 type MemoryWindow = Window & {
-  __hq: { store: { getState: () => { goToFloor: (floor: string) => void } }; office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } };
+  __hq: { store: { getState: () => { goToFloor: (floor: string) => void } }; office?: { load(): Promise<void> }; hall?: { loadPremium(): Promise<void> }; probes: { office?: { loaded: boolean }; hallPremium?: { mounted: boolean } } };
 };
 
 const { fullTierRoundTrips: TRIPS, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
@@ -49,6 +49,12 @@ async function settleOffice(page: Page) {
     null,
     { timeout: 120_000 },
   );
+  // The Highlights Hall interiors (idle on every L1 visit, owner decision 2026-11-04): loaded and shown before the baseline too.
+  await page.evaluate(() => (window as unknown as MemoryWindow).__hq.hall?.loadPremium());
+  await page.waitForFunction(() => {
+    const hq = (window as unknown as MemoryWindow).__hq;
+    return !hq.hall || hq.probes.hallPremium?.mounted === true;
+  }, null, { timeout: 120_000 });
 }
 
 async function ride(page: Page, floor: string) {

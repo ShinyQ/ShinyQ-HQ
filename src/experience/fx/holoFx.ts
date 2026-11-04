@@ -32,9 +32,9 @@ export const HOLO_MODE = {
    * Highlights Hall stage effects (L1 gallery): the kind comes per instance from `aStage.x` (`STAGE_KIND`
    * in floors/lobby/hallStage.ts: stage lights, light curtain and portal, stat tiles, atlas images and the
    * portrait hologram, pulse rings, and the B4 shell), so the hall shares this program instead of adding its own.
-   * B4 shell kinds: ribs, gate rings and door-pad halos are arc ribbons on a strip (position.x along the arc of aStage2.y
+   * B4 shell kinds: ribs and door-pad halos are arc ribbons on a strip (position.x along the arc of aStage2.y
    * radians with radii aStage.yz, upright or lying for halos; position.y across it, aStage.w wide, turned to the camera).
-   * Ribs breathe in sequence (9 s) and fade near the camera and when seen from above; gate rings pulse brighter. Motes are
+   * Ribs breathe in sequence (9 s) and fade near the camera and when seen from above. Motes are
    * camera-facing dots rising aStage.z u at aStage.y cycles/s. Runway, packets (sliding gate to spine every 10 s) and the
    * floor grid lie flat; walls stand up (aStage.yz the size, aStage2.x the glass fill, aStage.w the grid cell). Only this
    * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
@@ -94,7 +94,7 @@ void main(){
       float k = mix(.35, fract(uTime * aStage.z + aStage2.z), uPulse);
       vStage.z = k;
       w = modelMatrix * vec4(base + position * (1. + k * aStage.y), 1.);
-    } else if ((kind > 8.5 && kind < 10.5) || kind > 15.5) {
+    } else if ((kind > 8.5 && kind < 9.5) || kind > 15.5) {
       float s = position.x + .5;
       float ang = s * aStage2.y;
       vec2 ca = vec2(cos(ang) * aStage.y, sin(ang) * aStage.z);
@@ -250,14 +250,10 @@ void main(){
       a *= (1. - vStage.z) * mix(.6, 1., uPulse) * .8;
     } else if (kind > 15.5) {
       a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.));
-    } else if (kind < 10.5) {
-      float i = vLocal.x;
-      float k = kind < 9.5 ? .9 + .25 * max(0., sin(uTime * .7 - i * .55)) : 1.2 + .6 * max(0., sin(uTime * 1.2 + i * .9));
-      float across = 1. - abs(vStage.z * 2. - 1.);
+    } else if (kind < 9.5) {
       float above = clamp((cameraPosition.y - vW.y) / max(vDist, 1.), 0., 1.);
-      float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(10., 26., vDist) * mix(1., .3, smoothstep(.05, .5, above)) : 1.;
-      col = c * k;
-      a *= smoothstep(0., .7, across) * ends;
+      col = c * (.9 + .25 * max(0., sin(uTime * .7 - vLocal.x * .55)));
+      a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.)) * smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(10., 26., vDist) * mix(1., .3, smoothstep(.05, .5, above));
     } else if (kind < 11.5) {
       float band = 1. - abs(vLocal.y / vSize.y * 2. - 1.);
       float t = vLocal.x / vSize.x;

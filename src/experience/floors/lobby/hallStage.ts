@@ -28,7 +28,6 @@ export const STAGE_KIND = {
   ring: 8,
   /** B4 shell (owner decision 2026-11-04): ceiling ribs and gate rings are arc ribbons, the rest flat quads or dots. */
   rib: 9,
-  gateRing: 10,
   runway: 11,
   packet: 12,
   mote: 13,
@@ -142,10 +141,8 @@ export const SHELL = {
   indigo: "#6d4dff",
   /** Ceiling ribs: one every `step` u along the hall, springing from the wall tops (`spring`), rising `rise` u, `width` u wide. */
   rib: { step: 12, phase: 6, spring: ENCLOSURE.wall, rise: 3, width: 0.08, gain: 1, alpha: 0.6 },
-  /** The gate tunnel: three rings `gap` u apart west of the gateway arch, centred over the lead road. */
-  ring: { count: 3, gap: 1.6, r: 4.3, y: 4.5, width: 0.18, gain: 1.4, alpha: 1 },
   /** The runway: a narrow cyan line from west of the rings to the plaza's spine, and two light packets sliding in on it. */
-  runway: { west: 4, width: 0.45, gain: 1, alpha: 0.7 },
+  runway: { west: 8.4, width: 0.45, gain: 1, alpha: 0.7 },
   /** A fainter glow line down the plaza's long axis (the spine), split at the part line. */
   spine: { width: 0.3, gain: 0.8, alpha: 0.35 },
   packet: { count: 2, w: 1.6, d: 0.6, gain: 1.2, alpha: 0.9 },
@@ -194,13 +191,8 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   const north = hallPartitions()[0];
   const R = SHELL.rib;
   ribLines().forEach((z, i) => put("rib", K.rib, [(WEST + maxX) / 2, R.spring, z], 0, i % 2 ? SHELL.violet : SHELL.cyan, R.gain, [(maxX - WEST) / 2, R.rise, R.width], [0, Math.PI, i, R.alpha]));
-  // Gate tunnel: rings face the lead road (their plane along z), cyan and violet alternating, pulsing in sequence.
-  const o = gateOpening();
-  const G = SHELL.ring;
-  const ringX = (i: number) => HALL.gate.x - HALL.gate.depth / 2 - 0.6 - i * G.gap;
-  for (let i = 0; i < G.count; i++) put("gate-ring", K.gateRing, [ringX(i), G.y, (o.minZ + o.maxZ) / 2], Math.PI / 2, i % 2 ? SHELL.violet : SHELL.cyan, G.gain, [G.r, G.r, G.width], [0, Math.PI * 2, i, G.alpha]);
-  // Runway: from west of the last ring to the spine (the plaza's long axis), on the lead road's line, and its packets.
-  const fromX = ringX(G.count - 1) - SHELL.runway.west;
+  // Runway: from `SHELL.runway.west` u west of the gateway arch to the spine (the plaza's long axis), on the lead road's line, and its packets.
+  const fromX = HALL.gate.x - HALL.gate.depth / 2 - SHELL.runway.west;
   const len = HALL.plaza.x - fromX;
   const mid: [number, number, number] = [fromX + len / 2, 0.04, HALL.lead[0].z];
   const W = SHELL.runway;

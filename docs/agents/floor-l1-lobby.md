@@ -47,15 +47,15 @@ Code: `floors/lobby/SkillsWall.tsx`, layout in `floors/lobby/layout.ts` (`skills
 
 ## Highlights Hall
 
-Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md`](../superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md) Part 2.
+Code: `floors/lobby/hallLayout.ts`; the interiors in `floors/lobby/hallPremium/`. Design: [`docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md`](../superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md) Part 2, and the one gate and B4 look: [`2026-11-04-highlights-hall-premium-design.md`](../superpowers/specs/2026-11-04-highlights-hall-premium-design.md) ([decision](../decisions/2026-11-04-highlights-hall-one-gate-premium.md)).
 
 ### Layout
 
 - Every hall position is an offset from `LOBBY_SLAB` (`hallX` 33, `halfZ` 27): the slab runs to x = 69. Since 2026-11-02 (owner decision [2026-11-02](../decisions/2026-11-02-highlights-hall-extension.md)) the hall runs the slab's full depth, from the north edge (z -27) to the floor's south edge (`HALL.south`, z 59): `HALL.zone` x 32 to 69.
 - A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from S, 8 u clear of the wall; from x = 24, 6 u east of the Agent Office wing's east edge) into a 24 x 70 u plaza (x 39 to 63, z -16 to 50: 8 u to the north stations, 6 u to the south ones, 3 u to the east ones).
   - The certification wall stays untouched and readable from the plaza.
-- A second road enters the hall from the Agent Office plaza (`HALL.officeRoad`, `hallOfficeRoad`, 8 u wide on z 36.5 from the office plaza's centre to x 41, inside the hall plaza), so the Lobby, the office and the hall form a loop. It joins the office's network part (a T junction with the office lead road); the hall keeps its own, so a Lobby drive into the hall still joins the hall lead road at its west end (`partsPath` hops between the parts).
-- Routing inside the hall (`HALL_LAYOUT.network`): the lead road runs on to the spine (`hall-spine`, the plaza's long axis at x 51) and a short approach road leads from the spine to every spur's start, so a drive between two stations follows the plaza instead of one hub at its centre. The hall draws only the lead road, the plaza and the spurs (`HALL_LAYOUT.drawn`).
+- One way in (owner decision 2026-11-04): the gateway arch on the lead road. Low glass partitions close the west side (`HALL.partition`, `hallPartitions()`: obstacles and navgrid blockers, 0.4 u thick, 2.4 u high, not camera columns): the north run on the gate's line (x 36.6, from the north slab edge to the north pillar, touching it and the about station, 6.5 u clear of the certification wall), the south return from the south pillar to x 33 (as deep as the pillar, so it fills the gap) and the south run down the hall's west edge (x 33) to the contact station. Every gap is 0 or at least 6 u. A drive from the Agent Office stop to any station goes back up the office lead road and through the gate (`tests/unit/l1-outline-layout.test.ts`, `e2e/highlights.spec.ts`).
+- Routing inside the hall (`HALL_LAYOUT.network`): the lead road runs on to the spine (`hall-spine`, the plaza's long axis at x 51) and a short approach road leads from the spine to every spur's start, so a drive between two stations follows the plaza instead of one hub at its centre. The hall draws only the lead road from the Lobby to the gateway arch (`HALL_LAYOUT.drawn`, cyan); inside, the B4 shell marks the way (runway, spine, door-pad rings).
 - Seven stations sit flush with the slab edges, rooms `L1:highlights-*`, numbered 01 to 07 in this order (`HIGHLIGHT_STATIONS`):
 
   | Station | Footprint | Shape |
@@ -69,7 +69,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   | contact | south, x 33 to 47 | beacon and card |
 
 - Each station has a door pad 1.1 u in front and a camera zone that faces it.
-- `FloorLayout.roadZone` limits the L1 road to drives into or out of the hall, the floor between the office wing and the hall (`HALL.link`) or the [Agent Office wing](#agent-office) (`routeUsesRoad`), so Lobby trips keep the navgrid.
+- `FloorLayout.roadZone` limits the L1 road to drives into or out of the hall or the [Agent Office wing](#agent-office) (`routeUsesRoad`), so Lobby trips (the open floor between the office wing and the hall included) keep the navgrid.
 
 ### Scenery (a gallery)
 
@@ -87,8 +87,21 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   - pillars are obstacles; the rover drives under the lintel;
   - the floating "Highlights Hall" sign (`FloatingSigns`, `gateSign`); nothing is written on the floor;
   - a light curtain sweeps once per browser session on the first eastward pass (`gateCrossed`, `sessionStorage["hq:hall-gate"]`, probe `__hq.probes.hallGate`), never under reduced motion.
-- Two light fountains (light only) mark the middle of the north half (z 3, its ring turning) and of the south half (z 38, its ring still: the stage shader turns every spinning beam around one centre, `uCenter`).
-- Fake spotlight cones, uplights and glow pools are one instanced mesh; no real lights on any tier.
+- Fake spotlight cones, uplights and glow pools are one instanced mesh per part; no real lights on any tier. The light fountains are gone (2026-11-04).
+
+### B4 look (owner decision 2026-11-04)
+
+- Palette: deep indigo surfaces (`#0a0620`, a faint indigo glow), cyan `#6ee7ff` and violet `#a78bfa` only; `HALL.tone` alternates them by station number (odd cyan, even violet). Win tiers keep gold, silver and bronze (honors violet) inside Wins only. Gallery edges are violet at 0.55.
+- Enclosure (`enclosureQuads()` in `hallSolids.ts`, in the merged solid mesh): one-sided quads facing in, so a camera outside a wall or above the ceiling looks straight through and nothing joins the camera collision: dark walls on the north, east and south slab edges (`ENCLOSURE.wall` 9.5 u), the floor and a ceiling seen only from below (12.6 u), split at the part lines.
+- Shell (`hallShellInstances(tier)` in `hallStage.ts`, `SHELL`): seven ceiling ribs (`ribLines()`: every 12 u at z 6 + 12k, between the east stations and off the lead road), springing from the wall tops, fading near the camera and when seen from above; a three-ring gate tunnel west of the arch; a cyan runway from west of the rings to the spine, with two light packets; the spine glow; a faint indigo grid on the walls with a violet rail; the west glass (low tinted partitions with a lit rail, then clear glass up to the wall top, so the certification wall stays readable); the floor grid; door-pad halos (lying rings in the station accent, no filled stubs); 280 motes from a fixed seed on the full tier only.
+- Station headers (`hallTexts`, group `header`): above each station (`HEADER`: its height plus 0.6), a spaced sans number line ("01  PROFILE") over the title in sans bold, reading toward the plaza; the old "0N · TITLE" eyebrows and every monospace text are gone. Texts carry a `group` so the interiors could replace one (`REPLACES`, none today).
+
+### Interiors (lazy chunk)
+
+- `hallPremium/chunk.ts` (main path): `loadHallPremium()` once per page, `useHallPremium()`, `shouldLoadHallPremium` (on L1 only: at idle with speculative prefetch on, on a hall intent (a drive whose target lies in `HALL.zone`, a station room open) or once the rover is east of `HALL.lazyX`); `__hq.hall.loadPremium()`, probe `__hq.probes.hallPremium` (`state`, `mounted`, `wake` per station). `wake.ts` (`wakeLevel`: 0.8 s up while docked on the station's pad, 1.6 s back; reduced motion jumps).
+- `hallPremium/scene.ts` (the chunk entry): `HallPremium` (one instanced quad mesh per hall part, mounted inside that part's `HallView`, hidden until `precompileObject` compiled it, after the full tier's composer exists), `premiumTexts` (merged into the part batches) and `REPLACES`. One new shader program (`shader.ts`, `hall-premium`: modes pane, shimmer, curtain, bar, cone, ring, token; `uWake` per station).
+- What it adds: quiet glass cases (`caseFrame`: four panes inside the footprint, edges at 0.55 that brighten with the wake, the pad outside), the About me gyroscope (two tilted rings turning slowly) and the stat count-up (full tier, eight steps through the north batch handle), a scan shimmer and a light circling each project screenshot plus its headline metric (the first result of that case study, when one exists), the work experience light curtain (replacing the main path glow) and a bar under each pillar role that grows with the wake, the win tokens (`winTokens` from `src/content/hallBars.ts`: one per award and honor in three tilted rings, gold inner and larger with a sweep), the now cards with a breathing current dot, the result bars (`resultBars`: before faint, after growing; log over three decades past 20x; a value that does not parse stays text only) and the contact ripples.
+- Lite: no shimmer band, sweep or spin (tokens and gyroscope still), bars full width (the wake only brightens edges). Reduced motion: the clock frozen, wakes jump.
 
 ### Rendering
 
@@ -97,8 +110,8 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
   - the road markings, one merged solid mesh, one line mesh, one `BatchedLabels`;
   - the screenshot atlas: black until it loads once the rover is east of `HALL.lazyX` (`shouldLoadShots`);
   - the portrait disc, the tiles, the lights, the portal, the beacon rings, the sign, and the curtain while it sweeps.
-- The hall draws in three parts (2026-11-02), each its own `HallView` with its own merged solid mesh, line mesh, stage lights and text batch: the north part (north of S: the gateway arch, about me, top projects, work experience, wins, the north fountain; the tiles, screenshots and portrait, the work experience glow and the curtain), contact (the south-west corner: the beacon, its rings and card) and the south part (now, results, the south fountain; the now arch's glow). The north part tests its old view box on a 6 x 6 grid of cells; contact and the south part test a box per landmark, so a Lobby view that reaches only the contact beacon at the frame's edge (the spawn turned south) draws only contact, never the whole hall (the full-tier boost peak drawing it all was 33.7k triangles, over the 30k budget).
-- With every part in view the hall costs about 17 calls (main had 8) and about 9k triangles; L1 stays under 125 calls (the hall's south view from the wins stop: 46 full).
+- The hall draws in three parts (2026-11-02), each its own `HallView` with its own merged solid mesh (the enclosure included), line mesh, stage lights, shell, motes, interiors and text batch: the north part (north of S: the gateway arch, about me, top projects, work experience, wins; the tiles, screenshots and portrait, the work experience glow and the curtain), contact (the south-west corner: the beacon, its rings and card) and the south part (now, results; the now arch's glow; its view boxes are now, results and the band its ribs span). A fourth view part holds the gate tunnel, runway and packets (one draw). The north part tests its old view box on a 6 x 6 grid of cells; contact and the south part test a box per landmark, so a Lobby view that reaches only the contact beacon at the frame's edge (the spawn turned south) draws only contact, never the whole hall (the full-tier boost peak drawing it all was 33.7k triangles, over the 30k budget).
+- With the interiors (2026-11-04) each part adds a shell draw, a motes draw (full) and an interiors draw, the gate tunnel one more. Measured (perf lane, interiors awake on each pad): the hall stations 38 to 54 scene calls on both tiers, the gate view 78 lite and 83 full, the spawn 97 lite and 100 full; programs 41 lite and 53 full; L1 cap 125.
 - Measured against the main build before the extension (perf lane, settled spawn view): full 102 scene calls and 24.4k triangles (main 97 and 22.9k), lite 100 and 21.2k (95 and 19.7k); programs unchanged (62 full, 42 lite). Rides that arrive on L1 peak at or under main's; rides that leave it carry the spawn view's 5 calls (the worst whole ride frame 122 of 150, full L1 to B1). The highest ride triangle peak stays under main's (28,405 against 28,413).
 - `HallReady` precompiles and pins every program (`precompileObject`) once the scene draws into its final target, before the hall shows.
 - Shader materials are never culled by the ride cull ([3d-experience.md](3d-experience.md)).
@@ -271,7 +284,7 @@ Owner decisions [2026-11-02](../decisions/2026-11-02-l1-proof-park.md) (the outl
 
 - L1 is one rectangle, `LOBBY.slab` (x -24 to 69, z -27 to 59): the L1 `FloorLayout.bounds`, no `wings`. The navgrid, collision, camera clamp, space rules, slab mesh (one box), minimap (the plain rect) and ride cull read it through `nav/slab.ts`; `slabBox` is the same box as the old Lobby rect plus the office wing, so the tower frame and the grid fade did not move.
 - Why one rect: wings model slabs that are not rectangles ([floors.md](floors.md#multi-rect-slabs-wings)); two notch wings beside the office wing would put three rects on the corners (-12, 27) and (18, 27), which the slab code forbids.
-- The old notches: east of the office wing, the Highlights Hall's south half (x 33 to 69) and the open floor between it and the wing (`HALL.link`, x 18 to 32, crossed by the office road); west of the wing, the [west strip](#west-strip).
+- The old notches: east of the office wing, the Highlights Hall's south half (x 33 to 69) and the open floor between it and the wing (x 18 to 32, plain Lobby floor since the office road went, 2026-11-04); west of the wing, the [west strip](#west-strip).
 - Obstacles that touched the old edges (the observatory, the gateway's south pillar, the office's CI tower and dock corners) now have open floor beyond them, which the 6 u rules allow; `spaceViolations` on the real L1 is empty.
 
 ## West strip

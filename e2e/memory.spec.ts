@@ -23,7 +23,8 @@ type MemoryWindow = Window & {
     store: { getState: () => { goToFloor: (floor: string) => void } };
     floorChunks: { snapshot: () => Record<string, string> };
     office?: { load(): Promise<void> };
-    probes: { office?: { loaded: boolean } };
+    hall?: { loadPremium(): Promise<void> };
+    probes: { office?: { loaded: boolean }; hallPremium?: { mounted: boolean } };
   };
 };
 
@@ -45,7 +46,8 @@ const MEASURED_TOGGLES = TOGGLES - 1;
 /**
  * Waits for the one-off loads every L1 visit starts at idle: the public floor chunks (the idle prefetch) and the
  * always-live Agent Office scene (loaded now if the idle trigger has not yet, then compiled and shown, which adds its
- * programs and textures). Each lands once per page, and the office scene mounts again after every toggle back to 3D.
+ * programs and textures), and the Highlights Hall interiors (owner decision 2026-11-04, likewise). Each lands once per
+ * page, and the office scene and the interiors mount again after every toggle back to 3D.
  */
 async function settleIdleLoads(page: Page) {
   await expect
@@ -60,6 +62,16 @@ async function settleIdleLoads(page: Page) {
     null,
     { timeout: 120_000 },
   );
+  await settleHall(page);
+}
+
+/** The hall interiors loaded and their mesh compiled and shown (a build without them skips this). */
+async function settleHall(page: Page) {
+  await page.evaluate(() => (window as unknown as MemoryWindow).__hq.hall?.loadPremium());
+  await page.waitForFunction(() => {
+    const hq = (window as unknown as MemoryWindow).__hq;
+    return !hq.hall || hq.probes.hallPremium?.mounted === true;
+  }, null, { timeout: 120_000 });
 }
 
 async function ride(page: Page, floor: string) {
@@ -70,6 +82,7 @@ async function ride(page: Page, floor: string) {
 test("10 Lobby to Roof round trips leave renderer memory at its baseline @nightly", async ({ page }) => {
   await enterHQ(page);
   for (const floor of ["L2", "L3", "L4", "RF", "L1"]) await ride(page, floor);
+  await settleHall(page);
   await readSettledGpuCounters(page);
   await ride(page, "RF");
   await ride(page, "L1");
@@ -93,6 +106,7 @@ test("10 Lobby to Roof round trips leave renderer memory at its baseline @nightl
 
 test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ page }) => {
   await enterB1Route(page);
+  await settleHall(page);
   await ride(page, "B1");
   await ride(page, "L1");
   await readSettledGpuCounters(page);

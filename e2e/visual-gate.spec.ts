@@ -39,6 +39,10 @@ const POSES: readonly Pose[] = [
   { name: "rf-contact", kind: "settled", path: "/en/contact" },
   // The Highlights Hall's south half (owner decision 2026-11-02): the results station's view, its drawer closed.
   { name: "l1-hall-south", kind: "settled", path: "/en#highlights-results", closeRoom: true },
+  // The B4 interiors (owner decision 2026-11-04), each station awake on its pad (reduced motion: the wake is immediate).
+  { name: "l1-hall-about", kind: "settled", path: "/en#highlights-about", closeRoom: true },
+  { name: "l1-hall-wins", kind: "settled", path: "/en#highlights-wins", closeRoom: true },
+  { name: "l1-hall-experience", kind: "settled", path: "/en#highlights-experience", closeRoom: true },
   // Captured under reduced motion: 30 frames into the intro's fade into the follow view.
   { name: "intro-still", kind: "intro", path: "/en" },
   { name: "ride-up-l1-l2", kind: "ride", path: "/en", to: "L2" },

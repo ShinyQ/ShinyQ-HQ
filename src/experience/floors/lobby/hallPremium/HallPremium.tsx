@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { InstancedBufferAttribute, Object3D, PlaneGeometry, type InstancedMesh, type ShaderMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { sceneProbes } from "../../../fx/probes";
@@ -40,6 +40,13 @@ export function countValue(value: string, t: number): string {
  */
 function WakeDriver({ reducedMotion, countUp, full }: { reducedMotion: boolean; countUp: HallPremiumProps["countUp"]; full: boolean }) {
   const count = useRef({ on: false, prev: 0, step: COUNT_STEPS });
+  // A new canvas (back from the Page View) compiles the interiors again: `mounted` reads false until it shows.
+  useEffect(
+    () => () => {
+      sceneProbes.hallPremium.mounted = false;
+    },
+    [],
+  );
   useFrame((_, dt) => {
     const onL1 = getHQStore().getState().floor === "L1";
     const at = { x: roverRuntime.x, z: roverRuntime.z };

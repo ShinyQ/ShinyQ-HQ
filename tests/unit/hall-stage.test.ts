@@ -87,20 +87,14 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
     expect(ribs[0].color).toEqual(ribs[2].color);
   });
 
-  it("has three gate rings west of the arch over the lead road, one runway into the spine and two packets", () => {
-    expect(count(full, STAGE_KIND.gateRing)).toBe(3);
+  it("has no rings in front of the gate (owner, 2026-11-04): one runway from west of the arch into the spine and two packets", () => {
+    expect(full.some((i) => i.tag === "gate-ring")).toBe(false);
     expect(full.filter((i) => i.tag === "runway")).toHaveLength(1);
     expect(full.filter((i) => i.tag === "spine")).toHaveLength(2);
     expect(count(full, STAGE_KIND.packet)).toBe(2);
-    const o = gateOpening();
-    for (const r of full.filter((i) => i.stage[0] === STAGE_KIND.gateRing)) {
-      expect(r.at[0]).toBeLessThan(HALL.gate.x - HALL.gate.depth / 2);
-      expect(r.at[2]).toBeCloseTo((o.minZ + o.maxZ) / 2);
-      // Light only: the rover drives through; the ring clears the floor.
-      expect(r.at[1] - r.stage[2]).toBeGreaterThan(0);
-    }
     const runway = full.find((i) => i.tag === "runway")!;
     expect(runway.at[0] + runway.stage[1] / 2).toBeCloseTo(HALL.plaza.x);
+    expect(runway.at[0] - runway.stage[1] / 2).toBeLessThan(HALL.gate.x - HALL.gate.depth / 2);
     expect(runway.at[2]).toBe(HALL.lead[0].z);
   });
 
@@ -125,8 +119,8 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
     expect(full.filter((i) => i.tag === "glass")).toHaveLength(3);
     for (const g of glass) expect(g.stage[2]).toBe(HALL.partition.height);
     expect(hallPartitions()).toHaveLength(3);
-    const ring = full.find((i) => i.stage[0] === STAGE_KIND.gateRing)!;
-    for (const w of [...walls, full.find((i) => i.tag === "rib")!, full.find((i) => i.tag === "runway")!]) expect(w.stage2[3]).toBeLessThanOrEqual(ring.stage2[3]);
+    // One step under the stations: walls, ribs and the runway stay under full alpha.
+    for (const w of [...walls, full.find((i) => i.tag === "rib")!, full.find((i) => i.tag === "runway")!]) expect(w.stage2[3]).toBeLessThan(1);
   });
 
   it("rings every door pad on the floor in its station's accent (no filled stubs)", () => {
