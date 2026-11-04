@@ -2,7 +2,7 @@
 
 Status: in review
 
-> Recorded as approved. As built: the interiors are one instanced mesh per hall part (`hallPremium/build.ts`, `caseFrame.ts`, `shader.ts`) instead of one file per station; the result bars and win tokens live in the client-safe `src/content/hallBars.ts`; seven ribs phased between the east stations; the B4 rework (owner feedback after the first preview) added the indigo enclosure, the ring door pads and the sans station headers on the main path. Main path +3.4 KB gzip, accepted by the owner (see the decision).
+> Recorded as approved. As built: the interiors are one instanced mesh per hall part (`hallPremium/build.ts`, `caseFrame.ts`, `shader.ts`) instead of one file per station; the result bars and win tokens live in the client-safe `src/content/hallBars.ts`; seven ribs phased between the east stations; the B4 rework (owner feedback after the first preview) added the indigo enclosure, the ring door pads and the sans station headers on the main path; the gate rings were dropped later (owner, 2026-11-04). Main path +3.4 KB gzip, accepted by the owner (see the decision).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
