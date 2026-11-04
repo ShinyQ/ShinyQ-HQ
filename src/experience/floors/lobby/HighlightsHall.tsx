@@ -9,6 +9,8 @@ import { FloatingSigns } from "../../fx/FloatingSign";
 import { neonColor } from "../../fx/materials";
 import { RoadMarkings } from "../../fx/RoadMarkings";
 import { useDispose } from "../../fx/useDispose";
+import { afterFirstFrameIdle } from "../../boot-signals";
+import { speculativePrefetchOn } from "../floorChunks";
 import { registerExtraInteractables } from "../../interact/registry";
 import { roverRuntime } from "../../rover/runtime";
 import { sceneTarget } from "../../scene/postHandle";
@@ -21,10 +23,11 @@ import { GateCurtain, StageLights, StageMotes, StagePanels, StagePortal, StageRi
 import { aboutFace, contactBeacon, gateOpening, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
+import { hallPremiumState, inHall, loadHallPremium, shouldLoadHallPremium, useHallPremium } from "./hallPremium/chunk";
 import { LOBBY_SLAB } from "./slab";
 import { hallShellInstances, lightInstances, panelInstances, portalInstances, ringInstances, SHELL, STAGE_KIND, type StageInstance } from "./hallStage";
 import { hallLineBuffer, hallShapes, partShapes, portraitRing, solidBuffers, type Circle, type HallShapes } from "./hallSolids";
-import { HIGHLIGHT_STAT_COUNT } from "./stations";
+import { HIGHLIGHT_STAT_COUNT, isHighlightRoom } from "./stations";
 
 /** Draws the atlas cells into one canvas row (cover fit, per-cell brightness); a failed image leaves its cell dark. */
 function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
@@ -280,6 +283,22 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     if (!load && shouldLoadShots(getHQStore().getState().floor, roverRuntime.x)) setLoad(true);
   });
   const texture = useHallAtlas(atlas, load);
+  // The interiors chunk (owner decision 2026-11-04): at idle on L1 (speculative prefetch on), on a hall intent (a drive
+  // into the hall, a station room open) or once the rover heads for the hall. Checked twice a second, never retried
+  // after a failed speculative load (`__hq.hall.loadPremium()` retries).
+  const premium = useHallPremium();
+  const idle = useRef(false);
+  const nextCheck = useRef(0);
+  useEffect(() => afterFirstFrameIdle(() => (idle.current = speculativePrefetchOn(window.location.search))), []);
+  useFrame(({ clock }) => {
+    if (clock.elapsedTime < nextCheck.current || hallPremiumState() !== "idle") return;
+    nextCheck.current = clock.elapsedTime + 0.5;
+    const s = getHQStore().getState();
+    const target = roverRuntime.autopilot?.point;
+    const intent = (target ? inHall(target) : false) || (s.activeRoom ? isHighlightRoom(s.activeRoom) : false);
+    if (shouldLoadHallPremium({ floor: s.floor, x: roverRuntime.x, idle: idle.current, intent })) void loadHallPremium().catch(() => null);
+  });
+  const inside = { tier, reducedMotion, data, labels };
   const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
   const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
@@ -289,6 +308,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
       <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
+        {premium && <premium.HallPremium part="north" {...inside} />}
         <HallSolids shapes={shapes.north} />
         <StageShell instances={shell.parts.north} reducedMotion={reducedMotion} />
         <StageMotes instances={shell.motes.north} reducedMotion={reducedMotion} />
@@ -304,6 +324,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.contact} grid={HALL_GRID.contact} name="highlights-hall-view-contact">
+        {premium && <premium.HallPremium part="contact" {...inside} />}
         <HallSolids shapes={shapes.contact} />
         <StageShell instances={shell.parts.contact} reducedMotion={reducedMotion} />
         <StageMotes instances={shell.motes.contact} reducedMotion={reducedMotion} />
@@ -315,6 +336,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.south} grid={HALL_GRID.south} name="highlights-hall-view-south">
+        {premium && <premium.HallPremium part="south" {...inside} />}
         <HallSolids shapes={shapes.south} />
         <StageShell instances={shell.parts.south} reducedMotion={reducedMotion} />
         <StageMotes instances={shell.motes.south} reducedMotion={reducedMotion} />
