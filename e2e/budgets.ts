@@ -90,6 +90,8 @@ export const BYTES_3D_BUDGET = {
   picker: 1_891 + 614,
   /** Touch controls chunk (`hud/Joystick.tsx`: the tablet joystick, the phone's floating stick and Boost, loaded only on a coarse pointer), outside both session totals like the menu chunk (spec 2026-10-29, decision 3.8): measured 2,368 B + 614 B (cap 2,982 B). */
   touch: 2_368 + 614,
+  /** L1 Highlights Hall interiors chunk (`floors/lobby/hallPremium/scene.ts`, idle on every L1 visit, in the session total; owner decision 2026-11-04, target at most 12 KB): measured 5,105 B, cap 5,719 B. */
+  hallPremium: 5_105 + 614,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   /** Main path + the session floors + the office watch, scene and replay chunks (measured 527,810 B lite, 543,944 B full; caps 528,424 B and 544,558 B, +2,158 B each for the L4 reader tracks, owner decision 2026-10-25). */

@@ -31,8 +31,12 @@ export const HOLO_MODE = {
   /**
    * Highlights Hall stage effects (L1 gallery): the kind comes per instance from `aStage.x` (`STAGE_KIND`
    * in floors/lobby/hallStage.ts: stage lights, light curtain and portal, stat tiles, atlas images and the
-   * portrait hologram, pulse rings, and the B4 shell: ceiling ribs, gate rings, runway, packets, motes, glass walls and
-   * the floor grid), so the hall shares this program instead of adding its own. Only this
+   * portrait hologram, pulse rings, and the B4 shell), so the hall shares this program instead of adding its own.
+   * B4 shell kinds: ribs, gate rings and door-pad halos are arc ribbons on a strip (position.x along the arc of aStage2.y
+   * radians with radii aStage.yz, upright or lying for halos; position.y across it, aStage.w wide, turned to the camera).
+   * Ribs breathe in sequence (9 s) and fade near the camera and when seen from above; gate rings pulse brighter. Motes are
+   * camera-facing dots rising aStage.z u at aStage.y cycles/s. Runway, packets (sliding gate to spine every 10 s) and the
+   * floor grid lie flat; walls stand up (aStage.yz the size, aStage2.x the glass fill, aStage.w the grid cell). Only this
    * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
    */
   stage: 9,
@@ -91,9 +95,6 @@ void main(){
       vStage.z = k;
       w = modelMatrix * vec4(base + position * (1. + k * aStage.y), 1.);
     } else if ((kind > 8.5 && kind < 10.5) || kind > 15.5) {
-      // Arc ribbons (ceiling ribs, gate rings, door-pad halos lying on the floor) on a strip: position.x runs along the arc
-      // (aStage2.y radians, radii aStage.yz in the instance's x-y plane, or x-z lying), position.y across it; the ribbon
-      // turns to the camera, aStage.w wide.
       float s = position.x + .5;
       float ang = s * aStage2.y;
       vec2 ca = vec2(cos(ang) * aStage.y, sin(ang) * aStage.z);
@@ -105,7 +106,6 @@ void main(){
       w = vec4(wp + n * position.y * aStage.w, 1.);
       vStage.z = position.y + .5; vLocal = vec2(aStage2.z, s);
     } else if (kind > 12.5 && kind < 13.5) {
-      // Motes: camera-facing dots rising aStage.z u at aStage.y cycles per second, aStage.w wide.
       float f = fract(uTime * aStage.y + aStage2.z);
       vec3 c0 = (modelMatrix * vec4(base + vec3(0., f * aStage.z, 0.), 1.)).xyz;
       vec3 cr = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
@@ -113,8 +113,6 @@ void main(){
       w = vec4(c0 + (cr * position.x + cu * position.y) * aStage.w, 1.);
       vStage.z = f;
     } else if (kind > 10.5) {
-      // Floor quads (runway, packets, floor grid) lie flat; walls stand up. aStage.yz is the size, aStage2.x the glass fill.
-      // Packets slide along local x over aStage.w u, gate to spine every 10 s.
       bool lying = kind < 12.5 || kind > 14.5;
       float f = kind < 12.5 && kind > 11.5 ? fract(uTime * .1 + aStage2.z) : .5;
       local = lying ? vec3(position.x * aStage.y + (f - .5) * aStage.w, 0., 0. - position.y * aStage.z) : vec3(position.x * aStage.y, position.y * aStage.z, 0.);
@@ -253,12 +251,9 @@ void main(){
     } else if (kind > 15.5) {
       a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.));
     } else if (kind < 10.5) {
-      // Ribs breathe one after another (a 9 s cycle); gate rings pulse in sequence, brighter.
       float i = vLocal.x;
       float k = kind < 9.5 ? .9 + .25 * max(0., sin(uTime * .7 - i * .55)) : 1.2 + .6 * max(0., sin(uTime * 1.2 + i * .9));
       float across = 1. - abs(vStage.z * 2. - 1.);
-      // Ribs frame the hall as a vault: they fade out close to the camera and dim when seen from above, so one never
-      // streaks across a station view.
       float above = clamp((cameraPosition.y - vW.y) / max(vDist, 1.), 0., 1.);
       float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(10., 26., vDist) * mix(1., .3, smoothstep(.05, .5, above)) : 1.;
       col = c * k;
@@ -276,7 +271,6 @@ void main(){
       float r = length(vUv * 2. - 1.);
       a *= (1. - smoothstep(.15, 1., r)) * sin(3.1416 * vStage.z);
     } else {
-      // Walls (glass with a 1.5 u grid and a lit top rail) and the floor grid (3 u).
       float cell = kind < 14.5 ? vStage.z : 3.;
       vec2 g = abs(fract(vLocal / cell + .5) - .5) * cell;
       float line = 1. - smoothstep(.015, .045, min(g.x, g.y));

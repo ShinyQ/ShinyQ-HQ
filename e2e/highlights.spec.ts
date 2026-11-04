@@ -7,7 +7,8 @@ import { pickFeaturedPods } from "../src/content/pageview";
 import type { Pod } from "../src/content/schema";
 import { orderPods, podLiveLink } from "../src/content/selectors";
 import { gateOpening } from "../src/experience/floors/lobby/hallGallery";
-import { stationOf } from "../src/experience/floors/lobby/hallLayout";
+import { HALL, hallPartitions, stationOf } from "../src/experience/floors/lobby/hallLayout";
+import { LOBBY } from "../src/experience/config";
 import { onPad } from "../src/experience/nav/doors";
 import { HIGHLIGHT_STAT_COUNT, HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "../src/experience/floors/lobby/stations";
 import {
@@ -58,6 +59,64 @@ const verifiedBeforeAfter = orderPods(content.floors.labs.pods as unknown as Pod
 /** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
 async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {
   return page.evaluate(() => (window as unknown as { __hq: { probes: { hallGate: { sweeps: number; active: boolean } } } }).__hq.probes.hallGate);
+}
+
+type HallWindow = Window & {
+  __hq: {
+    rover: { x: number; z: number };
+    layouts: Record<string, { road?: { roads: { id: string }[] } }>;
+    probes: { hallPremium: { state: string; mounted: boolean; wake: Record<string, number> } };
+    hall: { loadPremium(): Promise<void> };
+  };
+  __trail?: { x: number; z: number }[];
+};
+
+/** Records the rover's position every frame until `stopTrail` (one point per frame, floor-local). */
+async function startTrail(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as HallWindow & { __trailOn?: boolean };
+    w.__trail = [];
+    w.__trailOn = true;
+    const tick = () => {
+      if (!w.__trailOn) return;
+      w.__trail!.push({ x: w.__hq.rover.x, z: w.__hq.rover.z });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+async function stopTrail(page: Page): Promise<{ x: number; z: number }[]> {
+  return page.evaluate(() => {
+    const w = window as unknown as HallWindow & { __trailOn?: boolean };
+    w.__trailOn = false;
+    return w.__trail ?? [];
+  });
+}
+
+/** The hall has one way in (owner decision 2026-11-04): a drive never enters a west partition and crosses the gate line inside the opening. */
+function entersThroughGate(trail: { x: number; z: number }[]): boolean {
+  const o = gateOpening();
+  const walls = hallPartitions();
+  let crossed = false;
+  for (let i = 1; i < trail.length; i++) {
+    const [a, b] = [trail[i - 1], trail[i]];
+    if (walls.some((w) => b.x > w.minX && b.x < w.maxX && b.z > w.minZ && b.z < w.maxZ)) return false;
+    if (a.x < o.x && b.x >= o.x) {
+      const z = a.z + ((o.x - a.x) / (b.x - a.x || 1)) * (b.z - a.z);
+      if (z < o.minZ || z > o.maxZ) return false;
+      crossed = true;
+    }
+  }
+  return crossed;
+}
+
+/** The hall interiors chunk is loaded and its mesh compiled and shown. */
+async function interiorsReady(page: Page) {
+  await page.waitForFunction(() => {
+    const p = (window as unknown as HallWindow).__hq.probes.hallPremium;
+    return p.state === "ready" && p.mounted;
+  }, null, { timeout: 90_000 });
 }
 
 /** The station's point-and-go id (Task 11). */
@@ -310,14 +369,61 @@ test.describe("Highlights Hall", () => {
    * spawn 86 and 84, gate 75 and 73, plaza 55 and 53). Lite L1 stays gated at the spawn (e2e/perf/floors.spec.ts),
    * the About me station and the gate (reduced motion, below). The station pads deeper in the hall measured 45.
    */
+  test("one gate: from the Agent Office every station is reached through the gateway arch, and no road joins the office to the hall", async ({ page }) => {
+    test.setTimeout(300_000);
+    await enterHQ(page);
+    const roads = await page.evaluate(() => (window as unknown as HallWindow).__hq.layouts.L1.road!.roads.map((r) => r.id));
+    expect(roads).not.toContain("hall-office");
+    for (const station of HIGHLIGHT_STATIONS) {
+      await closeDrawer(page);
+      await driveTo(page, LOBBY.officeWing.stop);
+      await startTrail(page);
+      await driveTo(page, stationOf(station).pad);
+      const trail = await stopTrail(page);
+      expect(entersThroughGate(trail), `${station}: the drive from the office entered the hall outside the gate`).toBe(true);
+      await expectRoverNear(page, stationOf(station).pad);
+    }
+  });
+
+  test("the hall interiors load at idle on L1, wake a station while the rover is on its pad, and keep L1 inside its budget", async ({ page }) => {
+    test.setTimeout(300_000);
+    await enterHQ(page);
+    await interiorsReady(page);
+    for (const station of ["about", "wins", "results", "contact"] as const) {
+      await closeDrawer(page);
+      await driveTo(page, stationOf(station).pad);
+      await roomOpen(page, highlightRoom(station));
+      await closeDrawer(page);
+      await page.waitForFunction((s) => (window as unknown as HallWindow).__hq.probes.hallPremium.wake[s] > 0.99, station, { timeout: 30_000 });
+      await waitForCameraSettle(page);
+      const peaks = await expectRenderBudget(page);
+      console.log(`L1 lite at ${station} (interiors awake): ${peaks.sceneCalls} scene calls, ${peaks.triangles} triangles`);
+      expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+    }
+    // Off the pad the station settles back.
+    await driveTo(page, { x: HALL.plaza.x, z: HALL.plaza.z });
+    await page.waitForFunction(() => (window as unknown as HallWindow).__hq.probes.hallPremium.wake.contact < 0.05, null, { timeout: 30_000 });
+  });
+
+  test("a #highlights-<station> deep link loads the interiors at once", async ({ page }) => {
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite&prefetch=off#highlights-results");
+    await waitForHQ(page);
+    await waitForRoom(page, highlightRoom("results"));
+    await interiorsReady(page);
+  });
+
   test("L1 keeps headroom under the floor budget from the plaza to the hall (full) @nightly", async ({ page }) => {
     // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });
     // The gate spot stands 4 u west of the gateway arch (x 36 since 2026-11-02), clear of its pillars; the last spot faces
     // the south half from the plaza (the stations added 2026-11-02 and the south fountain).
-    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, stationOf("wins").pad]) {
+    await interiorsReady(page);
+    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, ...HIGHLIGHT_STATIONS.map((s) => stationOf(s).pad)]) {
+      await closeDrawer(page);
       if (spot) await driveTo(page, spot);
+      await closeDrawer(page);
       await waitForCameraSettle(page);
       const peaks = await expectRenderBudget(page);
       console.log(`L1 full at ${spot ? `(${spot.x}, ${spot.z})` : "spawn"}: ${peaks.sceneCalls} scene calls + ${peaks.postCalls} post passes, ${peaks.triangles} triangles`);

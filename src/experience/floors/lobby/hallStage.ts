@@ -162,18 +162,6 @@ export const SHELL = {
 
 const FLAT: [number, number, number, number] = [0, 0, 1, 1];
 
-/** A deterministic 0..1 generator (mulberry32), so the motes stand in the same places on every load. */
-function seeded(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /**
  * The ribs' z lines: one every `SHELL.rib.step` u inside the hall, phased to fall between the east stations' centres and off
  * the lead road (z 6 + 12k), so a station view never looks along a rib edge on.
@@ -198,52 +186,45 @@ const WEST = HALL.zone.minX + 1;
  */
 export function hallShellInstances(tier: GpuTier): StageInstance[] {
   const out: StageInstance[] = [];
-  const tone = (hex: string, k: number) => rgb(neonColor(hex, k, tier));
+  const K = STAGE_KIND;
+  const put = (tag: string, kind: number, at: [number, number, number], yaw: number, hex: string, gain: number, shape: [number, number, number], stage2: [number, number, number, number]) =>
+    out.push({ at, yaw, color: rgb(neonColor(hex, gain, tier)), stage: [kind, ...shape], stage2, uv: FLAT, tag });
+  const { minZ, maxZ, maxX } = HALL.zone;
+  const S = LOBBY_SLAB.halfZ;
+  const north = hallPartitions()[0];
   const R = SHELL.rib;
-  const midX = (WEST + HALL.zone.maxX) / 2;
-  const half = (HALL.zone.maxX - WEST) / 2;
-  ribLines().forEach((z, i) =>
-    out.push({ at: [midX, R.spring, z], yaw: 0, color: tone(i % 2 ? SHELL.violet : SHELL.cyan, R.gain), stage: [STAGE_KIND.rib, half, R.rise, R.width], stage2: [0, Math.PI, i, R.alpha], uv: FLAT, tag: "rib" }),
-  );
+  ribLines().forEach((z, i) => put("rib", K.rib, [(WEST + maxX) / 2, R.spring, z], 0, i % 2 ? SHELL.violet : SHELL.cyan, R.gain, [(maxX - WEST) / 2, R.rise, R.width], [0, Math.PI, i, R.alpha]));
   // Gate tunnel: rings face the lead road (their plane along z), cyan and violet alternating, pulsing in sequence.
   const o = gateOpening();
   const G = SHELL.ring;
-  const gz = (o.minZ + o.maxZ) / 2;
-  for (let i = 0; i < G.count; i++) {
-    const x = HALL.gate.x - HALL.gate.depth / 2 - 0.6 - i * G.gap;
-    out.push({ at: [x, G.y, gz], yaw: Math.PI / 2, color: tone(i % 2 ? SHELL.violet : SHELL.cyan, G.gain), stage: [STAGE_KIND.gateRing, G.r, G.r, G.width], stage2: [0, Math.PI * 2, i, G.alpha], uv: FLAT, tag: "gate-ring" });
-  }
-  // Runway: from west of the last ring to the spine (the plaza's long axis), on the lead road's line.
-  const lead = HALL.lead[0].z;
-  const fromX = HALL.gate.x - HALL.gate.depth / 2 - 0.6 - (G.count - 1) * G.gap - SHELL.runway.west;
-  const toX = HALL.plaza.x;
-  const len = toX - fromX;
+  const ringX = (i: number) => HALL.gate.x - HALL.gate.depth / 2 - 0.6 - i * G.gap;
+  for (let i = 0; i < G.count; i++) put("gate-ring", K.gateRing, [ringX(i), G.y, (o.minZ + o.maxZ) / 2], Math.PI / 2, i % 2 ? SHELL.violet : SHELL.cyan, G.gain, [G.r, G.r, G.width], [0, Math.PI * 2, i, G.alpha]);
+  // Runway: from west of the last ring to the spine (the plaza's long axis), on the lead road's line, and its packets.
+  const fromX = ringX(G.count - 1) - SHELL.runway.west;
+  const len = HALL.plaza.x - fromX;
+  const mid: [number, number, number] = [fromX + len / 2, 0.04, HALL.lead[0].z];
   const W = SHELL.runway;
-  out.push({ at: [(fromX + toX) / 2, 0.04, lead], yaw: 0, color: tone(SHELL.cyan, W.gain), stage: [STAGE_KIND.runway, len, W.width, 0], stage2: [0, 0, 0, W.alpha], uv: FLAT, tag: "runway" });
+  put("runway", K.runway, mid, 0, SHELL.cyan, W.gain, [len, W.width, 0], [0, 0, 0, W.alpha]);
   const P = SHELL.packet;
-  for (let i = 0; i < P.count; i++)
-    out.push({ at: [(fromX + toX) / 2, 0.04, lead], yaw: 0, color: tone("#e0fbff", P.gain), stage: [STAGE_KIND.packet, P.w, P.d, len - P.w], stage2: [0, 0, i / P.count, P.alpha], uv: FLAT, tag: "packet" });
-  // Glass walls: x along `right`, so a wall's plane faces across it. Split at the part lines (z S, x 48).
-  const split = HALL.stations.contact.maxX + 1;
-  const S = LOBBY_SLAB.halfZ;
-  const WL = SHELL.wall;
-  const wall = (x0: number, z0: number, x1: number, z1: number, h: number, hex: string, gain: number, alpha: number, fill: number, tag: string, y0 = 0, cell = 0) => {
+  for (let i = 0; i < P.count; i++) put("packet", K.packet, mid, 0, "#e0fbff", P.gain, [P.w, P.d, len - P.w], [0, 0, i / P.count, P.alpha]);
+  // Walls: x along `right`, so a wall's plane faces across it; split at the part lines (z S, x 48).
+  const wall = (tag: string, x0: number, z0: number, x1: number, z1: number, h: number, hex: string, look: { gain: number; alpha: number; fill: number }, y0 = 0, cell = 0) => {
     const w = Math.hypot(x1 - x0, z1 - z0);
-    const right = { x: (x1 - x0) / w, z: (z1 - z0) / w };
-    out.push({ at: [(x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2], yaw: yawOfRight(right), color: tone(hex, gain), stage: [STAGE_KIND.wall, w, h, cell], stage2: [fill, 0, 0, alpha], uv: FLAT, tag });
+    put(tag, K.wall, [(x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2], yawOfRight({ x: (x1 - x0) / w, z: (z1 - z0) / w }), hex, look.gain, [w, h, cell], [look.fill, 0, 0, look.alpha]);
   };
-  const { minZ, maxZ, maxX } = HALL.zone;
-  const inset = 0.05;
-  const north = hallPartitions()[0];
-  wall(north.maxX, minZ + inset, maxX, minZ + inset, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
-  wall(maxX - inset, minZ, maxX - inset, S, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
-  wall(maxX - inset, S, maxX - inset, maxZ, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
-  wall(WEST, maxZ - inset, split, maxZ - inset, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
-  wall(split, maxZ - inset, maxX, maxZ - inset, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
+  const split = HALL.stations.contact.maxX + 1;
+  const e = 0.05;
+  const WL = SHELL.wall;
+  for (const [x0, z0, x1, z1] of [
+    [north.maxX, minZ + e, maxX, minZ + e],
+    [maxX - e, minZ, maxX - e, S],
+    [maxX - e, S, maxX - e, maxZ],
+    [WEST, maxZ - e, split, maxZ - e],
+    [split, maxZ - e, maxX, maxZ - e],
+  ])
+    wall("wall", x0, z0, x1, z1, WL.h, SHELL.indigo, WL);
   // The west side: low tinted glass with a lit violet rail (the partitions), then clear glass up to the wall top, so the
   // certification wall stays readable from the plaza (the north run, the south run in two parts).
-  const PT = SHELL.partition;
-  const GL = SHELL.glass;
   const ph = HALL.partition.height;
   const southRun = hallPartitions()[2];
   const nx = (north.minX + north.maxX) / 2;
@@ -253,14 +234,14 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
     [nx, north.minZ, north.maxZ],
     [sx, southRun.minZ, contactZ],
     [sx, contactZ, southRun.maxZ],
-  ] as const) {
-    wall(x, z0, x, z1, ph, SHELL.violet, PT.gain, PT.alpha, PT.fill, "partition");
-    wall(x, z0, x, z1, WL.h - ph, SHELL.violet, GL.gain, GL.alpha, GL.fill, "glass", ph, GL.cell);
+  ]) {
+    wall("partition", x, z0, x, z1, ph, SHELL.violet, SHELL.partition);
+    wall("glass", x, z0, x, z1, WL.h - ph, SHELL.violet, SHELL.glass, ph, SHELL.glass.cell);
   }
   // Door-pad halos (lying rings), in each station's accent.
   const H = SHELL.halo;
-  for (const st of HALL_LAYOUT.stations) out.push({ at: [st.pad.x, 0.045, st.pad.z], yaw: 0, color: tone(HALL.tone[st.station], H.gain), stage: [STAGE_KIND.halo, H.r, H.r, H.width], stage2: [0, Math.PI * 2, 0, H.alpha], uv: FLAT, tag: "halo" });
-  // The spine glow down the plaza's long axis, north and south of S.
+  for (const st of HALL_LAYOUT.stations) put("halo", K.halo, [st.pad.x, 0.045, st.pad.z], 0, HALL.tone[st.station], H.gain, [H.r, H.r, H.width], [0, Math.PI * 2, 0, H.alpha]);
+  // The spine glow down the plaza's long axis and the floor grid, each split at S (the part line).
   const SP = SHELL.spine;
   const top = HALL.plaza.z - HALL.plaza.d / 2;
   const bottom = HALL.plaza.z + HALL.plaza.d / 2;
@@ -268,25 +249,24 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
     [top, S],
     [S, bottom],
   ])
-    out.push({ at: [HALL.plaza.x, 0.035, (z0 + z1) / 2], yaw: Math.PI / 2, color: tone(SHELL.cyan, SP.gain), stage: [STAGE_KIND.runway, z1 - z0, SP.width, 0], stage2: [0, 0, 0, SP.alpha], uv: FLAT, tag: "spine" });
-  // The floor grid, north and south of S (the part line).
+    put("spine", K.runway, [HALL.plaza.x, 0.035, (z0 + z1) / 2], Math.PI / 2, SHELL.cyan, SP.gain, [z1 - z0, SP.width, 0], [0, 0, 0, SP.alpha]);
   const F = SHELL.floor;
-  const floor = (x0: number, z0: number, x1: number, z1: number) =>
-    out.push({ at: [(x0 + x1) / 2, 0.03, (z0 + z1) / 2], yaw: 0, color: tone(SHELL.indigo, F.gain), stage: [STAGE_KIND.floor, x1 - x0, z1 - z0, 0], stage2: [0, 0, 0, F.alpha], uv: FLAT, tag: "floor" });
-  floor(north.maxX, minZ, maxX, S);
-  floor(WEST, S, maxX, maxZ);
+  for (const [x0, z0, z1] of [
+    [north.maxX, minZ, S],
+    [WEST, S, maxZ],
+  ])
+    put("floor", K.floor, [(x0 + maxX) / 2, 0.03, (z0 + z1) / 2], 0, SHELL.indigo, F.gain, [maxX - x0, z1 - z0, 0], [0, 0, 0, F.alpha]);
   if (tier !== "full") return out;
-  // Motes inside the hall (east of the north partition north of S, east of the hall's west edge south of it).
+  // Motes inside the hall (east of the north partition north of S, east of the hall's west edge south of it), rising at
+  // 0.4 of the preview's 0.2 to 0.7 u/s, from a fixed seed (a Park-Miller generator), so captures repeat.
   const M = SHELL.mote;
-  const rand = seeded(M.seed);
-  const moteColor = rgb(new Color(M.color));
+  let seed: number = M.seed;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const color = rgb(new Color(M.color));
   for (let i = 0; i < M.count; i++) {
     const z = minZ + 0.5 + rand() * (maxZ - minZ - 1);
     const x0 = z < S ? north.maxX : WEST;
-    const x = x0 + 0.5 + rand() * (maxX - x0 - 1);
-    // 0.2 to 0.7 u/s in the preview, rising at 0.4 of it.
-    const speed = (0.2 + rand() * 0.5) * 0.4;
-    out.push({ at: [x, 0, z], yaw: 0, color: moteColor, stage: [STAGE_KIND.mote, speed / M.top, M.top, M.size], stage2: [0, 0, rand(), M.alpha], uv: FLAT, tag: "mote" });
+    out.push({ at: [x0 + 0.5 + rand() * (maxX - x0 - 1), 0, z], yaw: 0, color, stage: [K.mote, ((0.2 + rand() * 0.5) * 0.4) / M.top, M.top, M.size], stage2: [0, 0, rand(), M.alpha], uv: FLAT, tag: "mote" });
   }
   return out;
 }

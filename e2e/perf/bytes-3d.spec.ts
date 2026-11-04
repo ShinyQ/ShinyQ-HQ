@@ -29,6 +29,8 @@ import { writePerfEntry } from "./helpers";
  * the session total; the beacon chunk (`__hq.office.loadBeacon()`, on the first Needs Kurniadi ask or fresh production deploy) is measured last and
  * held to `BYTES_3D_BUDGET.officeBeacon`, outside the session total. The first-session tour chunk (`__hq.tour.load()`, loaded only by a
  * session that plays the tour or Replay tutorial, so never by this returning visitor) is measured after it, held to `BYTES_3D_BUDGET.tour`, outside the session total.
+ * The Highlights Hall interiors chunk (`__hq.hall.loadPremium()`, idle on every L1 visit, owner decision 2026-11-04) is
+ * measured after the office chunks, held to `BYTES_3D_BUDGET.hallPremium` and counted in the session total.
  * The Corners menu sheet chunk (`__hq.menu.load()`, loaded on the menu button's first press) and the pad picker sheet
  * chunk (`__hq.picker.load()`, loaded when a pad picker first opens) are measured last, held to `BYTES_3D_BUDGET.menu` and
  * `BYTES_3D_BUDGET.picker`, outside the session total. The touch controls chunk (`__hq.touch.load()`, loaded only on a coarse
@@ -58,6 +60,20 @@ type OfficeLoad = { __hq: { office?: Partial<Record<OfficeLoader, () => Promise<
 async function measureOffice(page: Page, loader: OfficeLoader, seen: Set<string>, counted: Set<string>): Promise<number | null> {
   if (!(await page.evaluate((l) => Boolean((window as unknown as OfficeLoad).__hq.office?.[l]), loader))) return null;
   const loaded = await recordTransfers(page, () => page.evaluate((l) => (window as unknown as OfficeLoad).__hq.office![l]!().then(() => undefined), loader), 2000);
+  const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
+  for (const t of loaded) counted.add(t.path);
+  return bytes;
+}
+
+type HallLoad = { __hq: { hall?: { loadPremium: () => Promise<unknown> } } };
+
+/**
+ * Bytes of the Highlights Hall interiors chunk (`__hq.hall.loadPremium()`, idle on every L1 visit, owner decision
+ * 2026-11-04) on top of everything counted so far; null on a build without it.
+ */
+async function measureHall(page: Page, seen: Set<string>, counted: Set<string>): Promise<number | null> {
+  if (!(await page.evaluate(() => Boolean((window as unknown as HallLoad).__hq.hall?.loadPremium)))) return null;
+  const loaded = await recordTransfers(page, () => page.evaluate(() => (window as unknown as HallLoad).__hq.hall!.loadPremium().then(() => undefined)), 2000);
   const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
   for (const t of loaded) counted.add(t.path);
   return bytes;
@@ -191,6 +207,8 @@ for (const tier of ["lite", "full"] as const) {
     // Its drawer controls are a lazy chunk of the replay chunk, loaded only by the drawer's "Show day replay" press: their own cap, outside the office total and the session total.
     const officeControls = officeReplay === null ? null : await measureOffice(page, "loadControls", seen, mainPaths);
     const officeTotal = office === null ? null : office + (officeBody ?? 0) + (officeReplay ?? 0);
+    // The Highlights Hall interiors load at idle on every L1 visit (owner decision 2026-11-04): their own cap, in the session total.
+    const hallPremium = await measureHall(page, seen, mainPaths);
     // The beacon chunk loads only on the first Needs Kurniadi ask: its own cap, outside the session total.
     const officeBeacon = await measureOffice(page, "loadBeacon", seen, mainPaths);
     // The first-session tour chunk loads only for a session that plays the tour or Replay tutorial: its own cap, outside the session total.
@@ -235,7 +253,7 @@ for (const tier of ["lite", "full"] as const) {
     }
     const total = sum(js);
     const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
-    const sessionTotal = total + floorsTotal + (officeWatch ?? 0) + (office ?? 0) + (officeReplay ?? 0);
+    const sessionTotal = total + floorsTotal + (officeWatch ?? 0) + (office ?? 0) + (officeReplay ?? 0) + (hallPremium ?? 0);
     writePerfEntry({
       kind: "bytes3d",
       tier,
@@ -249,13 +267,14 @@ for (const tier of ["lite", "full"] as const) {
       ...(officeTotal === null ? {} : { officeTotal }),
       ...(officeWatch === null ? {} : { officeWatch }),
       ...(officeBeacon === null ? {} : { officeBeacon }),
+      ...(hallPremium === null ? {} : { hallPremium }),
       ...(tour === null ? {} : { tour }),
       ...(menu === null ? {} : { menu }),
       ...(picker === null ? {} : { picker }),
       ...(touch === null ? {} : { touch }),
     });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
-    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)} + office scene ${kb(office ?? 0)}${officeReplay === null ? "" : ` + office replay ${kb(officeReplay)}`}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
+    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)} + office scene ${kb(office ?? 0)}${officeReplay === null ? "" : ` + office replay ${kb(officeReplay)}`}${hallPremium === null ? "" : ` + hall interiors ${kb(hallPremium)}`}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
     if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
     if (office !== null) console.log(`Agent Office chunk (${tier}, idle on L1): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), in the session total`);
@@ -264,6 +283,7 @@ for (const tier of ["lite", "full"] as const) {
     if (officeControls !== null) console.log(`Agent Office replay controls (${tier}, on the drawer's replay press): ${kb(officeControls)} gzip (${officeControls} B, cap ${kb(BYTES_3D_BUDGET.officeControls)}), not in the session total`);
     if (officeTotal !== null) console.log(`Agent Office total (${tier}, scene + drawer body${officeReplay === null ? "" : " + replay"}): ${kb(officeTotal)} gzip (cap ${kb(BYTES_3D_BUDGET.officeTotal)}), the office chunks' own cap`);
     if (officeWatch !== null) console.log(`Agent Office watch chunk (${tier}, idle on L1): ${kb(officeWatch)} gzip (cap ${kb(BYTES_3D_BUDGET.officeWatch)}), in the session total`);
+    if (hallPremium !== null) console.log(`Highlights Hall interiors (${tier}, idle on L1): ${kb(hallPremium)} gzip (${hallPremium} B, cap ${kb(BYTES_3D_BUDGET.hallPremium)}), in the session total`);
     if (officeBeacon !== null) console.log(`Agent Office beacon chunk (${tier}, on the first ask): ${kb(officeBeacon)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBeacon)}), not in the session total`);
     if (tour !== null) console.log(`First-session tour chunk (${tier}): ${kb(tour)} gzip (cap ${kb(BYTES_3D_BUDGET.tour)}), outside the session total`);
     if (menu !== null) console.log(`Menu sheet chunk (${tier}): ${kb(menu)} gzip (${menu} B, cap ${kb(BYTES_3D_BUDGET.menu)}), outside the session total`);
@@ -308,6 +328,10 @@ for (const tier of ["lite", "full"] as const) {
     if (officeBeacon !== null) {
       expect(officeBeacon, "Agent Office beacon chunk: did __hq.office.loadBeacon fetch any script?").toBeGreaterThan(0);
       expect(officeBeacon, `Agent Office beacon chunk ${kb(officeBeacon)} is over its ${kb(BYTES_3D_BUDGET.officeBeacon)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeBeacon);
+    }
+    if (hallPremium !== null) {
+      expect(hallPremium, "Highlights Hall interiors: did __hq.hall.loadPremium fetch any script?").toBeGreaterThan(0);
+      expect(hallPremium, `Highlights Hall interiors ${kb(hallPremium)} are over their ${kb(BYTES_3D_BUDGET.hallPremium)} cap`).toBeLessThan(BYTES_3D_BUDGET.hallPremium);
     }
     if (tour !== null) {
       expect(tour, "First-session tour chunk: did __hq.tour.load fetch any script?").toBeGreaterThan(0);
