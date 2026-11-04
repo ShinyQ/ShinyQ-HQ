@@ -1,7 +1,7 @@
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { ExperienceData, Vec2 } from "../../types";
 import { podLiveLink } from "@/content/selectors";
-import { ABOUT, aboutFace, BEACON, contactBeacon, experienceArch, faceOf, MONOLITH, monoliths, nowArch, onFace, SHOT, statTiles, winsFace, winsTiles, type Face } from "./hallGallery";
+import { ABOUT, aboutFace, BEACON, contactBeacon, experienceArch, faceOf, MONOLITH, monoliths, nowArch, nowCard, onFace, SHOT, statTiles, winsFace, winsTiles, type Face } from "./hallGallery";
 import { HALL, stationOf } from "./hallLayout";
 import { experienceRows, HIGHLIGHT_STAT_COUNT, HIGHLIGHT_STATIONS, type HighlightStation } from "./stations";
 import { brandPhotoSrc } from "@/lib/brand-photo";
@@ -115,14 +115,14 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   // 01 About me: eyebrow, name and headline over the portrait hologram, stat tiles in an arc, the motto in front of the column.
   const about = aboutFace();
   const A = ABOUT.text;
-  add(about, 0, A.name, input.profile.name, fonts.sansBold, 0.52, INK.title, { maxWidth: 9 });
-  add(about, 0, A.headline, input.profile.headline, fonts.sans, 0.28, INK.sub, { maxWidth: 9 });
+  add(about, 0, A.name, input.profile.name, fonts.sansBold, 0.52, INK.title, { maxWidth: 8 });
+  add(about, 0, A.headline, input.profile.headline, fonts.sans, 0.28, INK.sub, { maxWidth: 8 });
   statTiles(aboutTiles).forEach((t, i) => {
     const stat = input.stats[i];
-    add(t.face, 0, t.y + 0.5, stat.value, fonts.sansBold, 0.5, INK.title, { maxWidth: t.w - 0.2 }, OUT.text, i);
-    add(t.face, 0, t.y + 0.12, stat.label, fonts.sans, 0.14, INK.body, { anchorY: "top", maxWidth: t.w - 0.2, lineHeight: 1.2 }, OUT.text, i);
+    add(t.face, 0, t.y + t.h * 0.27, stat.value, fonts.sansBold, 0.44, INK.title, { maxWidth: t.w - 0.2 }, OUT.text, i);
+    add(t.face, 0, t.y + t.h * 0.03, stat.label, fonts.sans, 0.13, INK.body, { anchorY: "top", maxWidth: t.w - 0.24, lineHeight: 1.2 }, OUT.text, i);
   });
-  add(about, 0, A.motto, input.roof.subheadline, fonts.sans, 0.24, INK.body, { maxWidth: 9 }, ABOUT.column.r + 0.15);
+  add(about, 0, A.motto, input.roof.subheadline, fonts.sans, 0.24, INK.body, { maxWidth: 8 }, ABOUT.column.r + 0.15);
 
   current = "projects";
   // 02 Top projects: one monolith per project, the title, wing and live tag under its screen.
@@ -147,7 +147,8 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   ];
   current = "columns";
   for (const col of columns) {
-    const width = col.w - 0.6;
+    // 0.6 u inside the pillar each side (2026-11-04), so no line reaches the case edge.
+    const width = col.w - 1.2;
     const left = col.u - width / 2;
     const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: width };
     add(arch.face, col.u, 5.6, col.title.toUpperCase(), fonts.sans, 0.22, col.tone, { letterSpacing: 0.25, maxWidth: width });
@@ -179,15 +180,14 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   // 05 Now: the work experience layout on a smaller arch, one current role per pillar (employment, then freelance).
   const now = nowArch();
   input.highlights.now.slice(0, now.columns.length).forEach((role, i) => {
-    const col = now.columns[i];
-    const width = col.w - 0.6;
-    const left = col.u - width / 2;
-    const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: width };
-    // The role and period read on a phone from the stop (owner, 2026-11-02): the role 0.26 u, the period 0.24 u.
-    add(now.face, left, 4.75, (role.type === "job" ? labels.employment : labels.freelance).toUpperCase(), fonts.sans, 0.2, i ? ACCENT_ALT : HALL.tone.now, { ...row, letterSpacing: 0.25 });
-    add(now.face, left, 4.4, role.org, fonts.sansBold, 0.3, INK.title, { ...row, anchorY: "top", lineHeight: 1.15 });
-    add(now.face, left, 3.55, role.role, fonts.sans, 0.26, INK.body, { ...row, anchorY: "top", lineHeight: 1.2 });
-    add(now.face, left, 1.75, role.period, fonts.sansBold, 0.24, INK.cyan, row);
+    // Inside its card (`nowCard`, 2026-11-04): the kicker, the org (two lines at most), the role and the period.
+    const card = nowCard(now.columns[i]);
+    const row = { anchorX: "left" as const, textAlign: "left" as const, maxWidth: card.text };
+    // The role and period read on a phone from the stop (owner, 2026-11-02).
+    add(now.face, card.left, 4.75, (role.type === "job" ? labels.employment : labels.freelance).toUpperCase(), fonts.sans, 0.19, i ? ACCENT_ALT : HALL.tone.now, { ...row, letterSpacing: 0.25, maxWidth: card.text - 0.4 });
+    add(now.face, card.left, 4.47, role.org, fonts.sansBold, 0.27, INK.title, { ...row, anchorY: "top", lineHeight: 1.15 });
+    add(now.face, card.left, 3.68, role.role, fonts.sans, 0.23, INK.body, { ...row, anchorY: "top", lineHeight: 1.2 });
+    add(now.face, card.left, 1.62, role.period, fonts.sansBold, 0.22, INK.cyan, row);
   });
 
   current = "results";

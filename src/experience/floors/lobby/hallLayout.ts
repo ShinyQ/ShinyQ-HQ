@@ -41,7 +41,8 @@ export const HALL = {
   /** The plaza runs the hall's depth: 8 u from the north stations, 6 u from the south ones and 3 u from the east ones. */
   plaza: { x: X0 + 18, z: (-Z + 11 + SOUTH - 9) / 2, w: 24, d: SOUTH - 9 - (-Z + 11) },
   stations: {
-    about: { minX: X0 + 4, maxX: X0 + 14, minZ: -Z, maxZ: -Z + 3 },
+    // 0.75 u east of its first place (owner, 2026-11-04: clear of the west wall); a wing wall fills the gap to the partition.
+    about: { minX: X0 + 5.5, maxX: X0 + 14, minZ: -Z, maxZ: -Z + 3 },
     projects: { minX: X0 + 20, maxX: X0 + 36, minZ: -Z, maxZ: -Z + 3 },
     experience: { minX: X0 + 33, maxX: X0 + 36, minZ: -8, maxZ: 10 },
     wins: { minX: X0 + 33, maxX: X0 + 36, minZ: Z - 11, maxZ: Z - 1 },
@@ -80,7 +81,7 @@ export const HALL = {
   /**
    * Low glass partitions close the hall's west side (owner decision 2026-11-04): the gateway is the only opening. They touch
    * their neighbours, so the space rules hold (every gap 0 or at least 6 u): the north run stands on the gate's line, from the
-   * north pillar's east face to the about station (6.5 u clear of the certification wall); the south run returns from the
+   * north pillar's east face to the north slab edge, a wing wall to the about station (6.5 u clear of the certification wall); the south run returns from the
    * south pillar to the hall's west edge (`HALL.zone.minX` + 1, x 33) and runs down it to the contact station. Obstacles
    * and navgrid blockers, low and translucent so the certification wall stays readable from the plaza; not camera columns.
    */
@@ -167,9 +168,9 @@ function stationZone(s: HallStation): ViewZone {
 }
 
 /**
- * The west-side partitions (obstacles and navgrid blockers), north to south: the north run (gate line, touching the north
- * pillar and the about station), the south return (touching the south pillar) and the south run (the hall's west edge, down
- * to the contact station).
+ * The west-side partitions (obstacles and navgrid blockers): the north run (gate line, touching the north pillar), the
+ * south return (touching the south pillar), the south run (the hall's west edge, down to the contact station) and the wing
+ * wall from the north run to the about station.
  */
 export function hallPartitions(): Rect[] {
   const P = HALL.partition;
@@ -181,6 +182,8 @@ export function hallPartitions(): Rect[] {
     // As deep as the pillar it meets, so it fills the gap between the pillar and the south run (`gapFilled`).
     { minX: P.south, maxX: pillarMinX, minZ: g.south.minZ, maxZ: g.south.maxZ },
     { minX: P.south - P.thickness, maxX: P.south, minZ: g.south.minZ, maxZ: contact.maxZ },
+    // The wing wall from the north run to the about station, as deep as the station.
+    { minX: P.north + P.thickness, maxX: HALL.stations.about.minX, minZ: HALL.zone.minZ, maxZ: HALL.stations.about.maxZ },
   ];
 }
 

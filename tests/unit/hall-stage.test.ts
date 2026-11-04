@@ -118,7 +118,7 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
     // Above the low partitions, clear glass up to the wall top.
     expect(full.filter((i) => i.tag === "glass")).toHaveLength(3);
     for (const g of glass) expect(g.stage[2]).toBe(HALL.partition.height);
-    expect(hallPartitions()).toHaveLength(3);
+    expect(hallPartitions()).toHaveLength(4);
     // One step under the stations: walls, ribs and the runway stay under full alpha.
     for (const w of [...walls, full.find((i) => i.tag === "rib")!, full.find((i) => i.tag === "runway")!]) expect(w.stage2[3]).toBeLessThan(1);
   });

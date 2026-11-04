@@ -45,7 +45,7 @@ describe("hall interiors: case frames (owner decision 2026-11-04)", () => {
 describe("hall interiors: instances and texts", () => {
   it("draws each part's interiors in one mesh, every station in its part", () => {
     const parts = premiumInstances(data, "full");
-    const stationsIn = (list: (typeof parts)["north"]) => new Set(list.map((i) => i.a[3]));
+    const stationsIn = (list: (typeof parts)["north"]) => new Set(list.map((i) => i.a[3]).filter((n) => n > 0));
     for (const [part, list] of Object.entries(parts)) {
       const expected = HALL_LAYOUT.stations.filter((s) => PART_OF[s.station] === part).map((s) => HALL_LAYOUT.stations.indexOf(s) + 1);
       expect([...stationsIn(list)].sort()).toEqual(expected.sort());
@@ -79,5 +79,25 @@ describe("hall interiors: instances and texts", () => {
     expect(texts).toHaveLength(metrics);
     expect(REPLACES).toEqual([]);
     for (const t of texts) expect(t.text).not.toContain("\u2014");
+  });
+});
+
+describe("hall interiors: the floor's life (owner, 2026-11-04)", () => {
+  const parts = premiumInstances(data, "full");
+  const all = [...parts.north, ...parts.contact, ...parts.south];
+  it("lays inlay rings, rib and gate glows, and a pool and a pulse path per station, all lying on the floor", () => {
+    expect(all.filter((i) => i.a[0] === PREMIUM_MODE.path)).toHaveLength(HALL_LAYOUT.stations.length);
+    expect(all.filter((i) => i.a[0] === PREMIUM_MODE.pool)).toHaveLength(HALL_LAYOUT.stations.length + 1);
+    for (const i of all.filter((x) => x.a[0] === PREMIUM_MODE.path || x.a[0] === PREMIUM_MODE.pool)) {
+      expect(i.c[2]).toBe(1);
+      expect(i.at[1]).toBeLessThan(0.1);
+    }
+    // Each station's path ends on its door pad and wakes with it.
+    for (const s of HALL_LAYOUT.stations) {
+      const p = all.find((i) => i.a[0] === PREMIUM_MODE.path && i.a[3] === HALL_LAYOUT.stations.indexOf(s) + 1)!;
+      const end = { x: p.at[0] + (Math.cos(p.yaw) * p.a[1]) / 2, z: p.at[2] - (Math.sin(p.yaw) * p.a[1]) / 2 };
+      expect(end.x).toBeCloseTo(s.pad.x);
+      expect(end.z).toBeCloseTo(s.pad.z);
+    }
   });
 });

@@ -5,27 +5,28 @@ import { AdditiveBlending, DoubleSide, ShaderMaterial } from "three";
  * instanced quad with a `mode` (`PREMIUM_MODE`), so each hall part draws its interiors in one call. Attributes per
  * instance: `aA` (mode, width, height, station 1 to 7 or 0), `aB` (tilt, spin rad/s, phase, alpha), `aC` (grow with the
  * wake, ripple cycles/s, orientation (tokens: their orbit radius), mode value); the instance matrix holds position and yaw, the instance colour the
- * tint. `uWake` holds each station's wake level, `uT` the clock (frozen under reduced motion), `uFull` 0 on lite.
+ * tint (path: a floor line with a travelling pulse, `aC.w` its phase; pool: a soft radial glow; rings take `aC.x` as
+ * their band, 0.06 by default). `uWake` holds each station's wake level, `uT` the clock (frozen under reduced motion), `uFull` 0 on lite.
  */
-export const PREMIUM_MODE = { pane: 0, shimmer: 1, curtain: 2, bar: 3, cone: 4, ring: 5, token: 6 } as const;
+export const PREMIUM_MODE = { pane: 0, shimmer: 1, curtain: 2, bar: 3, cone: 4, ring: 5, token: 6, path: 7, pool: 8 } as const;
 /** Orientation (`aC.z`): upright on the instance's yaw, lying on the floor, or turned to the camera around the vertical. */
 export const ORIENT = { upright: 0, lying: 1, column: 2 } as const;
 
 const VS = `attribute vec4 aA; attribute vec4 aB; attribute vec4 aC;
 uniform float uT; uniform float uWake[7];
-varying vec2 vUv; varying vec2 vL; varying vec2 vS; varying vec3 vCol; varying float vM; varying float vA; varying float vW; varying float vF; varying float vX;
+varying vec2 vUv; varying vec2 vL; varying vec2 vS; varying vec3 vCol; varying float vM; varying float vA; varying float vW; varying float vF; varying float vX; varying float vG;
 void main(){
   float m = aA.x; vec2 s = aA.yz; int si = int(aA.w + .5);
   float wk = 1.;
   for (int i = 0; i < 7; i++) if (i + 1 == si) wk = uWake[i];
-  vW = wk; vUv = uv; vM = m; vCol = instanceColor; vA = aB.w; vX = aC.w; vF = 0.;
+  vW = wk; vUv = uv; vM = m; vCol = instanceColor; vA = aB.w; vX = aC.w; vF = 0.; vG = aC.x;
   vec3 base = instanceMatrix[3].xyz; mat3 rot = mat3(instanceMatrix);
   vec2 q = position.xy;
   if (aC.x > .5) q.x = (q.x + .5) * mix(.02, 1., wk) - .5;
   if (aC.y > 0.) { vF = fract(uT * aC.y + aB.z); s *= .15 + .85 * vF; }
   vL = (q + .5) * s; vS = s;
   vec3 wp;
-  if (m > 5.5) {
+  if (m > 5.5 && m < 6.5) {
     float ang = aB.z + uT * aB.y;
     vec3 c = vec3(cos(ang), 0., sin(ang)) * aC.z;
     c = vec3(c.x, -c.z * sin(aB.x), c.z * cos(aB.x));
@@ -51,7 +52,7 @@ void main(){
 }`;
 
 const FS = `uniform float uT; uniform float uFull;
-varying vec2 vUv; varying vec2 vL; varying vec2 vS; varying vec3 vCol; varying float vM; varying float vA; varying float vW; varying float vF; varying float vX;
+varying vec2 vUv; varying vec2 vL; varying vec2 vS; varying vec3 vCol; varying float vM; varying float vA; varying float vW; varying float vF; varying float vX; varying float vG;
 float rim(float w){ vec2 d = min(vL, vS - vL); return 1. - smoothstep(w, w * 2.2, min(d.x, d.y)); }
 void main(){
   vec3 c = vCol; float a = vA; float m = vM; float wk = vW; vec2 uv = vUv;
@@ -74,7 +75,16 @@ void main(){
   } else if (m < 5.5) {
     float r = length(uv * 2. - 1.);
     if (r > 1.) discard;
-    a *= (smoothstep(.8, .88, r) * (1. - smoothstep(.94, 1., r)) + (1. - r) * vX) * mix(.5, 1., wk) * (vF > 0. ? 1. - vF : 1.);
+    float t = vG > 0. ? vG : .06;
+    a *= ((1. - smoothstep(t * .5, t, abs(r - 1. + t))) + (1. - r) * vX) * mix(.5, 1., wk) * (vF > 0. ? 1. - vF : 1.);
+  } else if (m > 6.5 && m < 7.5) {
+    float d = uv.x - fract(uT * .18 + vX);
+    a *= (1. - abs(uv.y * 2. - 1.)) * (.3 + 1.4 * exp(-d * d * 120.) * uFull) * mix(.6, 1., wk);
+  } else if (m > 7.5) {
+    float r = length(uv * 2. - 1.);
+    if (r > 1.) discard;
+    float k = 1. - r;
+    a *= k * k * mix(.35, 1., wk);
   } else {
     float r = length(uv * 2. - 1.);
     float sweep = vX > .5 && vX < 1.5 ? smoothstep(.86, 1., vF) * 1.6 * uFull : 0.;

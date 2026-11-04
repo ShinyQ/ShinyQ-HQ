@@ -2,10 +2,11 @@ import type { BatchedLabel } from "../../../fx/labelProps";
 import type { ExperienceData, GpuTier } from "../../../types";
 import { resultBars, winTokens } from "@/content/hallBars";
 import { HALL_ROWS, RESULT_ROWS, RESULT_Y, ROLE, type HallFonts, type HallLabels } from "../hallContent";
-import { ABOUT, aboutFace, ARCH, contactBeacon, experienceArch, MONOLITH, monoliths, NOW_ARCH, nowArch, onFace, SHOT, winsFace } from "../hallGallery";
-import { HALL_LAYOUT, type HallStation } from "../hallLayout";
+import { ABOUT, aboutFace, ARCH, contactBeacon, gateOpening, experienceArch, MONOLITH, monoliths, nowArch, nowCard, onFace, SHOT, winsFace } from "../hallGallery";
+import { HALL, HALL_LAYOUT, type HallStation } from "../hallLayout";
+import { ribLines } from "../hallStage";
 import { experienceRows, type HighlightStation } from "../stations";
-import { accentOf, caseFrame, stationNo, tint, type PremiumInstance } from "./caseFrame";
+import { ACCENT, accentOf, caseFrame, stationNo, tint, type PremiumInstance } from "./caseFrame";
 import { ORIENT, PREMIUM_MODE as M } from "./shader";
 
 export type HallPart = "north" | "contact" | "south";
@@ -82,10 +83,9 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
       // A glass card per current role, each with a breathing "current" dot by its type.
       const arch = nowArch();
       input.highlights.now.slice(0, arch.columns.length).forEach((_, i) => {
-        const col = arch.columns[i];
-        add(M.pane, onFace(arch.face, col.u, NOW_ARCH.h / 2 + 0.2, 0.03), arch.face.yaw, col.w - 0.3, 3.9, 0.85, [0, 0, ORIENT.upright, 0.045]);
-        const left = col.u - (col.w - 0.6) / 2;
-        add(M.token, onFace(arch.face, left - 0.24, 4.86, 0.1), 0, 0.26, 0.26, 1, [0, 0, 0, 2], [0, 0, 0], tint("#34d399", 1.6, tier));
+        const card = nowCard(arch.columns[i]);
+        add(M.pane, onFace(arch.face, card.u, card.y, 0.03), arch.face.yaw, card.w, card.h, 0.85, [0, 0, ORIENT.upright, 0.045]);
+        add(M.token, onFace(arch.face, card.right - 0.12, 4.75, 0.1), 0, 0.24, 0.24, 1, [0, 0, 0, 2], [0, 0, 0], tint("#34d399", 1.6, tier));
       });
       break;
     }
@@ -115,9 +115,48 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
   return out;
 }
 
-/** Every interior instance of the hall, by part: each station's case frame and its interior. */
-export function premiumInstances(input: Input, tier: GpuTier): Record<HallPart, PremiumInstance[]> {
+/** The floor's life (owner, 2026-11-04: "make the floor more alive"): inlay rings, the rib and gate glows. */
+const FLOOR = { inlay: [3, 6, 9], line: 0.08, rib: { d: 0.45, alpha: 0.09 }, pool: { d: 5, alpha: 0.32 }, path: { w: 0.14, alpha: 0.7 } } as const;
+
+/**
+ * The hall floor, alive and quiet (B4): concentric inlay rings at the middle of each half of the plaza, a faint glow under
+ * every ceiling rib and at the gate (all in the north part, which is in view whenever the plaza is), and per station a soft
+ * light pool at its face and a thin light path from the spine to its door pad with a slow pulse, both brightening with
+ * its wake. Lite keeps them still (no pulse).
+ */
+function floorLife(tier: GpuTier): Record<HallPart, PremiumInstance[]> {
   const out: Record<HallPart, PremiumInstance[]> = { north: [], contact: [], south: [] };
+  const lie = (part: HallPart, mode: number, at: [number, number, number], yaw: number, w: number, h: number, hex: string, alpha: number, no = 0, c: [number, number, number, number] = [0, 0, ORIENT.lying, 0]) =>
+    out[part].push({ at, yaw, color: tint(hex, 1.2, tier), a: [mode, w, h, no], b: [0, 0, 0, alpha], c });
+  const P = HALL.plaza;
+  const S = HALL.lead[0].z + 6;
+  for (const z of [(P.z - P.d / 2 + S) / 2, (S + P.z + P.d / 2) / 2])
+    FLOOR.inlay.forEach((r, i) => lie("north", M.ring, [P.x, 0.05, z], 0, 2 * r, 2 * r, i % 2 ? ACCENT.violet : ACCENT.cyan, 0.4 - i * 0.08, 0, [FLOOR.line / r, 0, ORIENT.lying, 0]));
+  const half = (HALL.zone.maxX - HALL.zone.minX - 1) / 2;
+  ribLines().forEach((z, i) => lie("north", M.bar, [HALL.zone.minX + 1 + half, 0.05, z], 0, 2 * half, FLOOR.rib.d, i % 2 ? ACCENT.violet : ACCENT.cyan, FLOOR.rib.alpha));
+  const o = gateOpening();
+  lie("north", M.pool, [o.x, 0.05, (o.minZ + o.maxZ) / 2], 0, 7, o.maxZ - o.minZ, ACCENT.cyan, 0.3);
+  const top = P.z - P.d / 2 + 1;
+  const bottom = P.z + P.d / 2 - 1;
+  for (const s of HALL_LAYOUT.stations) {
+    const no = stationNo(s);
+    const hex = accentOf(s);
+    const part = PART_OF[s.station];
+    const across = Math.abs(s.right.x) > 0.5 ? s.width : FLOOR.pool.d;
+    const deep = Math.abs(s.right.x) > 0.5 ? FLOOR.pool.d : s.width;
+    lie(part, M.pool, [s.front.x, 0.06, s.front.z], 0, across * 0.9, deep * 0.9, hex, FLOOR.pool.alpha, no);
+    const from = { x: P.x, z: Math.min(bottom, Math.max(top, s.pad.z)) };
+    const dx = s.pad.x - from.x;
+    const dz = s.pad.z - from.z;
+    const len = Math.hypot(dx, dz);
+    if (len > 1) lie(part, M.path, [(from.x + s.pad.x) / 2, 0.055, (from.z + s.pad.z) / 2], Math.atan2(0 - dz, dx), len, FLOOR.path.w, hex, FLOOR.path.alpha, no, [0, 0, ORIENT.lying, no / 7]);
+  }
+  return out;
+}
+
+/** Every interior instance of the hall, by part: each station's case frame and its interior, and the floor's life. */
+export function premiumInstances(input: Input, tier: GpuTier): Record<HallPart, PremiumInstance[]> {
+  const out = floorLife(tier);
   for (const s of HALL_LAYOUT.stations) {
     const f = caseFrame(s, tier);
     out[PART_OF[s.station]].push(...f.panes, ...interior(s, input, tier));

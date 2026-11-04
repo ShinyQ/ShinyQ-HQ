@@ -70,7 +70,7 @@ interface Surface {
 /** Every face that carries text: the two pedestals and their tiles, the monoliths, the two arches, the contact card. */
 const SURFACES: Surface[] = [
   ...statTiles().map((t): Surface => ({ station: "about", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
-  { station: "about", face: aboutFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
+  { station: "about", face: aboutFace(), width: 8, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
   ...winsTiles().map((t): Surface => ({ station: "wins", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
   { station: "wins", face: winsFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
   ...monoliths(3).map((m): Surface => ({ station: "projects", face: m.face, width: MONOLITH.w, y: [0.4, MONOLITH.h], d: 0.2 })),
@@ -86,7 +86,7 @@ function faceCoords(p: [number, number, number]) {
     const f = s.face;
     const d = (p[0] - f.origin.x) * f.out.x + (p[2] - f.origin.z) * f.out.z;
     const u = (p[0] - f.origin.x) * f.right.x + (p[2] - f.origin.z) * f.right.z;
-    if (d >= 0 && d <= s.d && Math.abs(u) <= s.width / 2 + 1e-6) return { s, u };
+    if (d >= 0 && d <= s.d && Math.abs(u) <= s.width / 2 + 1e-6 && p[1] >= s.y[0] - 1e-6 && p[1] <= s.y[1] + 1e-6) return { s, u };
   }
   return null;
 }

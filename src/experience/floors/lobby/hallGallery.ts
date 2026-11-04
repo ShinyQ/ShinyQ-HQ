@@ -71,8 +71,10 @@ export const ABOUT = {
   column: { r: 0.75, h: 1.25 },
   /** The portrait hologram disc: center height and radius. */
   disc: { y: 3.55, r: 0.95 },
-  /** Stat tiles: `u` along the face, center height, size, arc radius. */
+  /** Wins tiles: `u` along the face, center height, size, arc radius. */
   tiles: { u: [-4.75, -2.35, 2.35, 4.75], y: 3.45, w: 2.2, h: 1.7, arc: 8 },
+  /** About me's stat tiles: two columns `u` either side of the portrait, two rows (2026-11-04: clear of the west wall). */
+  grid: { u: 2.65, y: [4.12, 2.47], w: 2.2, h: 1.45, arc: 8 },
   /** Eyebrow, name, headline and motto heights. */
   text: { eyebrow: 6.15, name: 5.55, headline: 5.05, motto: 1.2 },
 } as const;
@@ -104,14 +106,18 @@ export interface StatTile {
   tone?: string;
 }
 
-export function statTiles(count: number = ABOUT.tiles.u.length, face: Face = aboutFace(), phase = 0): StatTile[] {
-  const T = ABOUT.tiles;
-  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: phase + i * 1.7 }));
+/** About me's stat tiles in reading order (top left, top right, bottom left, bottom right), turned gently toward the pedestal. */
+export function statTiles(count: number = 4): StatTile[] {
+  const G = ABOUT.grid;
+  const face = aboutFace();
+  return Array.from({ length: Math.min(count, 4) }, (_, i) => ({ face: arcFace(face, i % 2 ? G.u : -G.u, G.arc), y: G.y[i >> 1], w: G.w, h: G.h, phase: i * 1.7 }));
 }
 
 /** The wins tiles (one per placement tier, gold first), on the wins pedestal's arc; their drift starts out of step with About me's. */
 export function winsTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
-  return statTiles(count, winsFace(), 0.9);
+  const T = ABOUT.tiles;
+  const face = winsFace();
+  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: 0.9 + i * 1.7 }));
 }
 
 // ---------------------------------------------------------------- 02 Top projects: monoliths
@@ -182,6 +188,14 @@ function litArch(name: HighlightStation, A: ArchShape): ExperienceArch {
 
 export function experienceArch(): ExperienceArch {
   return litArch("experience", ARCH);
+}
+
+/** A now card on a pillar column (2026-11-04): the card 0.3 u inside the column each side, from `bottom` to `top`; the text `pad` inside it. */
+export const NOW_CARD = { inset: 0.3, pad: 0.25, top: 5.05, bottom: 1.25 } as const;
+
+export function nowCard(col: { u: number; w: number }): { u: number; w: number; y: number; h: number; left: number; text: number; right: number } {
+  const w = col.w - 2 * NOW_CARD.inset;
+  return { u: col.u, w, y: (NOW_CARD.top + NOW_CARD.bottom) / 2, h: NOW_CARD.top - NOW_CARD.bottom, left: col.u - w / 2 + NOW_CARD.pad, text: w - 2 * NOW_CARD.pad, right: col.u + w / 2 - NOW_CARD.pad };
 }
 
 /** The now station's lit arch: the employment role on the left pillar, the freelance one on the right. */

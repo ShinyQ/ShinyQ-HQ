@@ -125,14 +125,16 @@ describe("Highlights Hall layout", () => {
 
     it("closes the west side except the gateway opening, touching its neighbours (no gap under 6 u)", () => {
       const parts = hallPartitions();
-      expect(parts).toHaveLength(3);
-      const [north, ret, south] = parts;
+      expect(parts).toHaveLength(4);
+      const [north, ret, south, wing] = parts;
       const [pn, ps] = gatePillars();
       const touches = (a: Rect, b: Rect) => rectGap(a, b) === 0;
-      // North run: from the north slab edge to the north pillar, touching it and the about station.
+      // North run: from the north slab edge to the north pillar, touching it; the wing wall joins it to the about station.
       expect(north.minZ).toBe(HALL.zone.minZ);
       expect(touches(north, pn)).toBe(true);
-      expect(touches(north, stationOf("about").rect)).toBe(true);
+      expect(touches(north, wing)).toBe(true);
+      expect(touches(wing, stationOf("about").rect)).toBe(true);
+      expect(wing.minZ).toBe(HALL.zone.minZ);
       // South return and run: from the south pillar to the hall's west edge, down to the contact station.
       expect(touches(ret, ps)).toBe(true);
       expect(touches(ret, south)).toBe(true);

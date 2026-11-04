@@ -20,7 +20,7 @@ import {
   statTiles,
   winsFace,
 } from "@/experience/floors/lobby/hallGallery";
-import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
+import { gatePillars, HALL, HALL_LAYOUT, hallPartitions, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
@@ -97,12 +97,18 @@ describe("Highlights Hall gallery: stations", () => {
     const tiles = statTiles();
     expect(tiles).toHaveLength(4);
     for (const t of tiles) expect(readsToward(t.face.out, t.face.origin, s.pad)).toBe(true);
-    // The outer tiles come forward and turn inward (symmetric arc).
-    expect(tiles[0].face.origin.z).toBeCloseTo(tiles[3].face.origin.z);
-    expect(tiles[0].face.origin.z).toBeGreaterThan(tiles[1].face.origin.z);
-    expect(tiles[0].face.yaw).toBeCloseTo(-tiles[3].face.yaw);
-    // No tile touches the portrait disc.
-    for (const t of tiles) expect(Math.abs(t.face.origin.x - ABOUT.center.x) - t.w / 2).toBeGreaterThan(ABOUT.disc.r + 0.2);
+    // Two columns either side of the portrait (2026-11-04), turned symmetrically toward it, two rows.
+    expect(tiles[0].face.origin.z).toBeCloseTo(tiles[1].face.origin.z);
+    expect(tiles[0].face.yaw).toBeCloseTo(-tiles[1].face.yaw);
+    expect(tiles[0].face.origin).toEqual(tiles[2].face.origin);
+    expect(tiles[0].y).toBeGreaterThan(tiles[2].y + tiles[2].h);
+    // No tile touches the portrait disc; every tile stays inside the footprint and 1.5 u or more from the west wall.
+    const wall = hallPartitions()[0].maxX;
+    for (const t of tiles) {
+      expect(Math.abs(t.face.origin.x - ABOUT.center.x) - t.w / 2).toBeGreaterThan(ABOUT.disc.r + 0.2);
+      expect(Math.abs(t.face.origin.x - ABOUT.center.x) + t.w / 2).toBeLessThan((s.rect.maxX - s.rect.minX) / 2);
+      expect(Math.min(t.face.origin.x, ABOUT.center.x - Math.abs(t.face.origin.x - ABOUT.center.x)) - t.w / 2 - wall).toBeGreaterThanOrEqual(1.5);
+    }
   });
 
   it("Top projects: three monoliths in a shallow arc inside the footprint, faces toward the pad, clear of it", () => {
