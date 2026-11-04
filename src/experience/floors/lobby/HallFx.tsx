@@ -11,7 +11,7 @@ import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
 import type { GpuTier, Vec2 } from "../../types";
 import { gateSwept, markGateSwept, sweepProgress } from "./gateSweep";
-import { FOUNTAIN, gateCrossed } from "./hallGallery";
+import { gateCrossed } from "./hallGallery";
 import { curtainInstance, stageAttributes, type StageInstance } from "./hallStage";
 
 const NO_RAYCAST = () => null;
@@ -21,15 +21,14 @@ const NO_RAYCAST = () => null;
  * all hall effects share the one holo program with the floating signs and the other floors' spectacle.
  */
 export function createStageMaterial(o: { additive: boolean; depthWrite?: boolean }): ShaderMaterial {
-  const m = createHoloMaterial({ mode: HOLO_MODE.stage, additive: o.additive, depthWrite: o.depthWrite ?? false });
-  m.uniforms.uCenter.value.set(FOUNTAIN.x, FOUNTAIN.z);
-  m.uniforms.uSpin.value = FOUNTAIN.spin;
-  return m;
+  return createHoloMaterial({ mode: HOLO_MODE.stage, additive: o.additive, depthWrite: o.depthWrite ?? false });
 }
 
 const cylinder = () => new CylinderGeometry(1, 1, 1, 20, 1, true);
 const square = () => new PlaneGeometry(1, 1);
 const ring = () => new RingGeometry(0.5, 0.62, 40).rotateX(-Math.PI / 2);
+/** A unit strip with 64 segments along x: arcs bend it (ribs, gate rings); flat quads and walls use it straight. */
+const strip = () => new PlaneGeometry(1, 1, 64, 1);
 
 /**
  * One instanced draw of stage effects over a base shape: the instance matrix holds each instance's
@@ -101,6 +100,19 @@ function StageMesh({
  */
 export function StageLights({ instances, tier, reducedMotion }: { instances: readonly StageInstance[]; tier: GpuTier; reducedMotion: boolean }) {
   return <StageMesh name="hall-lights" base={cylinder} instances={instances} additive={tier === "full"} animate={!reducedMotion} />;
+}
+
+/**
+ * The B4 hall shell of one part in one additive draw (both tiers: lite has no bloom, so the glow is the additive blend):
+ * ceiling ribs, gate rings, the runway and its packets, glass walls and the floor grid. Reduced motion holds it still.
+ */
+export function StageShell({ instances, reducedMotion, name = "hall-shell" }: { instances: readonly StageInstance[]; reducedMotion: boolean; name?: string }) {
+  return <StageMesh name={name} base={strip} instances={instances} additive animate={!reducedMotion} />;
+}
+
+/** Light motes of one part in one draw (full tier only; `hallShellInstances` builds none on lite). */
+export function StageMotes({ instances, reducedMotion }: { instances: readonly StageInstance[]; reducedMotion: boolean }) {
+  return <StageMesh name="hall-motes" base={square} instances={instances} additive animate={!reducedMotion} />;
 }
 
 /** The beacon's pulse rings (one draw call); reduced motion holds them at a third of their growth. */

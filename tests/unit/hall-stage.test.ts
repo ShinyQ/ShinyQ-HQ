@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createHoloMaterial, HOLO_FS, HOLO_MODE, HOLO_VS } from "@/experience/fx/holoFx";
 import { hallAtlas, hallPhoto, hallShots, SHOT_CELL } from "@/experience/floors/lobby/hallContent";
-import { contactBeacon, FOUNTAIN, gateOpening, hallLights, statTiles } from "@/experience/floors/lobby/hallGallery";
-import { curtainInstance, lightInstances, panelInstances, portalInstance, ringInstances, STAGE_KIND, stageAttributes, yawOfRight } from "@/experience/floors/lobby/hallStage";
+import { contactBeacon, gateOpening, hallLights, statTiles } from "@/experience/floors/lobby/hallGallery";
+import { HALL, hallPartitions } from "@/experience/floors/lobby/hallLayout";
+import { curtainInstance, hallShellInstances, lightInstances, panelInstances, portalInstance, ribLines, ringInstances, SHELL, STAGE_KIND, stageAttributes, yawOfRight } from "@/experience/floors/lobby/hallStage";
 
 describe("Highlights Hall stage effects on the shared holo program", () => {
   it("use the holo shader source (one program with the floating signs and the other floors)", () => {
@@ -19,12 +20,16 @@ describe("Highlights Hall stage effects on the shared holo program", () => {
     expect(HOLO_FS).toContain("uniform sampler2D uMap");
   });
 
-  it("builds one light per gallery light; lite has fewer fountain beams and draws them fainter", () => {
-    const full = lightInstances(hallLights("full"), "full");
-    const lite = lightInstances(hallLights("lite"), "lite");
-    expect(full.length).toBeGreaterThan(lite.length);
-    const spin = full.filter((l) => l.stage2[0] === 1);
-    expect(spin).toHaveLength(FOUNTAIN.beams.full);
+  it("never names a variable after a GLSL ES 3 keyword (three compiles the holo shader as GLSL 3 on WebGL2)", () => {
+    for (const word of ["flat", "smooth", "centroid", "sample", "patch", "input", "output", "filter", "active", "common", "partition"])
+      for (const src of [HOLO_VS, HOLO_FS]) expect(src, word).not.toMatch(new RegExp(`\\b(?:bool|float|int|vec[234])\\s+${word}\\b`));
+  });
+
+  it("builds one light per gallery light; lite draws them fainter", () => {
+    const full = lightInstances(hallLights(), "full");
+    const lite = lightInstances(hallLights(), "lite");
+    expect(full.length).toBe(lite.length);
+    expect(full.filter((l) => l.stage2[0] === 1)).toHaveLength(0);
     for (const l of full) expect([STAGE_KIND.beam, STAGE_KIND.cone, STAGE_KIND.pool]).toContain(l.stage[0]);
     const fullPool = full.find((l) => l.stage[0] === STAGE_KIND.pool)!;
     const litePool = lite.find((l) => l.stage[0] === STAGE_KIND.pool)!;
@@ -60,5 +65,64 @@ describe("Highlights Hall stage effects on the shared holo program", () => {
     expect(portalInstance("full").stage[0]).toBe(STAGE_KIND.portal);
     const rings = ringInstances(contactBeacon().pulses, "#60a5fa", "full");
     expect(rings.map((r) => r.stage[0])).toEqual(rings.map(() => STAGE_KIND.ring));
+  });
+});
+
+describe("B4 shell (owner decision 2026-11-04)", () => {
+  const full = hallShellInstances("full");
+  const lite = hallShellInstances("lite");
+  const count = (list: typeof full, kind: number) => list.filter((i) => i.stage[0] === kind).length;
+
+  it("spans the hall with a rib every 12 u, centred on its depth, alternating cyan and violet", () => {
+    const depth = HALL.zone.maxZ - HALL.zone.minZ;
+    expect(count(full, STAGE_KIND.rib)).toBe(Math.floor(depth / 12) + 1);
+    const z = ribLines();
+    expect(z[0] - HALL.zone.minZ).toBeCloseTo(HALL.zone.maxZ - z.at(-1)!);
+    const ribs = full.filter((i) => i.stage[0] === STAGE_KIND.rib);
+    expect(ribs[0].color).not.toEqual(ribs[1].color);
+    expect(ribs[0].color).toEqual(ribs[2].color);
+  });
+
+  it("has three gate rings west of the arch over the lead road, one runway into the spine and two packets", () => {
+    expect(count(full, STAGE_KIND.gateRing)).toBe(3);
+    expect(count(full, STAGE_KIND.runway)).toBe(1);
+    expect(count(full, STAGE_KIND.packet)).toBe(2);
+    const o = gateOpening();
+    for (const r of full.filter((i) => i.stage[0] === STAGE_KIND.gateRing)) {
+      expect(r.at[0]).toBeLessThan(HALL.gate.x - HALL.gate.depth / 2);
+      expect(r.at[2]).toBeCloseTo((o.minZ + o.maxZ) / 2);
+      // Light only: the rover drives through; the ring clears the floor.
+      expect(r.at[1] - r.stage[2]).toBeGreaterThan(0);
+    }
+    const runway = full.find((i) => i.stage[0] === STAGE_KIND.runway)!;
+    expect(runway.at[0] + runway.stage[1] / 2).toBeCloseTo(HALL.plaza.x);
+    expect(runway.at[2]).toBe(HALL.lead[0].z);
+  });
+
+  it("draws motes on the full tier only, inside the hall, from a fixed seed", () => {
+    expect(count(full, STAGE_KIND.mote)).toBe(SHELL.mote.count);
+    expect(count(lite, STAGE_KIND.mote)).toBe(0);
+    expect(hallShellInstances("full")).toEqual(full);
+    for (const m of full.filter((i) => i.stage[0] === STAGE_KIND.mote)) {
+      expect(m.at[0]).toBeGreaterThan(HALL.zone.minX);
+      expect(m.at[0]).toBeLessThan(HALL.zone.maxX);
+      expect(m.at[2]).toBeGreaterThan(HALL.zone.minZ);
+      expect(m.at[2]).toBeLessThan(HALL.zone.maxZ);
+    }
+  });
+
+  it("puts glass on the slab edges and over every west partition, one step under the gate", () => {
+    const walls = full.filter((i) => i.tag === "wall");
+    const glass = full.filter((i) => i.tag === "partition");
+    expect(walls.length).toBe(5);
+    expect(glass.length).toBe(3);
+    for (const g of glass) expect(g.stage[2]).toBe(HALL.partition.height);
+    expect(hallPartitions()).toHaveLength(3);
+    const ring = full.find((i) => i.stage[0] === STAGE_KIND.gateRing)!;
+    for (const w of [...walls, full.find((i) => i.tag === "rib")!, full.find((i) => i.tag === "runway")!]) expect(w.stage2[3]).toBeLessThanOrEqual(ring.stage2[3]);
+  });
+
+  it("drops the two fountains", () => {
+    expect(full.some((i) => i.tag === "fountain")).toBe(false);
   });
 });

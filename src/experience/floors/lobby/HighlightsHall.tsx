@@ -17,12 +17,12 @@ import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, partTexts, RESULT_ROWS, SHOT_CELL, TIER_TONE, type HallAtlas, type HallLabels } from "./hallContent";
-import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
-import { aboutFace, contactBeacon, FOUNTAIN_SOUTH, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
+import { GateCurtain, StageLights, StageMotes, StagePanels, StagePortal, StageRings, StageShell } from "./HallFx";
+import { aboutFace, contactBeacon, gateOpening, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
 import { LOBBY_SLAB } from "./slab";
-import { lightInstances, panelInstances, portalInstances, ringInstances } from "./hallStage";
+import { hallShellInstances, lightInstances, panelInstances, portalInstances, ringInstances, SHELL, STAGE_KIND, type StageInstance } from "./hallStage";
 import { hallLineBuffer, hallShapes, partShapes, portraitRing, solidBuffers, type Circle, type HallShapes } from "./hallSolids";
 import { HIGHLIGHT_STAT_COUNT } from "./stations";
 
@@ -169,21 +169,29 @@ const around = (r: { minX: number; maxX: number; minZ: number; maxZ: number }, p
   new Box3(new Vector3(r.minX - pad, -0.5, r.minZ - pad), new Vector3(r.maxX + pad, top, r.maxZ + pad));
 
 /**
- * Floor-local view boxes of each half. The north half keeps the whole area from the gateway arch east (shapes, lights up
- * to the spotlight apexes), tested on a 6 x 6 grid of cells. The south half tests a box per landmark (now, results,
- * contact, the south fountain), so the empty plaza and the office road at its west edge, which a Lobby view facing south
- * reaches at the frame's edge, never draw it. The lead road west of the arch and the gate sign draw outside them.
+ * Floor-local view boxes of each part. The north part keeps the whole area from the gateway arch east (shapes, lights up
+ * to the spotlight apexes), tested on a 6 x 6 grid of cells. The south part tests a box per landmark (now, results) and
+ * the band its ceiling ribs span, so the empty plaza floor, which a Lobby view facing south reaches at the frame's edge,
+ * never draws it; contact tests a box around its station. The gate tunnel (rings, runway, packets) is its own part around
+ * the lead road. The lead road's markings and the gate sign draw outside them.
  */
+const GATE_O = gateOpening();
+const GATE_BOX = new Box3(
+  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 0.6 - (SHELL.ring.count - 1) * SHELL.ring.gap - SHELL.runway.west - 1, -0.5, (GATE_O.minZ + GATE_O.maxZ) / 2 - SHELL.ring.r - 0.5),
+  new Vector3(HALL.plaza.x + 1, SHELL.ring.y + SHELL.ring.r + 0.5, (GATE_O.minZ + GATE_O.maxZ) / 2 + SHELL.ring.r + 0.5),
+);
 const HALL_VIEW: Record<HallPart, Box3[]> = {
   north: [new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL_SPLIT + 1))],
   contact: [around(HALL.stations.contact, 5, 13)],
   south: [
     around(HALL.stations.now, 5, 11),
     around(HALL.stations.results, 5, 13),
-    new Box3(new Vector3(FOUNTAIN_SOUTH.x - 4, -0.5, FOUNTAIN_SOUTH.z - 4), new Vector3(FOUNTAIN_SOUTH.x + 4, 8.5, FOUNTAIN_SOUTH.z + 4)),
+    new Box3(new Vector3(HALL.zone.minX, SHELL.rib.spring - 1, HALL_SPLIT), new Vector3(HALL.zone.maxX, SHELL.rib.spring + SHELL.rib.rise + 0.5, HALL.zone.maxZ)),
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
+/** The gate tunnel's instances (its own view part); every other shell instance stands in a hall part. */
+const GATE_KINDS: readonly number[] = [STAGE_KIND.gateRing, STAGE_KIND.runway, STAGE_KIND.packet];
 /** The portrait and the wins rings both stand in the north part; the others have none. */
 const RINGS: Record<HallPart, readonly Circle[]> = { north: [portraitRing(aboutFace()), portraitRing(winsFace())], contact: [], south: [] };
 
@@ -252,9 +260,19 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     () => [...statTiles(Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length)), ...winsTiles(winTiers.length).map((t, i) => ({ ...t, tone: TIER_TONE[winTiers[i].tier] }))],
     [data.stats.length, winTiers],
   );
-  const lights = useMemo(() => byPart(lightInstances(hallLights(tier, projectCount, resultCount), tier), (l) => [l.at[0], l.at[2]]), [tier, projectCount, resultCount]);
+  const lights = useMemo(() => byPart(lightInstances(hallLights(projectCount, resultCount), tier), (l) => [l.at[0], l.at[2]]), [tier, projectCount, resultCount]);
   const portals = useMemo(() => byPart(portalInstances(tier), (p) => [p.at[0], p.at[2]]), [tier]);
   const rings = useMemo(() => ringInstances(contactBeacon().pulses, HALL.tone.contact, tier), [tier]);
+  const shell = useMemo(() => {
+    const all = hallShellInstances(tier);
+    const at = (i: StageInstance) => [i.at[0], i.at[2]] as const;
+    const motes = all.filter((i) => i.stage[0] === STAGE_KIND.mote);
+    return {
+      gate: all.filter((i) => GATE_KINDS.includes(i.stage[0])),
+      parts: byPart(all.filter((i) => i.stage[0] !== STAGE_KIND.mote && !GATE_KINDS.includes(i.stage[0])), at),
+      motes: byPart(motes, at),
+    };
+  }, [tier]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
   const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);
   const [load, setLoad] = useState(false);
@@ -272,6 +290,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
         <HallSolids shapes={shapes.north} />
+        <StageShell instances={shell.parts.north} reducedMotion={reducedMotion} />
+        <StageMotes instances={shell.motes.north} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.north} tier={tier} extra={RINGS.north} lattice={false} />
         <StageLights instances={lights.north} tier={tier} reducedMotion={reducedMotion} />
         {/* Every stat tile (About me and wins) stands in the north half, so the tile texts ride the north batch. */}
@@ -285,6 +305,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       </HallView>
       <HallView boxes={HALL_VIEW.contact} grid={HALL_GRID.contact} name="highlights-hall-view-contact">
         <HallSolids shapes={shapes.contact} />
+        <StageShell instances={shell.parts.contact} reducedMotion={reducedMotion} />
+        <StageMotes instances={shell.motes.contact} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.contact} tier={tier} extra={RINGS.contact} lattice />
         <StageLights instances={lights.contact} tier={tier} reducedMotion={reducedMotion} />
         <StageRings instances={rings} tier={tier} reducedMotion={reducedMotion} />
@@ -294,12 +316,18 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
       </HallView>
       <HallView boxes={HALL_VIEW.south} grid={HALL_GRID.south} name="highlights-hall-view-south">
         <HallSolids shapes={shapes.south} />
+        <StageShell instances={shell.parts.south} reducedMotion={reducedMotion} />
+        <StageMotes instances={shell.motes.south} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.south} tier={tier} extra={RINGS.south} lattice={false} />
         <StageLights instances={lights.south} tier={tier} reducedMotion={reducedMotion} />
         <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.south} />
         <Suspense fallback={null}>
           <BatchedLabels labels={texts.south.labels} name="highlights-labels-south" />
         </Suspense>
+      </HallView>
+      {/* The gate tunnel: three rings in front of the arch, the runway and its packets (one draw), hidden off view. */}
+      <HallView boxes={[GATE_BOX]} grid={3} name="highlights-hall-view-gate">
+        <StageShell instances={shell.gate} reducedMotion={reducedMotion} name="hall-gate-shell" />
       </HallView>
       {/* The floating gateway sign (shared FloatingSigns: holo plate plus batched text) turns to the camera, so it stays outside HallView. */}
       <Suspense fallback={null}>

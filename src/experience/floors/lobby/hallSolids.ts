@@ -1,11 +1,11 @@
 import { boxBuffers, boxEdgeBuffers, latticeSegments, type Box } from "../roof/solids";
-import { ABOUT, BEACON, contactBeacon, experienceArch, FOUNTAINS, monoliths, nowArch, winsFace, type Face } from "./hallGallery";
-import { gatePillars, HALL } from "./hallLayout";
+import { ABOUT, BEACON, contactBeacon, experienceArch, monoliths, nowArch, winsFace, type Face } from "./hallGallery";
+import { gatePillars, HALL, hallPartitions } from "./hallLayout";
 
 /**
  * Pure buffers for the gallery solids (no three): boxes (turned or not) plus round prisms (the About me
  * pedestal, the beacon head) in one indexed mesh, and every neon line (box edges, prism rims, the
- * portrait ring, the fountain floor rings, the beacon lattice) in one line-segment buffer.
+ * portrait ring, the beacon lattice) in one line-segment buffer.
  */
 
 /** A round prism standing on `y`: `sides` flat faces and a top cap. */
@@ -110,8 +110,10 @@ export interface HallShapes {
 }
 
 const PEDESTAL_SIDES = 28;
+/** Height of the partitions' dark plinths. */
+const PLINTH = 0.25;
 
-/** Every solid of the gallery: gateway arch, the pedestals, the monoliths, the two lit arches, the beacon and its card. */
+/** Every solid of the gallery: gateway arch, the pedestals, the monoliths, the two lit arches, the beacon and its card, the partition plinths. */
 export function hallShapes(projectCount: number, resultCount: number = 3): HallShapes {
   const g = HALL.gate;
   const boxes: Box[] = [];
@@ -142,8 +144,8 @@ export function hallShapes(projectCount: number, resultCount: number = 3): HallS
   prisms.push({ x: b.mast.x, z: b.mast.z, y: B.mast.top, h: B.head.h, r: B.head.r, sides: 12 });
   circles.push({ x: b.mast.x, y: B.mast.top + B.head.h + 0.005, z: b.mast.z, r: B.head.r, segments: 12 });
   boxes.push(b.card.box);
-  // Light fountains: two floor rings each (lines only, the rover drives through them).
-  for (const f of FOUNTAINS) for (const r of f.rings) circles.push({ x: f.x, y: 0.03, z: f.z, r, segments: 48 });
+  // The west partitions' low plinths (their glass and violet rail are shell instances, `hallShellInstances`).
+  for (const p of hallPartitions()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: PLINTH });
   return { boxes, prisms, circles };
 }
 

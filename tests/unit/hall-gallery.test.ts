@@ -8,9 +8,6 @@ import {
   contactBeacon,
   experienceArch,
   faceOf,
-  FOUNTAIN,
-  FOUNTAIN_SOUTH,
-  FOUNTAINS,
   gateCrossed,
   gateOpening,
   hallLights,
@@ -147,26 +144,16 @@ describe("Highlights Hall gallery: stations", () => {
 });
 
 describe("Highlights Hall gallery: lights and camera", () => {
-  it("lights every station and both fountains; lite gets fewer fountain beams; no light is real", () => {
-    const full = hallLights("full");
-    const lite = hallLights("lite");
-    // Only the north fountain's ring turns (the stage shader turns around one centre); the south ring stands still.
-    expect(full.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.full);
-    expect(lite.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.lite);
-    expect(full.filter((l) => l.kind === "beam" && !l.spin && l.r0 === 0.14)).toHaveLength(FOUNTAIN.beams.full);
-    // A spotlight per station.
+  it("lights every station and the gate; no fountains (owner decision 2026-11-04); no light is real", () => {
+    const full = hallLights();
+    // No light turns (the fountains are gone); a spotlight per station.
+    expect(full.filter((l) => l.spin)).toHaveLength(0);
+    expect(full.filter((l) => l.kind === "beam" && l.r0 === 0.14)).toHaveLength(0);
     expect(full.filter((l) => l.kind === "cone")).toHaveLength(7);
     for (const l of full) {
       expect(l.alpha).toBeGreaterThan(0);
       expect(l.alpha).toBeLessThanOrEqual(0.6);
       expect(inside(l, HALL.zone)).toBe(true);
-    }
-    // The fountains are light only: nothing blocks them, both stand on the plaza.
-    const grid = buildNavGrid(l1, ROVER.radius);
-    expect(FOUNTAINS).toEqual([FOUNTAIN, FOUNTAIN_SOUTH]);
-    for (const f of FOUNTAINS) {
-      expect(isWalkable(grid, { x: f.x, z: f.z })).toBe(true);
-      expect(Math.abs(f.z - HALL.plaza.z)).toBeLessThan(HALL.plaza.d / 2 - f.rings[1]);
     }
   });
 
