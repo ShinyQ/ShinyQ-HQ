@@ -114,7 +114,7 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(page).toHaveURL(/\/en\/contact\?tier=lite$/);
     const panel = page.getByTestId("room-drawer");
     await expect(panel).toContainText(content.floors.roof.availability.en);
-    await expect(panel.getByRole("link", { name: "Email me" })).toHaveAttribute("href", /^mailto:/);
+    await expect(panel.getByRole("link", { name: enMessages.drawer.rooms.emailMe, exact: true })).toHaveAttribute("href", /^mailto:/);
     await expect(panel.getByRole("link", { name: /LinkedIn/ })).toHaveAttribute("target", "_blank");
     await panel.getByRole("button", { name: "Copy email" }).click();
     await expect(panel.getByRole("status")).toHaveText(enMessages.drawer.rooms.copied);
