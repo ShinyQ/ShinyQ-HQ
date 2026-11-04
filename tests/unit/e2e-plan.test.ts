@@ -67,6 +67,14 @@ describe("specsForChanges", () => {
     }
   });
 
+  it("runs the contact mission and Roof action specs when translated labels change", () => {
+    for (const file of ["messages/en.json", "messages/id.json"]) {
+      expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining([
+        "library-roof", "roof", "pageview", "seo", "static-routes", "time-travel",
+      ]));
+    }
+  });
+
   it("maps the shared PDF reader, the CV and the paper reader to every spec that opens one", () => {
     for (const file of ["src/components/pdf-reader/PdfReader.tsx", "src/components/pdf-reader/ReaderDialog.tsx"]) {
       expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["guides", "guides-vault", "pageview", "csp", "library-roof"]));

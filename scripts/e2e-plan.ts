@@ -340,7 +340,8 @@ export const RULES: Rule[] = [
   { test: /^src\/lib\/audio\//, specs: ["ambience", "experience", "pageview"] },
   { test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },
   { test: /^src\/lib\//, specs: ["static-routes", "pageview"] },
-  { test: /^(content|messages)\/|^src\/content\//, specs: ["static-routes", "pageview", "seo"] },
+  { test: /^messages\//, specs: ["static-routes", "pageview", "seo", "library-roof", "roof"] },
+  { test: /^content\/|^src\/content\//, specs: ["static-routes", "pageview", "seo"] },
   { test: /^public\//, specs: ["static-routes"] },
 ];
 
@@ -737,4 +738,3 @@ export function medianDurations(samples: readonly DurationSample[]): Record<Lane
   }
   return result;
 }
-

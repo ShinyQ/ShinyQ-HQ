@@ -167,7 +167,7 @@ describe("MissionHud before the HUD index has loaded", () => {
     );
   }
 
-  it("the palette shows no 'No results' and keeps an Enter until the index arrives, then runs the first result", async () => {
+  it("the palette shows no empty-state message and keeps an Enter until the index arrives, then runs the first result", async () => {
     const { release } = slowIndex();
     chunks.push.mockReset();
     renderLoading();
@@ -175,7 +175,7 @@ describe("MissionHud before the HUD index has loaded", () => {
     const input = await screen.findByRole("combobox");
     await userEvent.type(input, "voice");
     expect(input).toHaveValue("voice");
-    expect(screen.queryByText(/No results/)).toBeNull();
+    expect(screen.queryByText('No match. Edit "voice"')).toBeNull();
     await userEvent.keyboard("{Enter}");
     expect(chunks.push).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Command palette" })).toBeInTheDocument();
@@ -209,4 +209,3 @@ describe("MissionHud before the HUD index has loaded", () => {
     expect(fetchMock).toHaveBeenCalledWith(`/data/hud/index.json?v=${version}`);
   });
 });
-
