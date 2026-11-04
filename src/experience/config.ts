@@ -8,7 +8,7 @@ import { buildEngineLayout, ENGINE } from "./floors/engine/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
-import { HALL, HALL_LAYOUT, hallOfficeRoad } from "./floors/lobby/hallLayout";
+import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
 import { officeObstacles, officeRoad, officeStops, officeTall, officeTowerTall, officeWing, officeZone } from "./floors/lobby/officeLayout";
 import {
@@ -301,15 +301,14 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       // zones; the Visitor Observatory's door and the spawn and observatory views (floors/lobby/observatoryLayout.ts);
       // the elevator arrival view.
       doors: [...HALL_LAYOUT.doors, observatory.door],
-      // The office wing's lead road and plaza and the road from the office plaza into the hall join the hall's network as a
-      // second part (the hall road joins the office lead road and ends inside the hall plaza, which links to the hall lead
-      // road only), and `roadRoute` drives between the parts.
+      // The office wing's lead road and plaza join the hall's network as a second part, and `roadRoute` drives between the
+      // parts. The hall has one way in, its lead road under the gateway arch (owner decision 2026-11-04).
       road: {
         ...HALL_LAYOUT.network,
-        roads: [...HALL_LAYOUT.network.roads, office.road, hallOfficeRoad()],
+        roads: [...HALL_LAYOUT.network.roads, office.road],
         plazas: [...HALL_LAYOUT.network.plazas, office.plaza],
       },
-      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan, HALL.link],
+      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan],
       viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone(), officeZone(wing)],
       // Every Agent Office room drives to the office stop (the rooms have no door).
       stops: officeStops(wing),

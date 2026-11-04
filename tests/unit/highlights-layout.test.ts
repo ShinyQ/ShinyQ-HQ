@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import { zoneAt } from "@/experience/camera/orbit";
 import { followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
-import { HALL, HALL_LAYOUT, shouldLoadShots, stationOf } from "@/experience/floors/lobby/hallLayout";
+import * as hall from "@/experience/floors/lobby/hallLayout";
+import { gatePillars, HALL, HALL_LAYOUT, hallPartitions, shouldLoadShots, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { HIGHLIGHT_STATIONS, highlightRoom } from "@/experience/floors/lobby/stations";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { spaceViolations } from "@/experience/nav/space";
+import type { Rect } from "@/experience/types";
+
+const rectGap = (a: Rect, b: Rect) => Math.max(0, a.minX - b.maxX, b.minX - a.maxX, a.minZ - b.maxZ, b.minZ - a.maxZ);
+const LOBBY_CERT: Rect = { minX: LOBBY.certWall.x - LOBBY.certWall.w / 2, maxX: LOBBY.certWall.x + LOBBY.certWall.w / 2, minZ: LOBBY.certWall.z - LOBBY.certWall.d / 2, maxZ: LOBBY.certWall.z + LOBBY.certWall.d / 2 };
 
 const layouts = buildFloorLayouts(8);
 const l1 = layouts.L1;
@@ -105,5 +110,45 @@ describe("Highlights Hall layout", () => {
     expect(shouldLoadShots("L1", LOBBY.spawn.x)).toBe(false);
     expect(shouldLoadShots("L1", HALL.lazyX + 1)).toBe(true);
     expect(shouldLoadShots("L3", 40)).toBe(false);
+  });
+
+  describe("one gate (owner decision 2026-11-04)", () => {
+    it("has no road from the Agent Office", () => {
+      expect("hallOfficeRoad" in hall).toBe(false);
+      expect("hallOfficeRoadDrawn" in hall).toBe(false);
+      expect("officeRoad" in HALL).toBe(false);
+      expect(l1.road!.roads.some((r) => r.id === "hall-office")).toBe(false);
+    });
+
+    it("closes the west side except the gateway opening, touching its neighbours (no gap under 6 u)", () => {
+      const parts = hallPartitions();
+      expect(parts).toHaveLength(3);
+      const [north, ret, south] = parts;
+      const [pn, ps] = gatePillars();
+      const touches = (a: Rect, b: Rect) => rectGap(a, b) === 0;
+      // North run: from the north slab edge to the north pillar, touching it and the about station.
+      expect(north.minZ).toBe(HALL.zone.minZ);
+      expect(touches(north, pn)).toBe(true);
+      expect(touches(north, stationOf("about").rect)).toBe(true);
+      // South return and run: from the south pillar to the hall's west edge, down to the contact station.
+      expect(touches(ret, ps)).toBe(true);
+      expect(touches(ret, south)).toBe(true);
+      expect(south.maxZ).toBe(HALL.zone.maxZ);
+      expect(touches(south, stationOf("contact").rect)).toBe(true);
+      // The opening between the pillars carries the whole lead road.
+      const lead = HALL.lead[0].z;
+      expect(north.maxZ).toBeLessThanOrEqual(lead - 4);
+      expect(ret.minZ).toBeGreaterThanOrEqual(lead + 4);
+      expect(rectGap(north, LOBBY_CERT)).toBeGreaterThanOrEqual(6);
+      for (const p of parts) {
+        expect(HALL_LAYOUT.obstacles).toContainEqual(p);
+        expect(l1.obstacles).toContainEqual(p);
+      }
+    });
+
+    it("keeps the partitions low: under the certification wall, never a camera column", () => {
+      expect(HALL.partition.height).toBeLessThan(LOBBY.certWall.h);
+      for (const p of hallPartitions()) expect(l1.tall!.some((t) => t.minX === p.minX && t.maxX === p.maxX && t.minZ === p.minZ)).toBe(false);
+    });
   });
 });

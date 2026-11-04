@@ -136,10 +136,10 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(W.lead.to).toBeGreaterThan(plaza.center.z - plaza.d / 2);
     expect(W.lead.to).toBeLessThan(plaza.center.z);
     expect(rectGap(r, kioskRect())).toBeGreaterThanOrEqual(SPACE_RULES.clear);
-    // The road network carries it, and the road zone covers the wing and the lead's span in the Lobby (and the floor between the office wing and the hall).
+    // The road network carries it, and the road zone covers the wing and the lead's span in the Lobby (the hall has one way in, its own lead road).
     expect(l1.road!.roads).toContainEqual(road);
     expect(l1.road!.plazas).toContainEqual(plaza);
-    expect(l1.roadZone).toEqual([HALL.zone, W.rect, W.leadSpan, HALL.link]);
+    expect(l1.roadZone).toEqual([HALL.zone, W.rect, W.leadSpan]);
     // The intro reveal rect: the wing reaching north over the lead road (narrower than the wing).
     expect(r.minX).toBeGreaterThanOrEqual(W.rect.minX);
     expect(r.maxX).toBeLessThanOrEqual(W.rect.maxX);
@@ -287,7 +287,7 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(findPath(grid, l1.spawn, HALL.lead[0])?.at(-1)).toEqual(HALL.lead[0]);
   });
 
-  it("follows the wing road into the wing and back out, and the hall road into the hall", () => {
+  it("follows the wing road into the wing and back out, and the hall road out of the hall through the gate", () => {
     const graph = buildRoadGraph(l1.road!);
     const grid = buildNavGrid(l1, ROVER.radius);
     expect(routeUsesRoad(l1, l1.spawn, W.stop)).toBe(true);
@@ -298,15 +298,17 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(route.some((p) => p.x === W.lead.x && p.z >= W.lead.to - 1e-9)).toBe(true);
     const back = roadRoute(l1.road!, grid, W.stop, l1.approach, graph)!;
     expect(back.some((p) => p.x === W.lead.x && Math.abs(p.z - W.lead.from) < 1e-9)).toBe(true);
-    // From the hall: out along the hall road to its west end, then across the open floor (the old notch, 2026-11-02) onto
-    // the road from the office plaza into the hall, which runs west into the office plaza.
-    const about = l1.doors!.find((d) => d.room === "L1:highlights-about")!.at;
-    const across = roadRoute(l1.road!, grid, about, W.stop, graph)!;
-    const hallEnd = across.findIndex((p) => p.x === HALL.lead[0].x && p.z === HALL.lead[0].z);
-    const roadIn = across.findIndex((p) => p.z === W.plaza.center.z && p.x > W.lead.x);
-    expect(hallEnd).toBeGreaterThanOrEqual(0);
-    expect(roadIn).toBeGreaterThan(hallEnd);
-    expect(across.at(-1)).toEqual(W.stop);
+    // From the hall: out along the hall road through the gate to its west end, then down the office lead road (the hall
+    // has one way in, owner decision 2026-11-04).
+    for (const room of ["L1:highlights-about", "L1:highlights-contact"]) {
+      const at = l1.doors!.find((d) => d.room === room)!.at;
+      const across = roadRoute(l1.road!, grid, at, W.stop, graph)!;
+      const hallEnd = across.findIndex((p) => p.x === HALL.lead[0].x && p.z === HALL.lead[0].z);
+      const lead = across.findIndex((p) => p.x === W.lead.x && Math.abs(p.z - W.lead.to) < 1e-9);
+      expect(hallEnd, room).toBeGreaterThanOrEqual(0);
+      expect(lead, room).toBeGreaterThan(hallEnd);
+      expect(across.at(-1)).toEqual(W.stop);
+    }
   });
 
   it("leaves no pocket behind the desks (either row) that the rover could reach", () => {

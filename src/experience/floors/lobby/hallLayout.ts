@@ -13,14 +13,13 @@ const Z = LOBBY_SLAB.halfZ;
 const LEAD_Z = Z - 6;
 /** The floor's south edge (the office wing's): the hall runs the slab's full depth (owner decision 2026-11-02). */
 const SOUTH = Z + OFFICE_WING.depth;
-/** The office plaza's centre, where the road from the office into the hall starts (a T junction with the office lead road). */
-const OFFICE_PLAZA = { x: OFFICE_WING.x, z: Z + OFFICE_WING.plaza.z, w: OFFICE_WING.plaza.w } as const;
 
 /**
  * L1 Highlights Hall (owner request, October 2026; more room 2026-10-19; the slab's full depth 2026-11-02): the Lobby
  * slab grows east from `LOBBY_SLAB.hallX` by 36 u, and the hall runs from the north slab edge to the floor's south edge.
  * A lead road leaves the Lobby south of the certification wall (which stays untouched and readable from the plaza) into
- * the hall plaza, and a second road comes in from the Agent Office plaza. Seven stations stand flush with the slab edges,
+ * the hall plaza through the gateway arch: the only way in (owner decision 2026-11-04; low glass partitions close the hall's
+ * west edge, so the hall is a dead-end gallery). Seven stations stand flush with the slab edges,
  * facing the plaza, in this order: about me (north-west), top projects (north-east), work experience, wins and now (east),
  * results (south-east), contact (south-west). Pure: the floor layout, the scenery and the e2e tests read it.
  * Checked by tests/unit/highlights-layout.test.ts (space rules with the real Lobby).
@@ -31,8 +30,6 @@ export const HALL = {
   south: SOUTH,
   /** Drives that start or end in here follow the hall road (`FloorLayout.roadZone`); east of the cert wall. */
   zone: { minX: X0 - 1, maxX: X0 + 36, minZ: -Z, maxZ: SOUTH },
-  /** The open floor between the Agent Office wing and the hall, which the office road crosses (`FloorLayout.roadZone`). */
-  link: { minX: OFFICE_WING.maxX, maxX: X0 - 1, minZ: Z, maxZ: SOUTH },
   /**
    * Starts 6 u east of the Agent Office wing's east edge (`OFFICE_WING.maxX`, the wing hangs off the south slab edge), so the
    * road's driving width keeps 6 u from the wing's north-east corner (owner, 2026-10-19).
@@ -80,8 +77,14 @@ export const HALL = {
   zoom: { about: 1, projects: 1.45, experience: 1.5, wins: 1, now: 1.2, results: 1.45, contact: 1.27 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */
   height: { about: 6.4, projects: 7.6, experience: 7.4, wins: 6.4, now: 6.4, results: 7.6, contact: 9.6 },
-  /** The road from the office plaza: 8 u wide on the office plaza's line, ending 2 u inside the hall plaza's west edge. */
-  officeRoad: { z: OFFICE_PLAZA.z, from: OFFICE_PLAZA.x, to: X0 + 8, width: ROAD.minWidth },
+  /**
+   * Low glass partitions close the hall's west side (owner decision 2026-11-04): the gateway is the only opening. They touch
+   * their neighbours, so the space rules hold (every gap 0 or at least 6 u): the north run stands on the gate's line, from the
+   * north pillar's east face to the about station (6.5 u clear of the certification wall); the south run returns from the
+   * south pillar to the hall's west edge (`HALL.zone.minX` + 1, x 33) and runs down it to the contact station. Obstacles
+   * and navgrid blockers, low and translucent so the certification wall stays readable from the plaza; not camera columns.
+   */
+  partition: { north: X0 + 3.6, south: X0, thickness: 0.4, height: 2.4 },
   /** Screenshots load once the rover is east of here on L1. */
   lazyX: X0 - 10,
 } as const;
@@ -161,20 +164,21 @@ function stationZone(s: HallStation): ViewZone {
 }
 
 /**
- * The road from the Agent Office plaza into the hall (routing): it starts on the office plaza's centre, on the office lead
- * road's driving width (a T junction), so it joins the office's network part; it ends inside the hall plaza, which links to
- * the hall lead road only, so the hall keeps its own part and Lobby drives into the hall still join the lead road at its west
- * end. A drive between the office and the hall hops between the parts (`partsPath`).
+ * The west-side partitions (obstacles and navgrid blockers), north to south: the north run (gate line, touching the north
+ * pillar and the about station), the south return (touching the south pillar) and the south run (the hall's west edge, down
+ * to the contact station).
  */
-export function hallOfficeRoad(): Road {
-  const R = HALL.officeRoad;
-  return { id: "hall-office", points: [{ x: R.from, z: R.z }, { x: R.to, z: R.z }], width: R.width };
-}
-
-/** The office road as drawn (`RoadMarkings`): from the office plaza's east edge to the hall plaza's west edge, so no road fill doubles a plaza's. */
-export function hallOfficeRoadDrawn(): Road {
-  const R = HALL.officeRoad;
-  return { id: "hall-office", points: [{ x: OFFICE_PLAZA.x + OFFICE_PLAZA.w / 2, z: R.z }, { x: HALL.plaza.x - HALL.plaza.w / 2, z: R.z }], width: R.width };
+export function hallPartitions(): Rect[] {
+  const P = HALL.partition;
+  const g = HALL.gate;
+  const pillarMinX = g.x - g.depth / 2;
+  const contact = HALL.stations.contact;
+  return [
+    { minX: P.north, maxX: P.north + P.thickness, minZ: HALL.zone.minZ, maxZ: g.north.maxZ },
+    // As deep as the pillar it meets, so it fills the gap between the pillar and the south run (`gapFilled`).
+    { minX: P.south, maxX: pillarMinX, minZ: g.south.minZ, maxZ: g.south.maxZ },
+    { minX: P.south - P.thickness, maxX: P.south, minZ: g.south.minZ, maxZ: contact.maxZ },
+  ];
 }
 
 /** The gateway arch pillars (obstacles; the opening between them carries the lead road). */
@@ -207,7 +211,7 @@ export function buildHighlightsHall(): HighlightsHallLayout {
     network: { roads: [leadOn, spine, ...approaches], plazas: [plaza], spurs },
     drawn: { roads: [lead], plazas: [plaza], spurs },
     doors: stations.map((s) => ({ room: s.room, at: s.pad, facing: s.facing })),
-    obstacles: [...stations.map((s) => s.rect), ...gatePillars()],
+    obstacles: [...stations.map((s) => s.rect), ...gatePillars(), ...hallPartitions()],
     viewZones: [{ id: "L1:highlights-entry", area: { ...HALL.entry }, yaw: -Math.PI / 2, zoom: 1.3 }, ...stations.map(stationZone)],
     zone: { ...HALL.zone },
   };
