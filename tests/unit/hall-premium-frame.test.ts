@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { resultBars } from "@/content/highlights";
-import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
-import { barLengths, PART_OF, premiumInstances, premiumTexts } from "@/experience/floors/lobby/hallPremium/build";
+import { HEADER } from "@/experience/floors/lobby/hallContent";
+import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
+import { barLengths, PART_OF, premiumInstances, premiumTexts, REPLACES } from "@/experience/floors/lobby/hallPremium/build";
 import { ACCENT, accentOf, caseFrame } from "@/experience/floors/lobby/hallPremium/caseFrame";
 import { PREMIUM_MODE } from "@/experience/floors/lobby/hallPremium/shader";
 import { onPad } from "@/experience/nav/doors";
@@ -27,13 +28,16 @@ describe("hall interiors: case frames (owner decision 2026-11-04)", () => {
     expect(HALL_LAYOUT.stations.map(accentOf)).toEqual([ACCENT.cyan, ACCENT.violet, ACCENT.cyan, ACCENT.violet, ACCENT.cyan, ACCENT.violet, ACCENT.cyan]);
   });
 
-  it("gives every station four panes, a cone and a halo, each tied to its wake slot", () => {
+  it("gives every station four quiet glass panes under its header, each tied to its wake slot", () => {
     for (const s of HALL_LAYOUT.stations) {
       const f = caseFrame(s, "lite");
       expect(f.panes).toHaveLength(4);
-      expect(f.cone.a[0]).toBe(PREMIUM_MODE.cone);
-      expect(f.halo.a[0]).toBe(PREMIUM_MODE.ring);
-      for (const i of [...f.panes, f.cone, f.halo]) expect(i.a[3]).toBe(HALL_LAYOUT.stations.indexOf(s) + 1);
+      expect(f.box.h).toBeCloseTo(HALL.height[s.station] + HEADER.over);
+      for (const i of f.panes) {
+        expect(i.a[0]).toBe(PREMIUM_MODE.pane);
+        expect(i.a[3]).toBe(HALL_LAYOUT.stations.indexOf(s) + 1);
+        expect(i.b[3]).toBeLessThanOrEqual(0.6);
+      }
     }
   });
 });
@@ -68,11 +72,12 @@ describe("hall interiors: instances and texts", () => {
     expect(la).toBeLessThan(0.5);
   });
 
-  it("titles every case with its number and existing station name only", () => {
-    const labels = { about: "About Me", projects: "Top Projects", experience: "Work Experience", wins: "Wins", now: "Now", results: "Results", contact: "Contact" } as never;
+  it("adds only the projects' headline metrics and replaces no station text", () => {
     const fonts = { sans: "s", sansBold: "sb", mono: "m", monoBold: "mb" };
-    const texts = premiumTexts(data, labels, fonts);
-    expect(texts.filter((t) => /^0\d {2}/.test(t.text))).toHaveLength(7);
+    const texts = premiumTexts(data, {} as never, fonts);
+    const metrics = data.highlights.projects.filter((p) => data.highlights.results.some((r) => r.slug === p.slug)).length;
+    expect(texts).toHaveLength(metrics);
+    expect(REPLACES).toEqual([]);
     for (const t of texts) expect(t.text).not.toContain("\u2014");
   });
 });

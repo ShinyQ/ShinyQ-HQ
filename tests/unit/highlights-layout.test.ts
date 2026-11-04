@@ -50,11 +50,14 @@ describe("Highlights Hall layout", () => {
     expect(HALL_LAYOUT.stations.map((s) => s.station)).toEqual([...HIGHLIGHT_STATIONS]);
     // Every station touches a slab edge (north, east or south).
     for (const s of HALL_LAYOUT.stations) expect([s.rect.minZ === LOBBY.slab.minZ, s.rect.maxX === LOBBY.slab.maxX, s.rect.maxZ === LOBBY.slab.maxZ].some(Boolean), s.room).toBe(true);
-    // The spine and the approach roads route only: the hall draws its lead road, plaza and spurs.
+    // The spine and the approach roads route only.
     const spine = HALL_LAYOUT.network.roads.find((r) => r.id === "hall-spine")!;
     expect(spine.points.every((p) => p.x === HALL.plaza.x)).toBe(true);
+    // B4 (owner decision 2026-11-04): only the lead road from the Lobby to the gateway arch is drawn; no plaza fill or stubs.
     expect(HALL_LAYOUT.drawn.roads.map((r) => r.id)).toEqual(["hall-lead"]);
-    expect(HALL_LAYOUT.drawn.spurs).toEqual(HALL_LAYOUT.network.spurs);
+    expect(HALL_LAYOUT.drawn.roads[0].points.at(-1)!.x).toBe(HALL.gate.x);
+    expect(HALL_LAYOUT.drawn.plazas).toEqual([]);
+    expect(HALL_LAYOUT.drawn.spurs).toEqual([]);
     // A drive between two stations follows the spine: no detour through the plaza's centre.
     const graph = buildRoadGraph(l1.road!);
     const grid = buildNavGrid(l1, ROVER.radius);

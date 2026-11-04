@@ -78,10 +78,14 @@ function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
   return texture;
 }
 
+/** B4 base (owner decision 2026-11-04): deep indigo surfaces with a faint indigo glow. */
+const B4_BASE = "#0a0620";
+const B4_GLOW = "#1c1442";
+
 /** Every gallery solid in one mesh (boxes and round prisms), lit like the rest of the Lobby. */
 function HallSolids({ shapes }: { shapes: HallShapes }) {
   const geometry = useMemo(() => {
-    const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms);
+    const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms, shapes.quads);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("normal", new BufferAttribute(normals, 3));
@@ -92,7 +96,7 @@ function HallSolids({ shapes }: { shapes: HallShapes }) {
   useDispose(geometry);
   return (
     <mesh geometry={geometry} raycast={() => null}>
-      <meshStandardMaterial color="#0b1020" emissive={HALL.tone.about} emissiveIntensity={0.05} roughness={0.7} metalness={0.2} />
+      <meshStandardMaterial color={B4_BASE} emissive={B4_GLOW} emissiveIntensity={0.25} roughness={0.55} metalness={0.3} />
     </mesh>
   );
 }
@@ -106,10 +110,10 @@ function HallLines({ shapes, tier, extra, lattice }: { shapes: HallShapes; tier:
     return g;
   }, [shapes, extra, lattice]);
   useDispose(geometry);
-  const neon = useMemo(() => neonColor(HALL.tone.about, 1.4, tier), [tier]);
+  const neon = useMemo(() => neonColor(SHELL.violet, 1.2, tier), [tier]);
   return (
     <lineSegments geometry={geometry} raycast={() => null}>
-      <lineBasicMaterial color={neon} transparent opacity={0.7} toneMapped={false} />
+      <lineBasicMaterial color={neon} transparent opacity={0.55} toneMapped={false} />
     </lineSegments>
   );
 }
@@ -193,8 +197,6 @@ const HALL_VIEW: Record<HallPart, Box3[]> = {
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
-/** A station eyebrow (`hallTexts`: "0N · TITLE"). */
-const EYEBROW = /^0\d · /;
 /** The gate tunnel's instances (its own view part); every other shell instance stands in a hall part. */
 const GATE_KINDS: readonly number[] = [STAGE_KIND.gateRing, STAGE_KIND.runway, STAGE_KIND.packet];
 /** The portrait and the wins rings both stand in the north part; the others have none. */
@@ -260,9 +262,13 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const texts = useMemo(() => {
     const base = hallTexts(data, labels, FONTS);
     const extra = premium ? premium.premiumTexts(data, labels, FONTS) : [];
-    // Each case's "0N  TITLE" replaces the station's "0N · TITLE" eyebrow on its face.
-    const keep = base.labels.map((l) => !premium || !EYEBROW.test(l.text));
-    const all = { labels: [...base.labels.filter((_, i) => keep[i]), ...extra], tile: [...base.tile.filter((_, i) => keep[i]), ...extra.map(() => -1)] };
+    // The interiors replace whole groups of the station texts with their own (the pillar columns by the curtain's roles).
+    const keep = base.group.map((g) => !premium?.REPLACES.includes(g));
+    const all = {
+      labels: [...base.labels.filter((_, i) => keep[i]), ...extra],
+      tile: [...base.tile.filter((_, i) => keep[i]), ...extra.map(() => -1)],
+      group: [...base.group.filter((_, i) => keep[i]), ...extra.map(() => "interiors")],
+    };
     return { north: partTexts(all, partOf, "north"), contact: partTexts(all, partOf, "contact"), south: partTexts(all, partOf, "south") };
   }, [data, labels, premium]);
   const winTiers = data.highlights.wins.tiers;
@@ -318,8 +324,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const gateSigns = useMemo(() => [gateSign(labels.hall)], [labels.hall]);
   return (
     <HallReady>
-      {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
-      <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
+      {/* The lead road from the Lobby to the gateway arch, cyan (B4). Outside HallView: it starts by the spawn. */}
+      <RoadMarkings network={HALL_LAYOUT.drawn} color={SHELL.cyan} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.08 : 0.1} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
         {premium && <premium.HallPremium part="north" {...inside} countUp={countUp} />}
         <HallSolids shapes={shapes.north} />

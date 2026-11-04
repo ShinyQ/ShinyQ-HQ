@@ -3,7 +3,8 @@ import { neonColor } from "../../fx/materials";
 import type { GpuTier, Vec2 } from "../../types";
 import type { AtlasCell, ShotQuad } from "./hallContent";
 import { ARCH, experienceArch, gateOpening, NOW_ARCH, nowArch, onFace, type LightInstance, type StatTile } from "./hallGallery";
-import { HALL, hallPartitions } from "./hallLayout";
+import { HALL, HALL_LAYOUT, hallPartitions } from "./hallLayout";
+import { ENCLOSURE } from "./hallSolids";
 import { LOBBY_SLAB } from "./slab";
 
 /**
@@ -33,6 +34,7 @@ export const STAGE_KIND = {
   mote: 13,
   wall: 14,
   floor: 15,
+  halo: 16,
 } as const;
 
 export type StageKind = (typeof STAGE_KIND)[keyof typeof STAGE_KIND];
@@ -139,15 +141,20 @@ export const SHELL = {
   violet: "#a78bfa",
   indigo: "#6d4dff",
   /** Ceiling ribs: one every `step` u along the hall, springing from the wall tops (`spring`), rising `rise` u, `width` u wide. */
-  rib: { step: 12, phase: 6, spring: 6, rise: 4.5, width: 0.12, gain: 1, alpha: 0.8 },
+  rib: { step: 12, phase: 6, spring: ENCLOSURE.wall, rise: 3, width: 0.08, gain: 1, alpha: 0.6 },
   /** The gate tunnel: three rings `gap` u apart west of the gateway arch, centred over the lead road. */
   ring: { count: 3, gap: 1.6, r: 4.3, y: 4.5, width: 0.18, gain: 1.4, alpha: 1 },
   /** The runway: a narrow cyan line from west of the rings to the plaza's spine, and two light packets sliding in on it. */
   runway: { west: 4, width: 0.45, gain: 1, alpha: 0.7 },
+  /** A fainter glow line down the plaza's long axis (the spine), split at the part line. */
+  spine: { width: 0.3, gain: 0.8, alpha: 0.35 },
   packet: { count: 2, w: 1.6, d: 0.6, gain: 1.2, alpha: 0.9 },
-  /** Glass walls on the north, east and south edges (indigo grid) and over the west partitions (violet, low). */
-  wall: { h: 6, fill: 0.015, gain: 0.8, alpha: 0.45 },
+  /** A faint indigo grid on the dark walls (`enclosureQuads`), a violet rail on top; the west glass: low tinted, then clear up to the wall top. */
+  wall: { h: ENCLOSURE.wall, fill: 0, gain: 0.8, alpha: 0.32 },
   partition: { fill: 0.06, gain: 1.2, alpha: 0.8 },
+  glass: { fill: 0.006, gain: 0.8, alpha: 0.22, cell: 3 },
+  /** Door-pad halos: a ring on the floor around each station's pad, in its accent. */
+  halo: { r: 1.5, width: 0.07, gain: 1.3, alpha: 0.75 },
   floor: { gain: 0.8, alpha: 0.18 },
   /** Light motes rising slowly through the hall (full tier only), from a fixed seed so captures repeat. */
   mote: { count: 280, top: 11, size: 0.12, color: "#c7f3ff", alpha: 0.5, seed: 0x5eed },
@@ -212,7 +219,7 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   const toX = HALL.plaza.x;
   const len = toX - fromX;
   const W = SHELL.runway;
-  out.push({ at: [(fromX + toX) / 2, 0.035, lead], yaw: 0, color: tone(SHELL.cyan, W.gain), stage: [STAGE_KIND.runway, len, W.width, 0], stage2: [0, 0, 0, W.alpha], uv: FLAT, tag: "runway" });
+  out.push({ at: [(fromX + toX) / 2, 0.04, lead], yaw: 0, color: tone(SHELL.cyan, W.gain), stage: [STAGE_KIND.runway, len, W.width, 0], stage2: [0, 0, 0, W.alpha], uv: FLAT, tag: "runway" });
   const P = SHELL.packet;
   for (let i = 0; i < P.count; i++)
     out.push({ at: [(fromX + toX) / 2, 0.04, lead], yaw: 0, color: tone("#e0fbff", P.gain), stage: [STAGE_KIND.packet, P.w, P.d, len - P.w], stage2: [0, 0, i / P.count, P.alpha], uv: FLAT, tag: "packet" });
@@ -220,10 +227,10 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   const split = HALL.stations.contact.maxX + 1;
   const S = LOBBY_SLAB.halfZ;
   const WL = SHELL.wall;
-  const wall = (x0: number, z0: number, x1: number, z1: number, h: number, hex: string, gain: number, alpha: number, fill: number, tag: string) => {
+  const wall = (x0: number, z0: number, x1: number, z1: number, h: number, hex: string, gain: number, alpha: number, fill: number, tag: string, y0 = 0, cell = 0) => {
     const w = Math.hypot(x1 - x0, z1 - z0);
     const right = { x: (x1 - x0) / w, z: (z1 - z0) / w };
-    out.push({ at: [(x0 + x1) / 2, h / 2, (z0 + z1) / 2], yaw: yawOfRight(right), color: tone(hex, gain), stage: [STAGE_KIND.wall, w, h, 0], stage2: [fill, 0, 0, alpha], uv: FLAT, tag });
+    out.push({ at: [(x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2], yaw: yawOfRight(right), color: tone(hex, gain), stage: [STAGE_KIND.wall, w, h, cell], stage2: [fill, 0, 0, alpha], uv: FLAT, tag });
   };
   const { minZ, maxZ, maxX } = HALL.zone;
   const inset = 0.05;
@@ -233,20 +240,39 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   wall(maxX - inset, S, maxX - inset, maxZ, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
   wall(WEST, maxZ - inset, split, maxZ - inset, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
   wall(split, maxZ - inset, maxX, maxZ - inset, WL.h, SHELL.indigo, WL.gain, WL.alpha, WL.fill, "wall");
-  // The west partitions: violet glass with a lit rail on top (the north run, the south run in two parts).
+  // The west side: low tinted glass with a lit violet rail (the partitions), then clear glass up to the wall top, so the
+  // certification wall stays readable from the plaza (the north run, the south run in two parts).
   const PT = SHELL.partition;
+  const GL = SHELL.glass;
   const ph = HALL.partition.height;
   const southRun = hallPartitions()[2];
   const nx = (north.minX + north.maxX) / 2;
   const sx = (southRun.minX + southRun.maxX) / 2;
   const contactZ = HALL.stations.contact.minZ - 8;
-  wall(nx, north.minZ, nx, north.maxZ, ph, SHELL.violet, PT.gain, PT.alpha, PT.fill, "partition");
-  wall(sx, southRun.minZ, sx, contactZ, ph, SHELL.violet, PT.gain, PT.alpha, PT.fill, "partition");
-  wall(sx, contactZ, sx, southRun.maxZ, ph, SHELL.violet, PT.gain, PT.alpha, PT.fill, "partition");
+  for (const [x, z0, z1] of [
+    [nx, north.minZ, north.maxZ],
+    [sx, southRun.minZ, contactZ],
+    [sx, contactZ, southRun.maxZ],
+  ] as const) {
+    wall(x, z0, x, z1, ph, SHELL.violet, PT.gain, PT.alpha, PT.fill, "partition");
+    wall(x, z0, x, z1, WL.h - ph, SHELL.violet, GL.gain, GL.alpha, GL.fill, "glass", ph, GL.cell);
+  }
+  // Door-pad halos (lying rings), in each station's accent.
+  const H = SHELL.halo;
+  for (const st of HALL_LAYOUT.stations) out.push({ at: [st.pad.x, 0.045, st.pad.z], yaw: 0, color: tone(HALL.tone[st.station], H.gain), stage: [STAGE_KIND.halo, H.r, H.r, H.width], stage2: [0, Math.PI * 2, 0, H.alpha], uv: FLAT, tag: "halo" });
+  // The spine glow down the plaza's long axis, north and south of S.
+  const SP = SHELL.spine;
+  const top = HALL.plaza.z - HALL.plaza.d / 2;
+  const bottom = HALL.plaza.z + HALL.plaza.d / 2;
+  for (const [z0, z1] of [
+    [top, S],
+    [S, bottom],
+  ])
+    out.push({ at: [HALL.plaza.x, 0.035, (z0 + z1) / 2], yaw: Math.PI / 2, color: tone(SHELL.cyan, SP.gain), stage: [STAGE_KIND.runway, z1 - z0, SP.width, 0], stage2: [0, 0, 0, SP.alpha], uv: FLAT, tag: "spine" });
   // The floor grid, north and south of S (the part line).
   const F = SHELL.floor;
   const floor = (x0: number, z0: number, x1: number, z1: number) =>
-    out.push({ at: [(x0 + x1) / 2, 0.015, (z0 + z1) / 2], yaw: 0, color: tone(SHELL.indigo, F.gain), stage: [STAGE_KIND.floor, x1 - x0, z1 - z0, 0], stage2: [0, 0, 0, F.alpha], uv: FLAT, tag: "floor" });
+    out.push({ at: [(x0 + x1) / 2, 0.03, (z0 + z1) / 2], yaw: 0, color: tone(SHELL.indigo, F.gain), stage: [STAGE_KIND.floor, x1 - x0, z1 - z0, 0], stage2: [0, 0, 0, F.alpha], uv: FLAT, tag: "floor" });
   floor(north.maxX, minZ, maxX, S);
   floor(WEST, S, maxX, maxZ);
   if (tier !== "full") return out;

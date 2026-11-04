@@ -90,13 +90,17 @@ void main(){
       float k = mix(.35, fract(uTime * aStage.z + aStage2.z), uPulse);
       vStage.z = k;
       w = modelMatrix * vec4(base + position * (1. + k * aStage.y), 1.);
-    } else if (kind > 8.5 && kind < 10.5) {
-      // Arc ribbons (ceiling ribs, gate rings) on a strip: position.x runs along the arc (aStage2.y radians, radii
-      // aStage.yz in the instance's x-y plane), position.y across it; the ribbon turns to the camera, aStage.w wide.
+    } else if ((kind > 8.5 && kind < 10.5) || kind > 15.5) {
+      // Arc ribbons (ceiling ribs, gate rings, door-pad halos lying on the floor) on a strip: position.x runs along the arc
+      // (aStage2.y radians, radii aStage.yz in the instance's x-y plane, or x-z lying), position.y across it; the ribbon
+      // turns to the camera, aStage.w wide.
       float s = position.x + .5;
       float ang = s * aStage2.y;
-      vec3 wp = (modelMatrix * vec4(base + rot * vec3(cos(ang) * aStage.y, sin(ang) * aStage.z, 0.), 1.)).xyz;
-      vec3 tg = mat3(modelMatrix) * rot * vec3(-sin(ang) * aStage.y, cos(ang) * aStage.z, 0.);
+      vec2 ca = vec2(cos(ang) * aStage.y, sin(ang) * aStage.z);
+      vec2 cd = vec2(-sin(ang) * aStage.y, cos(ang) * aStage.z);
+      bool down = kind > 15.5;
+      vec3 wp = (modelMatrix * vec4(base + rot * (down ? vec3(ca.x, 0., ca.y) : vec3(ca, 0.)), 1.)).xyz;
+      vec3 tg = mat3(modelMatrix) * rot * (down ? vec3(cd.x, 0., cd.y) : vec3(cd, 0.));
       vec3 n = normalize(cross(tg, cameraPosition - wp));
       w = vec4(wp + n * position.y * aStage.w, 1.);
       vStage.z = position.y + .5; vLocal = vec2(aStage2.z, s);
@@ -115,7 +119,7 @@ void main(){
       float f = kind < 12.5 && kind > 11.5 ? fract(uTime * .1 + aStage2.z) : .5;
       local = lying ? vec3(position.x * aStage.y + (f - .5) * aStage.w, 0., 0. - position.y * aStage.z) : vec3(position.x * aStage.y, position.y * aStage.z, 0.);
       vLocal = (position.xy + .5) * aStage.yz; vSize = aStage.yz;
-      vStage.z = f; vStage.w = aStage2.x;
+      vStage.z = kind > 13.5 && kind < 14.5 ? (aStage.w > 0. ? aStage.w : 1.5) : f; vStage.w = aStage2.x;
       w = modelMatrix * vec4(base + rot * local, 1.);
     } else {
       float lift = (kind > 4.5 && kind < 5.5) ? uDrift * .08 * sin(uTime * .6 + aStage2.z) : 0.;
@@ -246,13 +250,17 @@ void main(){
       col = img;
     } else if (kind < 8.5) {
       a *= (1. - vStage.z) * mix(.6, 1., uPulse) * .8;
+    } else if (kind > 15.5) {
+      a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.));
     } else if (kind < 10.5) {
       // Ribs breathe one after another (a 9 s cycle); gate rings pulse in sequence, brighter.
       float i = vLocal.x;
       float k = kind < 9.5 ? .9 + .25 * max(0., sin(uTime * .7 - i * .55)) : 1.2 + .6 * max(0., sin(uTime * 1.2 + i * .9));
       float across = 1. - abs(vStage.z * 2. - 1.);
-      // Ribs fade out close to the camera, so one never slices a station view.
-      float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(8., 20., vDist) : 1.;
+      // Ribs frame the hall as a vault: they fade out close to the camera and dim when seen from above, so one never
+      // streaks across a station view.
+      float above = clamp((cameraPosition.y - vW.y) / max(vDist, 1.), 0., 1.);
+      float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(10., 26., vDist) * mix(1., .3, smoothstep(.05, .5, above)) : 1.;
       col = c * k;
       a *= smoothstep(0., .7, across) * ends;
     } else if (kind < 11.5) {
@@ -269,7 +277,7 @@ void main(){
       a *= (1. - smoothstep(.15, 1., r)) * sin(3.1416 * vStage.z);
     } else {
       // Walls (glass with a 1.5 u grid and a lit top rail) and the floor grid (3 u).
-      float cell = kind < 14.5 ? 1.5 : 3.;
+      float cell = kind < 14.5 ? vStage.z : 3.;
       vec2 g = abs(fract(vLocal / cell + .5) - .5) * cell;
       float line = 1. - smoothstep(.015, .045, min(g.x, g.y));
       float top = kind < 14.5 ? 1. - smoothstep(.02, .12, vSize.y - vLocal.y) : 0.;

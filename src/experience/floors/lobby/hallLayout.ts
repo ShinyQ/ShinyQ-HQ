@@ -59,8 +59,8 @@ export const HALL = {
     results: { x: 0, z: 1 },
     contact: { x: 0, z: 1 },
   },
-  /** Station hues, matching the drawer accents (green, violet, amber, pink, white, cyan, blue). */
-  tone: { about: "#34d399", projects: "#a78bfa", experience: "#fbbf24", wins: "#f472b6", now: "#e5e7eb", results: "#22d3ee", contact: "#60a5fa" },
+  /** Station accents in the B4 palette (owner decision 2026-11-04): cyan for odd station numbers, violet for even. */
+  tone: { about: "#6ee7ff", projects: "#a78bfa", experience: "#6ee7ff", wins: "#a78bfa", now: "#6ee7ff", results: "#a78bfa", contact: "#6ee7ff" },
   padInset: 1.1,
   spurWidth: 4,
   panel: { h: 6, plinth: 0.35, depth: 0.3 },
@@ -115,7 +115,10 @@ export interface HighlightsHallLayout {
    * along it instead of through one hub at the plaza's centre (the hall runs the slab's full depth since 2026-11-02).
    */
   network: RoadNetwork;
-  /** What the hall draws (`RoadMarkings`): the lead road up to the plaza, the plaza and the spurs; the spine stays unseen. */
+  /**
+   * What the hall draws (`RoadMarkings`): the lead road from the Lobby up to the gateway arch only. Inside, the hall's
+   * own runway, floor grid and door-pad halos mark the way (B4, owner decision 2026-11-04).
+   */
   drawn: RoadNetwork;
   doors: DoorTrigger[];
   obstacles: Rect[];
@@ -209,7 +212,7 @@ export function buildHighlightsHall(): HighlightsHallLayout {
   return {
     stations,
     network: { roads: [leadOn, spine, ...approaches], plazas: [plaza], spurs },
-    drawn: { roads: [lead], plazas: [plaza], spurs },
+    drawn: { roads: [{ ...lead, points: [lead.points[0], { x: HALL.gate.x, z: lead.points[0].z }] }], plazas: [], spurs: [] },
     doors: stations.map((s) => ({ room: s.room, at: s.pad, facing: s.facing })),
     obstacles: [...stations.map((s) => s.rect), ...gatePillars(), ...hallPartitions()],
     viewZones: [{ id: "L1:highlights-entry", area: { ...HALL.entry }, yaw: -Math.PI / 2, zoom: 1.3 }, ...stations.map(stationZone)],

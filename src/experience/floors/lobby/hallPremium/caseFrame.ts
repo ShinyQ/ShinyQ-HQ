@@ -1,6 +1,7 @@
 import { Color } from "three";
 import { neonColor } from "../../../fx/materials";
 import type { GpuTier, Rect } from "../../../types";
+import { HEADER } from "../hallContent";
 import { HALL, type HallStation } from "../hallLayout";
 import { HIGHLIGHT_STATIONS } from "../stations";
 import { ORIENT, PREMIUM_MODE } from "./shader";
@@ -33,20 +34,21 @@ export const tint = (hex: string, k: number, tier: GpuTier): [number, number, nu
   return [c.r, c.g, c.b];
 };
 
-/** Glass case: inset from the station's back and sides, its front on the station's face, this tall (the contact beacon's mast is taller). */
-export const CASE = { inset: 0.15, h: 8.6, over: 1.6, fill: 0.018, alpha: 0.9, halo: 1.6 } as const;
+/**
+ * Glass case (B4, quiet): inset from the station's back and sides, its front on the station's face, its top under the
+ * station header (`HEADER.over` above the station's height); thin edges at about 55%, a faint face tint.
+ */
+export const CASE = { inset: 0.15, fill: 0.01, alpha: 0.55 } as const;
 
 export interface CaseFrame {
   /** The case's footprint (inside the station's) and height. */
   box: Rect & { h: number };
   panes: PremiumInstance[];
-  cone: PremiumInstance;
-  halo: PremiumInstance;
 }
 
 /**
  * The shared frame of one station (owner decision 2026-11-04): a glass display case of four panes (faint tinted faces,
- * lit edges that brighten with the wake), a light cone from above and a halo ring on the floor around its door pad.
+ * thin lit edges that brighten with the wake). The light cone and the door-pad halo are the main path's.
  */
 export function caseFrame(s: HallStation, tier: GpuTier): CaseFrame {
   const r = s.rect;
@@ -58,11 +60,11 @@ export function caseFrame(s: HallStation, tier: GpuTier): CaseFrame {
     maxX: r.maxX - (f.x > 0 ? 0 : i),
     minZ: r.minZ + (f.z < 0 ? 0 : i),
     maxZ: r.maxZ - (f.z > 0 ? 0 : i),
-    h: Math.max(CASE.h, HALL.height[s.station] + CASE.over),
+    h: HALL.height[s.station] + HEADER.over,
   };
   const no = stationNo(s);
   const accent = accentOf(s);
-  const edge = tint(accent, 1.3, tier);
+  const edge = tint(accent, 1.1, tier);
   const cx = (box.minX + box.maxX) / 2;
   const cz = (box.minZ + box.maxZ) / 2;
   const w = box.maxX - box.minX;
@@ -81,11 +83,5 @@ export function caseFrame(s: HallStation, tier: GpuTier): CaseFrame {
     pane(box.minX, cz, Math.PI / 2, d, CASE.fill),
     pane(box.maxX, cz, Math.PI / 2, d, CASE.fill),
   ];
-  const coneH = box.h + 3;
-  return {
-    box,
-    panes,
-    cone: { at: [cx, coneH / 2, cz], yaw: 0, color: tint(accent, 1, tier), a: [PREMIUM_MODE.cone, Math.min(Math.max(w, d), 9) * 0.8, coneH, no], b: [0, 0, 0, 0.16], c: [0, 0, ORIENT.column, 0] },
-    halo: { at: [s.pad.x, 0.03, s.pad.z], yaw: 0, color: tint(accent, 1.4, tier), a: [PREMIUM_MODE.ring, CASE.halo * 2, CASE.halo * 2, no], b: [0, 0, 0, 0.9], c: [0, 0, ORIENT.lying, 0.12] },
-  };
+  return { box, panes };
 }

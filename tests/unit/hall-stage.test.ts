@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createHoloMaterial, HOLO_FS, HOLO_MODE, HOLO_VS } from "@/experience/fx/holoFx";
 import { hallAtlas, hallPhoto, hallShots, SHOT_CELL } from "@/experience/floors/lobby/hallContent";
 import { contactBeacon, gateOpening, hallLights, statTiles } from "@/experience/floors/lobby/hallGallery";
-import { HALL, hallPartitions } from "@/experience/floors/lobby/hallLayout";
+import { HALL, HALL_LAYOUT, hallPartitions } from "@/experience/floors/lobby/hallLayout";
 import { curtainInstance, hallShellInstances, lightInstances, panelInstances, portalInstance, ribLines, ringInstances, SHELL, STAGE_KIND, stageAttributes, yawOfRight } from "@/experience/floors/lobby/hallStage";
 
 describe("Highlights Hall stage effects on the shared holo program", () => {
@@ -89,7 +89,8 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
 
   it("has three gate rings west of the arch over the lead road, one runway into the spine and two packets", () => {
     expect(count(full, STAGE_KIND.gateRing)).toBe(3);
-    expect(count(full, STAGE_KIND.runway)).toBe(1);
+    expect(full.filter((i) => i.tag === "runway")).toHaveLength(1);
+    expect(full.filter((i) => i.tag === "spine")).toHaveLength(2);
     expect(count(full, STAGE_KIND.packet)).toBe(2);
     const o = gateOpening();
     for (const r of full.filter((i) => i.stage[0] === STAGE_KIND.gateRing)) {
@@ -98,7 +99,7 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
       // Light only: the rover drives through; the ring clears the floor.
       expect(r.at[1] - r.stage[2]).toBeGreaterThan(0);
     }
-    const runway = full.find((i) => i.stage[0] === STAGE_KIND.runway)!;
+    const runway = full.find((i) => i.tag === "runway")!;
     expect(runway.at[0] + runway.stage[1] / 2).toBeCloseTo(HALL.plaza.x);
     expect(runway.at[2]).toBe(HALL.lead[0].z);
   });
@@ -120,10 +121,22 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
     const glass = full.filter((i) => i.tag === "partition");
     expect(walls.length).toBe(5);
     expect(glass.length).toBe(3);
+    // Above the low partitions, clear glass up to the wall top.
+    expect(full.filter((i) => i.tag === "glass")).toHaveLength(3);
     for (const g of glass) expect(g.stage[2]).toBe(HALL.partition.height);
     expect(hallPartitions()).toHaveLength(3);
     const ring = full.find((i) => i.stage[0] === STAGE_KIND.gateRing)!;
     for (const w of [...walls, full.find((i) => i.tag === "rib")!, full.find((i) => i.tag === "runway")!]) expect(w.stage2[3]).toBeLessThanOrEqual(ring.stage2[3]);
+  });
+
+  it("rings every door pad on the floor in its station's accent (no filled stubs)", () => {
+    const halos = full.filter((i) => i.tag === "halo");
+    expect(halos).toHaveLength(HALL_LAYOUT.stations.length);
+    HALL_LAYOUT.stations.forEach((s, k) => {
+      expect(halos[k].at[0]).toBe(s.pad.x);
+      expect(halos[k].at[2]).toBe(s.pad.z);
+      expect(halos[k].stage[0]).toBe(STAGE_KIND.halo);
+    });
   });
 
   it("drops the two fountains", () => {

@@ -73,21 +73,23 @@ export function prismBuffers(prisms: readonly Prism[]): { positions: Float32Arra
   return { positions, normals, indices };
 }
 
-/** Boxes then prisms in one indexed buffer (one draw call). */
-export function solidBuffers(boxes: readonly Box[], prisms: readonly Prism[]) {
-  const a = boxBuffers(boxes);
-  const b = prismBuffers(prisms);
-  const offset = a.positions.length / 3;
-  const indices = new Uint32Array(a.indices.length + b.indices.length);
-  indices.set(a.indices, 0);
-  indices.set(b.indices.map((k) => k + offset), a.indices.length);
-  const join = (x: Float32Array, y: Float32Array) => {
-    const out = new Float32Array(x.length + y.length);
-    out.set(x, 0);
-    out.set(y, x.length);
-    return out;
-  };
-  return { positions: join(a.positions, b.positions), normals: join(a.normals, b.normals), indices };
+/** Boxes, prisms and quads in one indexed buffer (one draw call). */
+export function solidBuffers(boxes: readonly Box[], prisms: readonly Prism[], quads: readonly Quad[] = []) {
+  const parts = [boxBuffers(boxes), prismBuffers(prisms), quadBuffers(quads)];
+  const total = (k: "positions" | "normals" | "indices") => parts.reduce((n, p) => n + p[k].length, 0);
+  const positions = new Float32Array(total("positions"));
+  const normals = new Float32Array(total("normals"));
+  const indices = new Uint32Array(total("indices"));
+  let v = 0;
+  let i = 0;
+  for (const p of parts) {
+    positions.set(p.positions, v * 3);
+    normals.set(p.normals, v * 3);
+    indices.set(p.indices.map((k) => k + v), i);
+    v += p.positions.length / 3;
+    i += p.indices.length;
+  }
+  return { positions, normals, indices };
 }
 
 export function circleSegments(c: Circle): number[] {
@@ -103,10 +105,84 @@ export function circleSegments(c: Circle): number[] {
   return out;
 }
 
+/** A one-sided quad (seen only from the side its normal, `right` x `up`, points to): the hall's inner walls, floor and ceiling. */
+export interface Quad {
+  x: number;
+  y: number;
+  z: number;
+  right: [number, number, number];
+  up: [number, number, number];
+  w: number;
+  h: number;
+}
+
 export interface HallShapes {
   boxes: Box[];
   prisms: Prism[];
   circles: Circle[];
+  quads: Quad[];
+}
+
+/** The B4 enclosure (owner decision 2026-11-04): wall height, the ceiling's height (seen only from below) and the floor's lift. */
+export const ENCLOSURE = { wall: 9.5, ceiling: 12.6, floor: 0.02 } as const;
+
+/**
+ * The hall's enclosure as one-sided quads facing in: dark indigo walls on the north, east and south slab edges, the floor
+ * and a ceiling seen only from below, so a camera outside a wall (or above the ceiling) looks straight through. Split at
+ * the hall's part lines (z S, the contact corner), so each part's view hides its own.
+ */
+export function enclosureQuads(): Quad[] {
+  const { maxX, minZ, maxZ } = HALL.zone;
+  const west = HALL.zone.minX + 1;
+  const north = hallPartitions()[0].maxX;
+  const S = HALL.lead[0].z + 6;
+  const cx = HALL.stations.contact.maxX + 1;
+  const cz = HALL.stations.contact.minZ - 8;
+  const E = ENCLOSURE;
+  const X: [number, number, number] = [1, 0, 0];
+  const Y: [number, number, number] = [0, 1, 0];
+  const out: Quad[] = [];
+  const wall = (x0: number, z0: number, x1: number, z1: number) => {
+    const w = Math.hypot(x1 - x0, z1 - z0);
+    out.push({ x: (x0 + x1) / 2, y: E.wall / 2, z: (z0 + z1) / 2, right: [(x1 - x0) / w, 0, (z1 - z0) / w], up: Y, w, h: E.wall });
+  };
+  const inset = 0.02;
+  wall(north, minZ + inset, maxX, minZ + inset);
+  wall(maxX - inset, minZ, maxX - inset, S);
+  wall(maxX - inset, S, maxX - inset, maxZ);
+  wall(maxX, maxZ - inset, cx, maxZ - inset);
+  wall(cx, maxZ - inset, west, maxZ - inset);
+  const flat = (x0: number, z0: number, x1: number, z1: number) => {
+    const x = (x0 + x1) / 2;
+    const z = (z0 + z1) / 2;
+    out.push({ x, y: E.floor, z, right: X, up: [0, 0, -1], w: x1 - x0, h: z1 - z0 });
+    out.push({ x, y: E.ceiling, z, right: X, up: [0, 0, 1], w: x1 - x0, h: z1 - z0 });
+  };
+  flat(north, minZ, maxX, S);
+  flat(west, S, maxX, cz);
+  flat(cx, cz, maxX, maxZ);
+  flat(west, cz, cx, maxZ);
+  return out;
+}
+
+/** Quad buffers: four corners and two triangles each, wound so the quad faces along `right` x `up`. */
+export function quadBuffers(quads: readonly Quad[]): { positions: Float32Array; normals: Float32Array; indices: Uint32Array } {
+  const positions = new Float32Array(quads.length * 12);
+  const normals = new Float32Array(quads.length * 12);
+  const indices = new Uint32Array(quads.length * 6);
+  quads.forEach((q, i) => {
+    const [rx, ry, rz] = q.right;
+    const [ux, uy, uz] = q.up;
+    const n = [ry * uz - rz * uy, rz * ux - rx * uz, rx * uy - ry * ux];
+    const corner = (a: number, b: number) => [q.x + (rx * a * q.w + ux * b * q.h) / 2, q.y + (ry * a * q.w + uy * b * q.h) / 2, q.z + (rz * a * q.w + uz * b * q.h) / 2];
+    [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)].forEach((p, k) => {
+      positions.set(p, i * 12 + k * 3);
+      normals.set(n, i * 12 + k * 3);
+    });
+    const v = i * 4;
+    indices.set([v, v + 1, v + 2, v, v + 2, v + 3], i * 6);
+  });
+  return { positions, normals, indices };
 }
 
 const PEDESTAL_SIDES = 28;
@@ -119,6 +195,7 @@ export function hallShapes(projectCount: number, resultCount: number = 3): HallS
   const boxes: Box[] = [];
   const prisms: Prism[] = [];
   const circles: Circle[] = [];
+  const quads = enclosureQuads();
   // Gateway arch: pillars and the lintel the rover drives under.
   for (const p of gatePillars()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: g.h });
   boxes.push({ x: g.x, z: (g.north.minZ + g.south.maxZ) / 2, y: g.h - g.lintel, w: g.depth, d: g.south.maxZ - g.north.minZ, h: g.lintel });
@@ -146,7 +223,7 @@ export function hallShapes(projectCount: number, resultCount: number = 3): HallS
   boxes.push(b.card.box);
   // The west partitions' low plinths (their glass and violet rail are shell instances, `hallShellInstances`).
   for (const p of hallPartitions()) boxes.push({ x: (p.minX + p.maxX) / 2, z: (p.minZ + p.maxZ) / 2, y: 0, w: p.maxX - p.minX, d: p.maxZ - p.minZ, h: PLINTH });
-  return { boxes, prisms, circles };
+  return { boxes, prisms, circles, quads };
 }
 
 /** The portrait hologram's neon ring (upright, on the About me face). */
@@ -160,7 +237,7 @@ export function portraitRing(face: Face): Circle {
  */
 export function partShapes<K extends string>(shapes: HallShapes, partOf: (x: number, z: number) => K, part: K): HallShapes {
   const mine = (p: { x: number; z: number }) => partOf(p.x, p.z) === part;
-  return { boxes: shapes.boxes.filter(mine), prisms: shapes.prisms.filter(mine), circles: shapes.circles.filter(mine) };
+  return { boxes: shapes.boxes.filter(mine), prisms: shapes.prisms.filter(mine), circles: shapes.circles.filter(mine), quads: shapes.quads.filter(mine) };
 }
 
 /** Every neon line of the gallery as segment pairs: box edges, prism rims, circles and (with `lattice`) the beacon lattice. */
