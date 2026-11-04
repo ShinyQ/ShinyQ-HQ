@@ -37,6 +37,10 @@ export interface HallLabels {
   hall: string;
   /** "Visit live site" (`common.visitLive`, R4-J): tag under a project screenshot that has a live link. */
   visitLive: string;
+  /** The plaza's centrepieces and the now terminals' badge (owner, 2026-11-04). */
+  impactOrbit: string;
+  signalSpire: string;
+  live: string;
   /** Station names for point-and-go (`hud.rooms.highlights*`). */
   stations: Record<HighlightStation, string>;
 }

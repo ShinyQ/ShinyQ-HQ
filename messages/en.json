@@ -991,6 +991,9 @@
     "nowSub": "Current roles, also shown on the Career Road",
     "results": "Results",
     "resultsSub": "Before-and-after figures reported in the case studies",
+    "impactOrbit": "Impact Orbit",
+    "signalSpire": "Signal Spire",
+    "live": "Live",
     "tier": { "gold": "1st place", "silver": "2nd place", "bronze": "3rd place", "honor": "Finalists and honors" }
   },
   "certs": {

@@ -186,6 +186,8 @@ const GATE_BOX = new Box3(
   new Vector3(HALL.gate.x - HALL.gate.depth / 2 - SHELL.runway.west - 1, -0.5, HALL.lead[0].z - 2),
   new Vector3(HALL.plaza.x + 1, 1, HALL.lead[0].z + 2),
 );
+/** The Signal Spire's z: the middle of the plaza's south half (`centres()` in the interiors chunk). */
+const SPIRE_Z = (HALL_SPLIT + HALL.plaza.z + HALL.plaza.d / 2) / 2;
 const HALL_VIEW: Record<HallPart, Box3[]> = {
   north: [new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL_SPLIT + 1))],
   contact: [around(HALL.stations.contact, 5, 13)],
@@ -193,6 +195,8 @@ const HALL_VIEW: Record<HallPart, Box3[]> = {
     around(HALL.stations.now, 5, 11),
     around(HALL.stations.results, 5, 13),
     new Box3(new Vector3(HALL.zone.minX, SHELL.rib.spring - 1, HALL_SPLIT), new Vector3(HALL.zone.maxX, SHELL.rib.spring + SHELL.rib.rise + 0.5, HALL.zone.maxZ)),
+    // The Signal Spire (interiors chunk) in the middle of the south half of the plaza.
+    new Box3(new Vector3(HALL.plaza.x - 4, -0.5, SPIRE_Z - 4), new Vector3(HALL.plaza.x + 4, 12.5, SPIRE_Z + 4)),
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
@@ -308,29 +312,27 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     if (shouldLoadHallPremium({ floor: s.floor, x: roverRuntime.x, idle: idle.current, intent })) void loadHallPremium().catch(() => null);
   });
   const labelBatch = useRef<BatchedLabelsHandle>(null);
+  const contactBatch = useRef<BatchedLabelsHandle>(null);
+  const southBatch = useRef<BatchedLabelsHandle>(null);
   const inside = { tier, reducedMotion, data, labels };
-  // About me's stat values (the first label of each stat tile) count up on its wake.
-  const countUp = useMemo(() => {
-    const n = Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length);
-    const members = Array.from({ length: n }, (_, k) => texts.north.tile.indexOf(k));
-    return { handle: labelBatch, members, values: members.map((_, k) => data.stats[k].value) };
-  }, [texts, data.stats]);
   const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
   const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
+  // The interiors replace the screenshots (floating screens) and the portrait (a particle hologram) once loaded.
+  const shownPanels = useMemo(() => (premium ? panels.filter((p) => p.stage[0] !== STAGE_KIND.image && p.stage[0] !== STAGE_KIND.portrait) : panels), [panels, premium]);
   const gateSigns = useMemo(() => [gateSign(labels.hall)], [labels.hall]);
   return (
     <HallReady>
       {/* The lead road from the Lobby to the gateway arch, cyan (B4). Outside HallView: it starts by the spawn. */}
       <RoadMarkings network={HALL_LAYOUT.drawn} color={SHELL.cyan} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.08 : 0.1} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
-        {premium && <premium.HallPremium part="north" {...inside} countUp={countUp} />}
+        {premium && <premium.HallPremium part="north" {...inside} texts={texts.north} handle={labelBatch} map={texture} />}
         <HallSolids shapes={shapes.north} />
         <StageShell instances={shell.arcs.north} reducedMotion={reducedMotion} />
         <StageFlat instances={shell.flat.north} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.north} tier={tier} extra={RINGS.north} lattice={false} />
         <StageLights instances={lights.north} tier={tier} reducedMotion={reducedMotion} />
         {/* Every stat tile (About me and wins) stands in the north half, so the tile texts ride the north batch. */}
-        <StagePanels instances={panels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.north.tile} />
+        <StagePanels instances={shownPanels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.north.tile} />
         {/* The interiors' light curtain replaces the work experience glow once loaded. */}
         {!premium && <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.north} />}
         <GateCurtain tier={tier} reducedMotion={reducedMotion} />
@@ -340,7 +342,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.contact} grid={HALL_GRID.contact} name="highlights-hall-view-contact">
-        {premium && <premium.HallPremium part="contact" {...inside} />}
+        {premium && <premium.HallPremium part="contact" {...inside} texts={texts.contact} handle={contactBatch} map={texture} />}
         <HallSolids shapes={shapes.contact} />
         <StageShell instances={shell.arcs.contact} reducedMotion={reducedMotion} />
         <StageFlat instances={shell.flat.contact} reducedMotion={reducedMotion} />
@@ -348,11 +350,11 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         <StageLights instances={lights.contact} tier={tier} reducedMotion={reducedMotion} />
         <StageRings instances={rings} tier={tier} reducedMotion={reducedMotion} />
         <Suspense fallback={null}>
-          <BatchedLabels labels={texts.contact.labels} name="highlights-labels-contact" />
+          <BatchedLabels ref={contactBatch} labels={texts.contact.labels} name="highlights-labels-contact" />
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.south} grid={HALL_GRID.south} name="highlights-hall-view-south">
-        {premium && <premium.HallPremium part="south" {...inside} />}
+        {premium && <premium.HallPremium part="south" {...inside} texts={texts.south} handle={southBatch} map={texture} />}
         <HallSolids shapes={shapes.south} />
         <StageShell instances={shell.arcs.south} reducedMotion={reducedMotion} />
         <StageFlat instances={shell.flat.south} reducedMotion={reducedMotion} />
@@ -360,7 +362,7 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         <StageLights instances={lights.south} tier={tier} reducedMotion={reducedMotion} />
         <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.south} />
         <Suspense fallback={null}>
-          <BatchedLabels labels={texts.south.labels} name="highlights-labels-south" />
+          <BatchedLabels ref={southBatch} labels={texts.south.labels} name="highlights-labels-south" />
         </Suspense>
       </HallView>
       {/* The runway into the hall and its packets (one draw), hidden off view. */}

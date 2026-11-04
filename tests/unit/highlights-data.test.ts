@@ -121,3 +121,23 @@ describe("hall interiors data (owner decision 2026-11-04)", () => {
     }
   });
 });
+
+describe("hall interiors text morphs (owner, 2026-11-04)", () => {
+  it("morphs a result from its before to its after value in the after side's unit, ending on its own text", async () => {
+    const { morphFrames } = await import("@/content/hallBars");
+    expect(morphFrames("~2 s to ~0.2 s")).toEqual(expect.arrayContaining(["~2.0 s", "~2 s to ~0.2 s"]));
+    expect(morphFrames("~2 s to ~0.2 s")[0]).toBe("~2.0 s");
+    const size = morphFrames("11.7 MB → 156 KB");
+    expect(size[0]).toBe("11,700 KB");
+    expect(size.at(-1)).toBe("11.7 MB → 156 KB");
+    expect(morphFrames("90.9% to 36.4%")[0]).toBe("90.9%");
+    expect(morphFrames("6 vs 18")).toEqual(["6 vs 18"]);
+  });
+  it("types a line in behind a cursor and ends on it", async () => {
+    const { typeFrames } = await import("@/content/hallBars");
+    const f = typeFrames("Metrodata", 4);
+    expect(f).toHaveLength(4);
+    expect(f[0].endsWith("_")).toBe(true);
+    expect(f.at(-1)).toBe("Metrodata");
+  });
+});

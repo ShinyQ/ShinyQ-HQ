@@ -96,6 +96,8 @@ export interface HallPremiumProps {
   reducedMotion: boolean;
   data: import("../../../types").ExperienceData;
   labels: import("../hallContent").HallLabels;
-  /** The north part's text batch and its About me stat value members, counted up on that station's wake. */
-  countUp?: { handle: import("react").RefObject<import("../../../fx/BatchedLabels").BatchedLabelsHandle | null>; members: readonly number[]; values: readonly string[] };
+  /** This part's texts in batch order and its text batch handle (the wake morphs), and the hall's screenshot atlas once loaded. */
+  texts: import("../hallContent").HallTexts;
+  handle: import("react").RefObject<import("../../../fx/BatchedLabels").BatchedLabelsHandle | null>;
+  map: import("three").Texture | null;
 }

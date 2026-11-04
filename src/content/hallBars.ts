@@ -65,3 +65,41 @@ export function winTokens(tiers: readonly { tier: WinTier; count: number }[]): W
     }),
   );
 }
+
+/** The number in a result side, its prefix ("~", "<") and its suffix (the unit), for re-formatting. */
+function sideParts(raw: string): { pre: string; num: string; unit: string } | null {
+  const m = raw.trim().match(/^([~<>]?\s*)([\d.,]+)\s*(%|ms|s|B|KB|MB)?$/);
+  return m ? { pre: m[1], num: m[2], unit: m[3] ?? "" } : null;
+}
+
+/**
+ * The frames of a result's morph on wake (owner, 2026-11-04: "each verified number morphs from before to after"): `steps`
+ * texts from the before value to the after value, written in the after side's unit and decimals, ending on the result's
+ * own text. A value `resultBars` cannot read stays as it is (one frame).
+ */
+export function morphFrames(value: string, steps = 9): string[] {
+  const bars = resultBars(value);
+  const parts = value.split(/\s*(?:→|\bto\b)\s*/);
+  const after = parts.length === 2 ? sideParts(parts[1]) : null;
+  if (!bars || !after) return [value];
+  const factor = RESULT_UNIT[after.unit]?.factor ?? 1;
+  const decimals = after.num.split(".")[1]?.length ?? 0;
+  const space = /\s/.test(parts[1].trim().replace(/^[~<>]\s*/, "").replace(/^[\d.,]+/, "").slice(0, 1)) ? " " : "";
+  const frames: string[] = [];
+  for (let k = 0; k < steps - 1; k++) {
+    const t = k / (steps - 1);
+    const v = (bars.before + (bars.after - bars.before) * t * t * (3 - 2 * t)) / factor;
+    const text = v >= 100 ? Math.round(v).toLocaleString("en-US") : v.toFixed(decimals);
+    frames.push(`${after.pre}${text}${space}${after.unit}`);
+  }
+  frames.push(value);
+  return frames;
+}
+
+/** Typing frames for a terminal line: the text growing a few characters per frame behind a cursor, ending on the text itself. */
+export function typeFrames(text: string, steps = 14): string[] {
+  const frames: string[] = [];
+  for (let k = 1; k < steps; k++) frames.push(`${text.slice(0, Math.ceil((text.length * k) / steps))}_`);
+  frames.push(text);
+  return frames;
+}

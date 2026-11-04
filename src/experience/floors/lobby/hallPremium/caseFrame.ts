@@ -15,8 +15,10 @@ export interface PremiumInstance {
   a: [number, number, number, number];
   /** tilt, spin, phase, alpha */
   b: [number, number, number, number];
-  /** grow, ripple, orientation (tokens: orbit radius), mode value */
+  /** grow from (bars) or band (rings), ripple, orientation (tokens: orbit radius), mode value */
   c: [number, number, number, number];
+  /** particles: scatter offset; screens: atlas rect; rings: 1 in `w` opens them with the wake (default zeros) */
+  d?: [number, number, number, number];
 }
 
 /** B4 accents (owner decision 2026-11-04): stations alternate cyan (odd numbers) and violet (even). */
@@ -38,7 +40,7 @@ export const tint = (hex: string, k: number, tier: GpuTier): [number, number, nu
  * Glass case (B4, quiet): inset from the station's back and sides, its front on the station's face, its top under the
  * station header (`HEADER.over` above the station's height); thin edges at about 55%, a faint face tint.
  */
-export const CASE = { inset: 0.15, fill: 0.01, alpha: 0.55 } as const;
+export const CASE = { inset: 0.15, fill: 0.012, alpha: 0.6 } as const;
 
 export interface CaseFrame {
   /** The case's footprint (inside the station's) and height. */
