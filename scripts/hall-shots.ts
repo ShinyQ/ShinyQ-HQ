@@ -78,9 +78,13 @@ async function pinView(page: Page, from: [number, number, number], at: [number, 
     ({ from, at, fov }) => {
       type V = { set(x: number, y: number, z: number): V; copy(v: V): V };
       type Cam = { position: V; fov: number; lookAt(x: number, y: number, z: number): void; updateProjectionMatrix(): void };
-      const cam = (window as unknown as { __hq: { render: { camera: Cam } } }).__hq.render.camera;
+      const w = window as unknown as { __hq: { render: { camera: Cam } }; __pin?: { copy: Cam["position"]["copy"]; lookAt: Cam["lookAt"] } };
+      const cam = w.__hq.render.camera;
+      // The first pin keeps the camera's own methods, so a second pin can move it again.
+      w.__pin ??= { copy: cam.position.copy, lookAt: cam.lookAt };
+      cam.position.copy = w.__pin.copy;
       cam.position.set(...from);
-      cam.lookAt(...at);
+      w.__pin.lookAt.call(cam, ...at);
       cam.position.copy = function () {
         return this;
       };

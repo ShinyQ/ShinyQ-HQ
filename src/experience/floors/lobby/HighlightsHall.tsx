@@ -193,6 +193,8 @@ const HALL_VIEW: Record<HallPart, Box3[]> = {
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
+/** A station eyebrow (`hallTexts`: "0N · TITLE"). */
+const EYEBROW = /^0\d · /;
 /** The gate tunnel's instances (its own view part); every other shell instance stands in a hall part. */
 const GATE_KINDS: readonly number[] = [STAGE_KIND.gateRing, STAGE_KIND.runway, STAGE_KIND.packet];
 /** The portrait and the wins rings both stand in the north part; the others have none. */
@@ -253,10 +255,16 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     const all = hallShapes(projectCount, resultCount);
     return { north: partShapes(all, partOf, "north"), contact: partShapes(all, partOf, "contact"), south: partShapes(all, partOf, "south") };
   }, [projectCount, resultCount]);
+  // The interiors chunk (owner decision 2026-11-04), once loaded: its texts join each part's batch.
+  const premium = useHallPremium();
   const texts = useMemo(() => {
-    const all = hallTexts(data, labels, FONTS);
+    const base = hallTexts(data, labels, FONTS);
+    const extra = premium ? premium.premiumTexts(data, labels, FONTS) : [];
+    // Each case's "0N  TITLE" replaces the station's "0N · TITLE" eyebrow on its face.
+    const keep = base.labels.map((l) => !premium || !EYEBROW.test(l.text));
+    const all = { labels: [...base.labels.filter((_, i) => keep[i]), ...extra], tile: [...base.tile.filter((_, i) => keep[i]), ...extra.map(() => -1)] };
     return { north: partTexts(all, partOf, "north"), contact: partTexts(all, partOf, "contact"), south: partTexts(all, partOf, "south") };
-  }, [data, labels]);
+  }, [data, labels, premium]);
   const winTiers = data.highlights.wins.tiers;
   // About me's stat tiles, then one wins tile per tier in its tier's tone (`hallTexts` rides their labels in this order).
   const tiles = useMemo(
@@ -286,7 +294,6 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   // The interiors chunk (owner decision 2026-11-04): at idle on L1 (speculative prefetch on), on a hall intent (a drive
   // into the hall, a station room open) or once the rover heads for the hall. Checked twice a second, never retried
   // after a failed speculative load (`__hq.hall.loadPremium()` retries).
-  const premium = useHallPremium();
   const idle = useRef(false);
   const nextCheck = useRef(0);
   useEffect(() => afterFirstFrameIdle(() => (idle.current = speculativePrefetchOn(window.location.search))), []);
@@ -298,17 +305,23 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     const intent = (target ? inHall(target) : false) || (s.activeRoom ? isHighlightRoom(s.activeRoom) : false);
     if (shouldLoadHallPremium({ floor: s.floor, x: roverRuntime.x, idle: idle.current, intent })) void loadHallPremium().catch(() => null);
   });
+  const labelBatch = useRef<BatchedLabelsHandle>(null);
   const inside = { tier, reducedMotion, data, labels };
+  // About me's stat values (the first label of each stat tile) count up on its wake.
+  const countUp = useMemo(() => {
+    const n = Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length);
+    const members = Array.from({ length: n }, (_, k) => texts.north.tile.indexOf(k));
+    return { handle: labelBatch, members, values: members.map((_, k) => data.stats[k].value) };
+  }, [texts, data.stats]);
   const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
   const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
-  const labelBatch = useRef<BatchedLabelsHandle>(null);
   const gateSigns = useMemo(() => [gateSign(labels.hall)], [labels.hall]);
   return (
     <HallReady>
       {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
       <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
-        {premium && <premium.HallPremium part="north" {...inside} />}
+        {premium && <premium.HallPremium part="north" {...inside} countUp={countUp} />}
         <HallSolids shapes={shapes.north} />
         <StageShell instances={shell.parts.north} reducedMotion={reducedMotion} />
         <StageMotes instances={shell.motes.north} reducedMotion={reducedMotion} />
@@ -316,7 +329,8 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         <StageLights instances={lights.north} tier={tier} reducedMotion={reducedMotion} />
         {/* Every stat tile (About me and wins) stands in the north half, so the tile texts ride the north batch. */}
         <StagePanels instances={panels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.north.tile} />
-        <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.north} />
+        {/* The interiors' light curtain replaces the work experience glow once loaded. */}
+        {!premium && <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.north} />}
         <GateCurtain tier={tier} reducedMotion={reducedMotion} />
         {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
         <Suspense fallback={null}>

@@ -19,3 +19,13 @@ it("eases from 0 to 1", () => {
   expect(eased(1)).toBe(1);
   expect(eased(0.5)).toBe(0.5);
 });
+
+it("counts a stat value up with its prefix, separators and suffix kept", async () => {
+  const { countValue } = await import("@/experience/floors/lobby/hallPremium/HallPremium");
+  expect(countValue("1,190+", 0.5)).toBe("595+");
+  expect(countValue("1,190+", 1)).toBe("1,190+");
+  expect(countValue("10x", 0.5)).toBe("5x");
+  expect(countValue("7,350", 0)).toBe("0");
+  expect(countValue("12+", 0.25)).toBe("3+");
+  expect(countValue("n/a", 0.5)).toBe("n/a");
+});

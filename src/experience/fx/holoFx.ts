@@ -251,7 +251,8 @@ void main(){
       float i = vLocal.x;
       float k = kind < 9.5 ? .9 + .25 * max(0., sin(uTime * .7 - i * .55)) : 1.2 + .6 * max(0., sin(uTime * 1.2 + i * .9));
       float across = 1. - abs(vStage.z * 2. - 1.);
-      float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) : 1.;
+      // Ribs fade out close to the camera, so one never slices a station view.
+      float ends = kind < 9.5 ? smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(8., 20., vDist) : 1.;
       col = c * k;
       a *= smoothstep(0., .7, across) * ends;
     } else if (kind < 11.5) {

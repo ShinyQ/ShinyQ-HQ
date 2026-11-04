@@ -13,5 +13,7 @@ describe("hall interiors chunk boundary", { timeout: 30_000 }, () => {
       expect([...main].filter((f) => f.startsWith(DIR) && !MAIN_ALLOWED.includes(f)), entry).toEqual([]);
     }
   });
-  it.todo("reaches HallPremium.tsx from the scene entry (enabled in Task 5)");
+  it("reaches HallPremium.tsx from the scene entry", () => {
+    expect(staticClosure(`${DIR}/scene.ts`).has(`${DIR}/HallPremium.tsx`)).toBe(true);
+  });
 });

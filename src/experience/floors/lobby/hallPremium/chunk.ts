@@ -96,4 +96,6 @@ export interface HallPremiumProps {
   reducedMotion: boolean;
   data: import("../../../types").ExperienceData;
   labels: import("../hallContent").HallLabels;
+  /** The north part's text batch and its About me stat value members, counted up on that station's wake. */
+  countUp?: { handle: import("react").RefObject<import("../../../fx/BatchedLabels").BatchedLabelsHandle | null>; members: readonly number[]; values: readonly string[] };
 }

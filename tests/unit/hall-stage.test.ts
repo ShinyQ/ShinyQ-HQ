@@ -73,11 +73,15 @@ describe("B4 shell (owner decision 2026-11-04)", () => {
   const lite = hallShellInstances("lite");
   const count = (list: typeof full, kind: number) => list.filter((i) => i.stage[0] === kind).length;
 
-  it("spans the hall with a rib every 12 u, centred on its depth, alternating cyan and violet", () => {
-    const depth = HALL.zone.maxZ - HALL.zone.minZ;
-    expect(count(full, STAGE_KIND.rib)).toBe(Math.floor(depth / 12) + 1);
+  it("spans the hall with a rib every 12 u, between the east stations and off the lead road, alternating cyan and violet", () => {
     const z = ribLines();
-    expect(z[0] - HALL.zone.minZ).toBeCloseTo(HALL.zone.maxZ - z.at(-1)!);
+    expect(count(full, STAGE_KIND.rib)).toBe(z.length);
+    expect(z.length).toBe(7);
+    for (let i = 1; i < z.length; i++) expect(z[i] - z[i - 1]).toBe(12);
+    expect(z[0]).toBeGreaterThan(HALL.zone.minZ);
+    expect(z.at(-1)!).toBeLessThan(HALL.zone.maxZ);
+    const centres = (["experience", "wins", "now"] as const).map((n) => (HALL.stations[n].minZ + HALL.stations[n].maxZ) / 2);
+    for (const c of [...centres, HALL.lead[0].z]) for (const r of z) expect(Math.abs(r - c), `rib ${r} near ${c}`).toBeGreaterThanOrEqual(3);
     const ribs = full.filter((i) => i.stage[0] === STAGE_KIND.rib);
     expect(ribs[0].color).not.toEqual(ribs[1].color);
     expect(ribs[0].color).toEqual(ribs[2].color);

@@ -139,7 +139,7 @@ export const SHELL = {
   violet: "#a78bfa",
   indigo: "#6d4dff",
   /** Ceiling ribs: one every `step` u along the hall, springing from the wall tops (`spring`), rising `rise` u, `width` u wide. */
-  rib: { step: 12, spring: 6, rise: 4.5, width: 0.12, gain: 1, alpha: 0.8 },
+  rib: { step: 12, phase: 6, spring: 6, rise: 4.5, width: 0.12, gain: 1, alpha: 0.8 },
   /** The gate tunnel: three rings `gap` u apart west of the gateway arch, centred over the lead road. */
   ring: { count: 3, gap: 1.6, r: 4.3, y: 4.5, width: 0.18, gain: 1.4, alpha: 1 },
   /** The runway: a narrow cyan line from west of the rings to the plaza's spine, and two light packets sliding in on it. */
@@ -167,12 +167,17 @@ function seeded(seed: number): () => number {
   };
 }
 
-/** The ribs' z lines: one every `SHELL.rib.step` u, centred on the hall's depth. */
+/**
+ * The ribs' z lines: one every `SHELL.rib.step` u inside the hall, phased to fall between the east stations' centres and off
+ * the lead road (z 6 + 12k), so a station view never looks along a rib edge on.
+ */
 export function ribLines(): number[] {
   const { minZ, maxZ } = HALL.zone;
-  const n = Math.floor((maxZ - minZ) / SHELL.rib.step) + 1;
-  const first = minZ + (maxZ - minZ - (n - 1) * SHELL.rib.step) / 2;
-  return Array.from({ length: n }, (_, i) => first + i * SHELL.rib.step);
+  const step = SHELL.rib.step;
+  const first = SHELL.rib.phase + Math.ceil((minZ + 1 - SHELL.rib.phase) / step) * step;
+  const out: number[] = [];
+  for (let z = first; z <= maxZ - 1; z += step) out.push(z);
+  return out;
 }
 
 /** The hall's inner west edge (x 33), where the ribs spring and the south partition stands. */

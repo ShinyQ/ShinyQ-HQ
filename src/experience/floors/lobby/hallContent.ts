@@ -57,7 +57,7 @@ export const HALL_ROWS = 6;
 const ROLE = { top: 5.0, step: 0.6 } as const;
 /** Results per monolith in 3D (the drawer lists every one), and each block's value line, top first. */
 export const RESULT_ROWS = 3;
-const RESULT_Y = [5.7, 3.95, 2.2] as const;
+export const RESULT_Y = [5.7, 3.95, 2.2] as const;
 /** The wins tiles' tones, by tier (the ring and the eyebrow take the station's pink). */
 export const TIER_TONE = { gold: "#fbbf24", silver: "#e5e7eb", bronze: "#d97706", honor: "#22d3ee" } as const;
 export { SHOT };
