@@ -171,6 +171,21 @@ for (const combo of COMBOS) {
     // Off the pad again, so the next drive starts from open floor.
     await driveTo(page, { x: s.pad.x - s.facing.x * 2.5, z: s.pad.z - s.facing.z * 2.5 }, SLOW);
   }
+  // The centrepieces from the follow camera: the rover 9 u south of the Impact Orbit and 9 u north of the Signal Spire, facing them.
+  const P = HALL.plaza;
+  const S = HALL.lead[0].z + 6;
+  for (const [shot, z, look] of [
+    ["orbit", (P.z - P.d / 2 + S) / 2 + 12, { x: 0, z: -1 }],
+    ["spire", (S + P.z + P.d / 2) / 2 - 11, { x: 0, z: 1 }],
+  ] as const) {
+    if (!wants(shot)) continue;
+    await driveTo(page, { x: P.x - 4, z }, SLOW);
+    await settle(page);
+    await turnCameraTo(page, yawLooking(look), SLOW);
+    await waitForFrames(page, 30);
+    await page.screenshot({ path: name(shot) });
+    await turnCameraTo(page, 0, SLOW);
+  }
   if (wants("overview")) {
     await pinView(page, [24, 26, 72], [53, 0, 14], combo.mobile ? 70 : 50);
     await waitForFrames(page, 30);

@@ -177,7 +177,7 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
 
 /** The plaza's centrepieces (owner, 2026-11-04): where the fountains were, light only (the rover drives through), on the spine. */
 export const CENTRE = {
-  orbit: { y: 5.4, r: 2.6, band: 5.2, points: { full: 180, lite: 90 } },
+  orbit: { y: 4.3, r: 2.3, band: 4.9, points: { full: 180, lite: 90 } },
   spire: { y0: 1.1, y1: 10, core: 0.22 },
   /** Jakarta on the globe: latitude, and the longitude its turn starts from. */
   jakarta: { lat: -6.2, lon: 1.2 },
