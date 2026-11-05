@@ -272,11 +272,11 @@ export function centreBillboards(input: Input, labels: Pick<HallLabels, "impactO
   const C = CENTRE.spire;
   const out: Billboard[] = [];
   const at = (c: { x: number; z: number }, y: number, r = 0) => ({ x: c.x, y, z: c.z, r });
-  out.push({ text: labels.impactOrbit.toUpperCase(), ...at(orbit, O.y + O.r + 1.9), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
+  out.push({ text: labels.impactOrbit.toUpperCase(), ...at(orbit, O.y + O.r + 3.2), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
   const stat = input.stats[0];
   if (stat) {
-    out.push({ text: stat.value, ...at(orbit, O.y + O.r + 1.25), size: 0.7, color: "#eefbff", bold: true, maxWidth: 6 });
-    out.push({ text: stat.label, ...at(orbit, O.y + O.r + 0.75), size: 0.16, color: "#c9d6e3", bold: false, maxWidth: 4.5, top: true });
+    out.push({ text: stat.value, ...at(orbit, O.y + O.r + 2.5), size: 0.7, color: "#eefbff", bold: true, maxWidth: 6 });
+    out.push({ text: stat.label, ...at(orbit, O.y + O.r + 2), size: 0.2, color: "#c9d6e3", bold: false, maxWidth: 4, top: true });
   }
   for (const node of sectorNodes(input.highlights.sectors))
     out.push({ text: node.label, ...at({ x: orbit.x + Math.sin(node.a) * (O.band + 0.35), z: orbit.z + Math.cos(node.a) * (O.band + 0.35) }, O.y + node.dy), size: 0.24, color: "#d9ccff", bold: true, maxWidth: 3.2 });
