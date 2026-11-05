@@ -79,13 +79,13 @@ describe("Highlights Hall gallery: gateway arch", () => {
   });
 
   it("fires the curtain only for an eastward pass inside the opening", () => {
-    // The gate stands at x 36 over the lead road (z 21) (owner decision 2026-11-02, from 38: room for the Proof Park arch road).
-    expect(HALL.gate.x).toBe(36);
-    expect(gateCrossed({ x: 33, z: 21 }, { x: 37, z: 21 })).toBe(true);
-    expect(gateCrossed({ x: 37, z: 21 }, { x: 33, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 33, z: 11 }, { x: 37, z: 11 })).toBe(false);
-    expect(gateCrossed({ x: 34, z: 21 }, { x: 35.9, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 35.9, z: 21 }, { x: 36, z: 21 })).toBe(true);
+    // The gate stands at x 36.8 over the lead road (z 21), on the west wall's line (owner, 2026-11-04).
+    expect(HALL.gate.x).toBe(36.8);
+    expect(gateCrossed({ x: 34, z: 21 }, { x: 38, z: 21 })).toBe(true);
+    expect(gateCrossed({ x: 38, z: 21 }, { x: 34, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 34, z: 11 }, { x: 38, z: 11 })).toBe(false);
+    expect(gateCrossed({ x: 34, z: 21 }, { x: 36.7, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 36.7, z: 21 }, { x: 36.8, z: 21 })).toBe(true);
   });
 });
 

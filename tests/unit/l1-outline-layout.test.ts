@@ -133,8 +133,7 @@ describe("L1 outline (owner decisions 2026-11-02)", () => {
   });
 
   it("blocks the hall's west edge on the navgrid outside the gateway opening", () => {
-    for (const z of [-20, 0, 10]) expect(isWalkable(grid, { x: HALL.partition.north + HALL.partition.thickness / 2, z }), String(z)).toBe(false);
-    for (const z of [30, 45, 55]) expect(isWalkable(grid, { x: HALL.partition.south - HALL.partition.thickness / 2, z }), String(z)).toBe(false);
+    for (const z of [-20, 0, 10, 30, 45, 55]) expect(isWalkable(grid, { x: HALL.partition.line + HALL.partition.thickness / 2, z }), String(z)).toBe(false);
     expect(isWalkable(grid, { x: HALL.gate.x, z: HALL.lead[0].z })).toBe(true);
   });
 });

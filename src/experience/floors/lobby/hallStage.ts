@@ -172,8 +172,8 @@ export function ribLines(): number[] {
   return out;
 }
 
-/** The hall's inner west edge (x 33), where the ribs spring and the south partition stands. */
-const WEST = HALL.zone.minX + 1;
+/** The hall's inner west edge (the wall line's east face, x 37): the ribs, walls, floor and motes start there. */
+const WEST = HALL.partition.line + HALL.partition.thickness;
 
 /**
  * Every B4 shell instance (one draw per base shape and hall part): the ceiling ribs, the gate rings, the runway and its
@@ -218,14 +218,13 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   // The west side: low tinted glass with a lit violet rail (the partitions), then clear glass up to the wall top, so the
   // certification wall stays readable from the plaza (the north run, the south run in two parts).
   const ph = HALL.partition.height;
-  const southRun = hallPartitions()[2];
-  const nx = (north.minX + north.maxX) / 2;
-  const sx = (southRun.minX + southRun.maxX) / 2;
+  const southRun = hallPartitions()[1];
+  const x = (north.minX + north.maxX) / 2;
   const contactZ = HALL.stations.contact.minZ - 8;
-  for (const [x, z0, z1] of [
-    [nx, north.minZ, north.maxZ],
-    [sx, southRun.minZ, contactZ],
-    [sx, contactZ, southRun.maxZ],
+  for (const [z0, z1] of [
+    [north.minZ, north.maxZ],
+    [southRun.minZ, contactZ],
+    [contactZ, southRun.maxZ],
   ]) {
     wall("partition", x, z0, x, z1, ph, SHELL.violet, SHELL.partition);
     wall("glass", x, z0, x, z1, WL.h - ph, SHELL.violet, SHELL.glass, ph, SHELL.glass.cell);
@@ -244,7 +243,7 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
     put("spine", K.runway, [HALL.plaza.x, 0.035, (z0 + z1) / 2], Math.PI / 2, SHELL.cyan, SP.gain, [z1 - z0, SP.width, 0], [0, 0, 0, SP.alpha]);
   const F = SHELL.floor;
   for (const [x0, z0, z1] of [
-    [north.maxX, minZ, S],
+    [WEST, minZ, S],
     [WEST, S, maxZ],
   ])
     put("floor", K.floor, [(x0 + maxX) / 2, 0.03, (z0 + z1) / 2], 0, SHELL.indigo, F.gain, [maxX - x0, z1 - z0, 0], [0, 0, 0, F.alpha]);
@@ -257,7 +256,7 @@ export function hallShellInstances(tier: GpuTier): StageInstance[] {
   const color = rgb(new Color(M.color));
   for (let i = 0; i < M.count; i++) {
     const z = minZ + 0.5 + rand() * (maxZ - minZ - 1);
-    const x0 = z < S ? north.maxX : WEST;
+    const x0 = WEST;
     out.push({ at: [x0 + 0.5 + rand() * (maxX - x0 - 1), 0, z], yaw: 0, color, stage: [K.mote, ((0.2 + rand() * 0.5) * 0.4) / M.top, M.top, M.size], stage2: [0, 0, rand(), M.alpha], uv: FLAT, tag: "mote" });
   }
   return out;

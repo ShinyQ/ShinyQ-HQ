@@ -206,7 +206,7 @@ export function nowArch(): ExperienceArch {
 // ---------------------------------------------------------------- 04 Contact: signal beacon
 
 export const BEACON = {
-  u: 5.3,
+  u: 3.6,
   base: { w: 1.4, h: 0.4 },
   mast: { r: 0.22, top: 9 },
   head: { r: 0.4, h: 0.5 },
@@ -216,7 +216,7 @@ export const BEACON = {
     { y: 7.8, w: 0.9 },
   ],
   /** `inset`: the card's center, 2.65 u in from the slab edge behind the station. */
-  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
+  card: { u: -1.5, w: 6.4, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
 } as const;
 
 export interface ContactBeacon {
@@ -344,9 +344,7 @@ export function hallLights(projectCount: number = 3, resultCount: number = 3): L
   }
   const r = stationOf("results");
   out.push(cone(r.front.x, (r.rect.minZ + r.rect.maxZ) / 2, 12, 5, T.results, 0.07));
-  // Gateway arch: uplights on the inner faces of both pillars.
-  const o = gateOpening();
-  out.push(beam(o.x, o.minZ + 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2), beam(o.x, o.maxZ - 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2));
+  // The gateway's opening stays clear: no uplight columns in it (owner, 2026-11-04).
   return out;
 }
 

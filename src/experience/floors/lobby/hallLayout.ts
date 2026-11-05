@@ -48,7 +48,8 @@ export const HALL = {
     wins: { minX: X0 + 33, maxX: X0 + 36, minZ: Z - 11, maxZ: Z - 1 },
     now: { minX: X0 + 33, maxX: X0 + 36, minZ: Z + 5, maxZ: Z + 19 },
     results: { minX: X0 + 20, maxX: X0 + 36, minZ: SOUTH - 3, maxZ: SOUTH },
-    contact: { minX: X0, maxX: X0 + 14, minZ: SOUTH - 3, maxZ: SOUTH },
+    // Inside the west wall's line since the gate moved onto it (2026-11-04): 10 u wide, the beacon and card closer.
+    contact: { minX: X0 + 4, maxX: X0 + 14, minZ: SOUTH - 3, maxZ: SOUTH },
   },
   /** Unit direction from each door pad into its station. */
   facing: {
@@ -70,22 +71,22 @@ export const HALL = {
   /**
    * Gateway arch over the lead road where it enters the plaza (gallery rebuild, October 2026): two
    * pillars (the north one stays clear of the cert wall, the south one reaches the Lobby's south edge line), a lintel the
-   * rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor). At x 36 since
-   * 2026-11-02 (from 38).
+   * rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor). At x 36.8 since
+   * 2026-11-04, on the west wall's line (36 from 2026-11-02, 38 before).
    */
-  gate: { x: X0 + 3, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
+  gate: { x: X0 + 3.8, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
   /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
-  zoom: { about: 1, projects: 1.45, experience: 1.5, wins: 1, now: 1.2, results: 1.45, contact: 1.27 },
+  zoom: { about: 1, projects: 1.45, experience: 1.5, wins: 1, now: 1.2, results: 1.45, contact: 1 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */
   height: { about: 6.4, projects: 7.6, experience: 7.4, wins: 6.4, now: 6.4, results: 7.6, contact: 9.6 },
   /**
-   * Low glass partitions close the hall's west side (owner decision 2026-11-04): the gateway is the only opening. They touch
-   * their neighbours, so the space rules hold (every gap 0 or at least 6 u): the north run stands on the gate's line, from the
-   * north pillar's east face to the north slab edge, a wing wall to the about station (6.5 u clear of the certification wall); the south run returns from the
-   * south pillar to the hall's west edge (`HALL.zone.minX` + 1, x 33) and runs down it to the contact station. Obstacles
-   * and navgrid blockers, low and translucent so the certification wall stays readable from the plaza; not camera columns.
+   * Low glass partitions close the hall's west side on one straight line through the gateway arch (owner decisions
+   * 2026-11-04: one gate; then "the wall and the door" flush, nothing further forward than the rest): x 36.6 to 37, 6.5 u
+   * clear of the certification wall, from the north slab edge to the contact station, the gate's pillars set into it.
+   * Obstacles and navgrid blockers, low and translucent so the certification wall stays readable from the plaza; not
+   * camera columns.
    */
-  partition: { north: X0 + 3.6, south: X0, thickness: 0.4, height: 2.4 },
+  partition: { line: X0 + 3.6, thickness: 0.4, height: 2.4 },
   /** Screenshots load once the rover is east of here on L1. */
   lazyX: X0 - 10,
 } as const;
@@ -168,22 +169,19 @@ function stationZone(s: HallStation): ViewZone {
 }
 
 /**
- * The west-side partitions (obstacles and navgrid blockers): the north run (gate line, touching the north pillar), the
- * south return (touching the south pillar), the south run (the hall's west edge, down to the contact station) and the wing
- * wall from the north run to the about station.
+ * The west-side partitions (obstacles and navgrid blockers), on one line through the gateway: the north run (north slab
+ * edge through the north pillar), the south run (through the south pillar to the south slab edge, beside the contact
+ * station) and the wing wall
+ * from the line to the about station.
  */
 export function hallPartitions(): Rect[] {
   const P = HALL.partition;
   const g = HALL.gate;
-  const pillarMinX = g.x - g.depth / 2;
-  const contact = HALL.stations.contact;
+  const x = { minX: P.line, maxX: P.line + P.thickness };
   return [
-    { minX: P.north, maxX: P.north + P.thickness, minZ: HALL.zone.minZ, maxZ: g.north.maxZ },
-    // As deep as the pillar it meets, so it fills the gap between the pillar and the south run (`gapFilled`).
-    { minX: P.south, maxX: pillarMinX, minZ: g.south.minZ, maxZ: g.south.maxZ },
-    { minX: P.south - P.thickness, maxX: P.south, minZ: g.south.minZ, maxZ: contact.maxZ },
-    // The wing wall from the north run to the about station, as deep as the station.
-    { minX: P.north + P.thickness, maxX: HALL.stations.about.minX, minZ: HALL.zone.minZ, maxZ: HALL.stations.about.maxZ },
+    { ...x, minZ: HALL.zone.minZ, maxZ: g.north.maxZ },
+    { ...x, minZ: g.south.minZ, maxZ: HALL.zone.maxZ },
+    { minX: x.maxX, maxX: HALL.stations.about.minX, minZ: HALL.zone.minZ, maxZ: HALL.stations.about.maxZ },
   ];
 }
 

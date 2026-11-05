@@ -213,10 +213,10 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   // 07 Contact: the card floating beside the beacon.
   const card = contactBeacon().card.face;
   const w = BEACON.card.w - 0.6;
-  add(card, 0, 4.75, input.roof.availability, fonts.sansBold, 0.36, INK.title, { maxWidth: w });
-  add(card, 0, 3.95, input.roof.email, fonts.sansBold, 0.42, INK.cyan, { maxWidth: w });
-  add(card, 0, 3.15, input.roof.channels.map((c) => c.label).join(" · "), fonts.sans, 0.22, INK.body, { maxWidth: w });
-  add(card, 0, 2.4, labels.cvHint, fonts.sans, 0.18, INK.sub, { maxWidth: w });
+  add(card, 0, 4.95, input.roof.availability, fonts.sansBold, 0.28, INK.title, { maxWidth: w });
+  add(card, 0, 4.2, input.roof.email, fonts.sansBold, 0.3, INK.cyan, { maxWidth: w + 0.4 });
+  add(card, 0, 3.6, input.roof.channels.map((c) => c.label).join(" · "), fonts.sans, 0.17, INK.body, { anchorY: "top", lineHeight: 1.3, maxWidth: w });
+  add(card, 0, 2.1, labels.cvHint, fonts.sans, 0.16, INK.sub, { maxWidth: w });
   return { labels: out, tile, group };
 }
 

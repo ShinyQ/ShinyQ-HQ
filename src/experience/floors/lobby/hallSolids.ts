@@ -133,7 +133,7 @@ export const ENCLOSURE = { wall: 9.5, ceiling: 12.6, floor: 0.02 } as const;
  */
 export function enclosureQuads(): Quad[] {
   const { maxX, minZ, maxZ } = HALL.zone;
-  const west = HALL.zone.minX + 1;
+  const west = HALL.partition.line + HALL.partition.thickness;
   const north = hallPartitions()[0].maxX;
   const S = HALL.lead[0].z + 6;
   const cx = HALL.stations.contact.maxX + 1;

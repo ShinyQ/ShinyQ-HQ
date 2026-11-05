@@ -269,8 +269,9 @@ function floorLife(tier: GpuTier): Record<HallPart, PremiumInstance[]> {
   const S = HALL.lead[0].z + 6;
   for (const z of [(P.z - P.d / 2 + S) / 2, (S + P.z + P.d / 2) / 2])
     FLOOR.inlay.forEach((r, i) => lie("north", M.ring, [P.x, 0.05, z], 0, 2 * r, 2 * r, i % 2 ? ACCENT.violet : ACCENT.cyan, 0.4 - i * 0.08, 0, [FLOOR.line / r, 0, ORIENT.lying, 0]));
-  const half = (HALL.zone.maxX - HALL.zone.minX - 1) / 2;
-  ribLines().forEach((z, i) => lie("north", M.bar, [HALL.zone.minX + 1 + half, 0.05, z], 0, 2 * half, FLOOR.rib.d, i % 2 ? ACCENT.violet : ACCENT.cyan, FLOOR.rib.alpha));
+  const west = HALL.partition.line + HALL.partition.thickness;
+  const half = (HALL.zone.maxX - west) / 2;
+  ribLines().forEach((z, i) => lie("north", M.bar, [west + half, 0.05, z], 0, 2 * half, FLOOR.rib.d, i % 2 ? ACCENT.violet : ACCENT.cyan, FLOOR.rib.alpha));
   const o = gateOpening();
   lie("north", M.pool, [o.x, 0.05, (o.minZ + o.maxZ) / 2], 0, 7, o.maxZ - o.minZ, ACCENT.cyan, 0.3);
   const top = P.z - P.d / 2 + 1;

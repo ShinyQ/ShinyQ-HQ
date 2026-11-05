@@ -123,27 +123,31 @@ describe("Highlights Hall layout", () => {
       expect(l1.road!.roads.some((r) => r.id === "hall-office")).toBe(false);
     });
 
-    it("closes the west side except the gateway opening, touching its neighbours (no gap under 6 u)", () => {
+    it("closes the west side on one straight line through the gate, nothing further forward (no gap under 6 u)", () => {
       const parts = hallPartitions();
-      expect(parts).toHaveLength(4);
-      const [north, ret, south, wing] = parts;
+      expect(parts).toHaveLength(3);
+      const [north, south, wing] = parts;
       const [pn, ps] = gatePillars();
       const touches = (a: Rect, b: Rect) => rectGap(a, b) === 0;
-      // North run: from the north slab edge to the north pillar, touching it; the wing wall joins it to the about station.
+      // One line: both runs and the gate's centre share x; the pillars hold the line inside them.
+      expect(north.minX).toBe(south.minX);
+      expect(north.maxX).toBe(south.maxX);
+      expect((north.minX + north.maxX) / 2).toBeCloseTo(HALL.gate.x);
+      for (const p of [pn, ps]) expect(p.minX <= north.minX && p.maxX >= north.maxX).toBe(true);
+      // North run: from the north slab edge into the north pillar; the wing wall joins it to the about station.
       expect(north.minZ).toBe(HALL.zone.minZ);
       expect(touches(north, pn)).toBe(true);
       expect(touches(north, wing)).toBe(true);
       expect(touches(wing, stationOf("about").rect)).toBe(true);
-      expect(wing.minZ).toBe(HALL.zone.minZ);
-      // South return and run: from the south pillar to the hall's west edge, down to the contact station.
-      expect(touches(ret, ps)).toBe(true);
-      expect(touches(ret, south)).toBe(true);
+      // South run: from the south pillar to the south slab edge, the contact station touching its east face.
+      expect(touches(south, ps)).toBe(true);
       expect(south.maxZ).toBe(HALL.zone.maxZ);
       expect(touches(south, stationOf("contact").rect)).toBe(true);
+      expect(stationOf("contact").rect.minX).toBeGreaterThanOrEqual(south.maxX);
       // The opening between the pillars carries the whole lead road.
       const lead = HALL.lead[0].z;
       expect(north.maxZ).toBeLessThanOrEqual(lead - 4);
-      expect(ret.minZ).toBeGreaterThanOrEqual(lead + 4);
+      expect(south.minZ).toBeGreaterThanOrEqual(lead + 4);
       expect(rectGap(north, LOBBY_CERT)).toBeGreaterThanOrEqual(6);
       for (const p of parts) {
         expect(HALL_LAYOUT.obstacles).toContainEqual(p);
