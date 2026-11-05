@@ -105,6 +105,13 @@ Content rules:
 - **Early look:** before the full gates, the implementing session posts captures (gate from the Lobby, the walk in, all seven stations on full and lite, phone) and a local preview for the owner to review. Final local preview before the PR.
 - Docs: update `docs/agents/floor-l1-lobby.md` (layout, one gate, scenery, rendering, budgets), `docs/agents/performance.md` and `e2e/budgets.ts` notes, `docs/features.md`; add `docs/decisions/2026-11-04-highlights-hall-one-gate-premium.md`, this spec under `docs/superpowers/specs/2026-11-04-highlights-hall-premium-design.md` and the plan under `docs/superpowers/plans/`.
 
+### 6. Feedback rounds (owner, 2026-11-04)
+
+- About me 0.75 u east with a wing wall; the Now cards inside their case; the floor's life (inlay rings, glows, pools, pulse paths).
+- The WOW round: two centrepieces in the plaza (Impact Orbit, Signal Spire), a new exhibit in every station (particle portrait, floating screens, light elevator, light trophy with stars, live terminals, metric reactor, contact portal) and a revamp of the shared pieces, all in the interiors chunk (9,441 B, under the 12 KB target), the first frame inside the accepted +3.4 KB.
+- The west wall and the gateway on one straight line (x 36.6 to 37, the gate at x 36.8); one camera-facing copy of each centrepiece label.
+- Current detail: [floor-l1-lobby.md](../../agents/floor-l1-lobby.md#interiors-lazy-chunk); numbers: the [decision](../../decisions/2026-11-04-highlights-hall-one-gate-premium.md).
+
 ## Out of scope
 
 - Classic page changes (the drawers and Classic sections keep their content).
