@@ -209,6 +209,13 @@ async function openStation(page: Page, station: HighlightStation) {
   return page.getByTestId("room-drawer");
 }
 
+/** 6 u off each centrepiece on the spine, facing it (`centres()` in the interiors chunk: the middle of each plaza half). */
+const SPLIT_Z = HALL.lead[0].z + 6;
+const CENTREPIECE_SPOTS = [
+  ["Impact Orbit", { x: HALL.plaza.x - 3, z: (HALL.plaza.z - HALL.plaza.d / 2 + SPLIT_Z) / 2 + 6 }],
+  ["Signal Spire", { x: HALL.plaza.x - 3, z: (SPLIT_Z + HALL.plaza.z + HALL.plaza.d / 2) / 2 - 6 }],
+] as const;
+
 test.describe("Highlights Hall", () => {
   test("clicking each station drives there along the road and opens its drawer", async ({ page, context }) => {
     const errors = collectErrors(page);
@@ -400,6 +407,15 @@ test.describe("Highlights Hall", () => {
       console.log(`L1 lite at ${station} (interiors awake): ${peaks.sceneCalls} scene calls, ${peaks.triangles} triangles`);
       expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
     }
+    // Both centrepieces from the plaza, 6 u off each one on the spine (owner, 2026-11-04).
+    for (const [name, spot] of CENTREPIECE_SPOTS) {
+      await closeDrawer(page);
+      await driveTo(page, spot);
+      await waitForCameraSettle(page);
+      const peaks = await expectRenderBudget(page);
+      console.log(`L1 lite at the ${name}: ${peaks.sceneCalls} scene calls, ${peaks.triangles} triangles`);
+      expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+    }
     // Off the pad the station settles back.
     await driveTo(page, { x: HALL.plaza.x, z: HALL.plaza.z });
     await page.waitForFunction(() => (window as unknown as HallWindow).__hq.probes.hallPremium.wake.contact < 0.05, null, { timeout: 30_000 });
@@ -417,10 +433,10 @@ test.describe("Highlights Hall", () => {
     // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });
-    // The gate spot stands 4 u west of the gateway arch (x 36 since 2026-11-02), clear of its pillars; the last spot faces
-    // the south half from the plaza (the stations added 2026-11-02 and the south fountain).
+    // The gate spot stands 4 u west of the gateway arch (x 36.8, on the west wall's line since 2026-11-04), clear of its
+    // pillars; then every station pad and both centrepieces.
     await interiorsReady(page);
-    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, ...HIGHLIGHT_STATIONS.map((s) => stationOf(s).pad)]) {
+    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, ...HIGHLIGHT_STATIONS.map((s) => stationOf(s).pad), ...CENTREPIECE_SPOTS.map(([, at]) => at)]) {
       await closeDrawer(page);
       if (spot) await driveTo(page, spot);
       await closeDrawer(page);

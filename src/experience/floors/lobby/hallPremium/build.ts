@@ -177,7 +177,7 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
 
 /** The plaza's centrepieces (owner, 2026-11-04): where the fountains were, light only (the rover drives through), on the spine. */
 export const CENTRE = {
-  orbit: { y: 4.3, r: 2.3, band: 4.9, points: { full: 180, lite: 90 } },
+  orbit: { y: 3.8, r: 2.2, band: 4.9, points: { full: 180, lite: 90 } },
   spire: { y0: 1.1, y1: 10, core: 0.22 },
   /** Jakarta on the globe: latitude, and the longitude its turn starts from. */
   jakarta: { lat: -6.2, lon: 1.2 },
@@ -272,11 +272,11 @@ export function centreBillboards(input: Input, labels: Pick<HallLabels, "impactO
   const C = CENTRE.spire;
   const out: Billboard[] = [];
   const at = (c: { x: number; z: number }, y: number, r = 0) => ({ x: c.x, y, z: c.z, r });
-  out.push({ text: labels.impactOrbit.toUpperCase(), ...at(orbit, O.y + O.r + 3.2), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
+  out.push({ text: labels.impactOrbit.toUpperCase(), ...at(orbit, O.y + O.r + 2.1), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
   const stat = input.stats[0];
   if (stat) {
-    out.push({ text: stat.value, ...at(orbit, O.y + O.r + 2.5), size: 0.7, color: "#eefbff", bold: true, maxWidth: 6 });
-    out.push({ text: stat.label, ...at(orbit, O.y + O.r + 2), size: 0.2, color: "#c9d6e3", bold: false, maxWidth: 4, top: true });
+    out.push({ text: stat.value, ...at(orbit, O.y + O.r + 1.4), size: 0.7, color: "#eefbff", bold: true, maxWidth: 6 });
+    out.push({ text: stat.label, ...at(orbit, O.y + O.r + 0.9), size: 0.2, color: "#c9d6e3", bold: false, maxWidth: 4, top: true });
   }
   for (const node of sectorNodes(input.highlights.sectors))
     out.push({ text: node.label, ...at({ x: orbit.x + Math.sin(node.a) * (O.band + 0.35), z: orbit.z + Math.cos(node.a) * (O.band + 0.35) }, O.y + node.dy), size: 0.24, color: "#d9ccff", bold: true, maxWidth: 3.2 });
@@ -288,9 +288,9 @@ export function centreBillboards(input: Input, labels: Pick<HallLabels, "impactO
   return out;
 }
 
-/** The Impact Orbit's sector nodes: evenly around the globe, alternating a little up and down. */
+/** The Impact Orbit's sector nodes: evenly around the globe, alternating between two heights under its equator (clear of the stat above). */
 export function sectorNodes(sectors: readonly string[]): { label: string; a: number; dy: number }[] {
-  return sectors.map((label, i) => ({ label, a: (i / Math.max(sectors.length, 1)) * Math.PI * 2 + 0.3, dy: i % 2 ? 0.45 : -0.45 }));
+  return sectors.map((label, i) => ({ label, a: (i / Math.max(sectors.length, 1)) * Math.PI * 2 + 0.3, dy: i % 2 ? -0.2 : -0.75 }));
 }
 
 /** The floor's life (owner, 2026-11-04: "make the floor more alive"): inlay rings, the rib and gate glows. */
