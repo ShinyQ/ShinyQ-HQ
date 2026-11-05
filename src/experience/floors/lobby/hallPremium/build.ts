@@ -81,10 +81,11 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
       const f = aboutFace();
       const at = onFace(f, 0, ABOUT.disc.y, 0.02);
       const [u0, u1] = atlasCells(input.highlights.projects.length, tier).portrait;
-      for (const p of discGrid(full ? 26 : 16)) {
+      // 22 a side on full (372 particles): the L2 to L1 ride's triangle peak stays at main's.
+      for (const p of discGrid(full ? 22 : 16)) {
         const pos = onFace(f, p.x * ABOUT.disc.r, ABOUT.disc.y + p.y * ABOUT.disc.r, 0.02);
         const scatter: [number, number, number] = [(rand() - 0.5) * 3.2, (rand() - 0.5) * 2.4, (rand() - 0.2) * 1.6];
-        add(M.particle, pos, 0, full ? 0.1 : 0.15, 0, 0.95, [u0 + ((p.x + 1) / 2) * (u1 - u0), (p.y + 1) / 2, 0, 0], [0, 0, 0], [1, 1, 1], [...scatter, 0]);
+        add(M.particle, pos, 0, full ? 0.12 : 0.15, 0, 0.95, [u0 + ((p.x + 1) / 2) * (u1 - u0), (p.y + 1) / 2, 0, 0], [0, 0, 0], [1, 1, 1], [...scatter, 0]);
       }
       add(M.ring, at, f.yaw, 2.7, 2.7, 0.95, [0, 0, ORIENT.upright, 0], [0.35, full ? 0.15 : 0, 0]);
       add(M.ring, at, f.yaw, 3.15, 3.15, 0.75, [0, 0, ORIENT.upright, 0], [-0.5, full ? -0.12 : 0, 1.6], tint(ACCENT.violet, 1.3, tier));
@@ -177,7 +178,7 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
 
 /** The plaza's centrepieces (owner, 2026-11-04): where the fountains were, light only (the rover drives through), on the spine. */
 export const CENTRE = {
-  orbit: { y: 3.8, r: 2.2, band: 4.9, points: { full: 180, lite: 90 } },
+  orbit: { y: 3.8, r: 2.2, band: 4.9, points: { full: 160, lite: 90 } },
   spire: { y0: 1.1, y1: 10, core: 0.22 },
   /** Jakarta on the globe: latitude, and the longitude its turn starts from. */
   jakarta: { lat: -6.2, lon: 1.2 },
