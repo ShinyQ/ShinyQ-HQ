@@ -23,7 +23,7 @@ import { GateCurtain, StageFlat, StageLights, StagePanels, StagePortal, StageRin
 import { aboutFace, contactBeacon, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
-import { hallPremiumState, inHall, loadHallPremium, shouldLoadHallPremium, useHallPremium } from "./hallPremium/chunk";
+import { hallPremiumIdle, loadHallPremium, shouldLoadHallPremium, useHallPremium } from "./hallPremium/chunk";
 import { LOBBY_SLAB } from "./slab";
 import { hallShellInstances, lightInstances, panelInstances, portalInstances, ringInstances, SHELL, STAGE_KIND, type StageInstance } from "./hallStage";
 import { hallLineBuffer, hallShapes, partShapes, portraitRing, solidBuffers, type Circle, type HallShapes } from "./hallSolids";
@@ -304,12 +304,11 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   const nextCheck = useRef(0);
   useEffect(() => afterFirstFrameIdle(() => (idle.current = speculativePrefetchOn(window.location.search))), []);
   useFrame(({ clock }) => {
-    if (clock.elapsedTime < nextCheck.current || hallPremiumState() !== "idle") return;
+    if (clock.elapsedTime < nextCheck.current || !hallPremiumIdle()) return;
     nextCheck.current = clock.elapsedTime + 0.5;
     const s = getHQStore().getState();
-    const target = roverRuntime.autopilot?.point;
-    const intent = (target ? inHall(target) : false) || (s.activeRoom ? isHighlightRoom(s.activeRoom) : false);
-    if (shouldLoadHallPremium({ floor: s.floor, x: roverRuntime.x, idle: idle.current, intent })) void loadHallPremium().catch(() => null);
+    const x = Math.max(roverRuntime.x, roverRuntime.autopilot?.point.x ?? -1e9);
+    if (shouldLoadHallPremium({ floor: s.floor, x, idle: idle.current, intent: !!s.activeRoom && isHighlightRoom(s.activeRoom) })) void loadHallPremium().catch(() => null);
   });
   const labelBatch = useRef<BatchedLabelsHandle>(null);
   const contactBatch = useRef<BatchedLabelsHandle>(null);

@@ -42,14 +42,6 @@ export function loadHallPremium(): Promise<HallPremiumModule> {
   return pending;
 }
 
-export function hallPremiumModule(): HallPremiumModule | null {
-  return loaded;
-}
-
-export function hallPremiumState(): HallPremiumState {
-  return state;
-}
-
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
@@ -58,8 +50,11 @@ function subscribe(listener: () => void): () => void {
 }
 
 export function useHallPremium(): HallPremiumModule | null {
-  return useSyncExternalStore(subscribe, hallPremiumModule, () => null);
+  return useSyncExternalStore(subscribe, () => loaded, () => null);
 }
+
+/** True until the first load starts (the trigger asks only then). */
+export const hallPremiumIdle = () => state === "idle";
 
 export interface HallPremiumLoadInput {
   floor: FloorId;
@@ -67,7 +62,7 @@ export interface HallPremiumLoadInput {
   x: number;
   /** The first frame went idle and speculative prefetch is on (`?prefetch=off` turns the idle load off). */
   idle: boolean;
-  /** A hall intent: a drive heading into the hall (point-and-go, Cmd-K, a mission) or a station room open (a deep link). */
+  /** A hall intent: a station room open (a deep link, Cmd-K). A drive heading into the hall counts through `x` (its target's). */
   intent: boolean;
 }
 
@@ -77,16 +72,9 @@ export function shouldLoadHallPremium({ floor, x, idle, intent }: HallPremiumLoa
   return idle || intent || x > HALL.lazyX;
 }
 
-/** True when a floor-local point lies in the hall (a drive's target there is a hall intent). */
-export function inHall(p: { x: number; z: number }): boolean {
-  const z = HALL.zone;
-  return p.x >= z.minX && p.x <= z.maxX && p.z >= z.minZ && p.z <= z.maxZ;
-}
-
-/** `window.__hq.hall` (Playwright, the bytes, perf and memory gates): load the interiors, and their state. */
+/** `window.__hq.hall` (Playwright, the bytes, perf and memory gates): load the interiors (their state is `__hq.probes.hallPremium`). */
 export const hallHandle = {
   loadPremium: (): Promise<void> => loadHallPremium().then(() => undefined),
-  premiumState: hallPremiumState,
 };
 
 /** What `HighlightsHall` hands the interiors of one hall part (`HallView`), so they hide with it. */

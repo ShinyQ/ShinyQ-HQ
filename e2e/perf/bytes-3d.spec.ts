@@ -273,7 +273,7 @@ for (const tier of ["lite", "full"] as const) {
       ...(picker === null ? {} : { picker }),
       ...(touch === null ? {} : { touch }),
     });
-    console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
+    console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip (${total} B) in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
     if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)} + office scene ${kb(office ?? 0)}${officeReplay === null ? "" : ` + office replay ${kb(officeReplay)}`}${hallPremium === null ? "" : ` + hall interiors ${kb(hallPremium)}`}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
     if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
