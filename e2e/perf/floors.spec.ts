@@ -259,28 +259,36 @@ for (const tier of ["lite", "full"] as const) {
   });
   // The Highlights Hall (one gate and B4 interiors, owner decision 2026-11-04): from the lead road facing the gate, then on
   // every station's pad with the interiors loaded and that station awake (its drawer closed again). Same cap and program
-  // baseline as the L1 spawn; reported as the settled-L1-hall-gate and settled-L1-hall-<station> peaks.
-  test(`L1 ${tier}: settled draw calls and shader programs in the Highlights Hall @nightly`, async ({ page }) => {
-    test.setTimeout(600_000);
-    await enterFloorRoute(page, "/en", { tier });
-    await settleOffice(page);
-    await page.evaluate(() => (window as unknown as HallWindow).__hq.hall?.loadPremium());
-    await page.waitForFunction(() => (window as unknown as HallWindow).__hq.probes.hallPremium?.mounted === true, null, { timeout: 90_000 });
-    await driveTo(page, { x: HALL.lead[0].x, z: HALL.lead[0].z }, 120_000);
-    await turnCameraTo(page, yawLooking({ x: 1, z: 0 }));
-    await measureFloor(page, tier, "L1", "hall-gate");
-    await turnCameraTo(page, 0);
-    for (const station of HIGHLIGHT_STATIONS) {
-      await driveTo(page, stationOf(station).pad, 120_000);
-      await page.evaluate(() => {
-        const store = (window as unknown as { __hq: { store: { getState: () => { phase: string; closeRoom: () => void } } } }).__hq.store.getState();
-        if (store.phase === "room") store.closeRoom();
-      });
-      await waitForPhase(page, "explore");
-      await page.waitForFunction((s) => ((window as unknown as HallWindow).__hq.probes.hallPremium?.wake[s] ?? 0) > 0.99, station, { timeout: 60_000 });
-      await measureFloor(page, tier, "L1", `hall-${station}`);
-    }
-  });
+  // baseline as the L1 spawn; reported as the settled-L1-hall-gate and settled-L1-hall-<station> peaks. Two halves (north:
+  // the gate and stations 01 to 03; south: 04 to 07): a pose takes about 3 min in CI, so all eight in one test ran out of time.
+  for (const [half, stations] of [
+    ["north", HIGHLIGHT_STATIONS.slice(0, 3)],
+    ["south", HIGHLIGHT_STATIONS.slice(3)],
+  ] as const) {
+    test(`L1 ${tier}: settled draw calls and shader programs in the Highlights Hall, ${half} half @nightly`, async ({ page }) => {
+      test.setTimeout(900_000);
+      await enterFloorRoute(page, "/en", { tier });
+      await settleOffice(page);
+      await page.evaluate(() => (window as unknown as HallWindow).__hq.hall?.loadPremium());
+      await page.waitForFunction(() => (window as unknown as HallWindow).__hq.probes.hallPremium?.mounted === true, null, { timeout: 90_000 });
+      if (half === "north") {
+        await driveTo(page, { x: HALL.lead[0].x, z: HALL.lead[0].z }, 120_000);
+        await turnCameraTo(page, yawLooking({ x: 1, z: 0 }));
+        await measureFloor(page, tier, "L1", "hall-gate");
+        await turnCameraTo(page, 0);
+      }
+      for (const station of stations) {
+        await driveTo(page, stationOf(station).pad, 120_000);
+        await page.evaluate(() => {
+          const store = (window as unknown as { __hq: { store: { getState: () => { phase: string; closeRoom: () => void } } } }).__hq.store.getState();
+          if (store.phase === "room") store.closeRoom();
+        });
+        await waitForPhase(page, "explore");
+        await page.waitForFunction((s) => ((window as unknown as HallWindow).__hq.probes.hallPremium?.wake[s] ?? 0) > 0.99, station, { timeout: 60_000 });
+        await measureFloor(page, tier, "L1", `hall-${station}`);
+      }
+    });
+  }
   // The L1 poses past the arrival (the beacon, the office in view, the Agent Office stop and the day replay) end with
   // ` @nightly` (owner decision 2026-11-01): the nightly runs them, and so does a pull request that changes the Lobby or
   // the office (scripts/perf-plan.ts `nightlyPerfFor`); other pull requests and main skip them.

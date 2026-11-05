@@ -800,10 +800,10 @@ describe("shard plan against the real Playwright list", () => {
     for (const smoke of PR_SMOKE) if (smoke.title) expect(isNightlyTest(smoke.title)).toBe(false);
   }, 120_000);
 
-  it("the perf lane's nightly-only tests are the ten L1 poses past the arrival, each with a measured duration", () => {
+  it("the perf lane's nightly-only tests are the twelve L1 poses past the arrival, each with a measured duration", () => {
     const nightly = list(true, ["--grep", "@nightly"]);
-    // Owner decision 2026-11-01: the beacon, the office in view, the Agent Office stop and the day replay, both tiers; the Highlights Hall poses (2026-11-04).
-    expect(nightly).toHaveLength(10);
+    // Owner decision 2026-11-01: the beacon, the office in view, the Agent Office stop and the day replay, both tiers; the Highlights Hall poses in two halves (2026-11-04).
+    expect(nightly).toHaveLength(12);
     expect(nightly.every((t) => isNightlyTest(t) && /› L1 (full|lite): settled /.test(t))).toBe(true);
     for (const t of nightly) expect(durations.perf?.[durationKey(t)], t).toBeGreaterThan(0);
     // The timeline runs only in perf-nightly.yml: never in a CI perf shard, the nightly included.
