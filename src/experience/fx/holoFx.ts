@@ -31,7 +31,12 @@ export const HOLO_MODE = {
   /**
    * Highlights Hall stage effects (L1 gallery): the kind comes per instance from `aStage.x` (`STAGE_KIND`
    * in floors/lobby/hallStage.ts: stage lights, light curtain and portal, stat tiles, atlas images and the
-   * portrait hologram, pulse rings), so the hall shares this program instead of adding its own. Only this
+   * portrait hologram, pulse rings, and the B4 shell), so the hall shares this program instead of adding its own.
+   * B4 shell kinds: ribs and door-pad halos are arc ribbons on a strip (position.x along the arc of aStage2.y
+   * radians with radii aStage.yz, upright or lying for halos; position.y across it, aStage.w wide, turned to the camera).
+   * Ribs breathe in sequence (9 s) and fade near the camera and when seen from above. Motes are
+   * camera-facing dots rising aStage.z u at aStage.y cycles/s. Runway, packets (sliding gate to spine every 10 s) and the
+   * floor grid lie flat; walls stand up (aStage.yz the size, aStage2.x the glass fill, aStage.w the grid cell). Only this
    * mode reads `aStage`, `aStage2` and `aStageUv`; instance color carries the tint, `aStage2.w` the alpha.
    */
   stage: 9,
@@ -85,10 +90,35 @@ void main(){
       vec3 n = normalize(mat3(modelMatrix) * vec3(position.x, 0., position.z));
       vStage.z = t;
       vStage.w = abs(dot(n, normalize(cameraPosition - w.xyz)));
-    } else if (kind > 7.5) {
+    } else if (kind > 7.5 && kind < 8.5) {
       float k = mix(.35, fract(uTime * aStage.z + aStage2.z), uPulse);
       vStage.z = k;
       w = modelMatrix * vec4(base + position * (1. + k * aStage.y), 1.);
+    } else if ((kind > 8.5 && kind < 9.5) || kind > 15.5) {
+      float s = position.x + .5;
+      float ang = s * aStage2.y;
+      vec2 ca = vec2(cos(ang) * aStage.y, sin(ang) * aStage.z);
+      vec2 cd = vec2(-sin(ang) * aStage.y, cos(ang) * aStage.z);
+      bool down = kind > 15.5;
+      vec3 wp = (modelMatrix * vec4(base + rot * (down ? vec3(ca.x, 0., ca.y) : vec3(ca, 0.)), 1.)).xyz;
+      vec3 tg = mat3(modelMatrix) * rot * (down ? vec3(cd.x, 0., cd.y) : vec3(cd, 0.));
+      vec3 n = normalize(cross(tg, cameraPosition - wp));
+      w = vec4(wp + n * position.y * aStage.w, 1.);
+      vStage.z = position.y + .5; vLocal = vec2(aStage2.z, s);
+    } else if (kind > 12.5 && kind < 13.5) {
+      float f = fract(uTime * aStage.y + aStage2.z);
+      vec3 c0 = (modelMatrix * vec4(base + vec3(0., f * aStage.z, 0.), 1.)).xyz;
+      vec3 cr = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+      vec3 cu = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+      w = vec4(c0 + (cr * position.x + cu * position.y) * aStage.w, 1.);
+      vStage.z = f;
+    } else if (kind > 10.5) {
+      bool lying = kind < 12.5 || kind > 14.5;
+      float f = kind < 12.5 && kind > 11.5 ? fract(uTime * .1 + aStage2.z) : .5;
+      local = lying ? vec3(position.x * aStage.y + (f - .5) * aStage.w, 0., 0. - position.y * aStage.z) : vec3(position.x * aStage.y, position.y * aStage.z, 0.);
+      vLocal = (position.xy + .5) * aStage.yz; vSize = aStage.yz;
+      vStage.z = kind > 13.5 && kind < 14.5 ? (aStage.w > 0. ? aStage.w : 1.5) : f; vStage.w = aStage2.x;
+      w = modelMatrix * vec4(base + rot * local, 1.);
     } else {
       float lift = (kind > 4.5 && kind < 5.5) ? uDrift * .08 * sin(uTime * .6 + aStage2.z) : 0.;
       local = vec3(position.x * aStage.y, position.y * aStage.z + lift, 0.);
@@ -216,8 +246,34 @@ void main(){
         img = mix(img, img * c, .35) * scan * flick + c * smoothstep(.8, 1., r) * .21;
       }
       col = img;
-    } else {
+    } else if (kind < 8.5) {
       a *= (1. - vStage.z) * mix(.6, 1., uPulse) * .8;
+    } else if (kind > 15.5) {
+      a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.));
+    } else if (kind < 9.5) {
+      float above = clamp((cameraPosition.y - vW.y) / max(vDist, 1.), 0., 1.);
+      col = c * (.9 + .25 * max(0., sin(uTime * .7 - vLocal.x * .55)));
+      a *= smoothstep(0., .7, 1. - abs(vStage.z * 2. - 1.)) * smoothstep(0., .03, vLocal.y) * smoothstep(1., .97, vLocal.y) * smoothstep(10., 26., vDist) * mix(1., .3, smoothstep(.05, .5, above));
+    } else if (kind < 11.5) {
+      float band = 1. - abs(vLocal.y / vSize.y * 2. - 1.);
+      float t = vLocal.x / vSize.x;
+      col = c * (.6 + .8 * band * band * band);
+      a *= (band * .3 + band * band * band * .7) * smoothstep(0., .1, t) * smoothstep(1., .8, t);
+    } else if (kind < 12.5) {
+      vec2 q = abs(vUv * 2. - 1.);
+      col = c * 1.6;
+      a *= (1. - smoothstep(.35, 1., max(q.x, q.y))) * sin(3.1416 * vStage.z);
+    } else if (kind < 13.5) {
+      float r = length(vUv * 2. - 1.);
+      a *= (1. - smoothstep(.15, 1., r)) * sin(3.1416 * vStage.z);
+    } else {
+      float cell = kind < 14.5 ? vStage.z : 3.;
+      vec2 g = abs(fract(vLocal / cell + .5) - .5) * cell;
+      float line = 1. - smoothstep(.015, .045, min(g.x, g.y));
+      float top = kind < 14.5 ? 1. - smoothstep(.02, .12, vSize.y - vLocal.y) : 0.;
+      float up = kind < 14.5 ? 1. - .6 * vLocal.y / vSize.y : 1.;
+      col = c * (1. + top);
+      a *= line * .5 * up + top + vStage.w;
     }
   } else if (uMode == 10) {
     vec3 n = normalize(vW - vC);

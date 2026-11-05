@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import { zoneAt } from "@/experience/camera/orbit";
 import { followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
-import { HALL, HALL_LAYOUT, shouldLoadShots, stationOf } from "@/experience/floors/lobby/hallLayout";
+import * as hall from "@/experience/floors/lobby/hallLayout";
+import { gatePillars, HALL, HALL_LAYOUT, hallPartitions, shouldLoadShots, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { HIGHLIGHT_STATIONS, highlightRoom } from "@/experience/floors/lobby/stations";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { spaceViolations } from "@/experience/nav/space";
+import type { Rect } from "@/experience/types";
+
+const rectGap = (a: Rect, b: Rect) => Math.max(0, a.minX - b.maxX, b.minX - a.maxX, a.minZ - b.maxZ, b.minZ - a.maxZ);
+const LOBBY_CERT: Rect = { minX: LOBBY.certWall.x - LOBBY.certWall.w / 2, maxX: LOBBY.certWall.x + LOBBY.certWall.w / 2, minZ: LOBBY.certWall.z - LOBBY.certWall.d / 2, maxZ: LOBBY.certWall.z + LOBBY.certWall.d / 2 };
 
 const layouts = buildFloorLayouts(8);
 const l1 = layouts.L1;
@@ -45,11 +50,14 @@ describe("Highlights Hall layout", () => {
     expect(HALL_LAYOUT.stations.map((s) => s.station)).toEqual([...HIGHLIGHT_STATIONS]);
     // Every station touches a slab edge (north, east or south).
     for (const s of HALL_LAYOUT.stations) expect([s.rect.minZ === LOBBY.slab.minZ, s.rect.maxX === LOBBY.slab.maxX, s.rect.maxZ === LOBBY.slab.maxZ].some(Boolean), s.room).toBe(true);
-    // The spine and the approach roads route only: the hall draws its lead road, plaza and spurs.
+    // The spine and the approach roads route only.
     const spine = HALL_LAYOUT.network.roads.find((r) => r.id === "hall-spine")!;
     expect(spine.points.every((p) => p.x === HALL.plaza.x)).toBe(true);
+    // B4 (owner decision 2026-11-04): only the lead road from the Lobby to the gateway arch is drawn; no plaza fill or stubs.
     expect(HALL_LAYOUT.drawn.roads.map((r) => r.id)).toEqual(["hall-lead"]);
-    expect(HALL_LAYOUT.drawn.spurs).toEqual(HALL_LAYOUT.network.spurs);
+    expect(HALL_LAYOUT.drawn.roads[0].points.at(-1)!.x).toBe(HALL.gate.x);
+    expect(HALL_LAYOUT.drawn.plazas).toEqual([]);
+    expect(HALL_LAYOUT.drawn.spurs).toEqual([]);
     // A drive between two stations follows the spine: no detour through the plaza's centre.
     const graph = buildRoadGraph(l1.road!);
     const grid = buildNavGrid(l1, ROVER.radius);
@@ -105,5 +113,51 @@ describe("Highlights Hall layout", () => {
     expect(shouldLoadShots("L1", LOBBY.spawn.x)).toBe(false);
     expect(shouldLoadShots("L1", HALL.lazyX + 1)).toBe(true);
     expect(shouldLoadShots("L3", 40)).toBe(false);
+  });
+
+  describe("one gate (owner decision 2026-11-04)", () => {
+    it("has no road from the Agent Office", () => {
+      expect("hallOfficeRoad" in hall).toBe(false);
+      expect("hallOfficeRoadDrawn" in hall).toBe(false);
+      expect("officeRoad" in HALL).toBe(false);
+      expect(l1.road!.roads.some((r) => r.id === "hall-office")).toBe(false);
+    });
+
+    it("closes the west side on one straight line through the gate, nothing further forward (no gap under 6 u)", () => {
+      const parts = hallPartitions();
+      expect(parts).toHaveLength(3);
+      const [north, south, wing] = parts;
+      const [pn, ps] = gatePillars();
+      const touches = (a: Rect, b: Rect) => rectGap(a, b) === 0;
+      // One line: both runs and the gate's centre share x; the pillars hold the line inside them.
+      expect(north.minX).toBe(south.minX);
+      expect(north.maxX).toBe(south.maxX);
+      expect((north.minX + north.maxX) / 2).toBeCloseTo(HALL.gate.x);
+      for (const p of [pn, ps]) expect(p.minX <= north.minX && p.maxX >= north.maxX).toBe(true);
+      // North run: from the north slab edge into the north pillar; the wing wall joins it to the about station.
+      expect(north.minZ).toBe(HALL.zone.minZ);
+      expect(touches(north, pn)).toBe(true);
+      expect(touches(north, wing)).toBe(true);
+      expect(touches(wing, stationOf("about").rect)).toBe(true);
+      // South run: from the south pillar to the south slab edge, the contact station touching its east face.
+      expect(touches(south, ps)).toBe(true);
+      expect(south.maxZ).toBe(HALL.zone.maxZ);
+      expect(touches(south, stationOf("contact").rect)).toBe(true);
+      expect(stationOf("contact").rect.minX).toBeGreaterThanOrEqual(south.maxX);
+      // The opening between the pillars carries the whole lead road.
+      const lead = HALL.lead[0].z;
+      expect(north.maxZ).toBeLessThanOrEqual(lead - 4);
+      expect(south.minZ).toBeGreaterThanOrEqual(lead + 4);
+      expect(rectGap(north, LOBBY_CERT)).toBeGreaterThanOrEqual(6);
+      for (const p of parts) {
+        expect(HALL_LAYOUT.obstacles).toContainEqual(p);
+        expect(l1.obstacles).toContainEqual(p);
+      }
+    });
+
+    it("keeps the partitions low: under the certification wall, never a camera column", () => {
+      expect(HALL.partition.height).toBeLessThan(LOBBY.certWall.h);
+      for (const p of hallPartitions()) expect(l1.tall!.some((t) => t.minX === p.minX && t.maxX === p.maxX && t.minZ === p.minZ)).toBe(false);
+    });
   });
 });

@@ -134,6 +134,7 @@ layout and application behaviour are outside this English-only rewrite.
 | Closing contact section | 2026-11-01: owner decision: every case study and the CV page end like the landing, with the availability line, the email, About and contact and View CV (the CV page skips View CV); case studies add "Ask Rover about this project", which asks Rover what was built and the results, and a question that names a project by its title is always answered from that project (never as a hobby or policy question) | Done |
 | L1 one rectangle | 2026-11-02: owner decision: the L1 floor becomes one 93 x 86 u rectangle (the notches beside the Agent Office wing filled); the hall's gateway arch moves 2 u west; no new chunk or program (#390; its Proof Park arch and roads were replaced by the Highlights Hall extension below) | Done |
 | L1 Highlights Hall extension | 2026-11-02: owner decision (Proof Park cancelled): the Highlights Hall runs the slab's full depth with three new stations in the gallery's shapes: Wins (every award by placement, counts from the data), Now (the roles still running) and Results (verified before and after numbers from the case studies); contact moves to the new south edge, a road from the Agent Office plaza enters the hall, the strip west of the office is lit floor; no new chunk or program, the hall drawn in three culled parts | In review |
+| L1 Highlights Hall one gate and B4 | 2026-11-04: owner decision: one way into the hall (the road from the Agent Office plaza removed, glass partitions close its west side); the B4 neon look (deep indigo, cyan and violet: dark grid walls, a ceiling seen from below, ceiling ribs, a runway and spine (no rings in front of the gate, owner 2026-11-04), light motes on the full tier, ring door pads, sans station headers); the station exhibits (particle portrait, floating screens, light elevator, light trophy with 24 stars, live terminals, metric reactor, contact portal) and two centrepieces (Impact Orbit, Signal Spire) in a lazy 9.2 KB chunk at idle on L1; the west wall and gate on one line | In review |
 | Blog reading revamp | 2026-11-02: owner decision: posts read on one centred measure shared by the title, the meta and the body, in brighter text at the same 16 px, with section heads in the display face, framed code, a calmer backdrop, a reading-time line, "On this page" contents beside the text from 1280 px, a thin progress line, and the topics and copy-link buttons after the post; on phones and tablets the header hides while reading down and the Ask pill shrinks to its icon ([decision](decisions/2026-11-02-blog-reading-revamp.md)) | Done |
 
 ## Controls and first visit
@@ -293,7 +294,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 - **Room to drive** (owner, 2026-10-19): the Lobby and the Highlights Hall share one 54 u deep slab centred on the elevator; every walkway between the lane ring and the walls, the kiosk and the Visitor Observatory is at least 6 u wide, and every pair of L1 obstacles stays 6 u apart.
 - **Agent Office wing**: south of the plaza, reached by its own lead road (see [Agent Office](#agent-office)); the Highlights Hall's lead road starts 6 u east of it.
-- **One rectangle** (owner, 2026-11-02): L1 is one 93 x 86 u rectangle. East of the Agent Office wing the Highlights Hall runs down to the floor's south edge, and a road from the office plaza enters it, so the Lobby, the office and the hall form one loop. West of the wing, a row of light columns lights the strip along the west edge (decoration only).
+- **One rectangle** (owner, 2026-11-02): L1 is one 93 x 86 u rectangle. East of the Agent Office wing the Highlights Hall runs down to the floor's south edge; since 2026-11-04 it has one way in, its gateway arch on the Lobby lead road (the office keeps its own lead road from the Lobby plaza). West of the wing, a row of light columns lights the strip along the west edge (decoration only).
 
 - **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging. An in-progress certification (AB-100 today) shows in amber with "In progress" instead of its month.
@@ -334,17 +335,21 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 ## L1 Highlights Hall
 
-Behind the certifications wall, a road past its south end leads under a gateway arch into the hall.
+Behind the certifications wall, a road past its south end leads under a gateway arch into the hall: the only way in (glass partitions close its west side).
 
-- **Gateway**: a floating **Highlights Hall** sign, and a light curtain that sweeps once per session as you drive through.
-- **The hall**: a gallery that sums up the tower, from the north edge of the floor to its south edge, around two light fountains, each station on its own stage under fake spotlights. A road from the Agent Office plaza enters it too.
-  - **01 About me** on a holo pedestal: the portrait as a hologram, name, headline, four big numbers in an arc, the one-line intro.
-  - **02 Top 3 projects** on three monolith screens (the same three as the landing).
-  - **03 Work experience** on a lit arch split into Employment and Freelance (newest first; a card rides to the role on L2).
-  - **04 Wins** on a second pedestal: the number of awards and honors in the ring, the first places, a tile per placement (1st, 2nd, 3rd place, finalists and honors); the drawer lists every award by placement with its organizer and month. Every count comes from the awards data.
-  - **05 Now** on a smaller lit arch: the roles still running (Metrodata and LILT today), each riding to its role on L2.
-  - **06 Results** on three monoliths: the verified before and after numbers from the case studies (value, what it measures, the case study); the drawer rides to each case study.
-  - **07 Contact** beside a signal beacon on the south edge: email with copy, channels, the CV reader, availability.
+- **Gateway**: a floating **Highlights Hall** sign, a cyan runway into the hall, and a light curtain that sweeps once per session as you drive through.
+- **The hall** (the B4 neon look): a dark indigo gallery from the north edge of the floor to its south edge, with gridded walls, ceiling ribs of light, a glowing spine and light motes. Each station stands in a glass case with a bevelled light frame under its number and title, its door pad marked by a turning ring of light. The west wall and the gateway stand on one straight line.
+- **Two centrepieces** in the middle of the plaza, made of light (drive straight through them):
+  - **Impact Orbit**: a turning globe of light points with Jakarta marked, light paths out to the sectors of the case studies (banking, a bakery brand, automotive, coal mining, a lender, consumer health, insurance) and "12+ enterprise clients" above it.
+  - **Signal Spire**: a ring of light per career year, sized by that year's roles and wins, the current year on top and brightest, each year labelled on its ring.
+- **Waking a station**: park on its pad and the station wakes; drive off and it settles back. The interiors load a moment after L1 goes idle, or at once when you head for the hall.
+  - **01 About me**: the portrait as a hologram of light particles that assemble on waking, inside a slow two-ring gyroscope with orbiting light chips, name, headline and four big numbers (they count up).
+  - **02 Top 3 projects**: the screenshots on floating screens fanned out in depth, cycling and floating forward on waking; each project's headline metric counts from before to after.
+  - **03 Work experience**: a lit arch split into Employment and Freelance (newest first) with a light elevator in its opening, a glowing floor per role and a cursor rising to now; a card rides to the role on L2.
+  - **04 Wins**: a trophy drawn in light with one star per award orbiting it by placement (first places larger and flaring), the first places, a tile per placement; the drawer lists every award by placement with its organizer and month. Every count comes from the awards data.
+  - **05 Now**: the roles still running (Metrodata and LILT today) as live terminals with a LIVE badge; org and role type in on waking, each card riding to its role on L2.
+  - **06 Results**: a metric reactor on three monoliths: each verified before and after number morphs from before to after while its bar collapses to scale; the drawer rides to each case study.
+  - **07 Contact**: a portal ring that opens on arrival around the email card, beside a signal beacon whose signal ripples across the floor: email with copy, channels, the CV reader, availability.
 - Point at a station and click (or tap twice) to drive there and open its drawer. A project with a public site shows **Visit live site**.
 - **See the highlights** (Rover menu or Cmd-K) rides to the hall and opens About me.
 - `/{locale}#highlights` or `/{locale}#highlights-<about|projects|experience|wins|now|results|contact>` opens a station directly.

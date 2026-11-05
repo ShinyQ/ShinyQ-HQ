@@ -267,4 +267,6 @@ export interface HighlightsData {
   results: { slug: string; project: string; value: string; label: string }[];
   /** The now station: the roles still running, employment first (timeline text, the period formatted). */
   now: { slug: string; org: string; role: string; type: "job" | "freelance"; period: string }[];
+  /** The Impact Orbit's sectors: each case study's client sector label (C3: never a client name), once each, in site order. */
+  sectors: string[];
 }

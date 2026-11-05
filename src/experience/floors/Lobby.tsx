@@ -14,7 +14,7 @@ import { postHandle } from "../scene/postHandle";
 import { useRingStats } from "../visits3d";
 import { CertWall, type CertLabels } from "./lobby/CertWall";
 import type { HallLabels } from "./lobby/hallContent";
-import { HALL, hallOfficeRoadDrawn } from "./lobby/hallLayout";
+import { HALL } from "./lobby/hallLayout";
 import { HighlightsHall } from "./lobby/HighlightsHall";
 import { Lanes } from "./lobby/Lanes";
 import { atlasLayout, wallLogoSrcs } from "./lobby/logoAtlas";
@@ -65,13 +65,9 @@ const REVEAL = {
   westStrip: WEST_STRIP.rect,
 } satisfies Record<string, Rect>;
 
-/**
- * The office wing's lead road and plaza and the road from the office plaza into the Highlights Hall (only between the two
- * plazas: `hallOfficeRoadDrawn`), drawn with the hall's road kit (`RoadMarkings`) in one mesh: the intro orbit and the
- * office stop already draw it, so the hall road adds no draw call there.
- */
+/** The office wing's lead road and plaza, drawn with the hall's road kit (`RoadMarkings`) in one mesh. */
 const WING = officeRoad(LOBBY.officeWing);
-const WING_ROAD = { roads: [WING.road, hallOfficeRoadDrawn()], plazas: [WING.plaza], spurs: [] };
+const WING_ROAD = { roads: [WING.road], plazas: [WING.plaza], spurs: [] };
 
 /**
  * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays. Every session that boots on

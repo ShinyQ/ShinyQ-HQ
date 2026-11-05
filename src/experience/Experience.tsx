@@ -71,6 +71,7 @@ import { loadTour } from "@/hud/dialog/tourChunk";
 import { loadMenu } from "@/hud/menu/menuChunk";
 import { loadTouch } from "@/hud/touchChunk";
 import { loadPicker } from "@/hud/pads/pickerChunk";
+import { hallHandle } from "./floors/lobby/hallPremium/chunk";
 import { officeHandle } from "./floors/lobby/office/chunk";
 import { loadOfficeBeacon, loadOfficeWatch, officeWatchNow } from "./floors/lobby/office/watchLoader";
 import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
@@ -202,6 +203,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // the office watch and beacon chunks: `watchNow` loads the watch chunk and runs one tick of its watch, `loadWatch` and
     // `loadBeacon` load a chunk and resolve with its module (the bytes gate).
     office: { ...officeHandle, watchNow: officeWatchNow, loadWatch: loadOfficeWatch, loadBeacon: loadOfficeBeacon },
+    // The lazy Highlights Hall interiors chunk (L1): `loadPremium` and its state (the bytes, perf and memory gates).
+    hall: hallHandle,
     // The lazy first-session tour chunk: `load` resolves with its module (the bytes gate).
     tour: { load: loadTour },
     // The lazy Corners menu sheet chunk: `load` resolves with its module (the bytes gate).
@@ -554,6 +557,9 @@ function ExperienceView({
           wins: tHall("wins"),
           now: tHall("now"),
           results: tHall("results"),
+          impactOrbit: tHall("impactOrbit"),
+          signalSpire: tHall("signalSpire"),
+          live: tHall("live"),
           winsTitle: (firsts: number) => tHall("winsTitle", { firsts }),
           winsLine: (placings: number) => tHall("winsLine", { placings }),
           winsRing: tHall("winsRing"),

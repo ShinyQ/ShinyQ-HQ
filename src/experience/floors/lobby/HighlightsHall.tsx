@@ -9,6 +9,8 @@ import { FloatingSigns } from "../../fx/FloatingSign";
 import { neonColor } from "../../fx/materials";
 import { RoadMarkings } from "../../fx/RoadMarkings";
 import { useDispose } from "../../fx/useDispose";
+import { afterFirstFrameIdle } from "../../boot-signals";
+import { speculativePrefetchOn } from "../floorChunks";
 import { registerExtraInteractables } from "../../interact/registry";
 import { roverRuntime } from "../../rover/runtime";
 import { sceneTarget } from "../../scene/postHandle";
@@ -17,14 +19,15 @@ import { renderProbe } from "../../scene/renderProbe";
 import { FONTS } from "../../tower/primitives";
 import type { ExperienceData, GpuTier } from "../../types";
 import { coverCrop, hallAtlas, hallPhoto, hallShots, hallTexts, partTexts, RESULT_ROWS, SHOT_CELL, TIER_TONE, type HallAtlas, type HallLabels } from "./hallContent";
-import { GateCurtain, StageLights, StagePanels, StagePortal, StageRings } from "./HallFx";
-import { aboutFace, contactBeacon, FOUNTAIN_SOUTH, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
+import { GateCurtain, StageFlat, StageLights, StagePanels, StagePortal, StageRings, StageShell } from "./HallFx";
+import { aboutFace, contactBeacon, gateSign, hallLights, MONOLITH, statTiles, winsFace, winsTiles } from "./hallGallery";
 import { highlightsInteractables } from "./hallInteract";
 import { HALL, HALL_LAYOUT, shouldLoadShots } from "./hallLayout";
+import { hallPremiumIdle, loadHallPremium, shouldLoadHallPremium, useHallPremium } from "./hallPremium/chunk";
 import { LOBBY_SLAB } from "./slab";
-import { lightInstances, panelInstances, portalInstances, ringInstances } from "./hallStage";
+import { hallShellInstances, lightInstances, panelInstances, portalInstances, ringInstances, SHELL, STAGE_KIND, type StageInstance } from "./hallStage";
 import { hallLineBuffer, hallShapes, partShapes, portraitRing, solidBuffers, type Circle, type HallShapes } from "./hallSolids";
-import { HIGHLIGHT_STAT_COUNT } from "./stations";
+import { HIGHLIGHT_STAT_COUNT, isHighlightRoom } from "./stations";
 
 /** Draws the atlas cells into one canvas row (cover fit, per-cell brightness); a failed image leaves its cell dark. */
 function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
@@ -75,10 +78,14 @@ function useHallAtlas(atlas: HallAtlas, enabled: boolean) {
   return texture;
 }
 
+/** B4 base (owner decision 2026-11-04): deep indigo surfaces with a faint indigo glow. */
+const B4_BASE = "#0a0620";
+const B4_GLOW = "#1c1442";
+
 /** Every gallery solid in one mesh (boxes and round prisms), lit like the rest of the Lobby. */
 function HallSolids({ shapes }: { shapes: HallShapes }) {
   const geometry = useMemo(() => {
-    const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms);
+    const { positions, normals, indices } = solidBuffers(shapes.boxes, shapes.prisms, shapes.quads);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("normal", new BufferAttribute(normals, 3));
@@ -89,7 +96,7 @@ function HallSolids({ shapes }: { shapes: HallShapes }) {
   useDispose(geometry);
   return (
     <mesh geometry={geometry} raycast={() => null}>
-      <meshStandardMaterial color="#0b1020" emissive={HALL.tone.about} emissiveIntensity={0.05} roughness={0.7} metalness={0.2} />
+      <meshStandardMaterial color={B4_BASE} emissive={B4_GLOW} emissiveIntensity={0.25} roughness={0.55} metalness={0.3} />
     </mesh>
   );
 }
@@ -103,10 +110,10 @@ function HallLines({ shapes, tier, extra, lattice }: { shapes: HallShapes; tier:
     return g;
   }, [shapes, extra, lattice]);
   useDispose(geometry);
-  const neon = useMemo(() => neonColor(HALL.tone.about, 1.4, tier), [tier]);
+  const neon = useMemo(() => neonColor(SHELL.violet, 1.2, tier), [tier]);
   return (
     <lineSegments geometry={geometry} raycast={() => null}>
-      <lineBasicMaterial color={neon} transparent opacity={0.7} toneMapped={false} />
+      <lineBasicMaterial color={neon} transparent opacity={0.55} toneMapped={false} />
     </lineSegments>
   );
 }
@@ -169,21 +176,32 @@ const around = (r: { minX: number; maxX: number; minZ: number; maxZ: number }, p
   new Box3(new Vector3(r.minX - pad, -0.5, r.minZ - pad), new Vector3(r.maxX + pad, top, r.maxZ + pad));
 
 /**
- * Floor-local view boxes of each half. The north half keeps the whole area from the gateway arch east (shapes, lights up
- * to the spotlight apexes), tested on a 6 x 6 grid of cells. The south half tests a box per landmark (now, results,
- * contact, the south fountain), so the empty plaza and the office road at its west edge, which a Lobby view facing south
- * reaches at the frame's edge, never draw it. The lead road west of the arch and the gate sign draw outside them.
+ * Floor-local view boxes of each part. The north part keeps the whole area from the gateway arch east (shapes, lights up
+ * to the spotlight apexes), tested on a 6 x 6 grid of cells. The south part tests a box per landmark (now, results) and
+ * the band its ceiling ribs span, so the empty plaza floor, which a Lobby view facing south reaches at the frame's edge,
+ * never draws it; contact tests a box around its station. The runway and its packets are their own part around
+ * the lead road. The lead road's markings and the gate sign draw outside them.
  */
+const GATE_BOX = new Box3(
+  new Vector3(HALL.gate.x - HALL.gate.depth / 2 - SHELL.runway.west - 1, -0.5, HALL.lead[0].z - 2),
+  new Vector3(HALL.plaza.x + 1, 1, HALL.lead[0].z + 2),
+);
+/** The Signal Spire's z: the middle of the plaza's south half (`centres()` in the interiors chunk). */
+const SPIRE_Z = (HALL_SPLIT + HALL.plaza.z + HALL.plaza.d / 2) / 2;
 const HALL_VIEW: Record<HallPart, Box3[]> = {
   north: [new Box3(new Vector3(HALL.gate.x - HALL.gate.depth / 2 - 1, -0.5, HALL.zone.minZ - 1), new Vector3(HALL.zone.maxX + 1, 13, HALL_SPLIT + 1))],
   contact: [around(HALL.stations.contact, 5, 13)],
   south: [
     around(HALL.stations.now, 5, 11),
     around(HALL.stations.results, 5, 13),
-    new Box3(new Vector3(FOUNTAIN_SOUTH.x - 4, -0.5, FOUNTAIN_SOUTH.z - 4), new Vector3(FOUNTAIN_SOUTH.x + 4, 8.5, FOUNTAIN_SOUTH.z + 4)),
+    new Box3(new Vector3(HALL.zone.minX, SHELL.rib.spring - 1, HALL_SPLIT), new Vector3(HALL.zone.maxX, SHELL.rib.spring + SHELL.rib.rise + 0.5, HALL.zone.maxZ)),
+    // The Signal Spire (interiors chunk) in the middle of the south half of the plaza.
+    new Box3(new Vector3(HALL.plaza.x - 4, -0.5, SPIRE_Z - 4), new Vector3(HALL.plaza.x + 4, 12.5, SPIRE_Z + 4)),
   ],
 };
 const HALL_GRID: Record<HallPart, number> = { north: 6, contact: 2, south: 2 };
+/** The runway's instances (their own view part along the lead road); every other shell instance stands in a hall part. */
+const GATE_TAGS: readonly (string | undefined)[] = ["runway", "packet"];
 /** The portrait and the wins rings both stand in the north part; the others have none. */
 const RINGS: Record<HallPart, readonly Circle[]> = { north: [portraitRing(aboutFace()), portraitRing(winsFace())], contact: [], south: [] };
 
@@ -242,19 +260,36 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     const all = hallShapes(projectCount, resultCount);
     return { north: partShapes(all, partOf, "north"), contact: partShapes(all, partOf, "contact"), south: partShapes(all, partOf, "south") };
   }, [projectCount, resultCount]);
+  // The interiors chunk (owner decision 2026-11-04), once loaded: its texts join each part's batch.
+  const premium = useHallPremium();
   const texts = useMemo(() => {
-    const all = hallTexts(data, labels, FONTS);
+    const base = hallTexts(data, labels, FONTS);
+    const extra = premium ? premium.premiumTexts(data, labels, FONTS) : [];
+    // The interiors replace whole groups of the station texts with their own (the pillar columns by the curtain's roles).
+    const keep = base.group.map((g) => !premium?.REPLACES.includes(g));
+    const all = {
+      labels: [...base.labels.filter((_, i) => keep[i]), ...extra],
+      tile: [...base.tile.filter((_, i) => keep[i]), ...extra.map(() => -1)],
+      group: [...base.group.filter((_, i) => keep[i]), ...extra.map(() => "interiors")],
+    };
     return { north: partTexts(all, partOf, "north"), contact: partTexts(all, partOf, "contact"), south: partTexts(all, partOf, "south") };
-  }, [data, labels]);
+  }, [data, labels, premium]);
   const winTiers = data.highlights.wins.tiers;
   // About me's stat tiles, then one wins tile per tier in its tier's tone (`hallTexts` rides their labels in this order).
   const tiles = useMemo(
     () => [...statTiles(Math.min(HIGHLIGHT_STAT_COUNT, data.stats.length)), ...winsTiles(winTiers.length).map((t, i) => ({ ...t, tone: TIER_TONE[winTiers[i].tier] }))],
     [data.stats.length, winTiers],
   );
-  const lights = useMemo(() => byPart(lightInstances(hallLights(tier, projectCount, resultCount), tier), (l) => [l.at[0], l.at[2]]), [tier, projectCount, resultCount]);
+  const lights = useMemo(() => byPart(lightInstances(hallLights(projectCount, resultCount), tier), (l) => [l.at[0], l.at[2]]), [tier, projectCount, resultCount]);
   const portals = useMemo(() => byPart(portalInstances(tier), (p) => [p.at[0], p.at[2]]), [tier]);
   const rings = useMemo(() => ringInstances(contactBeacon().pulses, HALL.tone.contact, tier), [tier]);
+  const shell = useMemo(() => {
+    const all = hallShellInstances(tier);
+    const at = (i: StageInstance) => [i.at[0], i.at[2]] as const;
+    const arc = (i: StageInstance) => i.stage[0] === STAGE_KIND.rib || i.stage[0] === STAGE_KIND.halo;
+    const inParts = all.filter((i) => !GATE_TAGS.includes(i.tag));
+    return { gate: all.filter((i) => GATE_TAGS.includes(i.tag)), arcs: byPart(inParts.filter(arc), at), flat: byPart(inParts.filter((i) => !arc(i)), at) };
+  }, [tier]);
   const thumbs = useMemo(() => data.highlights.projects.map((p) => p.thumb), [data.highlights.projects]);
   const atlas = useMemo(() => hallAtlas(thumbs, SHOT_CELL[tier === "full" ? "full" : "lite"]), [thumbs, tier]);
   const [load, setLoad] = useState(false);
@@ -262,21 +297,43 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
     if (!load && shouldLoadShots(getHQStore().getState().floor, roverRuntime.x)) setLoad(true);
   });
   const texture = useHallAtlas(atlas, load);
+  // The interiors chunk (owner decision 2026-11-04): at idle on L1 (speculative prefetch on), on a hall intent (a drive
+  // into the hall, a station room open) or once the rover heads for the hall. Checked twice a second, never retried
+  // after a failed speculative load (`__hq.hall.loadPremium()` retries).
+  const idle = useRef(false);
+  const nextCheck = useRef(0);
+  useEffect(() => afterFirstFrameIdle(() => (idle.current = speculativePrefetchOn(window.location.search))), []);
+  useFrame(({ clock }) => {
+    if (clock.elapsedTime < nextCheck.current || !hallPremiumIdle()) return;
+    nextCheck.current = clock.elapsedTime + 0.5;
+    const s = getHQStore().getState();
+    const x = Math.max(roverRuntime.x, roverRuntime.autopilot?.point.x ?? -1e9);
+    if (shouldLoadHallPremium({ floor: s.floor, x, idle: idle.current, intent: !!s.activeRoom && isHighlightRoom(s.activeRoom) })) void loadHallPremium().catch(() => null);
+  });
+  const labelBatch = useRef<BatchedLabelsHandle>(null);
+  const contactBatch = useRef<BatchedLabelsHandle>(null);
+  const southBatch = useRef<BatchedLabelsHandle>(null);
+  const inside = { tier, reducedMotion, data, labels };
   const panels = useMemo(() => panelInstances(tiles, hallShots(thumbs.length), hallPhoto(thumbs.length), atlas.cells, tier), [tiles, thumbs.length, atlas, tier]);
   const phases = useMemo(() => tiles.map((t) => t.phase), [tiles]);
-  const labelBatch = useRef<BatchedLabelsHandle>(null);
+  // The interiors replace the screenshots (floating screens) and the portrait (a particle hologram) once loaded.
+  const shownPanels = useMemo(() => (premium ? panels.filter((p) => p.stage[0] !== STAGE_KIND.image && p.stage[0] !== STAGE_KIND.portrait) : panels), [panels, premium]);
   const gateSigns = useMemo(() => [gateSign(labels.hall)], [labels.hall]);
   return (
     <HallReady>
-      {/* A faint plaza fill (like the Career Road), so the large hall floor does not glow under bloom. Outside HallView: the lead road starts by the spawn. */}
-      <RoadMarkings network={HALL_LAYOUT.drawn} color={HALL.tone.about} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
+      {/* The lead road from the Lobby to the gateway arch, cyan (B4). Outside HallView: it starts by the spawn. */}
+      <RoadMarkings network={HALL_LAYOUT.drawn} color={SHELL.cyan} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.08 : 0.1} />
       <HallView boxes={HALL_VIEW.north} grid={HALL_GRID.north} name="highlights-hall-view">
+        {premium && <premium.HallPremium part="north" {...inside} texts={texts.north} handle={labelBatch} map={texture} />}
         <HallSolids shapes={shapes.north} />
+        <StageShell instances={shell.arcs.north} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.north} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.north} tier={tier} extra={RINGS.north} lattice={false} />
         <StageLights instances={lights.north} tier={tier} reducedMotion={reducedMotion} />
         {/* Every stat tile (About me and wins) stands in the north half, so the tile texts ride the north batch. */}
-        <StagePanels instances={panels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.north.tile} />
-        <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.north} />
+        <StagePanels instances={shownPanels} phases={phases} map={texture} tier={tier} reducedMotion={reducedMotion} labels={labelBatch} tile={texts.north.tile} />
+        {/* The interiors' light curtain replaces the work experience glow once loaded. */}
+        {!premium && <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.north} />}
         <GateCurtain tier={tier} reducedMotion={reducedMotion} />
         {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
         <Suspense fallback={null}>
@@ -284,22 +341,32 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.contact} grid={HALL_GRID.contact} name="highlights-hall-view-contact">
+        {premium && <premium.HallPremium part="contact" {...inside} texts={texts.contact} handle={contactBatch} map={texture} />}
         <HallSolids shapes={shapes.contact} />
+        <StageShell instances={shell.arcs.contact} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.contact} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.contact} tier={tier} extra={RINGS.contact} lattice />
         <StageLights instances={lights.contact} tier={tier} reducedMotion={reducedMotion} />
         <StageRings instances={rings} tier={tier} reducedMotion={reducedMotion} />
         <Suspense fallback={null}>
-          <BatchedLabels labels={texts.contact.labels} name="highlights-labels-contact" />
+          <BatchedLabels ref={contactBatch} labels={texts.contact.labels} name="highlights-labels-contact" />
         </Suspense>
       </HallView>
       <HallView boxes={HALL_VIEW.south} grid={HALL_GRID.south} name="highlights-hall-view-south">
+        {premium && <premium.HallPremium part="south" {...inside} texts={texts.south} handle={southBatch} map={texture} />}
         <HallSolids shapes={shapes.south} />
+        <StageShell instances={shell.arcs.south} reducedMotion={reducedMotion} />
+        <StageFlat instances={shell.flat.south} reducedMotion={reducedMotion} />
         <HallLines shapes={shapes.south} tier={tier} extra={RINGS.south} lattice={false} />
         <StageLights instances={lights.south} tier={tier} reducedMotion={reducedMotion} />
         <StagePortal tier={tier} reducedMotion={reducedMotion} instances={portals.south} />
         <Suspense fallback={null}>
-          <BatchedLabels labels={texts.south.labels} name="highlights-labels-south" />
+          <BatchedLabels ref={southBatch} labels={texts.south.labels} name="highlights-labels-south" />
         </Suspense>
+      </HallView>
+      {/* The runway into the hall and its packets (one draw), hidden off view. */}
+      <HallView boxes={[GATE_BOX]} grid={3} name="highlights-hall-view-gate">
+        <StageFlat instances={shell.gate} reducedMotion={reducedMotion} name="hall-runway" />
       </HallView>
       {/* The floating gateway sign (shared FloatingSigns: holo plate plus batched text) turns to the camera, so it stays outside HallView. */}
       <Suspense fallback={null}>

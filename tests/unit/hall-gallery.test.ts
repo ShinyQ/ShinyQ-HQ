@@ -8,9 +8,6 @@ import {
   contactBeacon,
   experienceArch,
   faceOf,
-  FOUNTAIN,
-  FOUNTAIN_SOUTH,
-  FOUNTAINS,
   gateCrossed,
   gateOpening,
   hallLights,
@@ -23,7 +20,7 @@ import {
   statTiles,
   winsFace,
 } from "@/experience/floors/lobby/hallGallery";
-import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
+import { gatePillars, HALL, HALL_LAYOUT, hallPartitions, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
@@ -82,13 +79,13 @@ describe("Highlights Hall gallery: gateway arch", () => {
   });
 
   it("fires the curtain only for an eastward pass inside the opening", () => {
-    // The gate stands at x 36 over the lead road (z 21) (owner decision 2026-11-02, from 38: room for the Proof Park arch road).
-    expect(HALL.gate.x).toBe(36);
-    expect(gateCrossed({ x: 33, z: 21 }, { x: 37, z: 21 })).toBe(true);
-    expect(gateCrossed({ x: 37, z: 21 }, { x: 33, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 33, z: 11 }, { x: 37, z: 11 })).toBe(false);
-    expect(gateCrossed({ x: 34, z: 21 }, { x: 35.9, z: 21 })).toBe(false);
-    expect(gateCrossed({ x: 35.9, z: 21 }, { x: 36, z: 21 })).toBe(true);
+    // The gate stands at x 36.8 over the lead road (z 21), on the west wall's line (owner, 2026-11-04).
+    expect(HALL.gate.x).toBe(36.8);
+    expect(gateCrossed({ x: 34, z: 21 }, { x: 38, z: 21 })).toBe(true);
+    expect(gateCrossed({ x: 38, z: 21 }, { x: 34, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 34, z: 11 }, { x: 38, z: 11 })).toBe(false);
+    expect(gateCrossed({ x: 34, z: 21 }, { x: 36.7, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 36.7, z: 21 }, { x: 36.8, z: 21 })).toBe(true);
   });
 });
 
@@ -100,12 +97,18 @@ describe("Highlights Hall gallery: stations", () => {
     const tiles = statTiles();
     expect(tiles).toHaveLength(4);
     for (const t of tiles) expect(readsToward(t.face.out, t.face.origin, s.pad)).toBe(true);
-    // The outer tiles come forward and turn inward (symmetric arc).
-    expect(tiles[0].face.origin.z).toBeCloseTo(tiles[3].face.origin.z);
-    expect(tiles[0].face.origin.z).toBeGreaterThan(tiles[1].face.origin.z);
-    expect(tiles[0].face.yaw).toBeCloseTo(-tiles[3].face.yaw);
-    // No tile touches the portrait disc.
-    for (const t of tiles) expect(Math.abs(t.face.origin.x - ABOUT.center.x) - t.w / 2).toBeGreaterThan(ABOUT.disc.r + 0.2);
+    // Two columns either side of the portrait (2026-11-04), turned symmetrically toward it, two rows.
+    expect(tiles[0].face.origin.z).toBeCloseTo(tiles[1].face.origin.z);
+    expect(tiles[0].face.yaw).toBeCloseTo(-tiles[1].face.yaw);
+    expect(tiles[0].face.origin).toEqual(tiles[2].face.origin);
+    expect(tiles[0].y).toBeGreaterThan(tiles[2].y + tiles[2].h);
+    // No tile touches the portrait disc; every tile stays inside the footprint and 1.5 u or more from the west wall.
+    const wall = hallPartitions()[0].maxX;
+    for (const t of tiles) {
+      expect(Math.abs(t.face.origin.x - ABOUT.center.x) - t.w / 2).toBeGreaterThan(ABOUT.disc.r + 0.2);
+      expect(Math.abs(t.face.origin.x - ABOUT.center.x) + t.w / 2).toBeLessThan((s.rect.maxX - s.rect.minX) / 2);
+      expect(Math.min(t.face.origin.x, ABOUT.center.x - Math.abs(t.face.origin.x - ABOUT.center.x)) - t.w / 2 - wall).toBeGreaterThanOrEqual(1.5);
+    }
   });
 
   it("Top projects: three monoliths in a shallow arc inside the footprint, faces toward the pad, clear of it", () => {
@@ -147,26 +150,16 @@ describe("Highlights Hall gallery: stations", () => {
 });
 
 describe("Highlights Hall gallery: lights and camera", () => {
-  it("lights every station and both fountains; lite gets fewer fountain beams; no light is real", () => {
-    const full = hallLights("full");
-    const lite = hallLights("lite");
-    // Only the north fountain's ring turns (the stage shader turns around one centre); the south ring stands still.
-    expect(full.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.full);
-    expect(lite.filter((l) => l.spin)).toHaveLength(FOUNTAIN.beams.lite);
-    expect(full.filter((l) => l.kind === "beam" && !l.spin && l.r0 === 0.14)).toHaveLength(FOUNTAIN.beams.full);
-    // A spotlight per station.
+  it("lights every station and the gate; no fountains (owner decision 2026-11-04); no light is real", () => {
+    const full = hallLights();
+    // No light turns (the fountains are gone); a spotlight per station.
+    expect(full.filter((l) => l.spin)).toHaveLength(0);
+    expect(full.filter((l) => l.kind === "beam" && l.r0 === 0.14)).toHaveLength(0);
     expect(full.filter((l) => l.kind === "cone")).toHaveLength(7);
     for (const l of full) {
       expect(l.alpha).toBeGreaterThan(0);
       expect(l.alpha).toBeLessThanOrEqual(0.6);
       expect(inside(l, HALL.zone)).toBe(true);
-    }
-    // The fountains are light only: nothing blocks them, both stand on the plaza.
-    const grid = buildNavGrid(l1, ROVER.radius);
-    expect(FOUNTAINS).toEqual([FOUNTAIN, FOUNTAIN_SOUTH]);
-    for (const f of FOUNTAINS) {
-      expect(isWalkable(grid, { x: f.x, z: f.z })).toBe(true);
-      expect(Math.abs(f.z - HALL.plaza.z)).toBeLessThan(HALL.plaza.d / 2 - f.rings[1]);
     }
   });
 

@@ -991,6 +991,9 @@
     "nowSub": "Peran yang masih berjalan, dari Career Road",
     "results": "Hasil",
     "resultsSub": "Angka sebelum dan sesudah yang terverifikasi dari studi kasus",
+    "impactOrbit": "Orbit Dampak",
+    "signalSpire": "Menara Sinyal",
+    "live": "Aktif",
     "tier": { "gold": "Juara 1", "silver": "Juara 2", "bronze": "Juara 3", "honor": "Finalis dan penghargaan lain" }
   },
   "certs": {

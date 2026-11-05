@@ -67,6 +67,7 @@ export function buildHighlightsData(locale: Locale): HighlightsData {
   return {
     wins: { ...winCounts(awards), tiers: winTiers(awards).map(({ tier, awards: list }) => ({ tier, count: list.length })) },
     results: beforeAfterResults().map(({ pod, result }) => ({ slug: pod.slug, project: pod.title[locale], value: result.value, label: result.label[locale] })),
+    sectors: [...new Set(getPods().flatMap((pod) => (pod.client && typeof pod.client === "object" ? [pod.client[locale]] : [])))],
     now: currentRoles().map((e) => ({ slug: e.slug, org: e.org, role: e.role[locale], type: e.type as "job" | "freelance", period: formatPeriod(e.start, e.end, locale) })),
     projects: highlightProjects().map((pod) => ({
       slug: pod.slug,
@@ -77,3 +78,5 @@ export function buildHighlightsData(locale: Locale): HighlightsData {
     })),
   };
 }
+
+export { resultBars, winTokens, type ResultBar, type WinToken } from "./hallBars";

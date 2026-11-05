@@ -1,6 +1,6 @@
 import type { TallObstacle } from "../../camera/collision";
 import type { SignSpec } from "../../fx/signLayout";
-import type { GpuTier, Rect, Vec2 } from "../../types";
+import type { Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
 import { gatePillars, HALL, stationOf, type HallStation } from "./hallLayout";
 import { LOBBY_SLAB } from "./slab";
@@ -11,9 +11,8 @@ import type { HighlightStation } from "./stations";
  * Part 2): every station gets its own shape inside its old footprint, so pads, doors, spurs and deep
  * links stay where they were. About me stands on a round holo pedestal with its four stat tiles in an
  * arc, the top projects on three monolith screens in a shallow arc, work experience on a lit arch,
- * contact beside a signal beacon. A gateway arch spans the lead road, a light fountain marks the plaza
- * center (light only: the rover drives through it) and fake spotlight cones and glow pools light the
- * stations (no real lights: a light changes the program of every lit material in the tower).
+ * contact beside a signal beacon. A gateway arch spans the lead road (the hall's only way in since 2026-11-04) and
+ * fake spotlight cones and glow pools light the stations (no real lights: a light changes the program of every lit material in the tower).
  * Wins (a pedestal with tier tiles), now (a smaller lit arch) and results (monoliths) reuse those shapes (2026-11-02).
  * Pure: the scenery, the camera collision and the tests read the same numbers.
  */
@@ -72,8 +71,10 @@ export const ABOUT = {
   column: { r: 0.75, h: 1.25 },
   /** The portrait hologram disc: center height and radius. */
   disc: { y: 3.55, r: 0.95 },
-  /** Stat tiles: `u` along the face, center height, size, arc radius. */
+  /** Wins tiles: `u` along the face, center height, size, arc radius. */
   tiles: { u: [-4.75, -2.35, 2.35, 4.75], y: 3.45, w: 2.2, h: 1.7, arc: 8 },
+  /** About me's stat tiles: two columns `u` either side of the portrait, two rows (2026-11-04: clear of the west wall). */
+  grid: { u: 2.65, y: [4.12, 2.47], w: 2.2, h: 1.45, arc: 8 },
   /** Eyebrow, name, headline and motto heights. */
   text: { eyebrow: 6.15, name: 5.55, headline: 5.05, motto: 1.2 },
 } as const;
@@ -105,14 +106,18 @@ export interface StatTile {
   tone?: string;
 }
 
-export function statTiles(count: number = ABOUT.tiles.u.length, face: Face = aboutFace(), phase = 0): StatTile[] {
-  const T = ABOUT.tiles;
-  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: phase + i * 1.7 }));
+/** About me's stat tiles in reading order (top left, top right, bottom left, bottom right), turned gently toward the pedestal. */
+export function statTiles(count: number = 4): StatTile[] {
+  const G = ABOUT.grid;
+  const face = aboutFace();
+  return Array.from({ length: Math.min(count, 4) }, (_, i) => ({ face: arcFace(face, i % 2 ? G.u : -G.u, G.arc), y: G.y[i >> 1], w: G.w, h: G.h, phase: i * 1.7 }));
 }
 
 /** The wins tiles (one per placement tier, gold first), on the wins pedestal's arc; their drift starts out of step with About me's. */
 export function winsTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
-  return statTiles(count, winsFace(), 0.9);
+  const T = ABOUT.tiles;
+  const face = winsFace();
+  return T.u.slice(0, count).map((u, i) => ({ face: arcFace(face, u, T.arc), y: T.y, w: T.w, h: T.h, phase: 0.9 + i * 1.7 }));
 }
 
 // ---------------------------------------------------------------- 02 Top projects: monoliths
@@ -185,6 +190,14 @@ export function experienceArch(): ExperienceArch {
   return litArch("experience", ARCH);
 }
 
+/** A now card on a pillar column (2026-11-04): the card 0.3 u inside the column each side, from `bottom` to `top`; the text `pad` inside it. */
+export const NOW_CARD = { inset: 0.3, pad: 0.25, top: 5.05, bottom: 1.25 } as const;
+
+export function nowCard(col: { u: number; w: number }): { u: number; w: number; y: number; h: number; left: number; text: number; right: number } {
+  const w = col.w - 2 * NOW_CARD.inset;
+  return { u: col.u, w, y: (NOW_CARD.top + NOW_CARD.bottom) / 2, h: NOW_CARD.top - NOW_CARD.bottom, left: col.u - w / 2 + NOW_CARD.pad, text: w - 2 * NOW_CARD.pad, right: col.u + w / 2 - NOW_CARD.pad };
+}
+
 /** The now station's lit arch: the employment role on the left pillar, the freelance one on the right. */
 export function nowArch(): ExperienceArch {
   return litArch("now", NOW_ARCH);
@@ -193,7 +206,7 @@ export function nowArch(): ExperienceArch {
 // ---------------------------------------------------------------- 04 Contact: signal beacon
 
 export const BEACON = {
-  u: 5.3,
+  u: 3.6,
   base: { w: 1.4, h: 0.4 },
   mast: { r: 0.22, top: 9 },
   head: { r: 0.4, h: 0.5 },
@@ -203,7 +216,7 @@ export const BEACON = {
     { y: 7.8, w: 0.9 },
   ],
   /** `inset`: the card's center, 2.65 u in from the slab edge behind the station. */
-  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
+  card: { u: -1.5, w: 6.4, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
 } as const;
 
 export interface ContactBeacon {
@@ -239,7 +252,7 @@ export function contactBeacon(): ContactBeacon {
   };
 }
 
-// ---------------------------------------------------------------- Gateway arch, fountain, lights
+// ---------------------------------------------------------------- Gateway arch, lights
 
 /** The opening under the gateway arch (between the pillars, below the lintel). */
 export function gateOpening(): { x: number; minZ: number; maxZ: number; top: number } {
@@ -262,18 +275,8 @@ export function gateSign(text: string): SignSpec {
   return { text: text.toUpperCase(), x: HALL.gate.x, y: HALL.gate.signY, z: (o.minZ + o.maxZ) / 2, color: HALL.tone.about, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
-/** The light fountain marks the middle of the hall's north half (the plaza's centre before the hall grew south, z 3). */
-export const FOUNTAIN = { x: HALL.plaza.x, z: 3, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;
-/** A second fountain in the middle of the south half, between the office road's end and the east stations. */
-export const FOUNTAIN_SOUTH = { ...FOUNTAIN, z: LOBBY_SLAB.halfZ + 11 } as const;
-/** Both fountains (light and floor rings only: the rover drives through them). */
-export const FOUNTAINS = [FOUNTAIN, FOUNTAIN_SOUTH] as const;
-
-/** Light colors (the station tones, HALL.tone, plus the fountain cyan). */
-const CYAN = "#22d3ee";
-
 export interface LightInstance {
-  /** `beam`: open cone fading up (uplights, fountain); `cone`: spotlight from above, brightest at its apex; `pool`: glow disc on the floor. */
+  /** `beam`: open cone fading up (uplights); `cone`: spotlight from above, brightest at its apex; `pool`: glow disc on the floor. */
   kind: "beam" | "cone" | "pool";
   x: number;
   y: number;
@@ -284,7 +287,7 @@ export interface LightInstance {
   r1: number;
   color: string;
   alpha: number;
-  /** 1 for fountain beams: they turn around the fountain and pulse in height. */
+  /** 1 turns the light around the stage centre (`uCenter`) and pulses its height; the hall has none since 2026-11-04. */
   spin: 0 | 1;
   phase: number;
 }
@@ -293,8 +296,8 @@ const beam = (x: number, z: number, h: number, r0: number, r1: number, color: st
 const cone = (x: number, z: number, h: number, r0: number, color: string, alpha: number): LightInstance => ({ kind: "cone", x, y: 0, z, h, r0, r1: 0.25, color, alpha, spin: 0, phase: 0 });
 const pool = (x: number, z: number, r: number, color: string, alpha: number): LightInstance => ({ kind: "pool", x, y: 0.025, z, h: 0, r0: r, r1: 0, color, alpha, spin: 0, phase: 0 });
 
-/** Every spotlight cone, uplight, fountain beam and glow pool of the hall (one instanced draw call). Lite gets fewer fountain beams. */
-export function hallLights(tier: GpuTier, projectCount: number = 3, resultCount: number = 3): LightInstance[] {
+/** Every spotlight cone, uplight and glow pool of the hall (one instanced draw call per part). */
+export function hallLights(projectCount: number = 3, resultCount: number = 3): LightInstance[] {
   const T = HALL.tone;
   const out: LightInstance[] = [];
   // About me: spotlight, floor pool and the projector beam from the column up to the portrait.
@@ -341,21 +344,7 @@ export function hallLights(tier: GpuTier, projectCount: number = 3, resultCount:
   }
   const r = stationOf("results");
   out.push(cone(r.front.x, (r.rect.minZ + r.rect.maxZ) / 2, 12, 5, T.results, 0.07));
-  // Light fountains: turning beams on a floor ring, a core beam and a pool.
-  const n = FOUNTAIN.beams[tier === "full" ? "full" : "lite"];
-  const tones = [CYAN, T.about, T.projects];
-  for (const f of FOUNTAINS) {
-    // The stage shader turns spinning beams around one centre (`uCenter`, the north fountain's): the south ring stands still.
-    const spin = f === FOUNTAIN ? 1 : 0;
-    for (let i = 0; i < n; i++) {
-      const t = (i / n) * Math.PI * 2;
-      out.push({ kind: "beam", x: f.x + Math.sin(t) * f.ring, y: 0, z: f.z + Math.cos(t) * f.ring, h: i % 2 ? 4.2 : 6, r0: 0.14, r1: 0.05, color: tones[i % tones.length], alpha: 0.55, spin, phase: i / n });
-    }
-    out.push(beam(f.x, f.z, 8, 0.35, 0.15, CYAN, 0.35), pool(f.x, f.z, 3.6, CYAN, 0.35));
-  }
-  // Gateway arch: uplights on the inner faces of both pillars.
-  const o = gateOpening();
-  out.push(beam(o.x, o.minZ + 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2), beam(o.x, o.maxZ - 0.4, HALL.gate.h - 0.4, 0.2, 0.6, T.about, 0.2));
+  // The gateway's opening stays clear: no uplight columns in it (owner, 2026-11-04).
   return out;
 }
 

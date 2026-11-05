@@ -15,10 +15,10 @@ import {
 } from "@/experience/floors/lobby/hallContent";
 import { podLiveLink } from "@/content/selectors";
 import { ABOUT, aboutFace, ARCH, BEACON, contactBeacon, experienceArch, MONOLITH, monoliths, NOW_ARCH, nowArch, onFace, statTiles, winsFace, winsTiles, type Face } from "@/experience/floors/lobby/hallGallery";
-import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
+import { HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { hallLineBuffer, hallShapes, portraitRing, prismBuffers, solidBuffers } from "@/experience/floors/lobby/hallSolids";
 import type { HighlightStation } from "@/experience/floors/lobby/stations";
-import { experienceRows } from "@/experience/floors/lobby/stations";
+import { experienceRows, HIGHLIGHT_STATIONS } from "@/experience/floors/lobby/stations";
 import { brandPhotoSrc } from "@/lib/brand-photo";
 
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
@@ -30,6 +30,9 @@ const labels: HallLabels = {
   now: "Now",
   results: "Results",
   contact: "Contact",
+  impactOrbit: "Impact Orbit",
+  signalSpire: "Signal Spire",
+  live: "Live",
   winsTitle: (firsts) => `${firsts} first places`,
   winsLine: (placings) => `${placings} competition placings`,
   winsRing: "placings",
@@ -52,7 +55,10 @@ const labels: HallLabels = {
   hall: "Highlights Hall",
 };
 const fonts = { sans: "s", sansBold: "sb", mono: "m", monoBold: "mb" };
-const texts = hallTexts(data, labels, fonts).labels;
+const built = hallTexts(data, labels, fonts);
+/** The station texts on their shapes (the headers float above the stations, checked on their own). */
+const texts = built.labels.filter((_, i) => built.group[i] !== "header");
+const headers = built.labels.filter((_, i) => built.group[i] === "header");
 
 interface Surface {
   station: HighlightStation;
@@ -67,7 +73,7 @@ interface Surface {
 /** Every face that carries text: the two pedestals and their tiles, the monoliths, the two arches, the contact card. */
 const SURFACES: Surface[] = [
   ...statTiles().map((t): Surface => ({ station: "about", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
-  { station: "about", face: aboutFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
+  { station: "about", face: aboutFace(), width: 8, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
   ...winsTiles().map((t): Surface => ({ station: "wins", face: t.face, width: t.w, y: [t.y - t.h / 2, t.y + t.h / 2], d: 0.2 })),
   { station: "wins", face: winsFace(), width: 9, y: [1, 6.4], d: ABOUT.column.r + 0.2 },
   ...monoliths(3).map((m): Surface => ({ station: "projects", face: m.face, width: MONOLITH.w, y: [0.4, MONOLITH.h], d: 0.2 })),
@@ -83,7 +89,7 @@ function faceCoords(p: [number, number, number]) {
     const f = s.face;
     const d = (p[0] - f.origin.x) * f.out.x + (p[2] - f.origin.z) * f.out.z;
     const u = (p[0] - f.origin.x) * f.right.x + (p[2] - f.origin.z) * f.right.z;
-    if (d >= 0 && d <= s.d && Math.abs(u) <= s.width / 2 + 1e-6) return { s, u };
+    if (d >= 0 && d <= s.d && Math.abs(u) <= s.width / 2 + 1e-6 && p[1] >= s.y[0] - 1e-6 && p[1] <= s.y[1] + 1e-6) return { s, u };
   }
   return null;
 }
@@ -106,9 +112,23 @@ describe("Highlights Hall scenery", () => {
     expect(all.every((t) => t.trim().length > 0)).toBe(true);
   });
 
-  it("numbers the stations in the hall's order (about 01 to contact 07)", () => {
-    const eyebrows = texts.map((t) => t.text).filter((t) => /^0\d · /.test(t));
-    expect(eyebrows).toEqual(["01 · PROFILE", "02 · TOP 3 PROJECTS", "03 · WORK EXPERIENCE", "04 · WINS", "05 · NOW", "06 · RESULTS", "07 · CONTACT"].map((e) => e.replace("PROFILE", labels.about.toUpperCase())));
+  it("heads every station with its spaced number line over its title, above it, reading toward the plaza (B4, 2026-11-04)", () => {
+    const numbers = headers.filter((h) => h.font === fonts.sans).map((h) => h.text);
+    expect(numbers).toEqual(HIGHLIGHT_STATIONS.map((n, i) => `0${i + 1}  ${labels[n].toUpperCase()}`));
+    expect(headers.filter((h) => h.font === fonts.sansBold).map((h) => h.text)).toEqual(HIGHLIGHT_STATIONS.map((n) => labels[n]));
+    HIGHLIGHT_STATIONS.forEach((n, i) => {
+      const s = stationOf(n);
+      for (const h of [headers[2 * i], headers[2 * i + 1]]) {
+        expect(h.position[0]).toBeCloseTo(s.front.x);
+        expect(h.position[2]).toBeCloseTo(s.front.z);
+        expect(h.position[1]).toBeGreaterThan(HALL.height[n]);
+        expect(Math.cos(h.yaw! - s.yaw)).toBeCloseTo(1);
+      }
+      expect(headers[2 * i].position[1]).toBeGreaterThan(headers[2 * i + 1].position[1]);
+    });
+    // No old "0N · TITLE" eyebrows and no monospace left in the hall's texts.
+    expect(built.labels.some((t) => /^0\d · /.test(t.text))).toBe(false);
+    expect(built.labels.filter((t) => t.font === fonts.mono)).toEqual([]);
   });
 
   it("tags a project screenshot with Visit live site only when its L3 pod has an allowed live link", () => {
@@ -129,7 +149,7 @@ describe("Highlights Hall scenery", () => {
 
   it("shows at most HALL_ROWS roles per column and says how many more the drawer has", () => {
     const { employment, freelance } = experienceRows(data.career);
-    const orgs = texts.filter((t) => t.font === fonts.sansBold && faceCoords(t.position)?.s.station === "experience");
+    const orgs = built.labels.filter((t, i) => built.group[i] === "columns" && t.font === fonts.sansBold);
     expect(orgs).toHaveLength(Math.min(HALL_ROWS, employment.length) + Math.min(HALL_ROWS, freelance.length));
     if (employment.length > HALL_ROWS) expect(texts.map((t) => t.text)).toContain(`+${employment.length - HALL_ROWS} more`);
   });

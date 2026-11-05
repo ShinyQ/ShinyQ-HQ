@@ -354,11 +354,12 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
     - the drawer body chunk `body.ts`: `OfficeBody.tsx` and `crewSummary.ts` (the summary drawer's crew sentences and announcements).
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
-  - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT (the routing network and the drawn one), stationOf, gatePillars, hallOfficeRoad).
+  - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT (the routing network and the drawn one), stationOf, gatePillars, hallPartitions).
   - westStripLayout.ts and WestStrip.tsx (the lit strip west of the office wing; see [floor-l1-lobby.md](floor-l1-lobby.md#west-strip)).
-  - hallGallery.ts (gallery shapes: faces, pedestals and tiles, monoliths, lit arches, beacon, gateway arch, fountains, lights, `hallTall`, `gateCrossed`).
-  - hallSolids.ts (merged boxes, prisms and neon lines), hallContent.ts (labels, screenshot atlas).
-  - hallStage.ts (stage effect instances for the holo program's `stage` mode), gateSweep.ts (`hq:hall-gate`), hallInteract.ts (station targets).
+  - hallGallery.ts (gallery shapes: faces, pedestals and tiles, monoliths, lit arches, beacon, gateway arch, lights, `hallTall`, `gateCrossed`).
+  - hallSolids.ts (merged boxes, prisms, the enclosure quads and neon lines), hallContent.ts (labels with groups, station headers, screenshot atlas).
+  - hallStage.ts (stage effect instances for the holo program's `stage` mode, the B4 shell `hallShellInstances`), gateSweep.ts (`hq:hall-gate`), hallInteract.ts (station targets).
+  - hallPremium/: the interiors. `chunk.ts` (main path: the loader, trigger, `__hq.hall`) and the lazy chunk `scene.ts`: `HallPremium.tsx` (one instanced mesh per hall part, the wake and the count-up), `build.ts` (the interiors' instances and texts), `caseFrame.ts` (glass cases, accents), `shader.ts` (the `hall-premium` program), `wake.ts`. Pure data helpers in `src/content/hallBars.ts` (`resultBars`, `winTokens`).
   - R3F walls, kiosk, HighlightsHall and HallFx.
 
 #### Systems
