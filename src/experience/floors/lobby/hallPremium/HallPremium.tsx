@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { InstancedBufferAttribute, Object3D, PlaneGeometry, type InstancedMesh, type ShaderMaterial } from "three";
+import { InstancedBufferAttribute, Object3D, PlaneGeometry, Vector3, type InstancedMesh, type ShaderMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { sceneProbes } from "../../../fx/probes";
 import { useDispose } from "../../../fx/useDispose";
@@ -17,7 +17,7 @@ import type { BatchedLabelsHandle } from "../../../fx/BatchedLabels";
 import type { HallTexts } from "../hallContent";
 import { HALL_LAYOUT } from "../hallLayout";
 import type { HallPremiumProps } from "./chunk";
-import { premiumInstances } from "./build";
+import { centreBillboards, premiumInstances } from "./build";
 import { createPremiumMaterial } from "./shader";
 import { eased, wakeLevel } from "./wake";
 
@@ -67,6 +67,50 @@ export function partMorphs(texts: HallTexts, data: HallPremiumProps["data"]): Mo
     } else if (g === "now" && now.has(label.text)) out.push({ member: i, station: no("now"), frames: typeFrames(label.text) });
   });
   return out;
+}
+
+/** A centrepiece label's member in its part's batch, with its anchor and the radius it slides out to toward the camera. */
+interface Facing {
+  member: number;
+  x: number;
+  z: number;
+  r: number;
+}
+
+/** The centrepiece labels of one part (`centreBillboards`), matched in batch order by text and anchor. */
+export function partBillboards(texts: HallTexts, data: HallPremiumProps["data"], labels: HallPremiumProps["labels"]): Facing[] {
+  const out: Facing[] = [];
+  const specs = centreBillboards(data, labels);
+  texts.labels.forEach((label, i) => {
+    if (texts.group[i] !== "interiors") return;
+    const b = specs.find((b) => b.text === label.text && Math.abs(label.position[0] - (b.x + b.r)) < 1e-6 && Math.abs(label.position[2] - b.z) < 1e-6);
+    if (b) out.push({ member: i, x: b.x, z: b.z, r: b.r });
+  });
+  return out;
+}
+
+const CAMERA = new Vector3();
+
+/** Turns each centrepiece label to the camera every frame (and slides a year label to its ring's near edge): one readable copy from any side. */
+function FacingDriver({ facing, handle }: { facing: readonly Facing[]; handle: HallPremiumProps["handle"] }) {
+  useFrame(({ camera }) => {
+    const h = handle?.current;
+    if (h && facing.length) faceCamera(facing, h, h.batch.worldToLocal(CAMERA.copy(camera.position)));
+  });
+  return null;
+}
+
+function faceCamera(facing: readonly Facing[], h: BatchedLabelsHandle, cam: Vector3) {
+  for (const f of facing) {
+    const m = h.members[f.member];
+    if (!m) continue;
+    const dx = cam.x - f.x;
+    const dz = cam.z - f.z;
+    const len = Math.hypot(dx, dz) || 1;
+    m.position.x = f.x + (dx / len) * f.r;
+    m.position.z = f.z + (dz / len) * f.r;
+    m.rotation.y = Math.atan2(dx, dz);
+  }
 }
 
 /**
@@ -138,9 +182,10 @@ function MorphDriver({ morphs, handle, enabled }: { morphs: readonly Morph[]; ha
  * and halo, and what it shows inside (`build.ts`). Hidden until its program compiled (`precompileObject`, after the
  * full tier's composer exists), so nothing compiles on arrival; disposed with the part.
  */
-export function HallPremium({ part, tier, reducedMotion, data, texts, handle, map }: HallPremiumProps) {
+export function HallPremium({ part, tier, reducedMotion, data, labels, texts, handle, map }: HallPremiumProps) {
   const instances = useMemo(() => premiumInstances(data, tier)[part], [data, tier, part]);
   const morphs = useMemo(() => partMorphs(texts, data), [texts, data]);
+  const facing = useMemo(() => partBillboards(texts, data, labels), [texts, data, labels]);
   const geometry = useMemo(() => {
     const g = new PlaneGeometry(1, 1);
     const attr = (pick: (i: (typeof instances)[number]) => number[]) => new InstancedBufferAttribute(new Float32Array(instances.flatMap(pick)), 4);
@@ -191,6 +236,7 @@ export function HallPremium({ part, tier, reducedMotion, data, texts, handle, ma
     <>
       {part === "north" && <WakeDriver reducedMotion={reducedMotion} />}
       <MorphDriver morphs={morphs} handle={handle} enabled={tier === "full" && !reducedMotion} />
+      <FacingDriver facing={facing} handle={handle} />
       {instances.length > 0 && (
         <instancedMesh key={instances.length} ref={mesh} name={`hall-premium-${part}`} args={[geometry, material, instances.length]} visible={false} frustumCulled={false} raycast={NO_RAYCAST}>
           <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />

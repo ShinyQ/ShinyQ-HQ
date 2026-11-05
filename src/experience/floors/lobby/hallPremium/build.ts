@@ -247,6 +247,47 @@ function centrepieces(input: Input, tier: GpuTier): Record<HallPart, PremiumInst
   return out;
 }
 
+/**
+ * One label per centrepiece text (owner bug, 2026-11-04: copies on four sides showed through each other, troika text being
+ * double sided): each turns to the camera every frame around its anchor (`x`, `z`), and a year label slides to its ring's
+ * near edge (`r`). `premiumTexts` writes them in this order; `HallPremium` finds their members by text and anchor.
+ */
+export interface Billboard {
+  text: string;
+  x: number;
+  y: number;
+  z: number;
+  r: number;
+  size: number;
+  color: string;
+  bold: boolean;
+  maxWidth: number;
+  spacing?: number;
+  top?: boolean;
+}
+
+export function centreBillboards(input: Input, labels: Pick<HallLabels, "impactOrbit" | "signalSpire">): Billboard[] {
+  const { orbit, spire } = centres();
+  const O = CENTRE.orbit;
+  const C = CENTRE.spire;
+  const out: Billboard[] = [];
+  const at = (c: { x: number; z: number }, y: number, r = 0) => ({ x: c.x, y, z: c.z, r });
+  out.push({ text: labels.impactOrbit.toUpperCase(), ...at(orbit, O.y + O.r + 1.9), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
+  const stat = input.stats[0];
+  if (stat) {
+    out.push({ text: stat.value, ...at(orbit, O.y + O.r + 1.25), size: 0.7, color: "#eefbff", bold: true, maxWidth: 6 });
+    out.push({ text: stat.label, ...at(orbit, O.y + O.r + 0.75), size: 0.16, color: "#c9d6e3", bold: false, maxWidth: 4.5, top: true });
+  }
+  for (const node of sectorNodes(input.highlights.sectors))
+    out.push({ text: node.label, ...at({ x: orbit.x + Math.sin(node.a) * (O.band + 0.35), z: orbit.z + Math.cos(node.a) * (O.band + 0.35) }, O.y + node.dy), size: 0.24, color: "#d9ccff", bold: true, maxWidth: 3.2 });
+  out.push({ text: labels.signalSpire.toUpperCase(), ...at(spire, C.y1 + 1.3), size: 0.26, color: "#8fb3c9", bold: false, maxWidth: 6, spacing: 0.3 });
+  spireRings(input.career.years).forEach((ring, i, all) => {
+    const top = i === all.length - 1;
+    out.push({ text: String(ring.year), ...at(spire, ring.y + 0.12, ring.r + 0.08), size: top ? 0.3 : 0.22, color: top ? "#eefbff" : "#b9c6d6", bold: true, maxWidth: 1.6 });
+  });
+  return out;
+}
+
 /** The Impact Orbit's sector nodes: evenly around the globe, alternating a little up and down. */
 export function sectorNodes(sectors: readonly string[]): { label: string; a: number; dy: number }[] {
   return sectors.map((label, i) => ({ label, a: (i / Math.max(sectors.length, 1)) * Math.PI * 2 + 0.3, dy: i % 2 ? 0.45 : -0.45 }));
@@ -320,27 +361,6 @@ export function premiumTexts(input: Input, labels: HallLabels, fonts: HallFonts)
     const card = nowCard(now.columns[i]);
     out.push({ text: labels.live.toUpperCase(), position: onFace(now.face, card.right, 4.75, 0.08), yaw: now.face.yaw, font: fonts.sansBold, fontSize: 0.17, color: "#34d399", letterSpacing: 0.2, anchorX: "right", textAlign: "right", maxWidth: LIVE_W });
   });
-  const { orbit, spire } = centres();
-  const O = CENTRE.orbit;
-  // Four faces each, so one reads from anywhere around the plaza (the back faces are culled).
-  const around = (c: { x: number; z: number }, y: number, r: number, text: string, fontSize: number, color: string, font = fonts.sansBold, a0 = 0, extra: Partial<BatchedLabel> = {}) => {
-    for (let k = 0; k < 4; k++) {
-      const a = a0 + (k * Math.PI) / 2;
-      out.push({ text, position: [c.x + Math.sin(a) * r, y, c.z + Math.cos(a) * r], yaw: a, font, fontSize, color, textAlign: "center", maxWidth: 6, ...extra });
-    }
-  };
-  const stat = input.stats[0];
-  around(orbit, O.y + O.r + 1.9, 0.6, labels.impactOrbit.toUpperCase(), 0.26, "#8fb3c9", fonts.sans, 0, { letterSpacing: 0.3 });
-  if (stat) {
-    around(orbit, O.y + O.r + 1.25, 0.6, stat.value, 0.7, "#eefbff");
-    around(orbit, O.y + O.r + 0.75, 0.6, stat.label, 0.16, "#c9d6e3", fonts.sans, 0, { anchorY: "top", lineHeight: 1.2, maxWidth: 4.5 });
-  }
-  for (const node of sectorNodes(input.highlights.sectors))
-    out.push({ text: node.label, position: [orbit.x + Math.sin(node.a) * (O.band + 0.35), O.y + node.dy, orbit.z + Math.cos(node.a) * (O.band + 0.35)], yaw: node.a, font: fonts.sansBold, fontSize: 0.24, color: "#d9ccff", textAlign: "center", maxWidth: 3.2 });
-  const C = CENTRE.spire;
-  around(spire, C.y1 + 1.3, 0.4, labels.signalSpire.toUpperCase(), 0.26, "#8fb3c9", fonts.sans, 0, { letterSpacing: 0.3 });
-  spireRings(input.career.years).forEach((ring, i, all) =>
-    around(spire, ring.y + 0.12, ring.r + 0.08, String(ring.year), i === all.length - 1 ? 0.3 : 0.22, i === all.length - 1 ? "#eefbff" : "#b9c6d6", fonts.sansBold, i * 0.55, { maxWidth: 1.6 }),
-  );
+  for (const b of centreBillboards(input, labels)) out.push({ text: b.text, position: [b.x + b.r, b.y, b.z], yaw: Math.PI / 2, font: b.bold ? fonts.sansBold : fonts.sans, fontSize: b.size, color: b.color, textAlign: "center", maxWidth: b.maxWidth, ...(b.spacing ? { letterSpacing: b.spacing } : {}), ...(b.top ? { anchorY: "top" as const, lineHeight: 1.2 } : {}) });
   return out;
 }

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { resultBars } from "@/content/highlights";
-import { HEADER } from "@/experience/floors/lobby/hallContent";
+import { HEADER, hallTexts } from "@/experience/floors/lobby/hallContent";
 import { HALL, HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
-import { barLengths, CENTRE, centres, PART_OF, premiumInstances, premiumTexts, REPLACES, sectorNodes, spireRings } from "@/experience/floors/lobby/hallPremium/build";
+import { barLengths, CENTRE, centreBillboards, centres, PART_OF, premiumInstances, premiumTexts, REPLACES, sectorNodes, spireRings } from "@/experience/floors/lobby/hallPremium/build";
 import { ACCENT, accentOf, caseFrame } from "@/experience/floors/lobby/hallPremium/caseFrame";
 import { PREMIUM_MODE } from "@/experience/floors/lobby/hallPremium/shader";
 import { onPad } from "@/experience/nav/doors";
@@ -81,8 +81,8 @@ describe("hall interiors: instances and texts", () => {
     expect(REPLACES).toEqual([]);
     expect(texts.filter((t) => t.text === "LIVE")).toHaveLength(Math.min(2, data.highlights.now.length));
     for (const sector of data.highlights.sectors) expect(texts.map((t) => t.text)).toContain(sector);
-    for (const y of data.career.years) expect(texts.filter((t) => t.text === String(y.year))).toHaveLength(4);
-    expect(texts.filter((t) => t.text === "IMPACT ORBIT")).toHaveLength(4);
+    for (const y of data.career.years) expect(texts.filter((t) => t.text === String(y.year))).toHaveLength(1);
+    expect(texts.filter((t) => t.text === "IMPACT ORBIT")).toHaveLength(1);
     for (const t of texts) expect(t.text).not.toContain("\u2014");
   });
 });
@@ -131,5 +131,33 @@ describe("hall interiors: the centrepieces (owner, 2026-11-04)", () => {
     expect(data.highlights.sectors.length).toBeGreaterThan(0);
     expect(new Set(data.highlights.sectors).size).toBe(data.highlights.sectors.length);
     expect(sectorNodes(data.highlights.sectors)).toHaveLength(data.highlights.sectors.length);
+  });
+});
+
+describe("hall texts: no duplicate copies (owner bug, 2026-11-04)", () => {
+  const fonts = { sans: "s", sansBold: "sb", mono: "m", monoBold: "mb" };
+  const labels = { about: "Profile", projects: "Top 3 projects", experience: "Work experience", wins: "Wins", now: "Now", results: "Results", contact: "Contact", impactOrbit: "Impact Orbit", signalSpire: "Signal Spire", live: "Live", winsTitle: (n: number) => `${n} first places`, winsLine: (n: number) => `${n} awards and honors`, winsRing: "awards", winsHint: "Open", tiers: { gold: "1st", silver: "2nd", bronze: "3rd", honor: "Honors" }, employment: "Employment", freelance: "Freelance", more: (n: number) => `+${n} more`, cvHint: "CV", hall: "Highlights Hall", visitLive: "Visit live site", stations: {} } as never;
+  const extra = premiumTexts(data, labels, fonts);
+  const all = [...hallTexts(data, labels, fonts).labels, ...extra];
+
+  it("writes every centrepiece text exactly once, each turned to the camera at run time", () => {
+    const specs = centreBillboards(data, labels);
+    for (const b of specs) expect(extra.filter((t) => t.text === b.text && t.position[0] === b.x + b.r && t.position[2] === b.z), b.text).toHaveLength(1);
+    expect(specs.filter((b) => b.text === "IMPACT ORBIT")).toHaveLength(1);
+    expect(specs.filter((b) => b.text === "SIGNAL SPIRE")).toHaveLength(1);
+    expect(specs.filter((b) => b.text === data.stats[0].value)).toHaveLength(1);
+  });
+
+  it("never shows two copies of a text at one spot: none overlapping, none turned at another angle within 3 u", () => {
+    // Rows that repeat a line (two roles with the same title, results from one case study) read side by side on one face.
+    const near: string[] = [];
+    all.forEach((a, i) =>
+      all.slice(i + 1).forEach((b) => {
+        const d = Math.hypot(a.position[0] - b.position[0], a.position[1] - b.position[1], a.position[2] - b.position[2]);
+        const turned = Math.abs(Math.sin(((a.yaw ?? 0) - (b.yaw ?? 0)) / 2)) > 0.05;
+        if (a.text === b.text && (d < 0.3 || (d < 3 && turned))) near.push(a.text);
+      }),
+    );
+    expect(near).toEqual([]);
   });
 });
