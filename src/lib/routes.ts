@@ -55,8 +55,9 @@ export function sitemapDate(date: string | undefined): string | undefined {
  * `lastmod` from content dates, only where the date says when the page changed (W3C dates such as
  * "2026-10-12" or "2026-02"): a post by its date or, when that translation was revised, its frontmatter `updated`
  * (`postUpdated`, of the translation `locale` renders; without a locale the newest of its languages), Writing by its
- * newest post, Journey by its newest timeline date or its content stamp, Home and Quick view (live facts, newest posts
- * and roles) by the newest of the weekly facts date, posts and timeline, the build story by its facts snapshot (the
+ * newest post, Journey by its content stamp (else its newest timeline date), Home and Quick view (live facts, newest
+ * posts, roles, case studies) by the newest of the weekly facts date, posts, timeline and the Labs and Journey stamps,
+ * the build story by its facts snapshot (the
  * HEAD commit date), and case studies, journey entries, Labs and the CV by their content stamp (`stampedDate`: the
  * day of the commit that last changed their content). Other pages carry no date rather than a guessed one.
  */
@@ -73,6 +74,6 @@ export function lastModified(path: string, locale?: Locale): string | undefined 
   if (path === "/library") return writing;
   if (path === "/journey") return stampedDate(path) ?? timeline;
   if (path === "/build") return getBuildFacts().generatedAt;
-  if (path === "/" || path === "/quick") return newest([getDynamicFacts().asOf, writing, timeline]);
+  if (path === "/" || path === "/quick") return newest([getDynamicFacts().asOf, writing, timeline, stampedDate("/labs"), stampedDate("/journey")]);
   return stampedDate(path);
 }
