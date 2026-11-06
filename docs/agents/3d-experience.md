@@ -62,7 +62,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - It leaves the 3D view; it does not skip the boot or the intro.
 - Beside it, View CV and Contact (`quick`, `bootQuickLinks` in `BootCard.tsx`, labels `common.viewCv` and `hud.bootContact`; owner decision 2026-11-01), styled like the Classic site link:
   - View CV is a real link to `/{locale}/cv?view=classic` carrying `data-hq-cv`: before hydration it opens the Classic CV page, after it `DialogHost` opens the CV reader over the boot (the boot keeps waiting under it).
-  - Contact is a real link to `/{locale}/contact?view=classic#availability` (About's availability, email and channels).
+  - Contact is a real link to `/{locale}/contact?view=classic`: the About and contact page at its top (email and channels in its panel), never `#availability` ([quiet availability line](content-style-and-safety.md#quiet-availability-line)).
   - Neither skips the boot or the intro.
 - `BootOverlay` renders the same `BootCard`, so the handoff does not move.
 - Portrait phones (`max-width: 639px` and portrait, the unlayered block after the `.hq-boot-*` layer in `hud-shared.css`): the card docks at the bottom in thumb reach (mark beside the eyebrow and title; Boot rover fills its row next to the Classic site link, `flex: 1`) and the log is one rolling line. It is at most 55% of a 390 x 844 screen and 66% of a 375 x 667 one (`e2e/phone-first.spec.ts`). Landscape phones and tablets keep the centered card; on a short landscape screen (`max-height: 480px`) it drops the decorative log and its bar, so the owner block is never clipped at the top and every action stays on screen (844 x 390, `e2e/phone-first.spec.ts`).
