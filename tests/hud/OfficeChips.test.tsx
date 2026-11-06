@@ -204,7 +204,7 @@ describe("Agent Office chips", () => {
     expect(count).toHaveTextContent(/^6$/);
     const ring = count.querySelector<HTMLElement>(".hq-dot")!;
     expect(ring).toHaveClass("hq-dot-md");
-    expect(ring.style.background).toBe("transparent");
+    expect(ring.style.backgroundColor).toBe("transparent");
     expect(ring.style.border).toContain("solid");
     expect(chip(2).querySelector("[data-testid=office-chip-head]")).toBeNull();
     expect(chip(2).querySelector("[data-testid=office-chip-more]")).toBeNull();
@@ -344,7 +344,7 @@ describe("Agent Office chips during a day replay", () => {
       expect(chip(slot)).toHaveAttribute("data-replay", "true");
       expect(chip(slot)).toHaveAttribute("aria-label", expect.stringMatching(/^Replay of Mon 19 Oct: Desk /));
       const dot = chip(slot).querySelector<HTMLElement>(".hq-dot")!;
-      expect(dot.style.background).toBe("transparent");
+      expect(dot.style.backgroundColor).toBe("transparent");
       expect(dot.style.border).toMatch(/^1\.5px solid/);
     }
     expect(chip(0)).toHaveAttribute("aria-label", "Replay of Mon 19 Oct: Desk 1: Copilot · Editing, Agent office scene");
@@ -417,7 +417,7 @@ describe("Agent Office chips during a day replay", () => {
     const el = document.createElement("span");
     const at = [NaN, NaN];
     placeAt(el, at, 8, 20);
-    expect(el.style.transform).toBe("translate3d(8px, 20px, 0)");
+    expect(el.style.transform).toBe("translate3d(8px, 20px, 0px)");
     expect(el.style.visibility).toBe("visible");
     el.style.transform = "";
     placeAt(el, at, 8, 20);
@@ -425,7 +425,7 @@ describe("Agent Office chips during a day replay", () => {
     placeAt(el, at, NaN, 20);
     expect(el.style.visibility).toBe("hidden");
     placeAt(el, at, 12, 20);
-    expect(el.style.transform).toBe("translate3d(12px, 20px, 0)");
+    expect(el.style.transform).toBe("translate3d(12px, 20px, 0px)");
     expect(el.style.visibility).toBe("visible");
     expect(() => placeAt(null, at, 1, 1)).not.toThrow();
   });
