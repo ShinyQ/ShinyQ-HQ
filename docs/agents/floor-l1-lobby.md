@@ -149,7 +149,7 @@ Code: `floors/lobby/hallLayout.ts`; the interiors in `floors/lobby/hallPremium/`
 ### Deep links and point-and-go
 
 - `/{locale}#highlights(-<station>)` opens a station (`gateStartRoom` in the gate), the new ones included (`#highlights-wins`, `#highlights-now`, `#highlights-results`).
-- Cmd-K lists all seven; the static tier opens the matching Classic section (`/#intro`, `/#work`, `/#journey`, `/quick#awards`, `/#journey`, `/labs#key-projects`, `/#contact`).
+- Cmd-K lists all seven; the static tier opens the matching Classic section (`/#intro`, `/#work`, `/#journey`, `/quick#awards`, `/#journey`, `/labs#key-projects`, `/contact`; Contact never opens the landing's `#contact`, whose heading is the availability line).
 - An open station keeps `/{locale}` (`hasPage` false).
 - The stations are point-and-go targets `L1:station:highlights-<station>` (kind `station`, `open-room`), registered by `HighlightsHall` with `registerExtraInteractables` (`hallInteract.ts`); see [floors.md](floors.md).
 - The registry's L1 built-ins do not derive targets from L1 doors.

@@ -595,7 +595,7 @@ test.describe("boot card: View CV and Contact (owner decision 2026-11-01)", () =
     const html = await (await page.request.get("/en")).text();
     const cover = html.slice(html.indexOf('id="hq-boot-cover"'));
     expect(cover).toContain('href="/en/cv?view=classic"');
-    expect(cover).toContain('href="/en/contact?view=classic#availability"');
+    expect(cover).toContain('href="/en/contact?view=classic"');
   });
 
   test.describe("portrait phone", () => {
@@ -606,7 +606,7 @@ test.describe("boot card: View CV and Contact (owner decision 2026-11-01)", () =
       const card = overlay.locator(".hq-boot-card");
       const cv = overlay.getByRole("link", { name: en.common.viewCv });
       const contact = overlay.getByRole("link", { name: en.hud.bootContact });
-      await expect(contact).toHaveAttribute("href", "/en/contact?view=classic#availability");
+      await expect(contact).toHaveAttribute("href", "/en/contact?view=classic");
       const c = await rect(card);
       expect(c.y, "the card stays in the lower half").toBeGreaterThanOrEqual(844 * 0.4);
       for (const link of [cv, contact]) {
