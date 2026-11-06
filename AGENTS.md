@@ -79,6 +79,11 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
   dynamic segments.
 - **Every route works without WebGL.** 3D mounts client-side on top of the HTML pages and never replaces their
   content.
+- **Quiet availability line** (owner rule). Navigation, search results, missions, deep links, CTAs and auto-scroll
+  never land on or scroll to the open-to-work line (`floors.roof.availability`): it stays quiet and
+  visitor-found. Contact targets open `/{locale}/contact` at its top, never `#availability` or the closing
+  `#contact`; keep `data-scroll-behavior="smooth"` on `<html>`.
+  [Detail](docs/agents/content-style-and-safety.md#quiet-availability-line).
 
 ## Rules that bite most often
 

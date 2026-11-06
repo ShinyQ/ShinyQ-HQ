@@ -20,7 +20,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 | Room | Kind | Static path | Notes |
 |---|---|---|---|
 | `L1:profile`, `L1:stats`, `L1:skills`, `L1:certifications` | | | |
-| `L1:highlights-about`, `L1:highlights-projects`, `L1:highlights-experience`, `L1:highlights-contact` | `highlights` | landing anchors `/#intro`, `/#work`, `/#journey`, `/#contact` | [Highlights Hall](floor-l1-lobby.md) stations |
+| `L1:highlights-about`, `L1:highlights-projects`, `L1:highlights-experience`, `L1:highlights-contact` | `highlights` | landing anchors `/#intro`, `/#work`, `/#journey`; Contact opens `/contact` (never the landing's `#contact`) | [Highlights Hall](floor-l1-lobby.md) stations |
 | `L1:visits` | `visits` | `/contact#visits` (the Classic section), also its floor path | Visitor Observatory, see below |
 | `L1:office` | `office` | `/#office` (the Classic home card, Agent Office part 4), also its floor path | Agent Office summary; `L1:office-github` and `L1:office-desk-1` to `-10` have views but no catalog entry |
 | `L2:workshop` | | | its keywords list every project and repo |
