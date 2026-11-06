@@ -1,0 +1,322 @@
+{
+  "/cv": {
+    "hash": "0013e9cc444bf91a",
+    "date": "2026-10-23"
+  },
+  "/journey": {
+    "hash": "58cb221eeeb0b75c",
+    "date": "2026-11-03"
+  },
+  "/journey/370-agency-2025": {
+    "hash": "19d1d76c94f3e5bf",
+    "date": "2026-10-23"
+  },
+  "/journey/bandung-techno-park-2022": {
+    "hash": "77a40c900248a0a8",
+    "date": "2026-11-03"
+  },
+  "/journey/bssn-2023": {
+    "hash": "0545f370f2fe4838",
+    "date": "2026-11-03"
+  },
+  "/journey/campus-and-community-2019": {
+    "hash": "eba442f5f27f91a6",
+    "date": "2026-11-03"
+  },
+  "/journey/campus-and-community-2020": {
+    "hash": "6f85b0d241dcbe15",
+    "date": "2026-10-23"
+  },
+  "/journey/campus-and-community-2021": {
+    "hash": "fb1e291c95dd1f08",
+    "date": "2026-11-03"
+  },
+  "/journey/campus-and-community-2022": {
+    "hash": "d9f272d58633e8a5",
+    "date": "2026-10-23"
+  },
+  "/journey/certification-desk-2021": {
+    "hash": "fdc93f0a24ad2cd8",
+    "date": "2026-10-27"
+  },
+  "/journey/certification-desk-2026": {
+    "hash": "a14174de2b9fafbe",
+    "date": "2026-10-31"
+  },
+  "/journey/crypto-tracker-2024": {
+    "hash": "0309f5dce44f978c",
+    "date": "2026-10-23"
+  },
+  "/journey/dariordal-2025": {
+    "hash": "67ceda10e223412d",
+    "date": "2026-10-23"
+  },
+  "/journey/digitiket-2021": {
+    "hash": "92b0f24b5357ae39",
+    "date": "2026-10-23"
+  },
+  "/journey/graduation-2023": {
+    "hash": "0d9a8089359271de",
+    "date": "2026-10-31"
+  },
+  "/journey/jatis-2023": {
+    "hash": "2f5aa0870fb34087",
+    "date": "2026-11-03"
+  },
+  "/journey/jenius-2024": {
+    "hash": "dbe730fcc83acf7d",
+    "date": "2026-11-03"
+  },
+  "/journey/jublia-2023": {
+    "hash": "e782c4e9c6105edd",
+    "date": "2026-11-03"
+  },
+  "/journey/kalbe-farma-2021": {
+    "hash": "485eebe41ce362a2",
+    "date": "2026-11-03"
+  },
+  "/journey/lilt-ai-2026": {
+    "hash": "8995f60d60289780",
+    "date": "2026-11-03"
+  },
+  "/journey/metrodata-2026": {
+    "hash": "44fca651408a759c",
+    "date": "2026-11-03"
+  },
+  "/journey/mnc-2022": {
+    "hash": "0ee596491c13d6d8",
+    "date": "2026-11-03"
+  },
+  "/journey/naremax-2025": {
+    "hash": "b5e416561be7d2e7",
+    "date": "2026-10-27"
+  },
+  "/journey/portfolio-v1-2025": {
+    "hash": "7e53b0903a78e5f8",
+    "date": "2026-10-23"
+  },
+  "/journey/prologue-2016": {
+    "hash": "9f7831b671bde9ce",
+    "date": "2026-11-03"
+  },
+  "/journey/research-covid-forecasting-2021": {
+    "hash": "1a6d01615e2a682e",
+    "date": "2026-10-23"
+  },
+  "/journey/research-ewallet-sentiment-2021": {
+    "hash": "394d25421ebbc7ef",
+    "date": "2026-11-03"
+  },
+  "/journey/research-vaccination-sentiment-2020": {
+    "hash": "1f7ef5a519c16995",
+    "date": "2026-10-23"
+  },
+  "/journey/sentiboard-2022": {
+    "hash": "5be774097e7c23a4",
+    "date": "2026-10-31"
+  },
+  "/journey/serupa-2025": {
+    "hash": "91bf513bc3f2fbe9",
+    "date": "2026-11-03"
+  },
+  "/journey/shumi-2019": {
+    "hash": "6ce8047a64e95fdb",
+    "date": "2026-11-03"
+  },
+  "/journey/sp500-optimizer-2024": {
+    "hash": "b84cb944fae020b5",
+    "date": "2026-10-23"
+  },
+  "/journey/techbros-2021": {
+    "hash": "2b8e9cf07e0af7d4",
+    "date": "2026-11-03"
+  },
+  "/journey/telkom-university-2019": {
+    "hash": "9a3b08380af118da",
+    "date": "2026-11-03"
+  },
+  "/journey/temmpat-2025": {
+    "hash": "49fc46f678fac031",
+    "date": "2026-11-03"
+  },
+  "/journey/trophy-case-2019": {
+    "hash": "4642b8a5e0568dcf",
+    "date": "2026-10-27"
+  },
+  "/journey/trophy-case-2020": {
+    "hash": "d3bd337e030d7881",
+    "date": "2026-10-23"
+  },
+  "/journey/trophy-case-2021": {
+    "hash": "7aaed022dafa3313",
+    "date": "2026-10-27"
+  },
+  "/journey/trophy-case-2022": {
+    "hash": "845e8b94ce9862c8",
+    "date": "2026-10-27"
+  },
+  "/labs": {
+    "hash": "9a2e63021d57a708",
+    "date": "2026-11-03"
+  },
+  "/labs/agent-deck-platform": {
+    "hash": "295589fcc217e08a",
+    "date": "2026-11-03"
+  },
+  "/labs/agent-orchestrated-delivery": {
+    "hash": "0efc1d5022d53df0",
+    "date": "2026-11-03"
+  },
+  "/labs/ai-app-accelerator": {
+    "hash": "5b855fec53d1b72c",
+    "date": "2026-11-03"
+  },
+  "/labs/ai-code-security-platform": {
+    "hash": "38f911de58152181",
+    "date": "2026-11-03"
+  },
+  "/labs/ai-cv-screening-platform": {
+    "hash": "f0fb515bee4e14a3",
+    "date": "2026-11-03"
+  },
+  "/labs/ai-solutions-assistant": {
+    "hash": "d0ba99f9d20ac9c2",
+    "date": "2026-11-03"
+  },
+  "/labs/anime-figure-ecommerce": {
+    "hash": "0f271d9e6b817c03",
+    "date": "2026-11-03"
+  },
+  "/labs/automotive-fraud-dashboard": {
+    "hash": "565d6ece72dddae4",
+    "date": "2026-11-03"
+  },
+  "/labs/azure-ai-operations": {
+    "hash": "7d4d6fda425e4224",
+    "date": "2026-11-03"
+  },
+  "/labs/bank-genai-governance": {
+    "hash": "c8567878ed40b9b8",
+    "date": "2026-11-03"
+  },
+  "/labs/bank-statement-analyzer": {
+    "hash": "dd88c53ee05472f9",
+    "date": "2026-11-03"
+  },
+  "/labs/clearbox": {
+    "hash": "94f39c4616f37631",
+    "date": "2026-11-03"
+  },
+  "/labs/covid-herd-immunity-forecast": {
+    "hash": "01d38756b5d364cc",
+    "date": "2026-11-03"
+  },
+  "/labs/credit-scoring-poc": {
+    "hash": "7b97dab8695b9f0c",
+    "date": "2026-11-03"
+  },
+  "/labs/digital-banking-integrations": {
+    "hash": "1f2574294149c7fc",
+    "date": "2026-11-03"
+  },
+  "/labs/digital-products-ecommerce": {
+    "hash": "54ab65fca0341282",
+    "date": "2026-11-03"
+  },
+  "/labs/event-tech-search-backend": {
+    "hash": "31c141080978c048",
+    "date": "2026-11-03"
+  },
+  "/labs/event-ticketing-platform": {
+    "hash": "72cd22a81b94aa35",
+    "date": "2026-11-03"
+  },
+  "/labs/fabric-forecasting-dashboard": {
+    "hash": "43827b8d5ce75b2c",
+    "date": "2026-11-03"
+  },
+  "/labs/fraud-review-platform": {
+    "hash": "4bce351ee47b5c70",
+    "date": "2026-11-03"
+  },
+  "/labs/healthcare-outreach-dashboard": {
+    "hash": "86e830ba7551ddf6",
+    "date": "2026-11-03"
+  },
+  "/labs/ifest-2021-sentiment-analysis": {
+    "hash": "aa7ef62991b2a419",
+    "date": "2026-11-03"
+  },
+  "/labs/insurer-contact-center-architecture": {
+    "hash": "6adecf7e6b50bdef",
+    "date": "2026-11-03"
+  },
+  "/labs/kampus-merdeka-reports-crawler": {
+    "hash": "51d2be63cce496da",
+    "date": "2026-11-03"
+  },
+  "/labs/limited-quota-event-ticketing": {
+    "hash": "5410eb2c958e64ad",
+    "date": "2026-11-03"
+  },
+  "/labs/marketplace-productization": {
+    "hash": "2bd33fdeb8090a27",
+    "date": "2026-11-03"
+  },
+  "/labs/mii-cowork": {
+    "hash": "04e16026f0d9b75f",
+    "date": "2026-11-03"
+  },
+  "/labs/mining-coa-assistant": {
+    "hash": "266c046c875286f4",
+    "date": "2026-11-03"
+  },
+  "/labs/multi-tenant-saas-platform": {
+    "hash": "e0d681d1fef15a20",
+    "date": "2026-11-03"
+  },
+  "/labs/payments-realtime-backend": {
+    "hash": "c6b06a5c5e6981d4",
+    "date": "2026-11-03"
+  },
+  "/labs/sewise-fashion-labs": {
+    "hash": "ba966349d6ed802d",
+    "date": "2026-11-03"
+  },
+  "/labs/solutions-marketing-site": {
+    "hash": "4c3e484e0824e5d8",
+    "date": "2026-11-03"
+  },
+  "/labs/stock-allocation-optimizer": {
+    "hash": "c283c2a7290a31e4",
+    "date": "2026-11-03"
+  },
+  "/labs/ticket-marketplace-backend": {
+    "hash": "30ed0b290b245ebb",
+    "date": "2026-11-03"
+  },
+  "/labs/ticketing-assistant-replatform": {
+    "hash": "bd2e1bc23644bc04",
+    "date": "2026-11-03"
+  },
+  "/labs/university-alumni-platforms": {
+    "hash": "685f1afcc1a9ba22",
+    "date": "2026-11-03"
+  },
+  "/labs/university-sentiment-indobert": {
+    "hash": "d649619b0254ff60",
+    "date": "2026-11-03"
+  },
+  "/labs/vendor-management-portal": {
+    "hash": "b36dc4fb053d0657",
+    "date": "2026-10-27"
+  },
+  "/labs/voice-ai-contact-center": {
+    "hash": "78108c9e52524484",
+    "date": "2026-11-03"
+  },
+  "/labs/vulnerability-scanning-automation": {
+    "hash": "ea11ab4b9ffa1fe5",
+    "date": "2026-11-03"
+  }
+}

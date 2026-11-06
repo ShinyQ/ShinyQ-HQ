@@ -18,7 +18,10 @@ const cacheOf = (pattern: string) => block(pattern).filter((l) => l.startsWith("
 
 describe("cache rules for unhashed public assets", () => {
   it("announces the language alternates of / over HTTP", () => {
-    expect(block("/")).toEqual(['Link: </en>; rel="alternate"; hreflang="en", </id>; rel="alternate"; hreflang="id", </en>; rel="alternate"; hreflang="x-default"']);
+    // Absolute URLs on the main address: Google ignores relative hreflang targets.
+    expect(block("/")).toEqual([
+      'Link: <https://shinyq.my.id/en>; rel="alternate"; hreflang="en", <https://shinyq.my.id/id>; rel="alternate"; hreflang="id", <https://shinyq.my.id/en>; rel="alternate"; hreflang="x-default"',
+    ]);
   });
 
   it("cache each prefix as planned", () => {

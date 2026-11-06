@@ -400,6 +400,7 @@
     "topics": "Topics",
     "tableLabel": "Scrollable table",
     "translationMissing": "This post is available in {language}. The original version is shown here.",
+    "updated": "Updated",
     "languageName": {
       "en": "English",
       "id": "Indonesian"
@@ -1131,6 +1132,7 @@
     "buildDescription": "How {name} builds ShinyQ HQ with AI coding agents: written specs and plans, small pull requests and automated gates on every merge.",
     "podTitle": "{title} by {name}",
     "postTitle": "{title} by {name}",
+    "feedTitle": "Articles by {name}",
     "entryTitle": "{name}: {role}",
     "entryTitleOrg": "{name}: {role}, {org}",
     "keyResult": "Key result: {value} ({label}).",

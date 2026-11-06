@@ -50,7 +50,11 @@ export function parseSocialMeta(html: string): SocialMeta {
   return meta;
 }
 
-export function validateSocialMeta(meta: SocialMeta): string[] {
+/**
+ * `paired: false` is a page whose content exists in one language only (an untranslated post, `pathLocales` in
+ * src/lib/routes.ts): it must carry no hreflang at all instead of the en/id/x-default set.
+ */
+export function validateSocialMeta(meta: SocialMeta, { paired = true }: { paired?: boolean } = {}): string[] {
   const problems: string[] = [];
   const need = (ok: unknown, problem: string) => {
     if (!ok) problems.push(problem);
@@ -59,7 +63,8 @@ export function validateSocialMeta(meta: SocialMeta): string[] {
   const length = meta.description?.length ?? 0;
   need(length >= DESCRIPTION_RANGE[0] && length <= DESCRIPTION_RANGE[1], `description length ${length} outside ${DESCRIPTION_RANGE[0]} to ${DESCRIPTION_RANGE[1]}`);
   need(meta.canonical, "missing canonical");
-  for (const lang of ["en", "id", "x-default"]) need(meta.hreflang[lang], `missing hreflang ${lang}`);
+  if (paired) for (const lang of ["en", "id", "x-default"]) need(meta.hreflang[lang], `missing hreflang ${lang}`);
+  else need(Object.keys(meta.hreflang).length === 0, "hreflang on a page written in one language");
   for (const key of ["og:title", "og:description", "og:url", "og:image", "og:image:alt"]) need(meta.og[key], `missing ${key}`);
   need(meta.og["og:url"] === meta.canonical, "og:url differs from the canonical");
   const image = meta.og["og:image"];
