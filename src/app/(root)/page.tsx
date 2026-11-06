@@ -2,10 +2,13 @@
  * "/" is a static page: it redirects by the remembered choice
  * (localStorage "hq:locale") or navigator.language, and links both locales
  * for no-JS visitors and crawlers (spec appendix 04 section 4). scripts/root-redirect.ts copies the
- * script above the stylesheet after the build; the `__hqRedirect` guard makes this copy a no-op.
+ * script above the stylesheet after the build; the `__hqRedirect` guard makes this copy a no-op. It carries the same
+ * Person and WebSite structured data as the locale pages: Google reads the site name from the domain root.
  */
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
 import { getProfile } from "@/content/load";
+import { personJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import en from "../../../messages/en.json";
 import id from "../../../messages/id.json";
 
@@ -31,6 +34,7 @@ export default function RootPage() {
           </Link>
         </li>
       </ul>
+      <JsonLd data={[personJsonLd("en"), websiteJsonLd("en")]} />
     </main>
   );
 }

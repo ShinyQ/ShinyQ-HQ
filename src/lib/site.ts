@@ -59,13 +59,24 @@ export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** hreflang map for a locale-relative path, including x-default (English). */
-export function languageAlternates(path: string, toUrl: (p: string) => string = (p) => p): Record<string, string> {
+/**
+ * hreflang map for a locale-relative path in the locales its content is written in, including x-default (English,
+ * else the first locale). Empty for a page written in one language only: untranslated content is never paired.
+ */
+export function languageAlternates(path: string, toUrl: (p: string) => string = (p) => p, locales: readonly Locale[] = LOCALES): Record<string, string> {
+  if (locales.length < 2) return {};
   return {
-    ...Object.fromEntries(LOCALES.map((l) => [l, toUrl(localePath(l, path))])),
-    "x-default": toUrl(localePath("en", path)),
+    ...Object.fromEntries(locales.map((l) => [l, toUrl(localePath(l, path))])),
+    "x-default": toUrl(localePath(locales.includes("en") ? "en" : locales[0], path)),
   };
 }
+
+/** The Atom feed of a locale's hosted posts (src/app/[locale]/feed.xml), e.g. "/en/feed.xml". */
+export function feedPath(locale: Locale): string {
+  return `/${locale}/feed.xml`;
+}
+
+export const FEED_TYPE = "application/atom+xml";
 
 /** Section pages with their own share card; journey entries share the journey card. */
 export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv", "build"] as const;
@@ -104,6 +115,9 @@ export function twitterImage({ url, width, height, type, alt }: ReturnType<typeo
  * and Twitter card for a locale-relative path. `image` defaults to the
  * locale's default share card. `documentTitle` is the `<title>` search engines show (at most about
  * 60 characters, see `searchTitle` in src/lib/seo.ts); Open Graph and Twitter keep `title`.
+ * `locales` are the languages the content is written in (`pathLocales` in src/lib/routes.ts): a page rendered in
+ * another locale (a post's translation fallback) points its canonical and og:url at the first of them and gets no
+ * hreflang. `feed` adds the locale's Atom feed link; `modifiedTime` is `article:modified_time`.
  */
 export function pageMetadata({
   locale,
@@ -113,9 +127,12 @@ export function pageMetadata({
   description,
   type = "website",
   publishedTime,
+  modifiedTime,
   tags,
   image,
   imageAlt,
+  locales = LOCALES,
+  feed,
 }: {
   locale: Locale;
   path: string;
@@ -124,29 +141,35 @@ export function pageMetadata({
   description?: string;
   type?: "website" | "article";
   publishedTime?: string;
+  modifiedTime?: string;
   tags?: string[];
   image?: string;
   imageAlt?: string;
+  locales?: readonly Locale[];
+  feed?: { url: string; title: string };
 }): Metadata {
-  const url = localePath(locale, path);
+  const url = localePath(locales.includes(locale) ? locale : locales[0], path);
+  const languages = languageAlternates(path, undefined, locales);
   const images = [shareImage(image ?? ogImagePath({ kind: "default", locale }), imageAlt ?? title ?? SITE_NAME)];
   const shown = documentTitle ?? title;
+  const article = { ...(publishedTime ? { publishedTime } : {}), ...(modifiedTime ? { modifiedTime } : {}), ...(tags?.length ? { tags } : {}) };
   return {
     ...(shown ? { title: { absolute: shown } } : {}),
     ...(description ? { description } : {}),
     alternates: {
       canonical: url,
-      languages: languageAlternates(path),
+      ...(Object.keys(languages).length ? { languages } : {}),
+      ...(feed ? { types: { [FEED_TYPE]: [feed] } } : {}),
     },
     openGraph: {
       ...(title ? { title } : {}),
       ...(description ? { description } : {}),
       siteName: SITE_NAME,
       locale: OG_LOCALE[locale],
-      alternateLocale: LOCALES.filter((l) => l !== locale).map((l) => OG_LOCALE[l]),
+      alternateLocale: locales.filter((l) => l !== locale).map((l) => OG_LOCALE[l]),
       url,
       images,
-      ...(type === "article" ? { type, ...(publishedTime ? { publishedTime } : {}), ...(tags?.length ? { tags } : {}) } : { type }),
+      ...(type === "article" ? { type, ...article } : { type }),
     },
     twitter: {
       card: "summary_large_image",

@@ -386,6 +386,11 @@ Alternative without a deploy variable: download Google's HTML file (`google<toke
 1. https://www.bing.com/webmasters > Import from Google Search Console (fastest once Google is verified; nothing else to do), or Add a site `https://shinyq.my.id/` and choose **HTML Meta Tag**.
 2. For the meta tag: `gh variable set BING_SITE_VERIFICATION --body <content of msvalidate.01>`, deploy, then Verify.
 3. Sitemaps > Submit `https://shinyq.my.id/sitemap.xml`. Bing also feeds DuckDuckGo and Yahoo.
+4. IndexNow needs no setup: `deploy.yml` pings the changed URLs after every deploy with the public key file `public/{key}.txt` (no secret). Bing's IndexNow page shows the received URLs. Cloudflare Crawler Hints stays optional. To stop the pings: `gh variable set INDEXNOW --body false`.
+
+### Feeds
+
+The Atom feeds `https://shinyq.my.id/en/feed.xml` and `https://shinyq.my.id/id/feed.xml` are valid sitemaps too: in Search Console and Bing, Sitemaps > add `en/feed.xml` and `id/feed.xml`.
 
 ### LinkedIn previews (Featured "Add link", posts)
 

@@ -8,7 +8,7 @@ import { ShareLinks } from "@/components/ShareLinks";
 import { CaseToc } from "@/components/page/CaseToc";
 import { CrumbLink } from "@/components/page/Layout";
 import { QuietLink } from "@/components/QuietLink";
-import { getPostSource } from "@/content/blog";
+import { getPostSource, postUpdated } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { assertLocale } from "@/i18n/locale";
@@ -43,6 +43,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   const tc = await getTranslations({ locale, namespace: "common" });
   const tcase = await getTranslations({ locale, namespace: "case" });
   const { content, headings } = await compilePost(found.source, slug, found.locale, t("tableLabel"));
+  const updated = postUpdated(post, locale);
 
   // One reading measure (.pv-read) for the head, the body and the end; the contents sit in the right gutter from 1280 px.
   return (
@@ -59,6 +60,14 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
             <time dateTime={post.date} className="pv-date">
               {formatDate(post.date, locale)}
             </time>
+            {updated && (
+              <span>
+                {t("updated")}{" "}
+                <time dateTime={updated} className="pv-date">
+                  {formatDate(updated, locale)}
+                </time>
+              </span>
+            )}
             <span>{t("readingTime", { minutes: readingMinutes(found.source) })}</span>
             <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(", ")}</span>
           </p>

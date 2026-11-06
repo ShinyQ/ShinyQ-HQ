@@ -19,6 +19,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only; `github.calendar` holds the daily contribution levels and counts of the last year), written by `scripts/refresh-facts.ts`.
 - `content/generated/build-facts.json`: the build page's measured numbers (git, tests, CI jobs, budgets), written by `scripts/build-facts.ts` (CI and deploy builds refresh it).
 - `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
+- `content/generated/content-lastmod.json`: sitemap content stamps (per case study, journey entry, Labs, Journey and the CV: a slice hash and the day it last changed), written by `scripts/content-lastmod.ts` (CI and deploy builds refresh it).
 - `content/generated/paper-pages.json`: paper PDF page image manifest (sizes, PDF sha256), written by `scripts/paper-pages.ts`.
 
 ## assets/
@@ -75,7 +76,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `public/og-assets/`: share card inputs, output of `bun run og:stills`, committed (the build never needs WebGL).
   - One 1200x630 still per floor (floor-{L1,L2,L3,L4,RF}.jpg).
   - The owner's photo (400 px PNG).
-- `public/_headers`, `public/_redirects`: Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*) and redirects (old CV paths).
+- `public/_headers`, `public/_redirects`: Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*, the hreflang `Link` of `/`) and redirects (old CV paths).
+- `public/{key}.txt`: the IndexNow key file (32 hex characters, public by design), read by `scripts/indexnow.ts`.
 
 ## tools/
 
@@ -98,6 +100,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/build-shapes.ts`: the floating hologram shapes (part of `build` and `dev`): converts the vendored Lucide icons and expands the sculpture recipes into `public/shapes/<floor>.<hash>.json`, removing stale files; fails on an unknown or duplicate id.
 - `scripts/ask-pack.ts`: publishes the knowledge pack to Workers KV and flips, pins or rolls back its pointer (deploy.yml, rollback.yml; runbook section 17).
 - `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
+- `scripts/content-lastmod.ts`: `--write` refreshes `content/generated/content-lastmod.json` from the first-parent history (needs full git history; a shallow clone keeps the committed file).
+- `scripts/indexnow.ts`: after a production deploy, posts the changed sitemap URLs to IndexNow with the public key file `public/{key}.txt`.
 
 ### Fonts, brand and content
 
@@ -163,7 +167,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### src/app/
 
 - `src/app/(root)/`: "/" language redirect (own root layout).
-- `src/app/[locale]/`: all localized routes (root layout with <html lang>), including `build/page.tsx` (the `/build` story page from `content/build-story.json` and the build facts).
+- `src/app/[locale]/`: all localized routes (root layout with <html lang>), including `build/page.tsx` (the `/build` story page from `content/build-story.json` and the build facts) and `feed.xml/route.ts` (the Atom feed per locale, `src/lib/feed.ts`).
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/globals.css` (the Classic stylesheet, with `tokens.css`, `base.css`, `pageview.css`, `landing.css`, `hud-shared.css`), `src/app/client-sheet.css` (the client sheet, built by `scripts/client-sheet/loader.mjs`) and `src/app/lazy-sources.css` (generated, gitignored).
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).

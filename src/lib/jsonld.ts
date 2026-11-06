@@ -2,9 +2,10 @@
  * schema.org structured data built from content (never hardcoded facts), worded like the page
  * metadata (src/lib/seo.ts). Rendered with <JsonLd> as `application/ld+json` scripts.
  */
-import { getPostSource } from "@/content/blog";
+import { getPostSource, postUpdated } from "@/content/blog";
 import { getBuildFacts, getBuildStory } from "@/content/build-story";
 import { getContact, getPod, getPost, getProfile, getSkills, getTimeline, getTimelineEntry } from "@/content/load";
+import { LOCALES } from "@/content/locales";
 import type { Locale, Pod, PostRef } from "@/content/schema";
 import { podLiveLink } from "@/content/selectors";
 import { OG_PHOTO_PATH } from "@/lib/og-layout";
@@ -85,6 +86,11 @@ export function profilePageJsonLd(locale: Locale): JsonLdObject {
   };
 }
 
+/**
+ * The site, the same on every page and on the domain root "/" (Google reads the site name from the root home page,
+ * and wants the same markup on its duplicates): one `url`, the domain root, and both languages. Only the
+ * description follows the page's locale.
+ */
 export function websiteJsonLd(locale: Locale): JsonLdObject {
   return {
     "@context": "https://schema.org",
@@ -93,8 +99,8 @@ export function websiteJsonLd(locale: Locale): JsonLdObject {
     name: SITE_NAME,
     alternateName: getProfile().name,
     description: seoFor(locale, "/").description,
-    url: absoluteUrl(localePath(locale, "/")),
-    inLanguage: LANGUAGE_TAG[locale],
+    url: absoluteUrl("/"),
+    inLanguage: LOCALES.map((l) => LANGUAGE_TAG[l]),
     author: { "@id": PERSON_ID },
   };
 }
@@ -136,9 +142,13 @@ export function podJsonLd(pod: Pod, locale: Locale): JsonLdObject {
   };
 }
 
-/** `contentLocale` is the language the post body is actually written in (translation fallback). */
+/**
+ * `contentLocale` is the language the post body is actually written in (translation fallback); a fallback copy
+ * names the original's URL, its canonical. `dateModified` only when that translation set `updated`.
+ */
 export function postJsonLd(post: PostRef, locale: Locale, contentLocale: Locale): JsonLdObject {
-  const url = absoluteUrl(localePath(locale, `/blog/${post.slug}`));
+  const url = absoluteUrl(localePath(post.languages.includes(locale) ? locale : contentLocale, `/blog/${post.slug}`));
+  const updated = postUpdated(post, locale);
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -150,6 +160,7 @@ export function postJsonLd(post: PostRef, locale: Locale, contentLocale: Locale)
     mainEntityOfPage: url,
     inLanguage: LANGUAGE_TAG[contentLocale],
     datePublished: post.date,
+    ...(updated ? { dateModified: updated } : {}),
     keywords: post.tags.join(", "),
     author: personRef(locale),
     publisher: { "@id": PERSON_ID },

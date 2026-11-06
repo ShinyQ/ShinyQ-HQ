@@ -400,6 +400,7 @@
     "topics": "Topik",
     "tableLabel": "Tabel yang dapat digeser",
     "translationMissing": "Tulisan ini tersedia dalam {language}. Versi asli ditampilkan di sini.",
+    "updated": "Diperbarui",
     "languageName": {
       "en": "bahasa Inggris",
       "id": "bahasa Indonesia"
@@ -1131,6 +1132,7 @@
     "buildDescription": "Cara {name} membangun ShinyQ HQ bersama AI coding agent: spec dan rencana tertulis, pull request kecil, dan gate otomatis di setiap merge.",
     "podTitle": "{title} oleh {name}",
     "postTitle": "{title} oleh {name}",
+    "feedTitle": "Artikel oleh {name}",
     "entryTitle": "{name}: {role}",
     "entryTitleOrg": "{name}: {role}, {org}",
     "keyResult": "Hasil utama: {value} ({label}).",
