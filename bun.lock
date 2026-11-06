@@ -16,7 +16,7 @@
         "react-dom": "19.3.1",
         "remark-gfm": "^4.0.1",
         "three": "^0.187.0",
-        "troika-three-text": "^0.53.1",
+        "troika-three-text": "^0.52.5",
         "zod": "^4.6.7",
         "zustand": "^5.1.0",
       },
@@ -53,9 +53,6 @@
   ],
   "patchedDependencies": {
     "@react-three/fiber@9.8.2": "patches/@react-three%2Ffiber@9.8.2.patch",
-  },
-  "overrides": {
-    "troika-three-text": "^0.53.1",
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.5.0", "", {}, "sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q=="],
@@ -1488,11 +1485,11 @@
 
     "trim-lines": ["trim-lines@3.0.1", "", {}, "sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg=="],
 
-    "troika-three-text": ["troika-three-text@0.53.1", "", { "dependencies": { "bidi-js": "^1.0.2", "troika-three-utils": "^0.53.1", "troika-worker-utils": "^0.53.0", "webgl-sdf-generator": "1.1.1" }, "peerDependencies": { "three": ">=0.125.0" } }, "sha512-vVcWolk0/LoVjIwYL8OxDKXP2P/NDGKPA9l7EaSyuc/DLSSK0wpBuD+vrnEKG5E0E3DhW5MIXNfgVp85hbkE7w=="],
+    "troika-three-text": ["troika-three-text@0.52.5", "", { "dependencies": { "bidi-js": "^1.0.2", "troika-three-utils": "^0.52.5", "troika-worker-utils": "^0.52.0", "webgl-sdf-generator": "1.1.1" }, "peerDependencies": { "three": ">=0.125.0" } }, "sha512-Ry3jRhic9pzcY4JduSvRRyDmVOSqEW19gT4vtK+aCiPNVcDlmkxvGG0YbFd36RTDq1wExOupXnvNF/j1oiHHDA=="],
 
-    "troika-three-utils": ["troika-three-utils@0.53.1", "", { "peerDependencies": { "three": ">=0.125.0" } }, "sha512-xgf/risxw+sYt0uiAEhpiNvS9l0kQwiqvLMBCik4Ikx+IWYkVVfMtH/QN5UnYH2bYAre6+tSsY/Lwep6HCW2hg=="],
+    "troika-three-utils": ["troika-three-utils@0.52.5", "", { "peerDependencies": { "three": ">=0.125.0" } }, "sha512-WsePbcX8RtfidRfsxK1eCZCjF81ZDzAKHH/evLs0hdV2wpoCb0vArGZHdzdOJrSS3k4zfdtbKDaBh8+phkrYnw=="],
 
-    "troika-worker-utils": ["troika-worker-utils@0.53.0", "", {}, "sha512-k0/w24ogNHJ8fjD1rxvLkzxiB+5j4H7fRdtBNjTaECQAS6c5Rrn4dxKtsSBjc+IfVnEG6YeAsyyPYnpRC9x8Nw=="],
+    "troika-worker-utils": ["troika-worker-utils@0.52.0", "", {}, "sha512-W1CpvTHykaPH5brv5VHLfQo9D1OYuo0cSBEUQFFT/nBUzM8iD6Lq2/tgG/f1OelbAS1WtaTPQzE5uM49egnngw=="],
 
     "trough": ["trough@2.2.0", "", {}, "sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw=="],
 

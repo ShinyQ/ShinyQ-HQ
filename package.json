@@ -50,7 +50,7 @@
     "react-dom": "19.3.1",
     "remark-gfm": "^4.0.1",
     "three": "^0.187.0",
-    "troika-three-text": "^0.53.1",
+    "troika-three-text": "^0.52.5",
     "zod": "^4.6.7",
     "zustand": "^5.1.0"
   },
@@ -91,9 +91,6 @@
     "sharp",
     "unrs-resolver"
   ],
-  "overrides": {
-    "troika-three-text": "$troika-three-text"
-  },
   "patchedDependencies": {
     "@react-three/fiber@9.8.2": "patches/@react-three%2Ffiber@9.8.2.patch"
   }
