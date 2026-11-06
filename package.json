@@ -91,6 +91,9 @@
     "sharp",
     "unrs-resolver"
   ],
+  "overrides": {
+    "troika-three-text": "$troika-three-text"
+  },
   "patchedDependencies": {
     "@react-three/fiber@9.8.2": "patches/@react-three%2Ffiber@9.8.2.patch"
   }
