@@ -1,5 +1,9 @@
 import type { PersistStorage, StorageValue } from "zustand/middleware";
 
+// zustand 5.1 types an async storage's getItem as a PromiseLike, not only a Promise.
+const isThenable = <T>(value: T | PromiseLike<T>): value is PromiseLike<T> =>
+  typeof (value as PromiseLike<T> | null)?.then === "function";
+
 /**
  * zustand 5 `persist` writes on every `set`, whatever changed (`api.setState` calls `setItem`), so
  * per-frame and 10 Hz store updates would serialize and write localStorage each time. This wrapper
@@ -22,7 +26,7 @@ export function skipUnchanged<S extends object>(inner: PersistStorage<S> | undef
   return {
     getItem: (name) => {
       const value = inner.getItem(name);
-      return value instanceof Promise ? value.then((v) => remember(name, v)) : remember(name, value);
+      return isThenable(value) ? value.then((v) => remember(name, v)) : remember(name, value);
     },
     setItem: (name, value) => {
       const previous = last.get(name);
