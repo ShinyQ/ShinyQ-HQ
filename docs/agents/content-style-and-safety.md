@@ -78,6 +78,25 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 - 3D mounts client-side on top of the HTML pages and must never replace their content.
 
+### Quiet availability line
+
+Owner decision 2026-11-06: the open-to-work line (`floors.roof.availability`, "I am open to freelance and part-time
+software and AI engineering work.") stays a quiet element the visitor finds on their own. Landing on it reads as
+begging.
+
+- Navigation, search and palette results, missions, deep links, CTAs and auto-scroll never land on it or scroll to
+  it. A result opens its own content at the top of that content.
+- Contact targets open the About and contact page at its top (`/{locale}/contact`): never `#availability` (the
+  contact panel heading) and never the closing `#contact` section (`ClosingCta`, whose heading is the availability
+  line). The Highlights Hall Contact station's Classic path is `/contact` (`src/experience/missions/rooms.ts`), and
+  so is the boot card's Contact link (`bootQuickLinks` in `src/components/BootCard.tsx`).
+- `<html>` in `src/app/[locale]/layout.tsx` carries `data-scroll-behavior="smooth"`, so Next turns the smooth scroll in
+  `globals.css` off during route changes. Without it a soft navigation (a palette result, a mission) could end its
+  scroll-to-top on the page's last section, the closing `#contact` and its availability line. Never remove it while
+  `html` scrolls smoothly.
+- Showing the line where it already sits (the hero, the closing section, the contact panel, the roof sign) is fine;
+  only jumping a visitor to it is not.
+
 ## Content style
 
 ### Bilingual editorial voice

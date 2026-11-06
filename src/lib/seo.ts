@@ -5,11 +5,13 @@
  * `seo` messages. Facts come from content/site-content.json, never from this file.
  */
 import { createTranslator } from "next-intl";
+import { postUpdated } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile, getTimeline, getTimelineEntry } from "@/content/load";
 import type { Locale, Pod, PostRef, Result, TimelineEntry } from "@/content/schema";
 import { hasFirstPerson } from "@/lib/first-person";
 import type { Metadata } from "next";
-import { type OgPage, type OgTarget, ogImagePath, pageMetadata } from "@/lib/site";
+import { pathLocales } from "@/lib/routes";
+import { type OgPage, type OgTarget, feedPath, ogImagePath, pageMetadata } from "@/lib/site";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
@@ -123,6 +125,8 @@ export interface SeoPage {
   imageAlt: string;
   type: "website" | "article";
   publishedTime?: string;
+  /** A post translation's frontmatter `updated` (`postUpdated`): `article:modified_time` and `dateModified`. */
+  modifiedTime?: string;
   tags?: string[];
 }
 
@@ -159,7 +163,18 @@ function postSeo(post: PostRef, locale: Locale, name: string, role: string): Seo
   const title = t("postTitle", { title: post.title[locale], name });
   const searchTitle = fitTitle([title, t("postTitle", { title: post.title[locale], name: firstName(name) }), post.title[locale]]);
   const description = fitDescription(post.excerpt[locale], [[t("postBy", { name, role }), t("articleBy", { name }), t("byName", { name })], [t("readArticle")]]);
-  return { title, searchTitle, description, image: { kind: "blog", locale, slug: post.slug }, imageAlt: title, type: "article", publishedTime: post.date, tags: post.tags };
+  const modifiedTime = postUpdated(post, locale);
+  return {
+    title,
+    searchTitle,
+    description,
+    image: { kind: "blog", locale, slug: post.slug },
+    imageAlt: title,
+    type: "article",
+    publishedTime: post.date,
+    ...(modifiedTime ? { modifiedTime } : {}),
+    tags: post.tags,
+  };
 }
 
 function entrySeo(entry: TimelineEntry, locale: Locale, name: string): SeoPage {
@@ -238,7 +253,15 @@ export function seoFor(locale: Locale, path: string): SeoPage {
   throw new Error(`No search metadata for ${path}`);
 }
 
-/** Next metadata for a page: always use this in `generateMetadata` (canonical, hreflang, Open Graph, Twitter). */
+/** Title of a locale's Atom feed (its `<title>` and the head link's `title`). */
+export function feedTitle(locale: Locale): string {
+  return seoT(locale)("feedTitle", { name: getProfile().name });
+}
+
+/**
+ * Next metadata for a page: always use this in `generateMetadata` (canonical, hreflang for the locales the content is
+ * written in, the locale's feed link, Open Graph, Twitter).
+ */
 export function seoMetadata(locale: Locale, path: string): Metadata {
   const seo = seoFor(locale, path);
   return pageMetadata({
@@ -249,8 +272,11 @@ export function seoMetadata(locale: Locale, path: string): Metadata {
     description: seo.description,
     type: seo.type,
     publishedTime: seo.publishedTime,
+    modifiedTime: seo.modifiedTime,
     tags: seo.tags,
     image: ogImagePath(seo.image),
     imageAlt: seo.imageAlt,
+    locales: pathLocales(path),
+    feed: { url: feedPath(locale), title: feedTitle(locale) },
   });
 }

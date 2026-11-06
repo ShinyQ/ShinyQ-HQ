@@ -56,7 +56,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const messages = pickMessages(await getMessages(), LAYOUT_NAMESPACES);
   return (
     // The inline script sets data-hq-boot on <html> before hydration, hence suppressHydrationWarning.
-    <html lang={locale} className={`${fontClassName} antialiased overflow-x-clip`} suppressHydrationWarning>
+    // data-scroll-behavior: Next turns the smooth scroll (globals.css) off during route changes. Without it the new page's
+    // top scroll ran smooth and could end on its last section, the closing contact and its availability line.
+    <html lang={locale} className={`${fontClassName} antialiased overflow-x-clip`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Runs before first paint: on 3D-capable visits the boot cover hides the Page View. */}
         <script dangerouslySetInnerHTML={{ __html: bootFirstScript() }} />

@@ -57,10 +57,10 @@ export interface BootCardProps {
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
 
-/** View CV (the Classic CV page, the reader once hydrated) and Contact (About's availability and channels). */
+/** View CV (the Classic CV page, the reader once hydrated) and Contact (the About and contact page at its top, never `#availability`). */
 export const bootQuickLinks = (locale: string, cv: string, contact: string): BootQuickLink[] => [
   { href: `/${locale}/cv?view=classic`, label: cv, cv: true },
-  { href: `/${locale}/contact?view=classic#availability`, label: contact },
+  { href: `/${locale}/contact?view=classic`, label: contact },
 ];
 
 /** The rover brand mark tile (public/brand, written by scripts/brand-marks.ts). */

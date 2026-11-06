@@ -3,7 +3,7 @@ import { getContent, getPod, getProfile } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import { hasFirstPerson } from "@/lib/first-person";
 import { allOgTargets } from "@/lib/og-cards";
-import { allPagePaths } from "@/lib/routes";
+import { allPagePaths, pathLocales } from "@/lib/routes";
 import { DESCRIPTION_MAX, DESCRIPTION_MIN, DYNAMIC_TITLE_MAX, HOME_TITLE_MAX, SEARCH_TITLE_MAX, TITLE_MAX, fitDescription, fitTitle, keyResult, periodLabel, seoFor, seoMetadata, shortenLead } from "@/lib/seo";
 import { ogImagePath } from "@/lib/site";
 
@@ -155,8 +155,11 @@ describe("every page's Next metadata", () => {
         const meta = seoMetadata(locale, path);
         expect(meta.title).toEqual({ absolute: seo.searchTitle });
         expect(meta.description).toBe(seo.description);
-        expect(meta.alternates?.canonical).toBe(path === "/" ? `/${locale}` : `/${locale}${path}`);
-        expect(Object.keys(meta.alternates?.languages ?? {}).sort()).toEqual(["en", "id", "x-default"]);
+        // A post written in one language points both locales at that original and pairs nothing.
+        const locales = pathLocales(path);
+        const canonicalLocale = locales.includes(locale) ? locale : locales[0];
+        expect(meta.alternates?.canonical).toBe(path === "/" ? `/${canonicalLocale}` : `/${canonicalLocale}${path}`);
+        expect(Object.keys(meta.alternates?.languages ?? {}).sort()).toEqual(locales.length > 1 ? ["en", "id", "x-default"] : []);
         const images = meta.openGraph?.images as { url: string; width: number; height: number; type: string; alt: string }[];
         expect(images).toHaveLength(1);
         expect(images[0]).toMatchObject({ width: 1200, height: 630, type: "image/jpeg", alt: seo.title });

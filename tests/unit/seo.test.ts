@@ -19,7 +19,7 @@ import {
   websiteJsonLd,
 } from "@/lib/jsonld";
 import { seoFor } from "@/lib/seo";
-import { allPagePaths, lastModified, sitemapDate } from "@/lib/routes";
+import { allPagePaths, lastModified, pathLocales, sitemapDate } from "@/lib/routes";
 import {
   SITE_URL,
   languageAlternates,
@@ -110,7 +110,13 @@ describe("sitemap and robots", () => {
 
   it("has one absolute entry per locale with hreflang alternates", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(paths.length * 2);
+    expect(entries).toHaveLength(paths.reduce((n, p) => n + pathLocales(p).length, 0));
+    // A post written in one language is listed once, under that language, with no hreflang pair.
+    for (const post of hostedPosts.filter((p) => p.languages.length === 1)) {
+      const listed = entries.filter((e) => e.url.endsWith(`/blog/${post.slug}`));
+      expect(listed.map((e) => e.url)).toEqual([`${SITE_URL}/${post.languages[0]}/blog/${post.slug}`]);
+      expect(listed[0].alternates).toBeUndefined();
+    }
     const pod = floors.labs.pods[0].slug;
     const entry = entries.find((e) => e.url === `${SITE_URL}/id/labs/${pod}`);
     expect(entry?.alternates?.languages).toEqual(languageAlternates(`/labs/${pod}`, (p) => `${SITE_URL}${p}`));
@@ -121,7 +127,7 @@ describe("sitemap and robots", () => {
     expect(robots()).toEqual({ rules: { userAgent: "*", allow: "/" }, sitemap: `${SITE_URL}/sitemap.xml` });
   });
 
-  it("dates posts, Writing, Journey, Home and Quick view from content, and nothing else", () => {
+  it("dates pages from content and content stamps, and nothing else", () => {
     const post = hostedPosts[0];
     expect(lastModified(`/blog/${post.slug}`)).toBe(post.date);
     const newestPost = [...floors.library.posts].map((p) => p.date).sort().at(-1);
@@ -130,7 +136,11 @@ describe("sitemap and robots", () => {
     expect(lastModified("/")! >= newestPost!).toBe(true);
     expect(lastModified("/")! >= lastModified("/journey")!).toBe(true);
     expect(lastModified("/quick")).toBe(lastModified("/"));
-    for (const path of ["/labs", "/contact", "/cv", `/labs/${floors.labs.pods[0].slug}`]) expect(lastModified(path), path).toBeUndefined();
+    // Stamped pages: a full day, or none while the committed stamp predates an edit (CI and deploy restamp first).
+    for (const path of ["/labs", "/cv", `/labs/${floors.labs.pods[0].slug}`, `/journey/${floors.careerArchive.entries[0].slug}`]) {
+      expect(lastModified(path) ?? "", path).toMatch(/^(\d{4}-\d{2}-\d{2})?$/);
+    }
+    expect(lastModified("/contact")).toBeUndefined();
     const today = new Date().toISOString().slice(0, 10);
     for (const path of allPagePaths()) {
       const date = lastModified(path);

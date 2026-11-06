@@ -51,8 +51,12 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - `searchTitle`: the `<title>`, at most `SEARCH_TITLE_MAX` 60 characters via `fitTitle` (full name, then first name, then the bare content title). Home's is `{name}: {role}` (the headline; the city stays in the description, since with it the title passes 60).
   - Search titles are unique per locale, and so are share titles.
 - `og:url` always equals the canonical, and `/` declares `/en` as both (`src/app/(root)/layout.tsx`).
+- hreflang and the canonical follow the languages the content is written in (`pathLocales` in `src/lib/routes.ts`, passed by `seoMetadata`): a post written in one language gets no hreflang in either locale, and its fallback copy's canonical and `og:url` name the original (`og:check` checks both). The sitemap and the feeds list only the original. hreflang URLs are absolute everywhere, including the `Link` header of `/` in `public/_headers`.
+- `/` carries the same `Person` and `WebSite` JSON-LD as the locale pages; `websiteJsonLd` has one `url`, the domain root, for every locale.
+- Every page links its locale's Atom feed through `pageMetadata`'s `feed` (`alternates.types`); never write the `<link>` by hand.
 - Search engine verification comes only from the `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` build variables (`searchVerification`, on `/`, `/en`, `/id`); never commit a token in code.
-- The sitemap's `lastmod` comes from content dates only (`lastModified` in `src/lib/routes.ts`), always as a full `YYYY-MM-DD` day (`sitemapDate`); a month-only date leaves the entry undated (Search Console rejects it).
+- The sitemap's `lastmod` comes from content dates only (`lastModified` in `src/lib/routes.ts`), always as a full `YYYY-MM-DD` day (`sitemapDate`); a month-only date leaves the entry undated (Search Console rejects it). Pages without a date of their own use their content stamp (`stampedDate`, `src/content/lastmod.ts`): a new stamped page type adds its slice to `contentSlices`. Never derive a date from the build time.
+- A post's `dateModified`, `article:modified_time` and visible "Updated" (`blog.updated`) come only from its translation's frontmatter `updated` (`postUpdated` in `src/content/blog.ts`).
 
 ### Share cards
 
