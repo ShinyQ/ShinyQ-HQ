@@ -49,7 +49,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 ## Highlights
 
 - **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator, five themed floors and a secret B1 Engine Room that opens once all five are visited.
-- **Highlights Hall**: one gate off the Lobby into a neon gallery of seven live exhibits around two light centrepieces, the Impact Orbit and the Signal Spire.
+- **Highlights Hall**: one gate off the Lobby into a neon gallery of seven station exhibits around two light centrepieces, the Impact Orbit and the Signal Spire.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Day and night**: a 4 minute twilight and neon night cycle from clock time, with a sun and moon that rise and set.
 - **Rover's onboarding**: a handheld-RPG text box intro, "!" hint bubbles and the Rover menu (`>_`) with shortcuts to the best rooms.
@@ -130,10 +130,10 @@ flowchart TB
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router, static export), React 19, TypeScript strict |
-| 3D | three.js, React Three Fiber, drei, postprocessing, troika text |
+| Framework | Next.js 16.4 (App Router, static export), React 19.3, TypeScript 6 strict |
+| 3D | three.js r187, React Three Fiber 9, drei 10, postprocessing, troika text |
 | State and i18n | zustand, next-intl, zod, MDX (next-mdx-remote) |
-| Styling | Tailwind CSS 4, Neon Grid design tokens, self-hosted subset fonts |
+| Styling | Tailwind CSS 4.3, Neon Grid design tokens, self-hosted subset fonts |
 | Edge and AI | Cloudflare Pages, Pages Functions, Workers AI, AI Gateway, Groq, KV, R2, Durable Objects, Analytics Engine, Turnstile, Cron Worker |
 | Testing | Vitest, Testing Library, Playwright (WebGL on SwiftShader), Lighthouse CI |
 | Tooling | Bun 1.4.3, Node 24.22.1 (pinned), ESLint, wrangler, GitHub Actions, gitleaks, Dependabot |
