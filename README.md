@@ -11,6 +11,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![CI](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/deploy.yml?branch=main&label=Deploy&logo=cloudflarepages&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
 [![Live site](https://img.shields.io/badge/live-shinyq.my.id-6EE7FF?logo=googlechrome&logoColor=white&style=flat-square&labelColor=0B0A20)](https://shinyq.my.id)
+[![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-6EE7FF?logo=bun&logoColor=white&style=flat-square&labelColor=0B0A20)](https://bun.sh)
 <br>
 [![Next.js 16.4.5](https://img.shields.io/badge/Next.js-16.4.5-6EE7FF?logo=nextdotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://nextjs.org)
 [![React 19.3](https://img.shields.io/badge/React-19.3-A78BFA?logo=react&logoColor=white&style=flat-square&labelColor=0B0A20)](https://react.dev)
@@ -18,7 +19,6 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![TypeScript 6](https://img.shields.io/badge/TypeScript-6.0-A78BFA?logo=typescript&logoColor=white&style=flat-square&labelColor=0B0A20)](https://www.typescriptlang.org)
 [![Tailwind CSS 4.3](https://img.shields.io/badge/Tailwind_CSS-4.3-6EE7FF?logo=tailwindcss&logoColor=white&style=flat-square&labelColor=0B0A20)](https://tailwindcss.com)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-A78BFA?logo=cloudflare&logoColor=white&style=flat-square&labelColor=0B0A20)](https://developers.cloudflare.com/pages/)
-[![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-6EE7FF?logo=bun&logoColor=white&style=flat-square&labelColor=0B0A20)](https://bun.sh)
 
 **[Enter the 3D HQ](https://shinyq.my.id/en?view=3d)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
