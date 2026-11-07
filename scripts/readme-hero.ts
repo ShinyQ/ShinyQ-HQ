@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * README media: the animated hero (boot card, intro, a boosted drive on L1, an elevator ride to
+ * README media: the animated hero (boot card, intro, a drive into the L1 Highlights Hall, an elevator ride to
  * L3 Project Roads) and one settled still per floor, captured from the static export.
  *
  *   bun run build && bun scripts/readme-hero.ts     # needs ffmpeg and gifsicle (brew install ffmpeg gifsicle)
@@ -22,6 +22,7 @@ import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { driveUntil, installVirtualClock, stepFrames, waitForQuiet } from "../e2e/vclock";
+import { stationOf } from "../src/experience/floors/lobby/hallLayout";
 
 const args = process.argv.slice(2);
 const framesOnly = args.includes("--frames-only");
@@ -54,8 +55,17 @@ type HQ = {
   __hq: {
     store: { getState(): { phase: string; floor: string; ride: { stage: string } | null; goToFloor(f: string): void } };
     rover: { drawCalls: number; speed: number; autopilot: { state: string } | null };
+    probes: { hallPremium: { state: string; wake: Record<string, number> } };
   };
 };
+
+/** The autopilot done and the rover nearly stopped (on a door pad the room opens, so any phase). */
+const parked = () => {
+  const w = window as unknown as HQ;
+  const state = w.__hq.rover.autopilot?.state;
+  return state !== "pending" && state !== "driving" && w.__hq.rover.speed < 0.3;
+};
+const hallReady = () => (window as unknown as HQ).__hq.probes.hallPremium.state === "ready";
 
 const live = () => {
   const w = window as unknown as Partial<HQ>;
@@ -92,7 +102,7 @@ async function recordUntil(page: Page, check: () => boolean, max: number, stride
 let statsBody: string | null = null;
 async function loadStats() {
   try {
-    const res = await fetch("https://kurniadi.pages.dev/api/stats");
+    const res = await fetch("https://shinyq.my.id/api/stats");
     if (res.status === 200) statsBody = await res.text();
   } catch {}
 }
@@ -139,17 +149,22 @@ async function hero(browser: Browser) {
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 3);
     await record(page, 18);
 
-    // 3. Boosted drive past the hologram (Shift + S: toward the camera from the spawn view), then a glide.
-    await page.keyboard.down("Shift");
-    await page.keyboard.down("s");
-    await record(page, 66);
-    await page.keyboard.up("s");
-    await page.keyboard.up("Shift");
-    await record(page, 15);
+    // 3. Highlights Hall: autopilot along the lead road under the gateway arch (its light curtain sweeps once), down the
+    // spine between the Impact Orbit and the Signal Spire to the Wins station, which wakes (its drawer stays hidden).
+    if (!(await page.evaluate(hallReady))) await driveUntil(page, hallReady, { maxFrames: 1200, batch: 10 });
+    const drawer = await page.addStyleTag({ content: '[data-testid="room-drawer"] { visibility: hidden !important; }' });
+    await page.evaluate((point) => {
+      (window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point, state: "pending" };
+    }, stationOf("wins").pad);
+    await recordUntil(page, parked, 3600, STRIDE * 2);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.probes.hallPremium.wake.wins > 0.99, 600);
+    await record(page, 30);
+    await page.keyboard.press("Escape");
+    await drawer.evaluate((el) => el.remove());
 
-    // 4. Elevator to L3: the drive to the car at 3x, the ride at 1x, the roll-on at 2x, then a hold.
+    // 4. Elevator to L3: the drive back to the car at 4x, the ride at 1x, the roll-on at 2x, then a hold.
     await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().goToFloor("L3"));
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 1800, STRIDE * 3);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 3600, STRIDE * 4);
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800);
     await recordUntil(
       page,
