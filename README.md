@@ -27,7 +27,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 <a href="https://shinyq.my.id">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
-    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a drive under the Highlights Hall gate between the Impact Orbit and the Signal Spire to the Wins trophy, and an elevator ride up to the three L3 Project Roads directory boards">
+    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a drive under the Highlights Hall gate past the Impact Orbit to the Wins trophy as it wakes, and an elevator ride up to the three L3 Project Roads directory boards">
   </picture>
 </a>
 
