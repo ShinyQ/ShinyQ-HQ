@@ -8,30 +8,30 @@
 
 Pilot a small Screen Rover through five floors of projects, career, writing and contact details, or read it all as a fast, accessible website.
 
-[![CI](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
-[![Deploy](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml/badge.svg)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
-[![Live site](https://img.shields.io/badge/live-shinyq.my.id-22d3ee?logo=cloudflarepages&logoColor=white)](https://shinyq.my.id)
+[![CI](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/deploy.yml?branch=main&label=Deploy&logo=cloudflarepages&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
+[![Live site](https://img.shields.io/badge/live-shinyq.my.id-6EE7FF?logo=googlechrome&logoColor=white&style=flat-square&labelColor=0B0A20)](https://shinyq.my.id)
 <br>
-[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
-[![three.js](https://img.shields.io/badge/three.js-R3F-000000?logo=threedotjs&logoColor=white)](https://threejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
-[![Bun](https://img.shields.io/badge/Bun-1.4.3-000000?logo=bun&logoColor=white)](https://bun.sh)
+[![Next.js 16.4.5](https://img.shields.io/badge/Next.js-16.4.5-6EE7FF?logo=nextdotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://nextjs.org)
+[![React 19.3](https://img.shields.io/badge/React-19.3-A78BFA?logo=react&logoColor=white&style=flat-square&labelColor=0B0A20)](https://react.dev)
+[![three.js r187](https://img.shields.io/badge/three.js-r187_%2B_R3F_9-6EE7FF?logo=threedotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://threejs.org)
+[![TypeScript 6](https://img.shields.io/badge/TypeScript-6.0_strict-A78BFA?logo=typescript&logoColor=white&style=flat-square&labelColor=0B0A20)](https://www.typescriptlang.org)
+[![Tailwind CSS 4.3](https://img.shields.io/badge/Tailwind_CSS-4.3-6EE7FF?logo=tailwindcss&logoColor=white&style=flat-square&labelColor=0B0A20)](https://tailwindcss.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-A78BFA?logo=cloudflare&logoColor=white&style=flat-square&labelColor=0B0A20)](https://pages.cloudflare.com)
+[![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-6EE7FF?logo=bun&logoColor=white&style=flat-square&labelColor=0B0A20)](https://bun.sh)
 
-**[Live site](https://shinyq.my.id)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
+**[Enter the 3D HQ](https://shinyq.my.id/en?view=3d)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
 <br>
 
 <a href="https://shinyq.my.id">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
-    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
+    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a drive under the Highlights Hall gate between the Impact Orbit and the Signal Spire to the Wins trophy, and an elevator ride up to the three L3 Project Roads directory boards">
   </picture>
 </a>
 
-<sub>Boot, intro, a boosted drive through the Lobby and an elevator ride to L3. Captured from the production build with <code>bun scripts/readme-hero.ts</code>.</sub>
+<sub>Boot, intro, a run through the Highlights Hall and an elevator ride to L3, captured from the production build (<code>bun scripts/readme-hero.ts</code>).</sub>
 
 </div>
 
