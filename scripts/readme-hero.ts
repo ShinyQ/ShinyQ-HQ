@@ -18,7 +18,7 @@
  * the Ask AI pill shows as in production.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { driveUntil, installVirtualClock, stepFrames, waitForQuiet } from "../e2e/vclock";
@@ -30,6 +30,8 @@ const encodeOnly = args.includes("--encode-only");
 const PORT = 4391;
 const BASE = `http://127.0.0.1:${PORT}`;
 const FRAMES = "test-results/readme-hero";
+/** The hero frame index for hero.jpg (the reduced-motion still), written during the capture. */
+const STILL = join(FRAMES, "still.txt");
 const OUT = "docs/readme";
 /** At or above 1024 px the HUD stays on one row; DPR 1.6 gives 1920x1080 frames to downscale. */
 const VIEWPORT = { width: 1200, height: 675 };
@@ -54,7 +56,7 @@ const SETTLE_FRAME = 600;
 type HQ = {
   __hq: {
     store: { getState(): { phase: string; floor: string; ride: { stage: string } | null; goToFloor(f: string): void } };
-    rover: { drawCalls: number; speed: number; autopilot: { state: string } | null };
+    rover: { x: number; drawCalls: number; speed: number; autopilot: { state: string } | null };
     probes: { hallPremium: { state: string; wake: Record<string, number> } };
   };
 };
@@ -156,15 +158,19 @@ async function hero(browser: Browser) {
     await page.evaluate((point) => {
       (window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point, state: "pending" };
     }, stationOf("wins").pad);
-    await recordUntil(page, parked, 3600, STRIDE * 2);
+    // The Lobby approach at 5x up to the lead road, the gate and the plaza at 2x; the still is the Impact Orbit pass.
+    await recordUntil(page, () => (window as unknown as HQ).__hq.rover.x > 26, 3600, STRIDE * 5);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.rover.x > 46, 1800, STRIDE * 2);
+    writeFileSync(STILL, String(shot - 1));
+    await recordUntil(page, parked, 1800, STRIDE * 2);
     await recordUntil(page, () => (window as unknown as HQ).__hq.probes.hallPremium.wake.wins > 0.99, 600);
-    await record(page, 30);
+    await record(page, 18);
     await page.keyboard.press("Escape");
     await drawer.evaluate((el) => (el as Element).remove());
 
-    // 4. Elevator to L3: the drive back to the car at 4x, the ride at 1x, the roll-on at 2x, then a hold.
+    // 4. Elevator to L3: the drive back to the car at 6x, the ride at 1x, the roll-on at 2x, then a hold.
     await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().goToFloor("L3"));
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 3600, STRIDE * 4);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 3600, STRIDE * 6);
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800);
     await recordUntil(
       page,
@@ -177,7 +183,7 @@ async function hero(browser: Browser) {
       2400,
       STRIDE * 2,
     );
-    await record(page, 36);
+    await record(page, 30);
   } finally {
     await context.close();
   }
@@ -257,6 +263,7 @@ if (!framesOnly && !ONLY) {
   ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
   const lossy = spawnSync("gifsicle", ["-O3", "--lossy=100", raw, "-o", join(OUT, "hero.gif")], { stdio: "inherit" });
   if (lossy.status !== 0) throw new Error("gifsicle failed");
-  ff("-i", framePath(Math.round(shot * Number(process.env.HERO_STILL ?? 0.3))), "-vf", "scale=1600:-1:flags=lanczos", "-q:v", "3", join(OUT, "hero.jpg"));
+  const still = process.env.HERO_STILL ? Math.round(shot * Number(process.env.HERO_STILL)) : existsSync(STILL) ? Number(readFileSync(STILL, "utf8")) : Math.round(shot * 0.3);
+  ff("-i", framePath(still), "-vf", "scale=1600:-1:flags=lanczos", "-q:v", "3", join(OUT, "hero.jpg"));
   for (const f of readdirSync(OUT).sort()) console.log(`${f}: ${(statSync(join(OUT, f)).size / 1024).toFixed(0)} KB`);
 }
