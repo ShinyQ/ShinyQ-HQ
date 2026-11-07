@@ -416,6 +416,7 @@ Each check lives in one place, at the cheapest level that can see the regression
 - One ride tour covers the elevator panel, arrivals and routes on every floor (`e2e/arrivals.spec.ts`); add per-floor ride checks there rather than in a new tour.
 - Before adding an e2e, search the suite for the same flow (`grep -rn "<the probe or test id>" e2e/`); fold a new assertion into the test that already reaches that state.
 - A slow budget sweep, or a second viewport or tier of the same behavior, ends its title with ` @nightly` (see [Nightly-only e2e tests](#nightly-only-e2e-tests)).
+- Size a full-tier sweep for CI, not for your machine: in an E2E shard the full tier renders about 1 fps on SwiftShader, so one settled spot (drive, camera settle, budget window) costs about 45 s against about 5 s locally. Keep each test to about half its timeout; split a longer sweep into parts with literal titles (`hallHeadroom` in `highlights.spec.ts`) and keep each spot's approach, since the follow camera faces the way the rover came.
 
 ### Nightly-only e2e tests
 
@@ -432,7 +433,7 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 | `library-labels`: L4 timeline labels, desktop and phone | 108 + 72 | `tests/unit/library-label-sweep.test.ts`: the same poses and checks without a renderer, on every PR. |
 | `gpu`: boot warms every floor (full tier) | 288 | `e2e/perf/floors.spec.ts` (programs per floor against the baseline) when the render path changes. |
 | `daynight`: day costs the same programs and calls as night on L1 | 120 | The day and night behavior tests in `daynight.spec.ts`; the L1 perf gate. |
-| `highlights`: L1 headroom under the floor budget (full) | 132 | The L1 perf gate on both tiers; the reduced-motion station and gate checks in `highlights.spec.ts`. |
+| `highlights`: L1 headroom under the floor budget (full), four parts of three spots (plaza to gate, north stations, south stations, contact and centrepieces) | 63 + 95 + 95 + 95 | The L1 perf gate on both tiers; the reduced-motion station and gate checks in `highlights.spec.ts`. |
 | `memory`: 10 Lobby to Roof round trips (lite) | 162 | `e2e/perf/memory-full.spec.ts` (the same round trips on the full tier); the B1 round trips and Page View toggles stay. |
 | `labs-paths`: arrival (1440x900 full) | 54.7 | The phone arrival; the desktop full tier through the reactor drive. |
 
