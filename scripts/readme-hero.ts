@@ -160,7 +160,7 @@ async function hero(browser: Browser) {
     await recordUntil(page, () => (window as unknown as HQ).__hq.probes.hallPremium.wake.wins > 0.99, 600);
     await record(page, 30);
     await page.keyboard.press("Escape");
-    await drawer.evaluate((el) => el.remove());
+    await drawer.evaluate((el) => (el as Element).remove());
 
     // 4. Elevator to L3: the drive back to the car at 4x, the ride at 1x, the roll-on at 2x, then a hold.
     await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().goToFloor("L3"));
