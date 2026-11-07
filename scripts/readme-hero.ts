@@ -36,7 +36,7 @@ const OUT = "docs/readme";
 /** At or above 1024 px the HUD stays on one row; DPR 1.6 gives 1920x1080 frames to downscale. */
 const VIEWPORT = { width: 1200, height: 675 };
 const DPR = 1.6;
-/** Captured at 20 fps (the preview MP4); the GIF keeps 10 fps, undithered, to stay under 6 MB. */
+/** Captured at 20 fps (the preview MP4); the GIF keeps 10 fps, 96 colours undithered, to stay under 6 MB. */
 const FPS = 20;
 const GIF_FPS = 10;
 const STRIDE = 60 / FPS;
@@ -260,7 +260,7 @@ if (!framesOnly && !ONLY) {
   const input = ["-framerate", String(FPS), "-i", join(FRAMES, "%04d.png")];
   ff(...input, "-vf", "scale=1280:-2:flags=lanczos", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-preset", "slow", "-movflags", "+faststart", join(FRAMES, "hero.mp4"));
   const raw = join(FRAMES, "hero-raw.gif");
-  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
+  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
   const lossy = spawnSync("gifsicle", ["-O3", "--lossy=100", raw, "-o", join(OUT, "hero.gif")], { stdio: "inherit" });
   if (lossy.status !== 0) throw new Error("gifsicle failed");
   const still = process.env.HERO_STILL ? Math.round(shot * Number(process.env.HERO_STILL)) : existsSync(STILL) ? Number(readFileSync(STILL, "utf8")) : Math.round(shot * 0.3);
