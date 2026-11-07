@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * README media: the animated hero (boot card, intro, a boosted drive on L1, an elevator ride to
+ * README media: the animated hero (boot card, intro, a drive into the L1 Highlights Hall, an elevator ride to
  * L3 Project Roads) and one settled still per floor, captured from the static export.
  *
  *   bun run build && bun scripts/readme-hero.ts     # needs ffmpeg and gifsicle (brew install ffmpeg gifsicle)
@@ -18,10 +18,11 @@
  * the Ask AI pill shows as in production.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { driveUntil, installVirtualClock, stepFrames, waitForQuiet } from "../e2e/vclock";
+import { stationOf } from "../src/experience/floors/lobby/hallLayout";
 
 const args = process.argv.slice(2);
 const framesOnly = args.includes("--frames-only");
@@ -29,11 +30,13 @@ const encodeOnly = args.includes("--encode-only");
 const PORT = 4391;
 const BASE = `http://127.0.0.1:${PORT}`;
 const FRAMES = "test-results/readme-hero";
+/** The hero frame index for hero.jpg (the reduced-motion still), written during the capture. */
+const STILL = join(FRAMES, "still.txt");
 const OUT = "docs/readme";
 /** At or above 1024 px the HUD stays on one row; DPR 1.6 gives 1920x1080 frames to downscale. */
 const VIEWPORT = { width: 1200, height: 675 };
 const DPR = 1.6;
-/** Captured at 20 fps (the preview MP4); the GIF keeps 10 fps, undithered, to stay under 6 MB. */
+/** Captured at 20 fps (the preview MP4); the GIF keeps 10 fps, 96 colours undithered, to stay under 6 MB. */
 const FPS = 20;
 const GIF_FPS = 10;
 const STRIDE = 60 / FPS;
@@ -53,9 +56,18 @@ const SETTLE_FRAME = 600;
 type HQ = {
   __hq: {
     store: { getState(): { phase: string; floor: string; ride: { stage: string } | null; goToFloor(f: string): void } };
-    rover: { drawCalls: number; speed: number; autopilot: { state: string } | null };
+    rover: { x: number; drawCalls: number; speed: number; autopilot: { state: string } | null };
+    probes: { hallPremium: { state: string; wake: Record<string, number> } };
   };
 };
+
+/** The autopilot done and the rover nearly stopped (on a door pad the room opens, so any phase). */
+const parked = () => {
+  const w = window as unknown as HQ;
+  const state = w.__hq.rover.autopilot?.state;
+  return state !== "pending" && state !== "driving" && w.__hq.rover.speed < 0.3;
+};
+const hallReady = () => (window as unknown as HQ).__hq.probes.hallPremium.state === "ready";
 
 const live = () => {
   const w = window as unknown as Partial<HQ>;
@@ -92,7 +104,7 @@ async function recordUntil(page: Page, check: () => boolean, max: number, stride
 let statsBody: string | null = null;
 async function loadStats() {
   try {
-    const res = await fetch("https://kurniadi.pages.dev/api/stats");
+    const res = await fetch("https://shinyq.my.id/api/stats");
     if (res.status === 200) statsBody = await res.text();
   } catch {}
 }
@@ -139,18 +151,27 @@ async function hero(browser: Browser) {
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 3);
     await record(page, 18);
 
-    // 3. Boosted drive past the hologram (Shift + S: toward the camera from the spawn view), then a glide.
-    await page.keyboard.down("Shift");
-    await page.keyboard.down("s");
-    await record(page, 66);
-    await page.keyboard.up("s");
-    await page.keyboard.up("Shift");
-    await record(page, 15);
+    // 3. Highlights Hall: autopilot along the lead road under the gateway arch (its light curtain sweeps once), down the
+    // spine between the Impact Orbit and the Signal Spire to the Wins station, which wakes (its drawer stays hidden).
+    if (!(await page.evaluate(hallReady))) await driveUntil(page, hallReady, { maxFrames: 1200, batch: 10 });
+    const drawer = await page.addStyleTag({ content: '[data-testid="room-drawer"] { visibility: hidden !important; }' });
+    await page.evaluate((point) => {
+      (window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point, state: "pending" };
+    }, stationOf("wins").pad);
+    // The Lobby approach at 5x up to the lead road, the gate and the plaza at 2x; the still is the Impact Orbit pass.
+    await recordUntil(page, () => (window as unknown as HQ).__hq.rover.x > 26, 3600, STRIDE * 5);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.rover.x > 46, 1800, STRIDE * 2);
+    writeFileSync(STILL, String(shot - 1));
+    await recordUntil(page, parked, 1800, STRIDE * 2);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.probes.hallPremium.wake.wins > 0.99, 600);
+    await record(page, 12);
+    await page.keyboard.press("Escape");
+    await drawer.evaluate((el) => (el as Element).remove());
 
-    // 4. Elevator to L3: the drive to the car at 3x, the ride at 1x, the roll-on at 2x, then a hold.
+    // 4. Elevator to L3: the drive back to the car at 6x, the ride at about 1.7x, the roll-on at 3x, then a hold.
     await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().goToFloor("L3"));
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 1800, STRIDE * 3);
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 3600, STRIDE * 6);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800, 5);
     await recordUntil(
       page,
       () => {
@@ -160,9 +181,9 @@ async function hero(browser: Browser) {
         return s.phase === "explore" && !s.ride && state !== "pending" && state !== "driving" && w.__hq.rover.speed < 0.3;
       },
       2400,
-      STRIDE * 2,
+      STRIDE * 3,
     );
-    await record(page, 36);
+    await record(page, 18);
   } finally {
     await context.close();
   }
@@ -239,9 +260,10 @@ if (!framesOnly && !ONLY) {
   const input = ["-framerate", String(FPS), "-i", join(FRAMES, "%04d.png")];
   ff(...input, "-vf", "scale=1280:-2:flags=lanczos", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-preset", "slow", "-movflags", "+faststart", join(FRAMES, "hero.mp4"));
   const raw = join(FRAMES, "hero-raw.gif");
-  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
+  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
   const lossy = spawnSync("gifsicle", ["-O3", "--lossy=100", raw, "-o", join(OUT, "hero.gif")], { stdio: "inherit" });
   if (lossy.status !== 0) throw new Error("gifsicle failed");
-  ff("-i", framePath(Math.round(shot * Number(process.env.HERO_STILL ?? 0.3))), "-vf", "scale=1600:-1:flags=lanczos", "-q:v", "3", join(OUT, "hero.jpg"));
+  const still = process.env.HERO_STILL ? Math.round(shot * Number(process.env.HERO_STILL)) : existsSync(STILL) ? Number(readFileSync(STILL, "utf8")) : Math.round(shot * 0.3);
+  ff("-i", framePath(still), "-vf", "scale=1600:-1:flags=lanczos", "-q:v", "3", join(OUT, "hero.jpg"));
   for (const f of readdirSync(OUT).sort()) console.log(`${f}: ${(statSync(join(OUT, f)).size / 1024).toFixed(0)} KB`);
 }

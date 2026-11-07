@@ -8,30 +8,30 @@
 
 Pilot a small Screen Rover through five floors of projects, career, writing and contact details, or read it all as a fast, accessible website.
 
-[![CI](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
-[![Deploy](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml/badge.svg)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
-[![Live site](https://img.shields.io/badge/live-shinyq.my.id-22d3ee?logo=cloudflarepages&logoColor=white)](https://shinyq.my.id)
+[![CI](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/ci.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/ShinyQ/ShinyQ-HQ/deploy.yml?branch=main&label=Deploy&logo=cloudflarepages&logoColor=white&style=flat-square&labelColor=0B0A20)](https://github.com/ShinyQ/ShinyQ-HQ/actions/workflows/deploy.yml)
+[![Live site](https://img.shields.io/badge/live-shinyq.my.id-6EE7FF?logo=googlechrome&logoColor=white&style=flat-square&labelColor=0B0A20)](https://shinyq.my.id)
+[![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-6EE7FF?logo=bun&logoColor=white&style=flat-square&labelColor=0B0A20)](https://bun.sh)
 <br>
-[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
-[![three.js](https://img.shields.io/badge/three.js-R3F-000000?logo=threedotjs&logoColor=white)](https://threejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
-[![Bun](https://img.shields.io/badge/Bun-1.4.3-000000?logo=bun&logoColor=white)](https://bun.sh)
+[![Next.js 16.4.5](https://img.shields.io/badge/Next.js-16.4.5-6EE7FF?logo=nextdotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://nextjs.org)
+[![React 19.3](https://img.shields.io/badge/React-19.3-A78BFA?logo=react&logoColor=white&style=flat-square&labelColor=0B0A20)](https://react.dev)
+[![three.js r187](https://img.shields.io/badge/three.js-r187-6EE7FF?logo=threedotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://threejs.org)
+[![TypeScript 6](https://img.shields.io/badge/TypeScript-6.0-A78BFA?logo=typescript&logoColor=white&style=flat-square&labelColor=0B0A20)](https://www.typescriptlang.org)
+[![Tailwind CSS 4.3](https://img.shields.io/badge/Tailwind_CSS-4.3-6EE7FF?logo=tailwindcss&logoColor=white&style=flat-square&labelColor=0B0A20)](https://tailwindcss.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-A78BFA?logo=cloudflare&logoColor=white&style=flat-square&labelColor=0B0A20)](https://developers.cloudflare.com/pages/)
 
-**[Live site](https://shinyq.my.id)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
+**[Enter the 3D HQ](https://shinyq.my.id/en?view=3d)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
 <br>
 
 <a href="https://shinyq.my.id">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
-    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
+    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a drive under the Highlights Hall gate past the Impact Orbit to the Wins trophy as it wakes, and an elevator ride up to the three L3 Project Roads directory boards">
   </picture>
 </a>
 
-<sub>Boot, intro, a boosted drive through the Lobby and an elevator ride to L3. Captured from the production build with <code>bun scripts/readme-hero.ts</code>.</sub>
+<sub>Boot, intro, a run through the Highlights Hall and an elevator ride to L3, captured from the production build (<code>bun scripts/readme-hero.ts</code>).</sub>
 
 </div>
 
@@ -49,22 +49,23 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 ## Highlights
 
 - **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator, five themed floors and a secret B1 Engine Room that opens once all five are visited.
+- **Highlights Hall**: one gate off the Lobby into a neon gallery of seven station exhibits around two light centrepieces, the Impact Orbit and the Signal Spire.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Day and night**: a 4 minute twilight and neon night cycle from clock time, with a sun and moon that rise and set.
-- **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles, plus the Rover menu (`>_`) with shortcuts to the best rooms.
-- **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and this site, in Rover's own voice, on Workers AI (Gemma 4, then Mistral) with Groq as the backup and a knowledge pack in Workers KV, Turnstile, rate limits and output checks.
-- **Live Agent Office**: an L1 wing where ten Rovers mirror the owner's AI coding agents (Copilot, Claude Code, Codex) live, with helper drones, a ship-it pipeline tower and a day replay; also a card on the Classic home.
-- **Study guides**: certification study guides read in the site (a pdf.js reader over byte ranges from a private R2 bucket), from the Writing shelf, the certification dialogs and the L4 Study Vault.
+- **Rover's onboarding**: a handheld-RPG text box intro, "!" hint bubbles and the Rover menu (`>_`) with shortcuts to the best rooms.
+- **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A in Rover's voice on Workers AI (Gemma 4, then Mistral, Groq as the backup) over a knowledge pack in Workers KV, behind Turnstile, rate limits and output checks.
+- **Live Agent Office**: an L1 wing where ten Rovers mirror the owner's AI coding agents (Copilot, Claude Code, Codex) live, with a ship-it pipeline tower and a day replay.
+- **Study guides**: certification study guides in a pdf.js reader over byte ranges from a private R2 bucket.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
-- **Public visit stats**: the site's own visit count (live today, an hourly rollup by a Cron Worker), shown as a hologram globe in the Lobby.
-- **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
-- **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR that touches 3D code, on `main` and nightly.
+- **Public visit stats**: the site's own visit count (live today, an hourly Cron Worker rollup) on a hologram globe in the Lobby.
+- **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, Atom feeds per locale, works without JavaScript.
+- **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR that touches 3D code.
 
 ## The tower
 
 | | Floor | Route | What is there |
 |---|---|---|---|
-| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://shinyq.my.id/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk, the Visitor Observatory and the Agent Office. Behind it, the Highlights Hall. |
+| <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://shinyq.my.id/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk, the Visitor Observatory and the Agent Office. Through one gate, the Highlights Hall: seven neon exhibits, the Impact Orbit and the Signal Spire. |
 | <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://shinyq.my.id/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
 | <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://shinyq.my.id/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
 | <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://shinyq.my.id/en/library) | Headline wall, reader track shelves (one bay per theme, its best post face-out first), research, models and talks desks, the Topic Constellation and the Study Vault of certification study guides. |
@@ -90,7 +91,7 @@ flowchart TB
 
   subgraph databox["Storage and analytics"]
     kv[("KV<br/>knowledge pack, answer cache,<br/>stats snapshot")]
-      ae[("Analytics Engine<br/>ask, perf, visit events")]
+    ae[("Analytics Engine<br/>ask, perf, visit events")]
     wa["Web Analytics"]
   end
 
@@ -120,42 +121,37 @@ flowchart TB
 ```
 
 - **Content is data**: `content/site-content.json` (zod-validated, every string `{ en, id }`) generates pages, rooms, pods and missions.
-- **Static first**: `output: "export"`, no server runtime. The 3D tower is a lazy client chunk portaled over the HTML page, which stays the SEO and no-WebGL tier.
-- **One store, one intent bus**: input sources emit intents, a Director drives the elevator, rover and store each frame; the HUD talks to the scene only through the store.
-- **AI behind a pipeline**: kill switch, Turnstile, rate limits, PII scrub, retrieval from a knowledge pack in Workers KV (versioned pointer, bundled fallback), model call, output checks, KV cache.
-- **Agent Office**: `office-relay` hooks post signed beats, GitHub webhooks add runs and merges; the `hq-office` Durable Object keeps the live snapshot and an 8-day log, reached only through the Pages service binding.
-- **Anonymous stats**: beacons write to Analytics Engine; a Cron Worker rolls up finalized UTC days into one KV snapshot.
+- **Static first**: `output: "export"`, no server runtime; the 3D tower is a lazy client chunk over the HTML page, which stays the SEO and no-WebGL tier.
+- **One store, one intent bus**: inputs emit intents, a Director drives the elevator, rover and store each frame; the HUD reaches the scene only through the store.
+- **AI behind a pipeline**: kill switch, Turnstile, rate limits, PII scrub, retrieval from the KV knowledge pack, model call, output checks, cache.
+- **Agent Office and stats**: signed relay beats and GitHub webhooks feed the `hq-office` Durable Object (live snapshot, 8-day log); visit beacons roll up hourly into one KV snapshot.
 
 ## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router, static export), React 19, TypeScript strict |
-| 3D | three.js, React Three Fiber, drei, postprocessing, troika text |
+| Framework | Next.js 16.4 (App Router, static export), React 19.3, TypeScript 6 strict |
+| 3D | three.js r187, React Three Fiber 9, drei 10, postprocessing, troika text |
 | State and i18n | zustand, next-intl, zod, MDX (next-mdx-remote) |
-| Styling | Tailwind CSS 4, Neon Grid design tokens, self-hosted subset fonts |
+| Styling | Tailwind CSS 4.3, Neon Grid design tokens, self-hosted subset fonts |
 | Edge and AI | Cloudflare Pages, Pages Functions, Workers AI, AI Gateway, Groq, KV, R2, Durable Objects, Analytics Engine, Turnstile, Cron Worker |
 | Testing | Vitest, Testing Library, Playwright (WebGL on SwiftShader), Lighthouse CI |
 | Tooling | Bun 1.4.3, Node 24.22.1 (pinned), ESLint, wrangler, GitHub Actions, gitleaks, Dependabot |
 
 ## Quick start
 
-Prerequisites: [Bun](https://bun.sh) 1.4.3 (`packageManager` in `package.json`), Node 24.22.1 (`.nvmrc`) and Chromium for the e2e tests.
+Needs [Bun](https://bun.sh) 1.4.3 (`packageManager` in `package.json`), Node 24.22.1 (`.nvmrc`) and Chromium for the e2e tests.
 
 ```bash
-bun install
-bunx playwright install chromium   # needed for the e2e tests
-bun run dev                        # http://localhost:3000/en
+bun install && bunx playwright install chromium
+bun run dev                         # http://localhost:3000/en
+bun run build && bun run serve      # static export to out/, served like Cloudflare Pages at http://127.0.0.1:4173/en
+bun run verify:quick                # typecheck, lint, unit tests, build and social cards: the pre-push check
+bun run e2e:changed                 # only the Playwright specs your changed paths affect (--dry prints the plan)
 ```
 
-Build and serve the static export like Cloudflare Pages does:
-
-```bash
-bun run build                      # static export to out/
-bun run serve                      # http://127.0.0.1:4173/en
-```
-
-### Scripts
+<details>
+<summary><b>All scripts</b></summary>
 
 | Script | What it does |
 |---|---|
@@ -167,12 +163,6 @@ bun run serve                      # http://127.0.0.1:4173/en
 | `bun run test` | Vitest unit, content and safety tests |
 | `bun run verify:quick` | Typecheck, lint, unit tests, build and social-card check: the pre-push check |
 | `bun run e2e:changed` | Playwright specs that cover your changed paths (`--dry` prints the plan) |
-
-<details>
-<summary><b>All scripts</b></summary>
-
-| Script | What it does |
-|---|---|
 | `bun run build:web` | Same as `build`, kept as an alias |
 | `bun run test:watch` | Vitest in watch mode |
 | `bun run bench` | Vitest benches (`tests/bench/`): `findPath` on the real floor layouts and palette typing against the pre-round-5 code; numbers for PR bodies, never a CI gate |
@@ -222,34 +212,24 @@ Section anchors, filters and deep links per route: [docs/features.md](docs/featu
 ## Project structure
 
 ```text
-content/         dataset, blog MDX, Ask knowledge and suggestions, perspectives, study guides, product allowlist, generated facts
-messages/        UI strings (en, id)
-functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}, /api/office
-workers/stats/   hq-stats Cron Worker: public visit stats rollup every hour into KV, live visit count
-workers/office/  hq-office Worker and Durable Object: the Agent Office state and 8-day log
-tools/           office-relay: the local agent hooks and installer for the Agent Office
-src/
-  app/           routes ([locale] pages, "/" redirect, OG cards, 404)
-  components/    Classic site UI, modals, CV and paper viewers
-  content/       schema, accessors, selectors, room views, forbidden patterns lint
-  experience/    3D tower: scene, floors, rover, camera, input, nav, missions
-  hud/           HTML HUD over the canvas: drawer, dialog, Ask dock, pickers
-  ask/           Ask client, protocol, knowledge pack
-  lib/ store/ i18n/
-scripts/         build steps, static server, e2e planning, renderers, evals, provisioning
-tests/           Vitest unit, content, HUD and Ask tests
-e2e/             Playwright suites, budgets and the perf lane
-docs/            features, content guide, design specs, plans, deploy, runbooks
+content/     dataset, blog MDX, Ask knowledge, perspectives, study guides, product allowlist, generated facts
+messages/    UI strings (en, id)
+src/         app routes, Classic UI, content schema and room views, 3D tower (experience/), HUD, Ask client, lib, store
+functions/   Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}, /api/office
+workers/     hq-stats Cron Worker (visit stats rollup), hq-office Worker and Durable Object (Agent Office)
+tools/       office-relay: local agent hooks and installer for the Agent Office
+scripts/     build steps, static server, e2e planning, renderers, evals, provisioning
+tests/ e2e/  Vitest unit, content, HUD and Ask tests; Playwright suites, budgets and the perf lane
+docs/        features, content guide, design specs, plans, deploy, runbooks, README media
 ```
 
 The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/folder-layout.md).
 
 ## Testing and CI
 
-- **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
-- **CI** (`ci.yml`): check and build in parallel; on a PR, smart CI runs only the Playwright specs, 3D perf tests and Lighthouse URLs the changed paths affect; `main` runs the complement of the merged PR's green run, the nightly everything (6 e2e and 4 perf shards). `main` accepts changes only through PRs with green checks.
-- **Scheduled**: a full CI run, Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
-- **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export script policy check, the deploy smoke check and e2e; gitleaks, a forbidden patterns lint over the content and SHA-pinned actions.
+- **Smart CI** (`ci.yml`): a PR runs only the Playwright specs, 3D perf tests and Lighthouse URLs its changed paths affect; `main` runs the complement of the merged PR's green run, the nightly everything (6 e2e and 4 perf shards). `main` takes changes only through PRs with green checks.
+- **Scheduled**: nightly full CI, Ask evals against the real models, timeline trend and screenshots; weekly live facts and content-gap reports; an hourly uptime check.
+- **Security**: a per-page script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked at build, deploy and in e2e; gitleaks, a forbidden patterns lint over the content and SHA-pinned actions.
 
 | Gate | Budget |
 |---|---|
@@ -267,7 +247,7 @@ Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/perf
 ## Deploy
 
 Production is the Cloudflare Pages project `kurniadi` at [shinyq.my.id](https://shinyq.my.id) (`kurniadi.pages.dev` redirects to it).
-`deploy.yml` runs on every merge to `main` (at once if the PR was green on the same tree, else after `main` CI), on dispatch and on the weekly facts merge: the `hq-office` Worker, `out/` plus `functions/`, a smoke check, then the `hq-stats` Worker. A red `main` CI rolls production back (`rollback.yml`).
+`deploy.yml` runs on every merge to `main` (at once if the PR was green on the same tree, else after `main` CI), on dispatch and on the weekly facts merge: `hq-office`, `out/` plus `functions/`, a smoke check, then `hq-stats`. A red `main` CI rolls production back (`rollback.yml`).
 
 Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/deploy.md).
 
@@ -277,17 +257,11 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 |---|---|
 | [`docs/features.md`](docs/features.md) | Every feature floor by floor, controls, Ask the HQ, CI, performance, status log |
 | [`docs/content.md`](docs/content.md) | Dataset, posts, perspectives, galleries, certifications, CV and paper PDFs, study guides, build story, public safety |
-| [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, workflow, key commands, budgets, index of the detail docs |
-| [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, Agent Office, performance, CI |
-| [`docs/decisions.md`](docs/decisions.md) | Dated log of owner decisions |
-| [Design spec](docs/superpowers/specs/2026-10-09-agent-hq-design.md) | Agent HQ design and appendices `agent-hq/01..08` |
-| [Ask the HQ design](docs/superpowers/specs/2026-10-11-ask-hq-design.md) | Models, security threat model, data freshness |
-| [`docs/superpowers/`](docs/superpowers/README.md) | Implementation plans and design specs with their status and PRs |
+| [`AGENTS.md`](AGENTS.md), [`docs/agents/`](docs/agents/) | Repo conventions for contributors and agents (hard rules, workflow, key commands, budgets) and the detail rules by area |
+| [`docs/decisions.md`](docs/decisions.md), [`docs/superpowers/`](docs/superpowers/README.md) | Dated owner decisions; implementation plans and design specs with their status and PRs |
+| [Design spec](docs/superpowers/specs/2026-10-09-agent-hq-design.md), [Ask the HQ design](docs/superpowers/specs/2026-10-11-ask-hq-design.md) | Agent HQ design and appendices `agent-hq/01..08`; Ask models, threat model, data freshness |
 | [`docs/deploy.md`](docs/deploy.md) | Deploys, secrets and variables, analytics, Cloudflare resources, Lighthouse budgets, headers |
-| [`docs/ask-runbook.md`](docs/ask-runbook.md) | Ask the HQ operations: provisioning, kill switch, cache purge, secret rotation, evals |
-| [`docs/study-guides-runbook.md`](docs/study-guides-runbook.md) | Study guides: preparing PDFs, the R2 bucket, the reader |
-| [`workers/stats/README.md`](workers/stats/README.md) | hq-stats Cron Worker runbook |
-| [`workers/office/README.md`](workers/office/README.md), [`tools/office-relay/README.md`](tools/office-relay/README.md) | Agent Office runbooks: the hq-office Worker, and the office-relay agent hooks |
+| Runbooks | [Ask the HQ](docs/ask-runbook.md), [study guides](docs/study-guides-runbook.md), [hq-stats](workers/stats/README.md), [hq-office](workers/office/README.md), [office-relay](tools/office-relay/README.md) |
 | [`docs/perf/r5-gpu.md`](docs/perf/r5-gpu.md) | GPU timing measurements on real hardware |
 
 ---
