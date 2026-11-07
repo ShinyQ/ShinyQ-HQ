@@ -164,14 +164,14 @@ async function hero(browser: Browser) {
     writeFileSync(STILL, String(shot - 1));
     await recordUntil(page, parked, 1800, STRIDE * 2);
     await recordUntil(page, () => (window as unknown as HQ).__hq.probes.hallPremium.wake.wins > 0.99, 600);
-    await record(page, 18);
+    await record(page, 12);
     await page.keyboard.press("Escape");
     await drawer.evaluate((el) => (el as Element).remove());
 
-    // 4. Elevator to L3: the drive back to the car at 6x, the ride at 1x, the roll-on at 2x, then a hold.
+    // 4. Elevator to L3: the drive back to the car at 6x, the ride at about 1.7x, the roll-on at 3x, then a hold.
     await page.evaluate(() => (window as unknown as HQ).__hq.store.getState().goToFloor("L3"));
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().ride?.stage === "moving", 3600, STRIDE * 6);
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().floor === "L3", 1800, 5);
     await recordUntil(
       page,
       () => {
@@ -181,9 +181,9 @@ async function hero(browser: Browser) {
         return s.phase === "explore" && !s.ride && state !== "pending" && state !== "driving" && w.__hq.rover.speed < 0.3;
       },
       2400,
-      STRIDE * 2,
+      STRIDE * 3,
     );
-    await record(page, 30);
+    await record(page, 18);
   } finally {
     await context.close();
   }
