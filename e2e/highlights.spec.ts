@@ -429,16 +429,21 @@ test.describe("Highlights Hall", () => {
     await interiorsReady(page);
   });
 
-  test("L1 keeps headroom under the floor budget from the plaza to the hall (full) @nightly", async ({ page }) => {
-    // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
+  /**
+   * L1 headroom on the full tier from the plaza to the hall: the spawn, the lead road, the gate spot (4 u west of the
+   * gateway arch at x 36.8, on the west wall's line since 2026-11-04, clear of its pillars), every station pad and both
+   * centrepieces, each with the interiors ready, a settled camera and a full budget window (every frame over at least
+   * 20 frames). On a CI shard the full tier renders about 1 fps, so a spot costs about 45 s: four parts of three spots
+   * each keep every test well inside its timeout (all twelve in one test ran past 6 min).
+   */
+  const hallHeadroom = async (page: Page, spots: readonly ({ x: number; z: number } | null)[]) => {
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });
-    // The gate spot stands 4 u west of the gateway arch (x 36.8, on the west wall's line since 2026-11-04), clear of its
-    // pillars; then every station pad and both centrepieces.
     await interiorsReady(page);
-    for (const spot of [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }, ...HIGHLIGHT_STATIONS.map((s) => stationOf(s).pad), ...CENTREPIECE_SPOTS.map(([, at]) => at)]) {
+    for (const spot of spots) {
       await closeDrawer(page);
-      if (spot) await driveTo(page, spot);
+      // The first drive of a hall part runs from the spawn through the gate: frame-bound, so give it room at about 1 fps.
+      if (spot) await driveTo(page, spot, 120_000);
       await closeDrawer(page);
       await waitForCameraSettle(page);
       const peaks = await expectRenderBudget(page);
@@ -446,6 +451,24 @@ test.describe("Highlights Hall", () => {
       // Headroom under the 150 scene-call budget: the Lobby is the busiest floor.
       expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
     }
+  };
+
+  test("L1 keeps headroom under the floor budget from the plaza to the gate (full) @nightly", async ({ page }) => {
+    await hallHeadroom(page, [null, { x: 20, z: 15 }, { x: gateOpening().x - 4, z: 13 }]);
+  });
+
+  test("L1 keeps headroom under the floor budget at the hall's north stations (full) @nightly", async ({ page }) => {
+    await hallHeadroom(page, HIGHLIGHT_STATIONS.slice(0, 3).map((s) => stationOf(s).pad));
+  });
+
+  test("L1 keeps headroom under the floor budget at the hall's south stations (full) @nightly", async ({ page }) => {
+    await hallHeadroom(page, HIGHLIGHT_STATIONS.slice(3, 6).map((s) => stationOf(s).pad));
+  });
+
+  test("L1 keeps headroom under the floor budget at the contact station and both centrepieces (full) @nightly", async ({ page }) => {
+    // The centrepieces have no camera zone, so the follow camera faces the way the rover came: from the contact pad, as in
+    // the one-test sweep, the views with the most scene calls.
+    await hallHeadroom(page, [...HIGHLIGHT_STATIONS.slice(6).map((s) => stationOf(s).pad), ...CENTREPIECE_SPOTS.map(([, at]) => at)]);
   });
 
   test("the About me station shows the owner's portrait in its neon frame, loaded with the hall", async ({ page }) => {
