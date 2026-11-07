@@ -17,7 +17,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![three.js r187](https://img.shields.io/badge/three.js-r187_%2B_R3F_9-6EE7FF?logo=threedotjs&logoColor=white&style=flat-square&labelColor=0B0A20)](https://threejs.org)
 [![TypeScript 6](https://img.shields.io/badge/TypeScript-6.0_strict-A78BFA?logo=typescript&logoColor=white&style=flat-square&labelColor=0B0A20)](https://www.typescriptlang.org)
 [![Tailwind CSS 4.3](https://img.shields.io/badge/Tailwind_CSS-4.3-6EE7FF?logo=tailwindcss&logoColor=white&style=flat-square&labelColor=0B0A20)](https://tailwindcss.com)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-A78BFA?logo=cloudflare&logoColor=white&style=flat-square&labelColor=0B0A20)](https://pages.cloudflare.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-A78BFA?logo=cloudflare&logoColor=white&style=flat-square&labelColor=0B0A20)](https://developers.cloudflare.com/pages/)
 [![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-6EE7FF?logo=bun&logoColor=white&style=flat-square&labelColor=0B0A20)](https://bun.sh)
 
 **[Enter the 3D HQ](https://shinyq.my.id/en?view=3d)** · **[Classic site](https://shinyq.my.id/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
