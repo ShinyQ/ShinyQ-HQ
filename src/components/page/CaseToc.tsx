@@ -13,11 +13,17 @@ function stuckTop(el: HTMLElement): number {
 
 /**
  * "On this page" links with scroll-spy (case study chapters, post headings); without IntersectionObserver they stay
- * plain anchors. `avoid` (a selector, the
- * posts' wide figures) hides the list while a matching element crosses the band it is stuck in, so a wide figure is
- * never drawn under it; focus inside the list keeps it shown (CSS).
+ * plain anchors. `avoid` hides the desktop rail while wide figures cross its sticky band; focus keeps it visible.
  */
-export function CaseToc({ items, label, avoid, children }: { items: readonly { id: string; label: string }[]; label: string; avoid?: string; children?: ReactNode }) {
+type CaseTocProps = {
+  items: readonly { id: string; label: string }[];
+  label: string;
+  countLabel: string;
+  avoid?: string;
+  children?: ReactNode;
+};
+
+export function CaseToc({ items, label, countLabel, avoid, children }: CaseTocProps) {
   const [active, setActive] = useState<string | null>(null);
   const [covered, setCovered] = useState(false);
   const nav = useRef<HTMLElement>(null);
@@ -43,11 +49,14 @@ export function CaseToc({ items, label, avoid, children }: { items: readonly { i
     const list = nav.current;
     const targets = avoid ? [...document.querySelectorAll(avoid)] : [];
     if (!list || targets.length === 0 || typeof IntersectionObserver === "undefined") return;
+    const desktop = window.matchMedia("(min-width: 80rem)");
     let observer: IntersectionObserver | null = null;
     const crossing = new Set<Element>();
     const watch = () => {
       observer?.disconnect();
       crossing.clear();
+      setCovered(false);
+      if (!desktop.matches) return;
       const top = stuckTop(list);
       const bottom = Math.max(0, window.innerHeight - top - list.offsetHeight);
       observer = new IntersectionObserver(
@@ -63,30 +72,48 @@ export function CaseToc({ items, label, avoid, children }: { items: readonly { i
       );
       for (const target of targets) observer.observe(target);
     };
-    const rewatch = () => {
-      setCovered(false);
-      watch();
-    };
+    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(watch);
     watch();
-    window.addEventListener("resize", rewatch);
+    resize?.observe(list);
+    desktop.addEventListener("change", watch);
+    window.addEventListener("resize", watch);
     return () => {
-      window.removeEventListener("resize", rewatch);
+      desktop.removeEventListener("change", watch);
+      window.removeEventListener("resize", watch);
+      resize?.disconnect();
       observer?.disconnect();
     };
-  }, [avoid]);
+  }, [avoid, ids]);
+
+  const links = (
+    <ol>
+      {items.map((item, index) => (
+        <li key={item.id}>
+          <a href={`#${item.id}`} aria-current={active === item.id ? "true" : undefined}>
+            <span className="pv-toc-number" aria-hidden="true">{index + 1}</span>
+            <span>{item.label}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  );
 
   return (
     <nav ref={nav} aria-label={label} className="pv-toc" data-covered={covered ? "" : undefined}>
-      <p className="pv-meta mb-3 px-3">{label}</p>
-      <ul>
-        {items.map((item) => (
-          <li key={item.id}>
-            <a href={`#${item.id}`} aria-current={active === item.id ? "true" : undefined}>
-              {item.label}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div className="pv-toc-wide">
+        <div className="pv-toc-head">
+          <p className="pv-meta">{label}</p>
+          <span className="pv-toc-count">{countLabel}</span>
+        </div>
+        <div className="pv-toc-list">{links}</div>
+      </div>
+      <details className="pv-toc-disclosure">
+        <summary>
+          {label}
+          <span className="pv-toc-count">{countLabel}</span>
+        </summary>
+        <div className="pv-toc-list">{links}</div>
+      </details>
       {children}
     </nav>
   );

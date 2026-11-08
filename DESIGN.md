@@ -54,6 +54,9 @@ uses (3D, HUD, dialogs) ship in `client-sheet.css` instead.
 - Links that lead on (`pv-go`) are a verb or a destination with an underline, never an arrow glued to the text.
 - Hover is one signal: a colour step or the `hq-glow` hairline glow (waived Reflex 29: the brand's cyan glow, hover,
   focus and the current item only). Focus is the instant 2px cyan outline.
+- Reading contents are the approved exception: a neutral frame, numbered rows and a localized chapter count.
+  The current row uses a restrained neutral fill, not a glow, decorative dot or edge stripe. The global focus
+  outline stays unchanged. A native collapsed disclosure replaces the desktop rail below 1280 px.
 
 ## Composition
 

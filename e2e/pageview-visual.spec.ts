@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { chooseMotion, asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
@@ -23,6 +23,58 @@ const PAGES = [
 
 test.skip(!process.env.SCREENSHOTS, "Set SCREENSHOTS=1 to capture screenshots");
 test.describe.configure({ timeout: 120_000 });
+
+const readerLabel = process.env.READER_SHOTS;
+for (const locale of ["en", "id"] as const) {
+  for (const item of [
+    { name: "benchmark", segment: "blog/ten-very-hard-benchmark-tasks-in-ten-days" },
+    { name: "case", segment: "labs/voice-ai-contact-center" },
+  ]) {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      test(`Reader review ${locale} ${item.name} ${viewport.width}`, async ({ browser }) => {
+        test.skip(!readerLabel, "Set READER_SHOTS=before or after");
+        const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+        await context.addInitScript(() => {
+          localStorage.setItem("hq:terminal-seen", "1");
+          localStorage.setItem("hq:onboarded", "done");
+        });
+        const page = await context.newPage();
+        await page.goto(`/${locale}/${item.segment}?tier=static`, { waitUntil: "networkidle" });
+        await page.evaluate(() => document.fonts.ready);
+        const dir = `screenshots/reader/${readerLabel}`;
+        const name = `${locale}-${item.name}-${viewport.width}`;
+        mkdirSync(dir, { recursive: true });
+        const metrics = await page.evaluate(() => ({
+          headings: [...document.querySelectorAll(".prose-hq > h2")].map((el) => ({ id: el.id, label: el.textContent })),
+          columns: [...document.querySelectorAll(".pv-read, article > .pv-wrap.grid > .pv-col")].map((el) => {
+            const box = el.getBoundingClientRect();
+            return { x: box.x, width: box.width };
+          }),
+          resources: performance.getEntriesByType("resource").map((entry) => {
+            const resource = entry as PerformanceResourceTiming;
+            return { url: resource.name, bytes: resource.encodedBodySize, type: resource.initiatorType };
+          }),
+          documentBytes: (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).encodedBodySize,
+        }));
+        writeFileSync(`${dir}/${name}.json`, `${JSON.stringify(metrics, null, 2)}\n`);
+        await page.screenshot({ path: `${dir}/${name}.png`, animations: "disabled" });
+        if (readerLabel === "after" && viewport.width < 1280) {
+          await page.locator(".pv-toc-disclosure > summary").click();
+          await page.screenshot({ path: `${dir}/${name}-expanded.png`, animations: "disabled" });
+        }
+        await page.locator(item.name === "case" ? "article > .pv-wrap.grid" : ".pv-post-body").evaluate((el) => {
+          window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 120, behavior: "instant" });
+        });
+        await page.screenshot({ path: `${dir}/${name}-reading.png`, animations: "disabled" });
+        await context.close();
+      });
+    }
+  }
+}
 
 for (const v of VIEWPORTS) {
   test(`Page View at ${v.width}x${v.height}`, async ({ browser }) => {
@@ -192,7 +244,7 @@ test.describe("P10 accent stripes", () => {
       await captureShot(page, dir, `case-${tag}`, { kind: "page", changes: [".pv-toc"] });
       if (v.width >= 1024) {
         await scrollToSection(page, "approach");
-        await expect(page.locator(".pv-toc a[aria-current='true']")).toHaveCount(1);
+        await expect(page.locator(".pv-toc a[aria-current='true']:visible")).toHaveCount(1);
         await captureShot(page, dir, `case-toc-${tag}`, { kind: "viewport", changes: [".pv-toc"] });
       }
 

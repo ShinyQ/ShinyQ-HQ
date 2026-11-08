@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { Analytics } from "@/components/Analytics";
+import { frontmatterUpdated, getPostSource } from "@/content/blog";
 import { getContent } from "@/content/load";
 import { LOCALES } from "@/content/schema";
 import {
@@ -129,7 +130,11 @@ describe("sitemap and robots", () => {
 
   it("dates pages from content and content stamps, and nothing else", () => {
     const post = hostedPosts[0];
-    expect(lastModified(`/blog/${post.slug}`)).toBe(post.date);
+    const found = getPostSource(post.slug, "en");
+    if (!found) throw new Error(`Missing source for ${post.slug}`);
+    const expectedModified = frontmatterUpdated(found.source);
+    const expected = expectedModified ?? post.date;
+    expect(lastModified(`/blog/${post.slug}`)).toBe(expected);
     const newestPost = [...floors.library.posts].map((p) => p.date).sort().at(-1);
     expect(lastModified("/library")).toBe(newestPost);
     expect(lastModified("/journey")).toMatch(/^\d{4}-\d{2}(-\d{2})?$/);
@@ -147,7 +152,14 @@ describe("sitemap and robots", () => {
       if (date) expect(date.slice(0, today.length) <= today, path).toBe(true);
     }
     const entry = sitemap().find((e) => e.url === `${SITE_URL}/en/blog/${post.slug}`);
-    expect(entry?.lastModified).toBe(post.date);
+    expect(entry?.lastModified).toBe(expected);
+    const json = postJsonLd(post, "en", found.locale);
+    expect(json.datePublished).toBe(post.date);
+    if (expectedModified && expectedModified > post.date) {
+      expect(json.dateModified).toBe(expectedModified);
+    } else {
+      expect(json).not.toHaveProperty("dateModified");
+    }
   });
 
   it("writes every sitemap lastmod as a full YYYY-MM-DD date and drops month-only dates (Search Console)", () => {

@@ -78,14 +78,18 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
           )}
         </header>
         <div className="pv-post-body">
-          <div className="prose-hq pv-read">{content}</div>
           {headings.length > 1 && (
             <aside className="pv-post-toc" lang={locale}>
-              <div className="sticky top-24">
-                <CaseToc items={headings} label={tcase("onThisPage")} avoid=".arch-break" />
-              </div>
+              <CaseToc
+                key={`${locale}:${slug}`}
+                items={headings}
+                label={tcase("onThisPage")}
+                countLabel={tcase("chapterCount", { count: headings.length })}
+                avoid=".arch-break"
+              />
             </aside>
           )}
+          <div className="prose-hq pv-read">{content}</div>
         </div>
         <footer className="pv-read pv-post-end" lang={locale}>
           {post.tags.length > 0 && (

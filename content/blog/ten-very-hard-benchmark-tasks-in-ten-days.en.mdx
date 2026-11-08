@@ -1,6 +1,7 @@
 ---
 title: "Ten Very Hard Benchmark Tasks in Ten Days"
 date: "2026-11-02"
+updated: "2026-11-08"
 excerpt: "First AI benchmark job: ten Indonesian tasks in ten days, half merged, most rated very hard, the top band. Over 300 ideas killed. The method, not the tasks."
 tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workflow", "case-study"]
 readingTime: "12 min"
@@ -11,6 +12,8 @@ On 24 October 2026 I started freelancing as an AI benchmark engineer. I had neve
 I build Indonesian-language tasks for Terminal-Bench, a public benchmark for AI coding agents. In each task, an agent gets a terminal, realistic Indonesian workplace files and an instruction written in Indonesian. It has to write a program that does the job. Hidden tests then grade the output, including on data the agent never saw. Frontier models from OpenAI, Google and Anthropic run every task many times, and their pass rate decides which difficulty band it lands in.
 
 I can't show you a single task. The data belongs to the client, and publishing the task would risk teaching future models the answer instead of testing the skill. So this post is about the method, not the tasks: how I checked fairness, rejected ideas early, and kept more than seventy AI sessions from stepping on each other.
+
+The workflow and numbers below describe those first ten days. The later-review section is a separate snapshot.
 
 ## Learning the job from merged work
 
@@ -38,7 +41,7 @@ A very hard task has to be fair like the third version and still beat the models
 
 ### Where the difficulty comes from
 
-I can't say what makes any one of my tasks hard; that would hand the answer to the next model. What I can share is the general shape, which held across every probe:
+I can't say what makes any one of my tasks hard; that would hand the answer to the next model. What I can share is the general shape, which held across every probe in that first sprint:
 
 - **Knowing is not doing.** Early on, I asked models questions about the language directly, with no tools. They answered almost everything correctly, yet the same models failed when asked to write a program. Explaining a rule and implementing it beyond the visible examples were different tests. The direct answers were not reliable evidence that an agent could do the task.
 - **The grader reruns on data the agent never saw.** A program that only handles the visible examples looks right and fails.
@@ -53,7 +56,7 @@ And what does not work, from the ideas I killed (categories only):
 
 ## A workspace an agent can pick up in sixty seconds
 
-AI agents did much of the research, building and checking in parallel sessions, and every new session starts with no memory. The workspace is written for that reader. An agent first reads a short entry file, which points to three more:
+AI agents did much of the research, building and checking in parallel sessions, and every new session started with no memory. The workspace was written for that reader. An agent first read a short entry file, which pointed to three more:
 
 ```text
 workspace/
@@ -69,9 +72,9 @@ workspace/
   wt-<task>/         one git worktree per task
 ```
 
-A few rules keep it useful:
+A few rules kept it useful:
 
-- **Every rule appears once, in one line, with its source.** The source is the review, the failed probe or the decision that created it. When a lesson changes a rule, the line changes; the long story goes into a spec or the archive. By day six, the original instructions file mixed the current rules with their history. I split it into this digest layer and moved the full history, verbatim, into the archive. The rulebook now holds more than a hundred one-line rules.
+- **Every rule appears once, in one line, with its source.** The source is the review, the failed probe or the decision that created it. When a lesson changes a rule, the line changes; the long story goes into a spec or the archive. By day six, the original instructions file mixed the current rules with their history. I split it into this digest layer and moved the full history, verbatim, into the archive. By publication, the rulebook held more than a hundred one-line rules.
 - **Status changes after every event**: a review, a push, a calibration result, a round opening or closing. Any agent can tell what is live without reading a transcript.
 - **No idea is ever deleted.** Every idea stays in the backlog with its verdict and the gates it failed. Before proposing anything, an agent reads all of it, so nothing is proposed twice.
 - **Ownership is written down.** Each research round owns one spec file and one prefix for its backlog rows, so parallel agents never edit the same lines. This rule came from a collision: early on, two researcher sessions from different model families both claimed the same round after the same handoff.
@@ -80,7 +83,7 @@ If this looks familiar, it is the constitution idea from [spec-driven developmen
 
 ## The funnel
 
-Every idea takes the same path, and almost all of them die on it.
+In that first sprint, every idea took the same path, and almost all of them died on it.
 
 <Architecture diagram="idea-funnel" caption="From idea to merged task. Most ideas stop at the first two checks." />
 
@@ -90,8 +93,8 @@ Every idea takes the same path, and almost all of them die on it.
 4. **Failure attribution.** Every failure is replayed as a minimal pair: change only the language feature and see whether the failure flips. A failure that survives the change is a generic coding error and does not count.
 5. **Build**, in its own git worktree.
 6. **Independent answer check.** A fresh session that never saw my answer key labels a batch of ordinary inputs. I treat every disagreement as a reason to recheck the key and the instruction, not as proof that the checker is wrong. I repeat with new writers until they converge. About 30 of the 70 subagents across my sessions did nothing but this kind of blind checking.
-7. **Local judges.** The repository's LLM-judged checks, run on my machine with three models. All three must pass every check before a push.
-8. **My instruction, my approval.** I write the instruction and approve every commit and push.
+7. **Local judges.** The repository's LLM-judged checks, run on my machine with three models. All three had to pass every check before a push.
+8. **My instruction, my approval.** I wrote the instruction and approved every commit and push.
 9. **Submit, calibrate, review.** The benchmark's own runs set the difficulty; human reviewers decide what merges.
 
 In ten days that meant twenty numbered research rounds and more than 330 ideas in the backlog. Over 300 were killed, on paper or by a probe. Ten became pull requests.
@@ -104,9 +107,9 @@ The sessions ran in the GitHub Copilot app, with the Copilot CLI for probes and 
 
 <Architecture diagram="agent-organisation" caption="One coordinator, fenced lanes, independent researchers and a human gate on everything that leaves the machine." />
 
-- **One coordinator.** A Claude session plans each round, splits it into lanes, checks every result on disk and merges findings into the docs. It reports to me; lanes report to it. The latest coordinator created 28 child sessions in about 54 hours.
-- **Lanes with fences.** A round usually has three lanes, each a child session with its own angle, its own spec file and its own backlog prefix. Lanes write only in their own section; the coordinator writes the consensus.
-- **Kickoff prompts that stand alone.** Every lane starts from one message with five parts: my request quoted word for word, the decisions already made (marked "do not reopen"), the spec sections that are the source of truth, numbered steps, and limits such as a container cap per lane and no edits to shared docs or other worktrees.
+- **One coordinator.** A Claude session planned each round, split it into lanes, checked every result on disk and merged findings into the docs. It reported to me; lanes reported to it. The latest coordinator in that period created 28 child sessions in about 54 hours.
+- **Lanes with fences.** A round usually had three lanes, each a child session with its own angle, its own spec file and its own backlog prefix. Lanes wrote only in their own section; the coordinator wrote the consensus.
+- **Kickoff prompts that stand alone.** Every lane started from one message with five parts: my request quoted word for word, the decisions already made (marked "do not reopen"), the spec sections that were the source of truth, numbered steps, and limits such as a container cap per lane and no edits to shared docs or other worktrees.
 - **Short messages.** Lead with the ask or the verdict, skip acknowledgements, and allow at most two round-trips on any disagreement before the coordinator decides or brings it to me.
 - **Decisions come to me as options.** In those 54 hours the coordinator asked me 101 questions. 83 were a pick from two to four options with one marked as recommended, and 25 were about a commit, push or pull request. My own messages were short; a lot of them just said "continue".
 - **Other model families as independent researchers.** Separate GPT, Gemini and Grok sessions proposed and attacked ideas. In one round, three agents from three families each proposed ideas alone, then red-teamed the other two agents' ideas, then converged on at most three to probe. Different families miss different things, which is the point. That round also taught me a lesson: it killed all 18 of its ideas in 34 minutes with questions asked without tools, and a later round showed that this kind of kill was not evidence.
@@ -115,12 +118,12 @@ The sessions ran in the GitHub Copilot app, with the Copilot CLI for probes and 
 
 ## Human gates
 
-AI drafted a lot. I decided everything that left the machine.
+During those first ten days, AI drafted a lot. I decided everything that left the machine.
 
-- **No commit, push or pull request without my explicit OK.** Agents stop and ask. Before a build pushed, the coordinator re-checked the result on disk and said so in its go message.
-- **I write every instruction.** I write it in my own Indonesian and paste it in. The coordinator may suggest mechanical fixes only, and the build applies my text byte for byte, checked with a checksum. The agent lists the sentences the tests depend on, so my edits do not break them.
+- **No commit, push or pull request without my explicit OK.** Agents stopped and asked. Before a build pushed, the coordinator re-checked the result on disk and said so in its go message.
+- **I wrote every instruction.** I wrote it in my own Indonesian and pasted it in. The coordinator could suggest mechanical fixes only, and the build applied my text byte for byte, checked with a checksum. The agent listed the sentences the tests depended on, so my edits would not break them.
 - **Indonesian facts need primary sources**: the official dictionary, the spelling guide and real usage, never a search summary. I ran the dictionary checks myself, and when a reading could not be verified, it was not quoted.
-- **Review findings are reproduced before any reply.** Then I fix the behaviour, rerun every check and recalibrate after any change to the tests, the answer key or the instruction. I never make a task harder in response to a correctness review; the corrected task's own result stands. Once, a review went from read to a push-ready fix in 14 minutes.
+- **Review findings were reproduced before any reply.** Then I fixed the behaviour, reran every check and recalibrated after any change to the tests, the answer key or the instruction. I never made a task harder in response to a correctness review; the corrected task's own result stood. Once, a review went from read to a push-ready fix in 14 minutes.
 - **Learn from other people's reviews too.** When another contributor's task was closed, I checked the reason against all my open tasks and prepared answers before any reviewer asked.
 
 ## Reading failures
@@ -130,24 +133,52 @@ Most of my mistakes were in reading results, not in building tasks.
 - **Separate language failures from coding failures.** Only failures that flip on the Indonesian feature are evidence; the rest are generic errors any task could produce.
 - **Count once per trial.** A failed run is one miss, however many tracebacks it prints.
 - **Recompute without the most-missed item.** If one row makes the whole score, the score is about that row.
-- **Sweep for infrastructure deaths first.** A network drop that kills a run looks exactly like a failure and makes an idea look harder. At about twenty parallel containers, 13 of 144 probe runs timed out from my own load; I now keep it near nine.
+- **Sweep for infrastructure deaths first.** A network drop that kills a run looks exactly like a failure and makes an idea look harder. At about twenty parallel containers, 13 of 144 probe runs timed out from my own load; by publication, I was keeping it near nine.
 - **Read the raw artifact, not the summary.** Bot summaries cited rows no trial missed and called a crash a design choice. Each group of failures is described by what its scripts really did, not by one blanket theory.
+
+## After the first ten days
+
+These notes come from later reviews, as of 8 November 2026, not the original ten-day window. Later work included hard-rated tasks, so the title's very-hard label does not apply to everything that followed. Some work was still open on that date. Review approval was not the same as a merge.
+
+### Verify dependencies against the evidence
+
+I learned to separate a tool producing an answer from evidence that the answer was correct. An installed dependency can return a plausible result while behaving differently from what the task requires. Familiarity with its API is not enough; the result needs an independent check.
+
+The failure description matters too. Some agents noticed an inconsistency but still delivered a program that retained the wrong behaviour. That is a failure to finish a repair, not evidence that the agent never inspected the tool. The distinction changes what I should test next.
+
+### Test the grader itself
+
+A correct answer can have more than one valid representation. A grader should accept equivalent output while enforcing the required schema, values and any stated ordering. Rejecting the correct result for the wrong reason measures the grader's assumptions, not the agent's ability.
+
+The reverse mistake is accepting a report because the same program reproduces it on another run. A consistently wrong program can agree with itself. Repeatability is useful evidence about execution, but correctness still needs an expected result that does not come from the program being graded.
+
+### Make the repair survive fresh inputs
+
+A patch that fixes the visible example is weaker than a program that handles another legitimate input. I need to check the delivered output and rerun the delivered program, using independently established expected results for both.
+
+Fresh inputs help distinguish a general repair from a workaround tied to the first environment. Reruns can expose state left behind by earlier execution, but a clean rerun alone is not proof of correctness. The question is whether the intended behaviour holds beyond the example that prompted the fix.
+
+### Keep claims within the evidence
+
+Successful checks on covered inputs do not establish that an entire input family works. I need to say what was observed, what remained untested, and what the delivered program actually did.
+
+That discipline also applies to difficulty and completion. A later task's result does not revise the first sprint's result, and an approved open contribution is still open. The stronger retrospective is not the one with the broadest claims. It is the one whose claims a reader could check, without being given the private task.
 
 ## What I would keep and change
 
-I would keep the digest layer, the kill-early habit, real agentic probes, the independent answer check and the human gates.
+Looking back at the first ten days, I would keep the digest layer, the kill-early habit, real agentic probes, the independent answer check and the human gates.
 
-Some things I would change:
+The changes I had identified at publication were:
 
-- **Fairness first, difficulty second.** A stricter fairness rule arrived on day seven, and I re-audited every task and idea against it. Ideas that looked very hard were often hard only because something was hidden. The fairness check now comes before the first probe.
-- **Make the blind checkers truly independent.** My answer-key checkers never saw the key, but they came from the same model family as the agent that wrote it. They can share its blind spots. The next version mixes families.
-- **Budget the probes.** Nine agent runs per idea, plus reruns, add up, and they are noisy. I now run the cheap plain-words variant first.
+- **Fairness first, difficulty second.** A stricter fairness rule arrived on day seven, and I re-audited every task and idea against it. Ideas that looked very hard were often hard only because something was hidden. The fairness check then came before the first probe.
+- **Make the blind checkers truly independent.** My answer-key checkers never saw the key, but they came from the same model family as the agent that wrote it. They can share its blind spots. For the next version, I wanted to mix families.
+- **Budget the probes.** Nine agent runs per idea, plus reruns, add up, and they are noisy. By publication, I was running the cheap plain-words variant first.
 - **Plan for bad nights.** One evening, network drops caused 59 session errors across five sessions, and I typed "continue" 64 times by hand. Sessions also lost context when their history was compacted.
-- **Keep the rulebook honest.** The digest grew back: the normalized rulebook is now larger than the file it replaced, and I relaxed gates three times mid-flight. Each relaxation was a recorded decision, but the file needs pruning, not only appending.
-- **Seed the automations.** Two empty runs suggested the open brief was the problem. The next version starts from concrete seeds.
-- **An approval is not a merge.** Half of my tasks are still waiting for review, and a review can still close them.
+- **Keep the rulebook honest.** The digest grew back: by publication, the normalized rulebook was larger than the file it replaced, and I relaxed gates three times mid-flight. Each relaxation was a recorded decision, but the file needed pruning, not only appending.
+- **Seed the automations.** Two empty runs suggested the open brief was the problem. For the next version, I wanted to start from concrete seeds.
+- **An approval is not a merge.** At publication, half of the first ten submissions were still waiting for review, and a review could still close them.
 
-I also have no baseline without agents, so I can't say how much faster they made me. What I can say is that ten tasks in ten days, from someone doing this for the first time, depended on writing the rules down and making the agents read them.
+I also had no baseline without agents for those ten days, so I can't say how much faster they made me. What I can say is that ten tasks in ten days, from someone doing this for the first time, depended on writing the rules down and making the agents read them.
 
 ## A checklist for building evaluations
 
@@ -157,7 +188,8 @@ I also have no baseline without agents, so I can't say how much faster they made
 4. Probe with real tools, several model families and several runs.
 5. Attribute every failure with a minimal pair.
 6. Have a fresh agent label data without your answer key.
-7. Give parallel agents fenced ownership: one file, one prefix.
-8. Keep a human gate on everything that leaves the machine.
-9. Read the raw artifacts, and sweep infrastructure deaths before you count.
-10. Publish the method, never the task.
+7. Check the grader and the dependency against independent expected results.
+8. Give parallel agents fenced ownership: one file, one prefix.
+9. Keep a human gate on everything that leaves the machine.
+10. Read the raw artifacts, and sweep infrastructure deaths before you count.
+11. Publish the method, never the task.

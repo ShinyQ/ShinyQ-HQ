@@ -878,6 +878,7 @@
   },
   "case": {
     "onThisPage": "On this page",
+    "chapterCount": "{count, plural, one {# chapter} other {# chapters}}",
     "more": "More {wing} projects",
     "breadcrumb": "Breadcrumb",
     "kind": "Project type",
