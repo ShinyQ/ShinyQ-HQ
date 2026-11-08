@@ -106,6 +106,11 @@ begging.
 - Keep strong existing passages rather than rewriting every line.
 - Preserve facts, measurement caveats, negative results, team credit, official names, citations, code, URLs and identifiers.
 - Never use promotional hype or AI-detector scores as editorial evidence.
+- Later benchmark evidence is explicitly dated, generalized and separated from the original ten-day
+  population. Preserve the original publication date and historical results; significant revisions use
+  each translation's frontmatter `updated`. Never expose a reconstructable private task mechanism,
+  identifying combination of details, individual result or reviewer quotation, or describe approval
+  on an open contribution as a merge. Later hard-rated work is not all very hard.
 
 For an English-only editorial pass, leave Indonesian sources and their rendered
 fallbacks unchanged. Review the full source inventory, not just changed files.

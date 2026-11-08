@@ -104,6 +104,17 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
     column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped.
 - Floor and wing colors only mark wayfinding (the active nav rule); never fill surfaces with them.
 
+### Reading contents
+
+Blog articles and case studies share a neutral numbered contents panel with a localized chapter count.
+From 1280 px it is sticky in the right gutter, with a bounded list that scrolls when needed. Below that
+breakpoint, a collapsed native contents disclosure appears before the body and works without JavaScript.
+The current row uses a restrained neutral fill, not a glowing outline. Existing fragment IDs, keyboard
+focus, centred blog measure and case-study content columns remain. Wide-diagram avoidance applies only
+to the desktop rail; focus keeps it visible, and panel or viewport resizing recalculates its occupied band.
+Blog contents still appear only when there is more than one h2. The closing availability section is
+never a contents target.
+
 ### Case study (`/labs/<slug>`)
 
 - The header opens with the metric strip (`MetricStrip`, `src/components/MetricStrip.tsx`, server-rendered, no client JS) under the tagline: up to 3 headline results (`headlineResults`), a big value (`pv-num`) and its label, as a list named "Key results" (`labs.keyResults`). 3 across from `md`, stacked rows below.
@@ -151,10 +162,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   the `<time>`, the reading time (`blog.readingTime`, 220 words a minute, `readingMinutes`) and the languages. The body
   (`.prose-hq`) is the ink token at 16 px on 28 px lines with a line of space between paragraphs, h2 in the display
   face, code in a framed `paper-2` well. The Neon Grid behind a post stops at 520 px, before the text.
-  - "On this page" (`CaseToc`, `case.onThisPage`) sits in the right gutter from 1280 px, listing the h2s
-    (`remarkPostHeadings` gives each a slug id at build), the current one lit. With `avoid=".arch-break"` it hides
-    while a wide architecture figure crosses its band, so figures keep their full breakout width; focus inside keeps
-    it. Without JavaScript it is plain anchor links.
+  - "On this page" (`CaseToc`, `case.onThisPage`) uses the shared [reading contents](#reading-contents),
+    listing the h2s (`remarkPostHeadings` gives each a slug id at build) with `case.chapterCount` resolved
+    on the server. With `avoid=".arch-break"` the desktop rail hides while a wide architecture figure
+    crosses its band, so figures keep their full breakout width; focus inside keeps it.
   - A 2 px reading progress line in the Writing floor colour (`--color-white`) runs along the top, driven by the
     article's own view timeline (CSS only, `animation-range: contain`); browsers without scroll timelines and reduced
     motion show none.

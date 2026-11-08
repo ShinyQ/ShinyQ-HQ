@@ -12,7 +12,7 @@ const items = [
 function Page() {
   return (
     <>
-      <CaseToc items={items} label="On this page" />
+      <CaseToc items={items} label="On this page" countLabel="2 chapters" />
       <section id="problem" />
       <section id="approach" />
     </>
@@ -41,15 +41,25 @@ describe("CaseToc", () => {
     render(<Page />);
     expect(observe).toHaveBeenCalledTimes(2);
     act(() => notify([{ target: document.getElementById("approach")!, isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
-    expect(screen.getByRole("link", { name: "What I did" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("link", { name: "Problem" })).not.toHaveAttribute("aria-current");
+    const nav = screen.getByRole("navigation", { name: "On this page" });
+    const current = nav.querySelectorAll('a[href="#approach"]');
+    const other = nav.querySelectorAll('a[href="#problem"]');
+    expect(current).toHaveLength(2);
+    expect(other).toHaveLength(2);
+    for (const link of current) expect(link).toHaveAttribute("aria-current", "true");
+    for (const link of other) expect(link).not.toHaveAttribute("aria-current");
+    expect(nav.querySelector('.pv-toc-wide a[href="#approach"]')).toHaveAccessibleName("What I did");
   });
 
   it("renders plain links without IntersectionObserver", () => {
     vi.stubGlobal("IntersectionObserver", undefined);
     render(<Page />);
-    expect(screen.getByRole("navigation", { name: "On this page" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link")).toHaveLength(2);
-    expect(screen.getByRole("link", { name: "Problem" })).toHaveAttribute("href", "#problem");
+    const nav = screen.getByRole("navigation", { name: "On this page" });
+    const links = nav.querySelectorAll<HTMLAnchorElement>("a");
+    expect([...links].map((link) => link.getAttribute("href"))).toEqual([
+      "#problem", "#approach", "#problem", "#approach",
+    ]);
+    expect(nav.querySelector('.pv-toc-wide a[href="#problem"]')).toHaveAccessibleName("Problem");
+    for (const link of links) expect(link).not.toHaveAttribute("aria-current");
   });
 });

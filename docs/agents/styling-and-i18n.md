@@ -120,6 +120,10 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - Use `hq-glow` for interaction:
   - The whole hairline lights up with a soft glow on hover, `:focus-visible`, `aria-current="true"` and `aria-selected="true"`.
   - `[--hq-glow:var(--color-violet)]` recolors it; the global focus outline stays.
+- Reading contents (`CaseToc`) are the approved exception: one neutral frame, numbered rows, a server-resolved
+  localized chapter count and a restrained neutral fill on the current row. No glow, decorative dot or edge
+  stripe; full labels and the global instant focus outline stay. Below 1280 px the native disclosure starts
+  collapsed in the server HTML.
 - What stays:
   - Cards keep the neutral `--color-line` hairline.
   - Neutral rules in `line`, `line-2` or `glass-border`, and bottom tab indicators.

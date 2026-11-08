@@ -475,21 +475,73 @@
     background: var(--color-paper);
   }
 
-  /* Case study contents: the current chapter lights the whole hairline with the violet glow (never an edge rule). */
-  .pv-toc a {
+  .pv-toc {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-paper-2);
+  }
+
+  .pv-toc-wide {
+    display: none;
+  }
+
+  .pv-toc-head,
+  .pv-toc-disclosure > summary {
+    min-height: 44px;
+    padding: var(--space-sm);
+    font-size: var(--text-meta);
+    line-height: 20px;
+  }
+
+  .pv-toc-head {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    min-height: 36px;
-    padding: 0 var(--space-sm);
-    border: 1px solid transparent;
-    border-radius: var(--radius-control);
-    font-size: 14px;
+    justify-content: space-between;
+    gap: var(--space-xs);
+  }
+
+  .pv-toc-disclosure > summary {
+    cursor: pointer;
+  }
+
+  .pv-toc-disclosure > summary .pv-toc-count {
+    float: inline-end;
+  }
+
+  .pv-toc-count {
     color: var(--color-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .pv-toc-list {
+    padding: var(--space-xs);
+  }
+
+  .pv-toc a {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-xs);
+    min-height: 44px;
+    padding: var(--space-xs);
+    border-radius: var(--radius-control);
+    color: var(--color-muted);
+    font-size: var(--text-meta);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
     transition:
       color var(--dur-micro) var(--ease-standard),
-      border-color var(--dur-micro) var(--ease-standard),
-      box-shadow var(--dur-micro) var(--ease-standard);
+      background-color var(--dur-micro) var(--ease-standard);
+    @variant motion-reduce {
+      transition: none;
+    }
+  }
+
+  .pv-toc-number {
+    font-variant-numeric: tabular-nums;
+    text-align: end;
   }
 
   .pv-toc a:hover {
@@ -498,8 +550,7 @@
 
   .pv-toc a[aria-current="true"] {
     color: var(--color-ink);
-    border-color: var(--color-violet-soft);
-    box-shadow: 0 0 20px -8px var(--color-violet);
+    background: var(--color-surface-2);
   }
 
   /* A post (blog/[slug]): one reading measure for its head, body and end, centred; the contents in the right gutter. */
@@ -517,10 +568,34 @@
   }
 
   .pv-post-toc {
-    display: none;
+    width: 100%;
+    max-width: 38rem;
+    margin-inline: auto;
+    margin-bottom: var(--space-lg);
+  }
+
+  .pv-case-toc {
+    grid-column: 1 / -1;
   }
 
   @media (min-width: 80rem) {
+    .pv-toc-wide {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      max-height: calc(100dvh - var(--nav-h) - var(--space-lg) - var(--space-md) - 2px);
+    }
+
+    .pv-toc-wide > .pv-toc-list {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scroll-padding-block: var(--space-xs);
+    }
+
+    .pv-toc-disclosure {
+      display: none;
+    }
+
     .pv-post-body {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 38rem) minmax(0, 1fr);
@@ -529,27 +604,49 @@
 
     .pv-post-body > .pv-read {
       grid-column: 2;
+      grid-row: 1;
       width: 100%;
     }
 
-    .pv-post-toc {
-      display: block;
-      grid-column: 3;
+    .pv-post-toc,
+    .pv-case-toc {
+      position: sticky;
+      top: calc(var(--nav-h) + var(--space-lg));
+      align-self: start;
       justify-self: end;
-      width: 13rem;
+      width: 100%;
+      max-width: 18rem;
+      margin: 0;
     }
-  }
 
-  /* The contents step aside while a wide figure passes under them (CaseToc `avoid`); focus inside keeps them. */
-  .pv-toc {
-    transition:
-      opacity 200ms var(--ease-standard),
-      visibility 200ms;
-  }
+    .pv-post-toc {
+      grid-column: 3;
+      grid-row: 1;
+    }
 
-  .pv-toc[data-covered]:not(:focus-within) {
-    opacity: 0;
-    visibility: hidden;
+    .pv-case-toc {
+      grid-column: 10 / span 3;
+      grid-row: 1;
+    }
+
+    .pv-case-body {
+      grid-column: 1 / span 8;
+      grid-row: 1;
+    }
+
+    .pv-toc {
+      transition:
+        opacity var(--dur-micro) var(--ease-standard),
+        visibility var(--dur-micro);
+      @variant motion-reduce {
+        transition: none;
+      }
+    }
+
+    .pv-toc[data-covered]:not(:focus-within) {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 
   .pv-post-end {

@@ -134,7 +134,15 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
         </header>
 
         <div className="pv-wrap grid gap-6 lg:grid-cols-12">
-          <div className="pv-col min-w-0 lg:col-span-8">
+          <aside className="pv-case-toc">
+            <CaseToc
+              key={`${locale}:${pod.slug}`}
+              items={toc}
+              label={tcase("onThisPage")}
+              countLabel={tcase("chapterCount", { count: toc.length })}
+            />
+          </aside>
+          <div className="pv-col pv-case-body min-w-0 lg:col-span-8">
             {story ? (
               <>
                 <Chapter id="problem" title={t("situation")}>
@@ -191,11 +199,6 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <ChipList items={pod.stack} label={tc("stack")} logos />
             </Chapter>
           </div>
-          <aside className="hidden xl:col-span-3 xl:col-start-10 xl:block">
-            <div className="sticky top-24 pt-24">
-              <CaseToc items={toc} label={tcase("onThisPage")} />
-            </div>
-          </aside>
         </div>
 
         <section aria-labelledby="related-title" className="pv-wrap pv-sec-l">

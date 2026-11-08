@@ -878,6 +878,7 @@
   },
   "case": {
     "onThisPage": "Di halaman ini",
+    "chapterCount": "{count} bagian",
     "more": "Proyek {wing} lainnya",
     "breadcrumb": "Jalur navigasi",
     "kind": "Jenis proyek",

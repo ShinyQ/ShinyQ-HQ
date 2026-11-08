@@ -8,6 +8,7 @@ import cvManifest from "../content/generated/cv-pages.json";
 import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
+import id from "../messages/id.json";
 import { perspectiveFingerprints } from "../src/content/perspectives";
 import { PerspectivesFileSchema, STORY_SLUGS } from "../src/content/schema";
 import { scanBuildOutput } from "../src/content/safety";
@@ -636,7 +637,7 @@ test.describe("no colored edge stripes", () => {
           const el = document.getElementById("approach")!;
           window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 200);
         });
-        await expect(page.locator(".pv-toc a[aria-current='true']")).toHaveCount(1);
+        await expect(page.locator(".pv-toc a[aria-current='true']:visible")).toHaveCount(1);
       }
       expect(await page.evaluate(findEdgeAccents, "body"), path).toEqual([]);
     }
@@ -950,7 +951,7 @@ test.describe("Quick view brief (owner decision 2026-11-01)", () => {
 test.describe("reading a post", () => {
   const POST = "/en/blog/ten-very-hard-benchmark-tasks-in-ten-days";
   const WIDE_FIGURE_POST = "/en/blog/why-the-better-fraud-engine-shipped-in-shadow-mode";
-  const contents = (page: Page) => page.getByRole("navigation", { name: en.case.onThisPage });
+  const contents = (page: Page) => page.getByRole("navigation", { name: en.case.onThisPage, includeHidden: true });
   /** Scrolls in steps, one frame apart, so the page sees a run of scroll events like a reader's swipe (instant: the
    *  site's smooth scroll-behavior would let each step cancel the last). */
   const scrollSteps = async (page: Page, dy: number, steps = 8) => {
@@ -974,7 +975,13 @@ test.describe("reading a post", () => {
     await expect(page.locator("article header .pv-meta")).toContainText(/\d+ min read/);
 
     const ids = await page.locator(".prose-hq > h2").evaluateAll((hs) => hs.map((h) => h.id));
-    expect(ids.length).toBeGreaterThan(1);
+    expect(ids).toHaveLength(10);
+    expect(ids).toContain("after-the-first-ten-days");
+    await expect(contents(page).locator(".pv-toc-count:visible")).toHaveText("10 chapters");
+    const box = await contents(page).boundingBox();
+    if (!box) throw new Error("Missing desktop contents box");
+    expect(box.x).toBeGreaterThanOrEqual(columns[0][0] + columns[0][1]);
+    expect(box.x + box.width).toBeLessThanOrEqual(1440);
     const links = contents(page).getByRole("link");
     expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(ids.map((id) => `#${id}`));
     await links.nth(2).click();
@@ -1004,6 +1011,173 @@ test.describe("reading a post", () => {
     await page.evaluate((y) => window.scrollTo(0, y + 1400), top);
     await expect(nav).not.toHaveAttribute("data-covered");
     await expect(nav).toBeVisible();
+    const focusedLink = nav.locator(".pv-toc-wide a").first();
+    await expect(focusedLink).toBeVisible();
+    await focusedLink.focus();
+    await expect(focusedLink).toBeFocused();
+    await page.evaluate((y) => window.scrollTo({ top: y - 200, behavior: "instant" }), top);
+    await expect(nav).toHaveAttribute("data-covered", "");
+    await expect(nav).toBeVisible();
+    await focusedLink.evaluate((el: HTMLAnchorElement) => el.blur());
+    await expect(nav).toBeHidden();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(nav).not.toHaveAttribute("data-covered");
+    await expect(nav.locator(".pv-toc-disclosure > summary")).toBeVisible();
+  });
+
+  const BENCHMARK_SLUG = "ten-very-hard-benchmark-tasks-in-ten-days";
+
+  for (const locale of ["en", "id"] as const) {
+    const messages = locale === "en" ? en : id;
+    for (const segment of [`blog/${BENCHMARK_SLUG}`, "labs/voice-ai-contact-center"]) {
+      const route = `/${locale}/${segment}`;
+      for (const viewport of [
+        { width: 390, height: 844 },
+        { width: 844, height: 390 },
+        { width: 1279, height: 900 },
+      ]) {
+        test(`Reading contents: native disclosure ${route} at ${viewport.width}`, async ({ browser }) => {
+          const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+          await chooseMotion(context, "system");
+          await context.addInitScript(() => {
+            localStorage.setItem("hq:terminal-seen", "1");
+            localStorage.setItem("hq:onboarded", "done");
+          });
+          const page = await context.newPage();
+          await openPage(page, staticTier(route));
+          const nav = page.getByRole("navigation", { name: messages.case.onThisPage });
+          const details = nav.locator("details");
+          const summary = details.locator("summary");
+          await expect(nav).toHaveCount(1);
+          await expect(nav.locator(".pv-toc-wide")).toBeHidden();
+          await expect(details).not.toHaveAttribute("open");
+          await expect(summary).toBeVisible();
+          const box = await summary.boundingBox();
+          if (!box) throw new Error("Missing contents summary box");
+          expect(box.height).toBeGreaterThanOrEqual(44);
+          expect(await nav.evaluate((el) => {
+            const body = document.querySelector(".prose-hq, .pv-case-body");
+            if (!body) throw new Error("Missing reading body");
+            return Boolean(el.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING);
+          })).toBe(true);
+          await summary.focus();
+          await page.keyboard.press("Enter");
+          await expect(details).toHaveAttribute("open", "");
+          const links = nav.getByRole("link");
+          const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+          const targets = await page.locator(
+            segment.startsWith("blog/") ? ".prose-hq > h2" : ".pv-case-body > section[id]",
+          ).evaluateAll((els) => els.map((el) => {
+            const heading = el.matches("h2") ? el : el.querySelector("h2");
+            if (!heading?.textContent) throw new Error("Missing chapter label");
+            return { href: `#${el.id}`, label: heading.textContent };
+          }));
+          expect(hrefs).toEqual(targets.map((target) => target.href));
+          expect(new Set(hrefs).size).toBe(hrefs.length);
+          expect(hrefs).not.toContain("#contact");
+          for (const [index, target] of targets.entries()) {
+            await expect(links.nth(index)).toHaveAccessibleName(target.label);
+          }
+          for (const height of await links.evaluateAll((as) => as.map((a) => a.getBoundingClientRect().height))) {
+            expect(height).toBeGreaterThanOrEqual(44);
+          }
+          await expect(details.locator(".pv-toc-list")).toHaveCSS("overflow-y", "visible");
+          const target = await links.nth(1).getAttribute("href");
+          if (!target) throw new Error("Missing chapter fragment");
+          await links.nth(1).click();
+          await expect(page).toHaveURL(new RegExp(`${target}$`));
+          expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
+          await expectNoSeriousViolations(page);
+          for (const colorScheme of ["light", "dark"] as const) {
+            await page.emulateMedia({ colorScheme });
+            await expectNoSeriousViolations(page);
+          }
+          await context.close();
+        });
+      }
+
+      test(`Reading contents: no JavaScript ${locale}/${segment}`, async ({ browser }) => {
+        const context = await browser.newContext({
+          javaScriptEnabled: false,
+          viewport: { width: 390, height: 844 },
+          reducedMotion: "reduce",
+        });
+        const page = await context.newPage();
+        await page.goto(staticTier(route));
+        const nav = page.getByRole("navigation", { name: messages.case.onThisPage });
+        const details = nav.locator("details");
+        await expect(details).not.toHaveAttribute("open");
+        await details.locator("summary").focus();
+        await page.keyboard.press("Enter");
+        await expect(details).toHaveAttribute("open", "");
+        const links = nav.getByRole("link");
+        const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+        const targets = await page.locator(
+          segment.startsWith("blog/") ? ".prose-hq > h2" : ".pv-case-body > section[id]",
+        ).evaluateAll((els) => els.map((el) => {
+          const heading = el.matches("h2") ? el : el.querySelector("h2");
+          if (!heading?.textContent) throw new Error("Missing no-script chapter label");
+          return { href: `#${el.id}`, label: heading.textContent };
+        }));
+        expect(hrefs).toEqual(targets.map((target) => target.href));
+        expect(new Set(hrefs).size).toBe(hrefs.length);
+        expect(hrefs).not.toContain("#contact");
+        for (const [index, target] of targets.entries()) {
+          await expect(links.nth(index)).toHaveAccessibleName(target.label);
+        }
+        const target = await links.nth(1).getAttribute("href");
+        if (!target) throw new Error("Missing no-script chapter fragment");
+        await links.nth(1).click();
+        await expect(page).toHaveURL(new RegExp(`${target}$`));
+        await context.close();
+      });
+    }
+
+    test(`Reading contents: publication and revision metadata ${locale}`, async ({ page }) => {
+      const source = readFileSync(`content/blog/${BENCHMARK_SLUG}.${locale}.mdx`, "utf8");
+      const updated = /^updated:\s*"(\d{4}-\d{2}-\d{2})"\s*$/m.exec(source)?.[1];
+      if (!updated) throw new Error("Benchmark revision date missing");
+      await openPage(page, staticTier(`/${locale}/blog/${BENCHMARK_SLUG}`));
+      await expect(page.locator("article > header time")).toHaveCount(2);
+      await expect(page.locator("article > header time").first()).toHaveAttribute("datetime", "2026-11-02");
+      await expect(page.locator("article > header time").last()).toHaveAttribute("datetime", updated);
+      await expect(page.locator('meta[property="article:modified_time"]')).toHaveAttribute("content", updated);
+      const response = await page.request.get(`/${locale}/feed.xml`);
+      expect(response.ok()).toBe(true);
+      const dates = await page.evaluate(({ xml, slug }) => {
+        const ns = "http://www.w3.org/2005/Atom";
+        const doc = new DOMParser().parseFromString(xml, "application/xml");
+        if (doc.querySelector("parsererror")) throw new Error("Invalid Atom XML");
+        const entry = [...doc.getElementsByTagNameNS(ns, "entry")].find((el) =>
+          el.getElementsByTagNameNS(ns, "id")[0]?.textContent?.endsWith(`/blog/${slug}`),
+        );
+        if (!entry) throw new Error("Missing benchmark Atom entry");
+        return [
+          entry.getElementsByTagNameNS(ns, "published")[0]?.textContent,
+          entry.getElementsByTagNameNS(ns, "updated")[0]?.textContent,
+        ];
+      }, { xml: await response.text(), slug: BENCHMARK_SLUG });
+      expect(dates).toEqual(["2026-11-02T00:00:00Z", `${updated}T00:00:00Z`]);
+    });
+  }
+
+  test("Reading contents: long list stays reachable on a short desktop", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await openPage(page, staticTier(`/en/blog/${BENCHMARK_SLUG}`));
+    const nav = page.getByRole("navigation", { name: en.case.onThisPage, includeHidden: true });
+    const stickyTop = await page.locator(".pv-post-toc").evaluate((el) => parseFloat(getComputedStyle(el).top));
+    await page.locator(".prose-hq > h2").nth(2).evaluate((el) => {
+      window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 120, behavior: "instant" });
+    });
+    await expect.poll(() => nav.evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBe(Math.round(stickyTop));
+    const list = nav.locator(".pv-toc-wide > .pv-toc-list");
+    await expect(list).toHaveCSS("overflow-y", "auto");
+    expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    const box = await nav.boundingBox();
+    if (!box) throw new Error("Missing sticky panel box");
+    expect(box.y + box.height).toBeLessThanOrEqual(500);
+    await list.getByRole("link").last().focus();
+    await expect(list.getByRole("link").last()).toBeFocused();
   });
 
   test("on a phone the header hides while reading down, the Ask pill turns into its icon, and nothing shifts", async ({ page }) => {
