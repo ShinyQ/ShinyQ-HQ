@@ -54,7 +54,8 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 - **Public repo.** Never commit private evidence, private repository names, cloud resource names, phone numbers,
   addresses, ID numbers, money amounts, salary or review text, the Master's degree, or any photo.
   - 2026 hackathon entries are excluded by default. An entry the owner approves explicitly may appear and is
-    named openly as a hackathon entry: Sewise Fashion Labs (approved), allowlisted in `tests/content/dataset.test.ts`.
+    named openly as a hackathon entry: the made-to-measure sewing pattern generator (approved), allowlisted by
+    its stable ID in `tests/content/dataset.test.ts`.
   - Photo exception: the owner's own portrait (`public/og-assets/kurniadi-photo.png` for share cards and JSON-LD,
     and the web sizes under `public/brand/`).
 - **No client company names** (C3). Clients of the owner's employers (the bank, automotive, bakery, mining,
@@ -63,9 +64,12 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
   "National digital bank" / "Bank digital nasional").
   - Employers stay named (Metrodata / PT Mitra Integrasi Informatika, Jenius (SMBC Indonesia) for the 2024 to
     2025 job only, Jatis, MNC, internships), and so do the freelance clients in C8.
-  - Product names are allowed, including MII / Metrodata products (ARIA, Pris.AI, MII Fraud Detection,
-    MII E-Recruitment, eVendor, MII Deck, MII AI Ticketing). ATLAS and FREDDY are client work: sector label.
-  - Never claim a product the owner did not build (Deck Studio inside MII Cowork, not all of Cowork).
+  - Public website copy uses capability-based project names instead of project/product brands, including
+    personal and hackathon projects. Relevant technologies, employers, site identity and official publication
+    titles remain. Original screenshots, PDFs, quotations, URL destinations and technical identifiers are
+    preserved exceptions. The complete Sun/Moon essay family stays unchanged.
+  - Owner stories explain the owner's decisions, spec/plan review and accountability without erasing factual
+    AI or team contributions. Never claim an entire colleague-led platform for work on one component.
   - Sole exception: the owner's CV PDF in `public/cv/`, committed byte for byte (never edit or regenerate it),
     and its page images in `public/cv/pages/` (`bun run cv:pages`). Never OCR them into site text or alt text
     (alt text is "CV page N of M").

@@ -37,7 +37,7 @@
     {
       "id": "work-ticket-hub",
       "topic": "work",
-      "q": { "en": "What is Serupa Ticket Hub?", "id": "Apa itu Serupa Ticket Hub?" },
+      "q": { "en": "What is the event ticketing platform?", "id": "Apa itu platform ticketing acara?" },
       "tags": ["work", "software"],
       "followUps": ["work-tickets", "career-freelance", "work-stack"],
       "expect": ["project-event-ticketing-platform"]
@@ -45,7 +45,7 @@
     {
       "id": "work-sewise",
       "topic": "work",
-      "q": { "en": "What is Sewise Fashion Labs?", "id": "Apa itu Sewise Fashion Labs?" },
+      "q": { "en": "What is the sewing pattern generator?", "id": "Apa itu generator pola jahit sesuai ukuran?" },
       "tags": ["work", "software"],
       "followUps": ["work-jagarupa", "ai-clearbox", "work-side"],
       "expect": ["project-sewise-fashion-labs"]
@@ -53,7 +53,7 @@
     {
       "id": "work-cowork",
       "topic": "work",
-      "q": { "en": "What did he change in MII Cowork?", "id": "Apa yang dia ubah di MII Cowork?" },
+      "q": { "en": "What did he change in the AI workspace?", "id": "Apa yang dia ubah di workspace AI?" },
       "tags": ["work", "software", "agents"],
       "followUps": ["ai-deck", "work-template", "work-best"],
       "expect": ["project-mii-cowork"]
@@ -109,7 +109,7 @@
     {
       "id": "work-jagarupa",
       "topic": "work",
-      "q": { "en": "What is JagaRupa?", "id": "Apa itu JagaRupa?" },
+      "q": { "en": "What is the product campaign image generator?", "id": "Apa itu generator gambar kampanye produk?" },
       "tags": ["work", "ai", "agents"],
       "followUps": ["work-side", "work-sewise", "ai-agents"],
       "expect": ["side-jagarupa"]
@@ -198,7 +198,7 @@
     {
       "id": "ai-deck",
       "topic": "ai",
-      "q": { "en": "What is MII Deck?", "id": "Apa itu MII Deck?" },
+      "q": { "en": "How does the AI presentation app work?", "id": "Bagaimana cara kerja aplikasi presentasi AI?" },
       "tags": ["ai", "agents"],
       "followUps": ["work-cowork", "ai-agents", "work-template"],
       "expect": ["project-agent-deck-platform"]
@@ -206,7 +206,7 @@
     {
       "id": "ai-clearbox",
       "topic": "ai",
-      "q": { "en": "How does Clearbox clean up an inbox?", "id": "Bagaimana Clearbox membersihkan inbox?" },
+      "q": { "en": "How does the AI inbox assistant clean up email?", "id": "Bagaimana asisten inbox AI membersihkan email?" },
       "tags": ["ai"],
       "followUps": ["work-sewise", "ai-deck", "work-github"],
       "expect": ["project-clearbox"]

@@ -17,9 +17,9 @@ describe("live-fact placeholders in the golden and red-team sets", () => {
     const newest = [...getContent().floors.library.posts].sort((a, b) => b.date.localeCompare(a.date))[0];
     expect(latest.facts).toEqual([newest.title.en, newest.date]);
     expect(scoreGolden(`The latest post, "${newest.title.en}" (${newest.date}), covers ten Indonesian benchmark tasks and the method behind them.`, latest).pass).toBe(true);
-    expect(scoreGolden("The latest post explains Clearbox and Microsoft-Decision-1, published on 2026-10-16.", latest).pass).toBe(false);
+    expect(scoreGolden("The latest post explains AI inbox triage and Microsoft-Decision-1, published on 2026-10-16.", latest).pass).toBe(false);
     expect(scoreGolden("The latest post is about voice agents and interruption latency.", latest).pass).toBe(false);
-    expect(scoreGolden("The latest post covers moving ARIA from ACS to LiveKit, published on 2026-10-27.", latest).pass).toBe(false);
+    expect(scoreGolden("The latest post covers moving grounded voice AI from ACS to LiveKit, published on 2026-10-27.", latest).pass).toBe(false);
   });
 
   it("resolves numbers to the site spelling and the plain form", () => {

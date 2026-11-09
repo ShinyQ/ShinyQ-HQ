@@ -1,6 +1,7 @@
 ---
 title: "Lock Instalasi yang Memblokir Aplikasi"
 date: "2026-10-24"
+updated: "2026-11-09"
 excerpt: "Pada test install managed application pertama, semua panggilan AI gagal meski role benar. Lock memblokir identity aplikasi sendiri. Ditemukan 36 defect."
 tags: ["azure-managed-applications", "azure-marketplace", "cloud-security", "deployment", "case-study"]
 readingTime: "7 min"
@@ -14,7 +15,7 @@ Semua ini terjadi di test install pada subscription uji. Paketnya sudah siap unt
 
 ## Empat Produk, Satu Instalasi Per Pelanggan
 
-Di Metrodata saya mengerjakan empat produk AI: ARIA (voice agent realtime), Pris.AI (keamanan kode), MII E-Recruitment (screening CV), dan MII Fraud Detection (review fraud pada dokumen). Pada Oktober, keempatnya sedang disiapkan untuk Microsoft Marketplace.
+Di Metrodata saya mengerjakan empat produk AI: voice agent AI realtime dengan grounding, platform keamanan kode berbasis AI, screening dan evaluasi CV berbasis AI, dan review fraud dokumen berbasis AI. Pada Oktober, keempatnya sedang disiapkan untuk Microsoft Marketplace.
 
 Tanggal 7 Oktober, manajer saya memutuskan untuk menawarkan keempatnya sebagai Azure Application dengan plan Managed Application, bukan SaaS multi-tenant. Saya memimpin sisi engineering dari perubahan itu di keempat codebase. Dengan managed application, setiap pelanggan memasang salinannya sendiri di subscription Azure miliknya. Data pelanggan dan pemakaian Azure OpenAI tetap di sana, sementara publisher mengelola instalasi lewat managed resource group.
 
@@ -38,16 +39,16 @@ Masalah yang saya temui terjadi pada pemeriksaan di langkah 4.
 
 Paketnya sudah lolos ARM-TTK dan pemeriksaan statis. Namun, belum ada satu pun yang dipasang dengan cara pelanggan memasangnya. Antara 18 dan 20 Oktober, saya menjalankan instalasi Service Catalog sungguhan di subscription uji. Ada satu sesi AI agent per produk yang menjalankan instalasi dengan sign-in Azure dan persetujuan saya.
 
-Agar kondisi pengujian sesuai dengan instalasi pelanggan, saya memasang produk menggunakan peran pelanggan, bukan publisher. Pada definisi uji Pris.AI, misalnya, saya memakai identity pengganti dengan role Reader saja untuk mewakili publisher. Akun saya sendiri berperan sebagai pelanggan, sehingga deny assignment berlaku untuk saya seperti pada pelanggan sungguhan.
+Agar kondisi pengujian sesuai dengan instalasi pelanggan, saya memasang produk menggunakan peran pelanggan, bukan publisher. Pada definisi uji platform keamanan kode, misalnya, saya memakai identity pengganti dengan role Reader saja untuk mewakili publisher. Akun saya sendiri berperan sebagai pelanggan, sehingga deny assignment berlaku untuk saya seperti pada pelanggan sungguhan.
 
 ## Semua Panggilan AI Gagal
 
 Saya menemui gejala yang berbeda pada tiap produk, dengan penyebab yang sama:
 
-- **MII Fraud Detection:** analisis berakhir `Failed`, dengan 401 dari Document Intelligence, Azure OpenAI, dan Prompt Shields.
-- **ARIA:** tidak ada panggilan AI yang berhasil.
-- **Pris.AI:** backend tidak bisa memanggil Azure OpenAI, mengirim ke Service Bus, atau menulis secret di Key Vault.
-- **MII E-Recruitment:** tidak ada panggilan AI, tidak ada blob write, dan task hub Durable Functions tidak bisa berjalan.
+- **Review fraud dokumen:** analisis berakhir `Failed`, dengan 401 dari Document Intelligence, Azure OpenAI, dan Prompt Shields.
+- **Voice agent:** tidak ada panggilan AI yang berhasil.
+- **Platform keamanan kode:** backend tidak bisa memanggil Azure OpenAI, mengirim ke Service Bus, atau menulis secret di Key Vault.
+- **Screening dan evaluasi CV:** tidak ada panggilan AI, tidak ada blob write, dan task hub Durable Functions tidak bisa berjalan.
 
 Sebagian panggilan tetap berhasil, termasuk operasi read ke Cosmos DB dan Key Vault.
 
@@ -80,23 +81,23 @@ Bentuknya kira-kira seperti ini. Ini ilustrasi, bukan file produksi:
 
 Saya membutuhkan waktu untuk memahami cakupan pengecualian ini: pembatasan deny assignment dicabut untuk semua principal pada aksi yang didaftarkan, tidak hanya untuk aplikasi. Setelah itu, izin tetap ditentukan oleh RBAC. Pelanggan tidak dapat membuat role assignment di dalam managed resource group, sehingga pengecualian data action terutama berpengaruh pada identity yang sudah memiliki role di sana. Control action lebih berisiko karena pelanggan mungkin memiliki role di level subscription. Setiap entri menambah aksi yang dapat dilakukan pemegang role yang sesuai di dalam instalasi yang menjadi tanggung jawab publisher.
 
-Karena itu, saya membatasi daftar tersebut dan memeriksanya saat build. Di MII E-Recruitment, build paket menolak entri tanpa alasan, aksi Authorization atau Key Vault apa pun, tag write, wildcard polos, write ke app settings, dan aksi code-publish. Aturannya disesuaikan untuk setiap produk. Pris.AI tetap memiliki satu pengecualian write ke Key Vault karena alur setup-nya menyimpan key GitHub App milik pelanggan. Alasan itu dicatat pada entrinya, seperti pada pengecualian lain.
+Karena itu, saya membatasi daftar tersebut dan memeriksanya saat build. Di produk screening CV, build paket menolak entri tanpa alasan, aksi Authorization atau Key Vault apa pun, tag write, wildcard polos, write ke app settings, dan aksi code-publish. Aturannya disesuaikan untuk setiap produk. Platform keamanan kode tetap memiliki satu pengecualian write ke Key Vault karena alur setup-nya menyimpan key GitHub App milik pelanggan. Alasan itu dicatat pada entrinya, seperti pada pengecualian lain.
 
-Setelah perbaikan, probe data-plane ARIA mengembalikan 200 dari Azure OpenAI, Speech, Language, dan Content Safety, serta 202 dari Document Intelligence. Untuk MII Fraud Detection, pengecualian yang baru dikonfirmasi pada instance yang sudah terpasang.
+Setelah perbaikan, probe data-plane voice agent mengembalikan 200 dari Azure OpenAI, Speech, Language, dan Content Safety, serta 202 dari Document Intelligence. Untuk review fraud dokumen, pengecualian yang baru dikonfirmasi pada instance yang sudah terpasang.
 
-Masalah ini pertama kali ditemukan saat instalasi MII Fraud Detection. Sebelum instalasi MII E-Recruitment berikutnya, saya menerapkan perbaikan yang sama agar tidak perlu mengulangi diagnosis pada setiap produk.
+Masalah ini pertama kali ditemukan saat instalasi produk review fraud dokumen. Sebelum instalasi produk screening CV berikutnya, saya menerapkan perbaikan yang sama agar tidak perlu mengulangi diagnosis pada setiap produk.
 
 ## Tiga Masalah Lain Terkait Lock
 
 Selain panggilan AI, lock tersebut memengaruhi tiga bagian lain:
 
-- **Deployment kode.** Awalnya MII E-Recruitment membutuhkan aksi code-publish di daftar pengecualian, sehingga aksi itu juga dapat digunakan principal lain dengan role yang sesuai. Saat memperbaiki deployment race pada Kudu yang masih cold, saya memindahkan deployment kode ke dalam template dengan langkah warm-up dan menghapus seluruh pengecualian publish. Pada instalasi berikutnya, upaya publish dari identity installer mendapat 403. Perbaikan reliability tersebut sekaligus membatasi izin publish.
-- **Token yang di-cache sehari.** App Service bisa menyimpan token managed identity sampai 24 jam. Di ARIA, role assignment salah satu service baru muncul setelah token pertamanya terbit, sehingga panggilan antar-service mendapat 403. Restart aplikasi akan memperbarui token, tetapi pelanggan tidak bisa me-restart aplikasi di dalam resource group yang terkunci. Kini service itu juga menerima peer-nya lewat object ID yang di-pin.
-- **Penolakan Key Vault reference yang tersimpan di cache.** Di MII E-Recruitment, reader role dibuat setelah App Service menyimpan hasil penolakan di cache, dan restart tidak membantu. Saya menambahkan reader role dan refresh reference di health gate. Namun, aksi otorisasi untuk panggilan refresh itu bukan operasi yang terdaftar, sehingga ditolak berdasarkan namanya oleh locking policy. Perbaikannya memerlukan wildcard app-settings yang terdaftar, dengan alasan yang dicatat pada entri tersebut.
+- **Deployment kode.** Awalnya produk screening CV membutuhkan aksi code-publish di daftar pengecualian, sehingga aksi itu juga dapat digunakan principal lain dengan role yang sesuai. Saat memperbaiki deployment race pada Kudu yang masih cold, saya memindahkan deployment kode ke dalam template dengan langkah warm-up dan menghapus seluruh pengecualian publish. Pada instalasi berikutnya, upaya publish dari identity installer mendapat 403. Perbaikan reliability tersebut sekaligus membatasi izin publish.
+- **Token yang di-cache sehari.** App Service bisa menyimpan token managed identity sampai 24 jam. Di voice agent, role assignment salah satu service baru muncul setelah token pertamanya terbit, sehingga panggilan antar-service mendapat 403. Restart aplikasi akan memperbarui token, tetapi pelanggan tidak bisa me-restart aplikasi di dalam resource group yang terkunci. Kini service itu juga menerima peer-nya lewat object ID yang di-pin.
+- **Penolakan Key Vault reference yang tersimpan di cache.** Di produk screening CV, reader role dibuat setelah App Service menyimpan hasil penolakan di cache, dan restart tidak membantu. Saya menambahkan reader role dan refresh reference di health gate. Namun, aksi otorisasi untuk panggilan refresh itu bukan operasi yang terdaftar, sehingga ditolak berdasarkan namanya oleh locking policy. Perbaikannya memerlukan wildcard app-settings yang terdaftar, dengan alasan yang dicatat pada entri tersebut.
 
 ## 36 Defect Sebelum Instalasi Berhasil
 
-Dari seluruh masalah instalasi, saya paling banyak belajar saat menelusuri deny assignment. Secara keseluruhan, pengujian pada keempat produk mengungkap 36 defect yang memblokir instalasi: 14 di ARIA, 12 di MII E-Recruitment, 5 di Pris.AI, dan 5 di MII Fraud Detection. Untuk setiap instalasi yang gagal, saya mencatat root cause, menerapkan perbaikan, lalu menjalankannya kembali. Selain lock, masalah utamanya mencakup:
+Dari seluruh masalah instalasi, saya paling banyak belajar saat menelusuri deny assignment. Secara keseluruhan, pengujian pada keempat produk mengungkap 36 defect yang memblokir instalasi: 14 di voice agent, 12 di screening CV, 5 di platform keamanan kode, dan 5 di review fraud dokumen. Untuk setiap instalasi yang gagal, saya mencatat root cause, menerapkan perbaikan, lalu menjalankannya kembali. Selain lock, masalah utamanya mencakup:
 
 - Plan private yang terblokir karena urutan: worker job dibuat sebelum network peering dan DNS link yang dibutuhkannya, serta firewall storage di depan deployment script.
 - Deployment script gagal karena container image Azure CLI tidak memiliki tool seperti `awk`, `unzip`, atau `curl`.
@@ -108,10 +109,10 @@ Setelah itu, pemeriksaan pasca-instalasi lolos:
 
 | Produk | Hasil |
 |---|---|
-| ARIA | 25/25 public, 22/22 private, dan upgrade dengan drain (sekitar 10,5 menit) |
-| Pris.AI | 16/16 public, 24/24 private |
-| MII E-Recruitment | Dua instalasi 0.1.1 yang lolos, lalu 0.1.2 tanpa pengecualian publish |
-| MII Fraud Detection | 2 dari 5 percobaan berhasil (Starter public, Enterprise private) |
+| Voice Agent | 25/25 public, 22/22 private, dan upgrade dengan drain (sekitar 10,5 menit) |
+| Platform Keamanan Kode | 16/16 public, 24/24 private |
+| Screening dan Evaluasi CV | Dua instalasi 0.1.1 yang lolos, lalu 0.1.2 tanpa pengecualian publish |
+| Review Fraud Dokumen | 2 dari 5 percobaan berhasil (Starter public, Enterprise private) |
 
 Semua resource uji dihapus setelahnya.
 
@@ -119,7 +120,7 @@ Semua resource uji dihapus setelahnya.
 
 Paketnya siap untuk Marketplace dan tervalidasi lewat test install Service Catalog sungguhan. Metrodata sudah terdaftar di Partner Center, tetapi offer-nya belum dibuat atau disertifikasi. Metering sudah diimplementasikan di keempat produk, nonaktif secara default, dan belum pernah memanggil Metering API live, karena offer-nya memang belum ada.
 
-Beberapa pemeriksaan belum selesai: pemeriksaan interaktif pada instance yang terpasang (sign-in admin pertama dengan MFA dan alur AI live), sandbox CreateUiDefinition di portal, serta latihan upgrade dan rollback untuk tiga dari empat produk. Sesuai catatan instalasi Pris.AI, hasil pemeriksaan otomatis yang hijau belum membuktikan setiap pengecualian secara end to end. Untuk memastikannya, masih perlu dilakukan satu scan sungguhan dan satu giliran chat pada instance yang terpasang.
+Beberapa pemeriksaan belum selesai: pemeriksaan interaktif pada instance yang terpasang (sign-in admin pertama dengan MFA dan alur AI live), sandbox CreateUiDefinition di portal, serta latihan upgrade dan rollback untuk tiga dari empat produk. Sesuai catatan instalasi platform keamanan kode, hasil pemeriksaan otomatis yang hijau belum membuktikan setiap pengecualian secara end to end. Untuk memastikannya, masih perlu dilakukan satu scan sungguhan dan satu giliran chat pada instance yang terpasang.
 
 ## Perbaikan Proses Pengujian
 

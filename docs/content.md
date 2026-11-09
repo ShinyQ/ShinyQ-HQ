@@ -27,7 +27,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - Posts are GitHub Flavored Markdown (`remark-gfm`, at build time): pipe tables render as real tables (ruled rows, tabular figures) inside a focusable scroll region labelled `blog.tableLabel`, so a wide table scrolls sideways on a phone while the page does not. Strikethrough, autolinks, footnotes and task lists also follow GFM. `tests/content/blog-mdx.test.tsx` fails when a post's pipe table does not compile to a `<table>`.
 - Review EN and ID independently in context, including unchanged passages. Keep sample sizes, evaluation scope and unresolved results in compact excerpts too. The entire Sun/Moon essay family is protected, including frontmatter, registry text and essay-specific accessible copy; do not add an EN translation.
 - For Indonesian revisions, use the draft, audit, final-revision method from [humanizer-indonesia](https://github.com/adhiprib/humanizer-indonesia): check calques, diction, personification, repetitive openings and fragmented prose. Use a neutral semiformal voice, retain good copy and technical English, and preserve quotations. Review supporting knowledge and runtime copy before `messages/id.json`; keep keys, ICU arguments and layout-message bytes unchanged or smaller, then check rendered HTML and 3D text limits.
-- Diagram node and optional edge labels accept either a shared string or strict `{ en, id }` text. Labels resolve once per locale before measurement, SVG drawing, accessible summaries and room DTOs. Keep product names shared where appropriate; node IDs, edge endpoints, group names and topology never change by locale.
+- Diagram node and optional edge labels accept either a shared string or strict `{ en, id }` text. Labels resolve once per locale before measurement, SVG drawing, accessible summaries and room DTOs. Use capability names for editable project labels; technical resource identifiers, node IDs, edge endpoints, group names and topology remain unchanged.
 - A technical post can show an architecture figure: `<Architecture pod="<pod-slug>" caption="..." />` reuses a case study's diagram, and `<Architecture diagram="<id>" caption="..." />` draws a post-local one from `content/blog/diagrams.json` (keyed by post slug, then diagram id; each value has the pod `architecture` shape: nodes with layer, row and kind, plus edges). Props are strings only, and the tag is self-closing with double-quoted props, so `tests/content/post-diagrams.test.ts` can read it. Follow each figure with a numbered walkthrough of the flow, put the same tags in both locales (only the caption is translated), and note that an unknown pod or diagram fails the build and that test (which also flags unused diagrams). Diagrams are drawn at build time as inline SVG (boxes and arrows; dashed for `async` edges): left to right from 1100 px when the drawing fits (a post figure may extend past the text column), top to bottom below that and on phones. An optional node `group` (for example "Cloudflare") draws a frame around its nodes; keep a group on neighbouring layers and rows so the frame holds only its members. The group name sits above the frame's top-left corner, or further along the top when an edge runs through that corner. `tests/unit/diagram-layout.test.ts` fails when a post diagram has crossing edges in any layout, or when any edge, node or edge label touches a group name.
 - Check an edit quickly with `bun run validate:content`.
 
@@ -47,6 +47,25 @@ before testing. Rebuild the knowledge pack, refresh changed embeddings using
 Use a coverage ledger and compare Indonesian source and generated output against
 the recorded base. Screenshots support reading review; they do not replace
 source, metadata, evidence or preservation checks.
+
+### Minimal capability naming and owner accountability
+
+Public website copy names projects by capability, including employer-built, freelance, personal and
+hackathon work. Preserve employers, site identity, relevant technologies and official publication titles.
+Original screenshots, PDFs, quotations, URL destinations, technical identifiers and historical records
+are accepted exceptions, not evidence that all visible branding has been removed. The complete Sun/Moon
+essay family remains protected.
+
+Keep the pass minimal: replace project brands and explicit passive-agent framing, not clear surrounding
+prose. Owner stories state the owner's decisions, spec/plan reading, review and accountability while
+retaining factual AI implementation, colleague leadership, role boundaries and measurement caveats.
+Ask and Rover remain assistants; legitimate Continue/Lanjut controls stay.
+
+Side project `title` accepts `{ en, id }` for descriptive names and a shared string for existing titles.
+Resolve it through `sideProjectTitle` for Classic headings, search, Workshop views, 3D labels and Ask.
+Project `shortTitle` stays under 32 characters and strictly shorter than the full title in each locale.
+Renaming a blog heading must preserve existing fragments: a content-local empty inline span can retain
+the old ID inside the real heading without creating a second contents row.
 
 The bilingual `aria-acs-to-livekit` case study belongs to **AI in Production**. Its
 post-local migration figure compares the old and new media paths. Results retain
@@ -109,7 +128,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - Project galleries are screenshots of the live apps (`public/media/<slug>/`; the vendor portal's come from a local demo instance with demo data).
 - Private data is blurred: company and people names, contact details, amounts, tax and bank identifiers, document numbers and hostnames.
 - Two client projects stay text only by the owner's choice: the coal mining chart-of-accounts assistant and the automotive fraud review dashboard.
-- Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the MII Microsoft Solutions Website and the MII Microsoft AI Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer.
+- Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the Microsoft Solutions Website and the AI Solutions Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer.
 - It opens a new tab with `rel="noopener noreferrer"`; internal apps never get a link.
 
 ## Time Travel stops
@@ -191,7 +210,7 @@ The owner's certification study guides (today GH-600, GH-300, Google Generative 
 
 - Private evidence never enters the repo.
 - The content lint (`tests/content/safety.test.ts`, `bun run validate:content`) blocks the forbidden patterns (em dashes, money amounts, phone numbers, Azure resource hostnames and the Master's degree) in the dataset, the perspectives, the Ask site-build note, the post diagrams, the build story, the study guides and the messages; MDX posts are checked for em dashes. A pod's `liveUrl` on a public live host (`PUBLIC_LIVE_HOSTS`) is exempt from the hostname rule.
-- 2026 hackathon entries stay out unless the owner approves one (today Sewise Fashion Labs, allowlisted in `tests/content/dataset.test.ts`).
+- 2026 hackathon entries stay out unless the owner approves one (today the made-to-measure sewing pattern generator, allowlisted by stable ID in `tests/content/dataset.test.ts`).
 - PDFs: `paper:pages` refuses personal data patterns ([Paper PDFs](#paper-pdfs)) and the study guide `prepare` step refuses phone numbers ([Study guides](#study-guides)); the CV is exempt.
 - Client company names (C3) and private repository or cloud resource names have no automated list (owner decision 2026-10-22): review keeps them out, and Ask prompt rule 6 names clients only by sector.
 - Product names in `content/safety-allowlist.txt` feed the Ask entity allowlist; never add a client name there.

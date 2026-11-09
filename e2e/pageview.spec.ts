@@ -33,6 +33,30 @@ const TEMPLATES = [
 
 const staticTier = (path: string) => `${path}${path.includes("?") ? "&" : "?"}tier=static`;
 
+test("Editorial naming keeps the original migration fragment", async ({ page }) => {
+  const oldId = "batas-dukungan-untuk-skenario-panggilan-aria";
+  const label = "Batas Dukungan untuk Panggilan Voice Agent AI";
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await openPage(page, staticTier("/id/blog/aria-acs-to-livekit"));
+    await expect(page.locator(`[id="${oldId}"]`)).toHaveCount(1);
+    const heading = page.locator("h2").filter({ has: page.locator(`[id="${oldId}"]`) });
+    await expect(heading).toHaveText(label);
+    await expect(heading).toHaveAttribute("id", "batas-dukungan-untuk-panggilan-voice-agent-ai");
+    await page.evaluate((id) => { window.location.hash = id; }, oldId);
+    await expect(page).toHaveURL(new RegExp(`#${oldId}$`));
+    await expect(heading).toBeInViewport();
+    const disclosure = page.locator(".pv-toc-disclosure");
+    if (await disclosure.isVisible()) await disclosure.evaluate((node) => { (node as HTMLDetailsElement).open = true; });
+    const tocLink = page.locator(".pv-toc a:visible").filter({ hasText: label });
+    await expect(tocLink).toHaveCount(1);
+    await expect(tocLink).toHaveAttribute("href", "#batas-dukungan-untuk-panggilan-voice-agent-ai");
+    await tocLink.click();
+    await expect(page).toHaveURL(/#batas-dukungan-untuk-panggilan-voice-agent-ai$/);
+    await expect(heading).toBeInViewport();
+  }
+});
+
 async function expectNoSeriousViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");

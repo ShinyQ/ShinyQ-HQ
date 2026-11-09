@@ -37,7 +37,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
   - any photo (see the exception below)
 - 2026 hackathon entries are excluded by default.
   - An entry the owner approves explicitly may appear, and is named openly as a hackathon entry.
-  - Approved today: Sewise Fashion Labs, allowlisted in `tests/content/dataset.test.ts`.
+  - Approved today: the made-to-measure sewing pattern generator, allowlisted by its stable ID in `tests/content/dataset.test.ts`.
 - Photo exception (owner decision): the owner's own portrait only:
   - `public/og-assets/kurniadi-photo.png` for share cards and JSON-LD
   - the web sizes under `public/brand/`
@@ -49,10 +49,13 @@ The hard rules in full, the editorial voice and title rules for content, and the
   - Use a sector label instead: `Pod.client` as `{ en, id }`, e.g. "National digital bank" / "Bank digital nasional".
 - Employers stay named: Metrodata / PT Mitra Integrasi Informatika, Jenius (SMBC Indonesia) for the 2024 to 2025 job only, Jatis, MNC, internships.
 - The freelance clients in C8 stay named too.
-- Product names are allowed, including MII / Metrodata products:
-  - ARIA, Pris.AI, MII Fraud Detection, MII E-Recruitment, eVendor, MII Deck, MII AI Ticketing.
-  - ATLAS and FREDDY are client work, so they get a sector label.
-  - Never claim a product the owner did not build (Deck Studio inside MII Cowork, not all of Cowork).
+- Public website copy uses capability-based project names instead of project/product brands, including
+  personal and hackathon projects. Relevant technologies, employers, site identity and official publication
+  titles remain.
+  - Original screenshots, PDFs, quotations, URL destinations and technical identifiers are preserved
+    exceptions. The complete Sun/Moon essay family stays unchanged.
+  - Owner stories explain the owner's decisions, spec/plan review and accountability without erasing factual
+    AI or team contributions. Never claim an entire colleague-led platform for work on one component.
 - Sole exception: the owner's CV PDF in `public/cv/`, committed byte for byte at the owner's request.
   - It may list items the site text hides. Never edit or regenerate it.
   - Its page images in `public/cv/pages/` (rendered by `bun run cv:pages`; page 1 is the CV cover) share that exception.
@@ -221,6 +224,7 @@ and counts, and refresh Ask embeddings through the existing authenticated tool.
 
 - There is no automated list of client names (owner decision 2026-10-22, [`docs/decisions/2026-10-22-safety-blocklist-removed.md`](../decisions/2026-10-22-safety-blocklist-removed.md)).
 - The C3 rule stays: review keeps client names out of the repo and the export, and Ask prompt rule 6 names clients only by sector.
-- `content/safety-allowlist.txt` lists product names; it feeds the Ask knowledge pack's `products`, part of the entity allowlist of the Ask output entity check.
+- `content/safety-allowlist.txt` lists canonical capability names and retained technical/bibliographic exceptions;
+  it feeds the Ask knowledge pack's `products`, part of the entity allowlist of the Ask output entity check.
   - Never add a client name.
   - Public live hosts (`mii-microsoft`, for example) stay out of it: there `mii-microsoft` would let "worked at Microsoft" pass the employer check.

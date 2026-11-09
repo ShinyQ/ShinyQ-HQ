@@ -5,7 +5,7 @@ import { pickFeaturedPods } from "@/content/pageview";
 import { buildRoomViews } from "@/content/room-views";
 import { podView } from "@/content/room-views/labs";
 import { LOCALES } from "@/content/schema";
-import { headlineResults, podLiveLink } from "@/content/selectors";
+import { headlineResults, podLiveLink, sideProjectTitle } from "@/content/selectors";
 import { repoRoom, repoSlug, sideProjectRoom } from "@/content/workshop";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { structuralLabels } from "@/hud/index-data";
@@ -139,7 +139,7 @@ describe("room views (Glass Drawer content)", () => {
       projects.forEach((p, i) => {
         const view = views[sideProjectRoom(p.id)];
         expect(view.kind).toBe("workshop");
-        expect(view.title).toBe(p.title);
+        expect(view.title).toBe(sideProjectTitle(p, locale));
         expect(view.subtitle).toBe(p.summary[locale]);
         expect(view.stack.map((s) => s.name)).toEqual(p.stack);
         expect(view.external).toBe(p.url ?? p.repo);

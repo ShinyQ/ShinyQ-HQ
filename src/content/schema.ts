@@ -425,7 +425,7 @@ export const CvConfigSchema = z.strictObject({
 
 export const SideProjectSchema = z.strictObject({
   id: SlugSchema,
-  title: nonEmpty,
+  title: z.union([nonEmpty, LocalizedTextSchema]),
   summary: LocalizedTextSchema,
   stack: z.array(nonEmpty),
   year: z.number().int().min(2016).max(2100).optional(),

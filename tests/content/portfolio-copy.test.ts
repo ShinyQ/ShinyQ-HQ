@@ -53,17 +53,18 @@ describe("portfolio evidence and ownership", () => {
   it.each(["en", "id"] as const)("keeps colleague-led Cowork distinct from Deck and frontend work in %s", (locale) => {
     for (const slug of ["mii-cowork", "agent-deck-platform"]) {
       expect(packed(slug, locale)).toMatch(/colleague|rekan/);
-      expect(packed(slug, locale)).toMatch(/Deck Studio/);
+      expect(packed(slug, locale)).toMatch(/AI presentation studio|studio presentasi AI/);
     }
     expect(pod("mii-cowork").tagline[locale]).toMatch(/frontend/);
     expect(packed("mii-cowork", locale)).toMatch(/no backend or API change|tanpa perubahan backend atau API/);
   });
 
-  it("uses sector labels for client products but retains employer product identities", () => {
+  it("uses sector labels for clients and capability names for employer projects", () => {
     expect(JSON.stringify(raw)).not.toMatch(/\bATLAS\b|\bFREDDY\b/);
-    for (const name of ["ARIA", "Pris.AI", "MII Fraud Detection", "MII E-Recruitment", "eVendor", "MII Deck", "MII Cowork"]) {
+    for (const name of ["Grounded realtime voice AI", "AI code security platform", "AI document fraud review", "AI CV screening", "vendor management portal", "AI Presentation Authoring and Hosting", "AI Workspace UI Revamp"]) {
       expect(JSON.stringify(raw)).toContain(name);
     }
+    expect(JSON.stringify(raw)).not.toMatch(/\bARIA\b|\bPris\.AI\b|\bMII Fraud Detection\b|\bMII E-Recruitment\b|\beVendor\b|\bMII Deck\b|\bMII Cowork\b/);
   });
 
   it.each(["en", "id"] as const)("describes Sewise calculations without asserting physical validation in %s", (locale) => {

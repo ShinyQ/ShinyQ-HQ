@@ -1,16 +1,38 @@
-# Product names the owner allowed on the site (C3, revised 2026-10-10): products
-# of the owner's employer (MII / Metrodata) and their own names. They feed the
-# Ask the HQ knowledge pack's entity allowlist (`products` in src/ask/pack.ts,
-# part of `pack.entities`), so an answer may name them. One name per line or
-# comma separated; `#` starts a comment. Client company names must never be
-# added here.
-ARIA
-Pris.AI
-Sentinel
-FREDDY
-ATLAS
-Cowork
-MII Cowork
-MII Deck
-eVendor
-MII E-Recruitment
+# Canonical capability labels for the Ask entity allowlist (`products`).
+# Keep client company names and obsolete project-brand aliases out of this list.
+# Original publication titles and technical identifiers remain source exceptions,
+# not permission to reintroduce branded editable descriptions.
+Realtime AI Voice Agent with Grounding
+Voice Agent AI Realtime dengan Grounding
+AI Code Security Platform
+Platform Keamanan Kode Berbasis AI
+Vendor Management Portal
+Portal Manajemen Vendor
+AI Document Fraud Review
+Review Fraud Dokumen Berbasis AI
+AI CV Screening and Evaluation
+Screening dan Evaluasi CV Berbasis AI
+AI Ticketing Assistant
+Asisten Ticketing AI
+AI Presentation Authoring and Hosting
+Penyusunan dan Hosting Presentasi AI
+AI Presentation Studio
+Studio Presentasi AI
+AI Workspace
+Workspace AI
+AI Inbox Assistant
+Asisten Inbox AI
+Made-to-Measure Sewing Pattern Generator
+Generator Pola Jahit Sesuai Ukuran
+University Sentiment Dashboard
+Dashboard Sentimen Universitas
+Product Campaign Image Generator
+Generator Gambar Kampanye Produk
+Meal Nutrition Tracker
+Pelacak Gizi Makanan
+AI Coding Session Analytics
+Analitik Sesi AI Coding
+Event Ticketing Platform
+Platform Ticketing Acara
+Multi-Agent Product Idea Review
+Review Ide Produk Multi-Agent

@@ -1,24 +1,25 @@
 ---
-title: "Moving ARIA From ACS to LiveKit"
+title: "Grounded Voice AI: From ACS to LiveKit"
 date: "2026-10-27"
-excerpt: "ARIA moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS-to-LiveKit speedup was measured."
+updated: "2026-11-09"
+excerpt: "The AI voice agent moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS speedup was measured."
 tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
 readingTime: "9 min"
 ---
 
-I led ARIA's move from Azure Communication Services (ACS) to self-hosted LiveKit at Metrodata. In a live proof-of-concept drill, returning a call from the operator to the AI took 425 ms at the median across 20 rounds. That is a measured result on the new path. I do not have a matched ACS-to-LiveKit comparison that isolates a migration speedup.
+I led the move of a realtime AI voice agent with grounding from Azure Communication Services (ACS) to self-hosted LiveKit at Metrodata. In a live proof-of-concept drill, returning a call from the operator to the AI took 425 ms at the median across 20 rounds. That is a measured result on the new path. I do not have a matched ACS-to-LiveKit comparison that isolates a migration speedup.
 
-The support deadline made me revisit what ARIA actually needed: browser voice calls, AI responses and human takeover. It did not need a telephone network connection or a dependency on Teams. The migration could stay focused on the part carrying the audio, rather than becoming a rewrite of the agent.
+The support deadline made me revisit what the voice agent actually needed: browser voice calls, AI responses and human takeover. It did not need a telephone network connection or a dependency on Teams. The migration could stay focused on the part carrying the audio, rather than becoming a rewrite of the agent.
 
 ## The Deadline Applied to Our Calling Scenario
 
 Microsoft announced the retirement of ACS as a standalone offering on September 23, 2026, effective September 30, 2028. The [official retirement and breaking changes guide](https://learn.microsoft.com/en-us/azure/communication-services/acs-retirement-and-breaking-changes-guide) makes an important distinction: Calling SDK, Call Automation and Audio Streaming are classified as breaking changes, while ACS Email is being retired.
 
-After that date, the affected calling services remain supported only for eligible Teams-aligned scenarios. Connecting an AI service does not make a standalone workload eligible. The notice explicitly covers the server-side, bidirectional WebSocket audio streaming through Call Automation that ARIA used.
+After that date, the affected calling services remain supported only for eligible Teams-aligned scenarios. Connecting an AI service does not make a standalone workload eligible. The notice explicitly covers the server-side, bidirectional WebSocket audio streaming through Call Automation that the voice agent used.
 
 I did not read that as "every ACS API disappears." I read it as a support boundary our standalone voice agent would cross. The available Teams integrations also needed their own capability checks; sending audio out of a call did not automatically establish support for sending it back.
 
-ARIA was still in development, so I chose to migrate before that boundary became a customer deadline. The product scope was web-only calls, with the media service self-hosted on Azure. LiveKit fit that scope without introducing a Teams requirement. Running it on Azure VMs also avoided a Kubernetes control plane we did not need for these rooms.
+The voice agent was still in development, so I chose to migrate before that boundary became a customer deadline. The product scope was web-only calls, with the media service self-hosted on Azure. LiveKit fit that scope without introducing a Teams requirement. Running it on Azure VMs also avoided a Kubernetes control plane we did not need for these rooms.
 
 ## Change the Media Path, Keep the Agent
 
@@ -31,7 +32,7 @@ Read each row from the browser toward the model:
 1. Before the migration, the browser used the ACS Calling SDK. Call Automation attached the AI and exchanged audio with the Python backend over a media WebSocket.
 2. Afterward, the caller and operator joined a LiveKit room. The self-hosted media plane ran on two zonal Azure VMs, with embedded TURN for networks that could not connect directly.
 3. Adapter workers joined the room as the AI participant and exposed audio through `MediaLink`. The Python bridge still owned tools, knowledge retrieval, escalation and conversation state.
-4. Azure OpenAI Realtime still generated the spoken response. The change did not move ARIA's orchestration into the LiveKit Agents framework.
+4. Azure OpenAI Realtime still generated the spoken response. The change did not move the voice agent's orchestration into the LiveKit Agents framework.
 
 That separation gave me a way to review the migration in pieces. Join credentials, media envelopes, callbacks and channel-specific dependencies could change without also changing how a knowledge search or escalation worked. A connected call and a correct agent response were still separate things to verify.
 
@@ -109,4 +110,4 @@ The broader 900 ms turn-P50 goal was still unmet. Real-microphone validation and
 
 Turn-taking also remained unfinished. In a later live start-hold experiment, cut-offs went from 8 of 15 utterances to 9 of 15. That small sample showed no improvement. I covered the interruption mechanism and that negative result in [Making a Voice Agent Interruptible](/en/blog/making-a-voice-agent-interruptible); it should not be counted again as a migration gain.
 
-I directed AI coding agents for much of the implementation, then reviewed and merged their work. The migration gave ARIA a self-hosted media path, measured cached hand-back in the recorded drills, and explicit recovery and operational controls. It did not establish a production latency or cost advantage over ACS. The remaining setup and real-microphone checks still needed a larger validation window.
+I directed AI coding agents for much of the implementation, then reviewed and merged their work. The migration gave the voice agent a self-hosted media path, measured cached hand-back in the recorded drills, and explicit recovery and operational controls. It did not establish a production latency or cost advantage over ACS. The remaining setup and real-microphone checks still needed a larger validation window.

@@ -404,7 +404,7 @@ describe("perspectives in the pipeline (spec section 13)", () => {
 });
 
 describe("multi-turn memory in the pipeline (owner decision 2026-10-17)", () => {
-  const CLEARBOX = { q: "Tell me about Clearbox", a: "**Clearbox** is an AI inbox cleanup tool for Gmail and Outlook that Kurniadi built." };
+  const CLEARBOX = { q: "Tell me about the AI inbox assistant", a: "**The AI inbox assistant** is an inbox cleanup tool for Gmail and Outlook that Kurniadi built." };
   const ask = (q: string, history: { q: string; a: string }[], text = "It uses TypeScript, Hono and Cloudflare Workers.") => {
     const { client, calls } = mock({ p: say(text) });
     const question = scrubPII(cleanText(q));
@@ -423,7 +423,7 @@ describe("multi-turn memory in the pipeline (owner decision 2026-10-17)", () => 
   });
 
   it("keeps a first turn to the system prompt and the question, without the history line", async () => {
-    const r = await ask("What is Clearbox?", []);
+    const r = await ask("What is the AI inbox assistant?", []);
     expect(r.messages.map((m) => m.role)).toEqual(["system", "user"]);
     expect(r.messages[0].content).not.toContain("Earlier turns");
     expect(r.historyUsed).toBe(0);
@@ -573,7 +573,7 @@ describe("answer cache (owner decision 2026-10-31: keyed on what the model sees)
     const entry = [...store.entries()];
     reads.length = 0;
     const other = "Kurniadi works at Metrodata as an engineer.";
-    const kept = await run(cache, "Where does he work?", other, { history: [{ q: "Tell me about Clearbox", a: "Clearbox is an AI inbox cleanup tool for Gmail and Outlook." }] });
+    const kept = await run(cache, "Where does he work?", other, { history: [{ q: "Tell me about the AI inbox assistant", a: "The AI inbox assistant cleans up Gmail and Outlook inboxes." }] });
     expect(kept).toMatchObject({ source: "primary", historyUsed: 1 });
     // The dropped turn leaves the model input of a first turn (the same key), yet the request still neither reads nor writes.
     const dropped = await run(cache, "Where does he work?", other, { history: [{ q: "Is Kurniadi married?", a: "Kurniadi keeps that private." }] });

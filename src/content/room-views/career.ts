@@ -1,6 +1,6 @@
 import { getAwards, getContent, getLibrary, getPod, getPods, getTimeline } from "../load";
 import type { Locale, Pod, TimelineEntry } from "../schema";
-import { FIRST_CORRIDOR_YEAR } from "../selectors";
+import { FIRST_CORRIDOR_YEAR, sideProjectTitle } from "../selectors";
 import { formatPeriod } from "@/lib/format";
 import { repoRoom, repoSlug, sideProjectRoom } from "../workshop";
 import { chain, fill, galleryOf, messages, roomId, single, stackItems } from "./shared";
@@ -67,7 +67,7 @@ export function buildCareerViews(locale: Locale): RoomView[] {
       {
         title: m.drawer.rooms.sideProjects,
         items: content.sideProjects.map((p) => ({
-          title: p.title,
+          title: sideProjectTitle(p, locale),
           meta: [p.summary[locale], p.year ? String(p.year) : ""].filter(Boolean).join(" · "),
           href: p.url ?? p.repo,
           external: Boolean(p.url ?? p.repo),
@@ -90,7 +90,7 @@ export function buildCareerViews(locale: Locale): RoomView[] {
     single({
       id: sideProjectRoom(p.id),
       kind: "workshop",
-      title: p.title,
+      title: sideProjectTitle(p, locale),
       subtitle: p.summary[locale],
       meta: [m.drawer.rooms.sideProject, ...(p.year ? [String(p.year)] : [])],
       badges: [{ label: m.drawer.rooms.sideProject, accent: "amber" }],
