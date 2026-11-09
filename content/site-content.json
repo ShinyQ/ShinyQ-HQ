@@ -10825,6 +10825,13 @@
           }
         },
         {
+          "slug": "personal",
+          "title": {
+            "en": "Personal",
+            "id": "Personal"
+          }
+        },
+        {
           "slug": "earlier-writing",
           "title": {
             "en": "Earlier Writing",
@@ -10833,6 +10840,28 @@
         }
       ],
       "posts": [
+        {
+          "slug": "before-it-looked-like-talent",
+          "title": {
+            "en": "Before It Looked Like Talent",
+            "id": "Sebelum Terlihat Seperti Bakat"
+          },
+          "date": "2026-11-09",
+          "track": "personal",
+          "tags": [
+            "personal",
+            "growth"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "A memory from university, a friend who learned faster, and the slow years of practice that came before anyone called it talent.",
+            "id": "Kenangan dari masa kuliah, teman yang lebih cepat paham, dan latihan bertahun-tahun sebelum semuanya terlihat seperti bakat."
+          },
+          "icon": "sprout"
+        },
         {
           "slug": "ten-very-hard-benchmark-tasks-in-ten-days",
           "title": {

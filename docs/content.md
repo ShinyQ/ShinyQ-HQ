@@ -79,6 +79,12 @@ scores. Its only outcome numbers are aggregates (ten tasks, half merged, most in
 hardest band); its process numbers come from the owner's workspace. Its two
 post-local figures show the idea funnel and the agent organisation.
 
+The bilingual personal essay `before-it-looked-like-talent` ("Before It Looked Like Talent" /
+"Sebelum Terlihat Seperti Bakat") is the only post on the **Personal** track, under the Personal topic
+(tags `personal`, `growth`). The owner wrote the English body and approved the Indonesian one, which
+keeps `aku`: edits need his approval. Its only link points "AI Benchmark Engineer" to the benchmark
+post in the same locale. The Sun/Moon essay stays on Earlier Writing.
+
 ### Reader tracks
 
 The L4 Writing floor shelves the posts by reader track, one bookshelf bay per track (owner decision [2026-10-25](decisions/2026-10-25-l4-reader-tracks.md); the floor in [`agents/floor-l4-library.md`](agents/floor-l4-library.md)).

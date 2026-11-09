@@ -21,7 +21,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 - `floors.library.tracks` in `content/site-content.json`: 1 to 6 tracks in bay order, `{ slug, title: { en, id }, lead? }`; every post has a required `track` ([content.md](../content.md#reader-tracks), schema in [content.md](content.md)).
 - `buildTrackIndex` (`src/content/track-index.ts`, pure; `getTrackIndex()` in `@/content/load`): per track in dataset order, its posts with the lead first (the owner's `lead`, else the newest), then newest first (same date: slug order). A track without posts stays in the index; the floor skips it.
 - 3D payload: `LibraryData.tracks` (`buildLibraryData` in `src/content/experience-floors.ts`: `slug`, the locale-resolved `label`, `posts` lead first; tracks without posts dropped), in the per-floor `/data` JSON, not in a code chunk. `libraryLayoutInput` passes it through as `LibraryLayoutInput.tracks`.
-- Real content: 11 posts on 4 tracks (AI in Production 4 with an owner lead, Cloud Platform and Security 3, Engineering with AI Agents 1, Earlier Writing 3).
+- Real content: 14 posts on 5 tracks (AI in Production 5 with an owner lead, Cloud Platform and Security 3, Engineering with AI Agents 2, Personal 1, Earlier Writing 3).
 
 ## Layout builder
 
@@ -53,7 +53,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
   - `baySlots(bay)` (`slots.ts`): one slot per post in `bay.posts` order (slot 0 is the lead), the lead at the bay's left end as seen from the road, the spines to its right, row 0 at the bottom filled first; each slot has `at`, `y` (its row), `w`, `d`, `h` and its axis-aligned `rect`. `SHELF_PLINTH` 0.24: every slot stands on a board that high.
 - Stops: `floor.stops["L4:<slug>"]` is the post's bay door for every post but the featured one, so `/blog/<slug>` 3D deep links, missions, Cmd-K and `roomTarget` drive to the bay. Plus `L4:topics` and `L4:vault`.
 - Doors: the stage, one per bay (room `L4:track:<slug>`), the three desks. No post has a door or station of its own.
-- Real content (`facing` z -1 north, +1 south): bays at x 16 (north), 18 (south), 30 (north), 32 (south), doors at z -5.9 / 5.9; the desks at x 45, 46, 60; the end plaza center (79, 0); slab x -24 to 108.7, z -23.5 to 29.6.
+- Real content (`facing` z -1 north, +1 south): bays at x 16 (north), 18 (south), 30 (north), 32 (south), 44 (north), doors at z -5.9 / 5.9; the desks at x 47, 58, 62; the end plaza center (81, 0); slab x -24 to 117.9, z -23.5 to 36.4.
 - `LIBRARY_FLOOR.padZone` stays free for the elevator call pad.
 - Spawn and arrival are one point (`NEWSROOM.arrival`, (-4, 0)) on the plaza axis, west of its center: deep links spawn there and elevator arrivals roll on to it.
 - Tests: `tests/unit/library-layout.test.ts` (real content: space rules, every catalog room has a door or a stop, bays in order, post stops, `listStop`), `tests/unit/library-concepts.test.ts` (real content and synthetic 1, 12, 39, 60 and 120 posts over 4 to 6 tracks: `expectSpaceRules`, the pad zone, one bay per track, every post room reachable), `tests/unit/library-shelf.test.ts` (`shelfSize`, `baySlots`), `tests/unit/track-index.test.ts`.
@@ -197,10 +197,10 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
 - Road `vault` (width `LIBRARY_FLOOR.road`, 8) from the ring vertex to the vault plaza center; plaza `vault`, round, no core.
 - Stop `stops["L4:vault"]` (`VAULT_ROOM`): a stop with a view, no catalog room and no drawer.
 - Books in file order north to south (left to right on screen), each turned with its spine toward the stop (`VaultBook.facing`). `VaultBook.tier` is 0 (front, or the one arc) or 1 (back); `VaultBook.rise` is its riser (0 or 0.9). `LibraryVault.tiers`, `arc` (the front radius) and `span` (the outer books' angle) describe the arrangement.
-- Real content (end plaza center (79, 0), six books, two tiers): stop (97.0, 18.0), vault plaza center (97.4, 18.4), book centers x 105.1 to 108.6, z 14.0 to 23.3. The end plaza moves east as the bays grow, and the vault moves with it.
-- Obstacle: one `LibraryVault.shelf`, the bounds of the book rects (about 6.3 x 11.6 u with real content, x 103.6 to 109.9). One obstacle per book cannot pass the space rules: books 3 u apart leave gaps under the 6 u clear floor.
+- Real content (end plaza center (81, 0), six books, two tiers): stop (99.0, 18.0), vault plaza center (99.4, 18.4), book centers x 107.1 to 110.6, z 14.0 to 23.3. The end plaza moves east as the bays grow, and the vault moves with it.
+- Obstacle: one `LibraryVault.shelf`, the bounds of the book rects (about 6.3 x 11.6 u with real content, x 105.6 to 111.9). One obstacle per book cannot pass the space rules: books 3 u apart leave gaps under the 6 u clear floor.
 - Each `VaultBook.rect` (the axis-aligned bound of the turned footprint; rects never overlap) is a tall camera column (h `rise` + 4.2) and the book's pick bounds.
-- The slab grows east and south only: floor bounds x -24 to 115.9, z -23.5 to 36.4 with real content.
+- The slab grows east and south only: floor bounds x -24 to 117.9, z -23.5 to 36.4 with real content.
 - `tests/unit/library-vault.test.ts` (real content, crowded with 60 posts on 6 tracks, no metrics, and every count from 1 to 10 guides): the space and pad rules, the road and stop on the diagonal, the stop reachable, books on their arc and inside the plaza, the shelf and every book rect at least 3 u from the Return pad, the monument, the pedestal, the ring road edge and the slab edge.
 
 ### Camera
