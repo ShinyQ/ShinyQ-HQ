@@ -1,24 +1,25 @@
 ---
-title: "Migrasi ARIA dari ACS ke LiveKit"
+title: "Migrasi Voice AI dari ACS ke LiveKit"
 date: "2026-10-27"
-excerpt: "ARIA pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur secara sebanding."
+updated: "2026-11-09"
+excerpt: "Voice agent AI pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur setara."
 tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
 readingTime: "9 min"
 ---
 
-Saya memimpin migrasi ARIA dari Azure Communication Services (ACS) ke LiveKit self-hosted di Metrodata. Dalam drill pada lingkungan proof-of-concept yang aktif, pengembalian panggilan dari operator ke AI mencatat median 425 ms dari 20 putaran. Hasil itu mengukur jalur baru. Saya belum punya perbandingan ACS dan LiveKit dengan kondisi setara yang dapat memisahkan pengaruh migrasi terhadap latensi.
+Saya memimpin migrasi voice agent AI realtime dengan grounding dari Azure Communication Services (ACS) ke LiveKit self-hosted di Metrodata. Dalam drill pada lingkungan proof-of-concept yang aktif, pengembalian panggilan dari operator ke AI mencatat median 425 ms dari 20 putaran. Hasil itu mengukur jalur baru. Saya belum punya perbandingan ACS dan LiveKit dengan kondisi setara yang dapat memisahkan pengaruh migrasi terhadap latensi.
 
-Pekerjaan ini berawal dari batas dukungan layanan dan keputusan produk. ARIA membutuhkan panggilan lewat browser, jawaban AI, serta pengalihan ke operator manusia. Sambungan ke jaringan telepon dan ketergantungan pada Teams tidak masuk kebutuhan tersebut. Karena itu, saya ingin mengganti jalur audio tanpa memindahkan orkestrasi agent yang sudah ada.
+Pekerjaan ini berawal dari batas dukungan layanan dan keputusan produk. Voice agent ini membutuhkan panggilan lewat browser, jawaban AI, serta pengalihan ke operator manusia. Sambungan ke jaringan telepon dan ketergantungan pada Teams tidak masuk kebutuhan tersebut. Karena itu, saya ingin mengganti jalur audio tanpa memindahkan orkestrasi agent yang sudah ada.
 
-## Batas Dukungan untuk Skenario Panggilan ARIA
+## <span id="batas-dukungan-untuk-skenario-panggilan-aria" />Batas Dukungan untuk Panggilan Voice Agent AI
 
 Microsoft mengumumkan penghentian ACS sebagai layanan standalone pada 23 September 2026, efektif 30 September 2028. Dalam [panduan retirement dan breaking changes resminya](https://learn.microsoft.com/en-us/azure/communication-services/acs-retirement-and-breaking-changes-guide), Microsoft membedakan cakupannya: Calling SDK, Call Automation, dan Audio Streaming masuk kategori breaking changes, sedangkan ACS Email dihentikan.
 
-Setelah tanggal tersebut, dukungan untuk layanan panggilan yang terdampak hanya berlaku pada skenario tertentu yang terintegrasi dengan Teams. Menghubungkan layanan AI saja tidak membuat workload standalone memenuhi syarat. Jalur yang dipakai ARIA juga disebut secara eksplisit: streaming audio dua arah dari server lewat WebSocket pada Call Automation.
+Setelah tanggal tersebut, dukungan untuk layanan panggilan yang terdampak hanya berlaku pada skenario tertentu yang terintegrasi dengan Teams. Menghubungkan layanan AI saja tidak membuat workload standalone memenuhi syarat. Jalur yang dipakai voice agent ini juga disebut secara eksplisit: streaming audio dua arah dari server lewat WebSocket pada Call Automation.
 
 API panggilan ACS tidak seluruhnya dihapus, tetapi voice agent standalone kami akan berada di luar cakupan dukungan setelah batas waktu tersebut. Saya juga perlu memeriksa setiap pilihan integrasi Teams sampai ke kapabilitasnya, karena dukungan mengirim audio keluar dari panggilan belum otomatis mencakup pengiriman audio kembali ke dalamnya.
 
-ARIA masih dalam pengembangan, sehingga saya memilih pindah sebelum batas tersebut menjadi tenggat bagi pelanggan. Cakupan produknya tetap panggilan web, dengan layanan media yang kami kelola sendiri di Azure. LiveKit memenuhi kebutuhan itu tanpa menambah ketergantungan pada Teams. Untuk room yang kami butuhkan, Azure VM juga cukup tanpa harus mengoperasikan control plane Kubernetes.
+Voice agent ini masih dalam pengembangan, sehingga saya memilih pindah sebelum batas tersebut menjadi tenggat bagi pelanggan. Cakupan produknya tetap panggilan web, dengan layanan media yang kami kelola sendiri di Azure. LiveKit memenuhi kebutuhan itu tanpa menambah ketergantungan pada Teams. Untuk room yang kami butuhkan, Azure VM juga cukup tanpa harus mengoperasikan control plane Kubernetes.
 
 ## Mengganti Jalur Media, Mempertahankan Agent
 
@@ -31,7 +32,7 @@ Alurnya dapat dibaca dari browser menuju model:
 1. Sebelum migrasi, browser memakai ACS Calling SDK. Call Automation menghubungkan AI ke panggilan dan bertukar audio dengan backend Python lewat media WebSocket.
 2. Setelah migrasi, penelepon dan operator bergabung ke room LiveKit. Media plane self-hosted berjalan pada dua Azure VM di availability zone berbeda, dengan TURN bawaan untuk jaringan yang tidak dapat terhubung langsung.
 3. Adapter worker bergabung sebagai peserta AI dan meneruskan audio lewat `MediaLink`. Bridge Python tetap menangani tool, pencarian knowledge, eskalasi, dan state percakapan.
-4. Azure OpenAI Realtime tetap menghasilkan jawaban suara. Orkestrasi ARIA tidak dipindahkan ke framework LiveKit Agents.
+4. Azure OpenAI Realtime tetap menghasilkan jawaban suara. Orkestrasi voice agent tidak dipindahkan ke framework LiveKit Agents.
 
 Dengan batas itu, saya dapat mengganti kredensial untuk join, format pesan media, callback, serta dependency khusus channel tanpa menulis ulang perilaku pencarian knowledge atau eskalasi.
 
@@ -107,4 +108,4 @@ Sasaran latensi giliran P50 sebesar 900 ms masih belum tercapai. Validasi dengan
 
 Turn-taking pun belum selesai. Pada eksperimen start-hold live berikutnya, cut-off tercatat pada 8 dari 15 ujaran sebelum perubahan dan 9 dari 15 sesudahnya. Sampel kecil itu tidak menunjukkan perbaikan. Mekanisme interupsi dan hasil negatif tersebut sudah saya bahas dalam [Cara Kami Membuat Voice Agent Bisa Diinterupsi](/id/blog/making-a-voice-agent-interruptible), sehingga tidak saya hitung lagi sebagai hasil migrasi.
 
-Saya mengarahkan AI coding agent untuk sebagian besar implementasi, lalu meninjau dan menggabungkan pekerjaannya. ARIA kini memiliki jalur media self-hosted, hand-back dari cache yang terukur dalam drill, serta kontrol pemulihan dan operasional yang eksplisit. Keunggulan latensi atau biaya terhadap ACS di production belum terbukti, sehingga pemeriksaan setup dan mikrofon sungguhan masih membutuhkan jendela validasi yang lebih besar.
+Saya mengarahkan AI coding agent untuk sebagian besar implementasi, lalu meninjau dan menggabungkan pekerjaannya. Voice agent ini kini memiliki jalur media self-hosted, hand-back dari cache yang terukur dalam drill, serta kontrol pemulihan dan operasional yang eksplisit. Keunggulan latensi atau biaya terhadap ACS di production belum terbukti, sehingga pemeriksaan setup dan mikrofon sungguhan masih membutuhkan jendela validasi yang lebih besar.

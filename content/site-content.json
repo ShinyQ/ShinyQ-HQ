@@ -987,8 +987,8 @@
               "id": "IPK 3,88 / 4,00"
             },
             {
-              "en": "Thesis: Sentiboard, a university sentiment dashboard with a public IndoBERT model",
-              "id": "Skripsi: Sentiboard, dashboard sentimen universitas dengan model IndoBERT publik"
+              "en": "Thesis: a university sentiment dashboard with a public IndoBERT model",
+              "id": "Skripsi: dashboard sentimen universitas dengan model IndoBERT publik"
             },
             {
               "en": "VP Internal and Software Engineer Lead of the campus programming club (2020 to 2021)",
@@ -1574,8 +1574,8 @@
               "id": "Mendokumentasikan proyek ini dalam paper (Aplikasi Sentiboard)"
             },
             {
-              "en": "Registered the Sentiboard application as a copyrighted work with DJKI (December 2022)",
-              "id": "Mencatatkan aplikasi Sentiboard sebagai ciptaan berhak cipta di DJKI (Desember 2022)"
+              "en": "Registered the university sentiment application as a copyrighted work with DJKI (December 2022)",
+              "id": "Mencatatkan aplikasi sentimen universitas sebagai ciptaan berhak cipta di DJKI (Desember 2022)"
             }
           ],
           "stack": [
@@ -3085,8 +3085,8 @@
             "id": "Portal Manajemen Vendor"
           },
           "tagline": {
-            "en": "eVendor, Metrodata's vendor portal for purchase orders, delivery acceptance, invoices, tax checks and approvals, built by one engineer in six weeks.",
-            "id": "eVendor, portal vendor Metrodata untuk purchase order, penerimaan barang, invoice, verifikasi pajak, dan approval, dikerjakan oleh satu engineer dalam enam minggu."
+            "en": "Metrodata's vendor management portal for purchase orders, delivery acceptance, invoices, tax checks and approvals, built by one engineer in six weeks.",
+            "id": "Portal manajemen vendor Metrodata untuk purchase order, penerimaan barang, invoice, verifikasi pajak, dan approval, dikerjakan satu engineer dalam enam minggu."
           },
           "period": {
             "start": "2026-08",
@@ -4599,12 +4599,12 @@
           "client": "Serupa",
           "timelineRef": "serupa-2025",
           "title": {
-            "en": "Serupa Ticket Hub: Event Ticketing Platform",
-            "id": "Serupa Ticket Hub: Platform Ticketing Acara"
+            "en": "Event Ticketing Platform",
+            "id": "Platform Ticketing Acara"
           },
           "shortTitle": {
-            "en": "Serupa Ticket Hub",
-            "id": "Serupa Ticket Hub"
+            "en": "Event Ticketing",
+            "id": "Ticketing Acara"
           },
           "tagline": {
             "en": "An event ticketing platform with an attendee site, an organizer dashboard and an Express API, from event discovery to QR e-tickets.",
@@ -5357,8 +5357,8 @@
             "id": "Contact Center Voice AI Realtime"
           },
           "tagline": {
-            "en": "ARIA, MII's voice AI contact center: ~2 s to ~0.2 s interruption latency in a controlled A/B (n=4 calls per arm), grounded answers and human handover.",
-            "id": "ARIA, voice AI MII: jawaban dari knowledge base dan pengalihan ke petugas. Latensi interupsi ~2 ke ~0,2 detik pada A/B terkontrol (n=4 panggilan per jalur)."
+            "en": "Grounded realtime voice AI: ~2 s to ~0.2 s interruption latency in a controlled A/B (n=4 calls per arm), knowledge-based answers and human handover.",
+            "id": "Voice AI realtime dengan grounding dan handoff ke petugas. Latensi interupsi ~2 ke ~0,2 detik pada A/B terkontrol (n=4 panggilan per jalur), bukan trafik live."
           },
           "period": {
             "start": "2026-05",
@@ -5798,8 +5798,8 @@
             {
               "src": "/media/voice-ai-contact-center/01-landing.webp",
               "alt": {
-                "en": "ARIA landing page: realtime voice agents with grounded answers and human handoff",
-                "id": "Halaman landing ARIA: voice agent realtime dengan jawaban berbasis knowledge dan handoff ke manusia"
+                "en": "Realtime AI voice agent landing page: realtime voice agents with grounded answers and human handoff",
+                "id": "Halaman landing voice agent AI realtime: voice agent realtime dengan jawaban berbasis knowledge dan handoff ke manusia"
               },
               "width": 1600,
               "height": 1000,
@@ -5818,8 +5818,8 @@
             {
               "src": "/media/voice-ai-contact-center/03-admin-dashboard.webp",
               "alt": {
-                "en": "ARIA operations console home: live calls, operators available, AI containment and escalation reasons over 7 days",
-                "id": "Beranda operations console ARIA: panggilan live, operator tersedia, containment AI, dan alasan eskalasi selama 7 hari"
+                "en": "Voice agent operations console home: live calls, operators available, AI containment and escalation reasons over 7 days",
+                "id": "Beranda operations console voice agent: panggilan live, operator tersedia, containment AI, dan alasan eskalasi selama 7 hari"
               },
               "width": 1600,
               "height": 1000,
@@ -5926,8 +5926,8 @@
             "id": "Platform Keamanan Kode AI"
           },
           "tagline": {
-            "en": "Pris.AI, MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
-            "id": "Pris.AI, platform keamanan kode AI milik MII: delapan scanner per pull request, triage AI yang mudah dibaca, dan fix agent yang membuka PR dengan validasi serta guardrail."
+            "en": "MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
+            "id": "Platform keamanan kode berbasis AI milik MII: delapan scanner per PR, triage AI yang mudah dibaca, dan fix agent pembuka PR dengan validasi serta guardrail."
           },
           "period": {
             "start": "2026-06",
@@ -6175,8 +6175,8 @@
           ],
           "story": {
             "situation": {
-              "en": "A GitHub organization with 100+ repositories needed consistent pull-request security scanning, clear triage, and fixes that engineers could review safely before merging. Pris.AI became MII's AI code security platform for this, with me as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
-              "id": "Organisasi GitHub dengan 100+ repositori membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat ditinjau dengan aman oleh engineer sebelum merge. Untuk kebutuhan ini, saya membangun Pris.AI, platform keamanan kode AI milik MII, sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap dapat ditinjau, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
+              "en": "A GitHub organization with 100+ repositories needed consistent pull-request security scanning, clear triage, and fixes that engineers could review safely before merging. I built MII's AI code security platform for this, as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
+              "id": "Organisasi GitHub dengan 100+ repositori membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat ditinjau dengan aman oleh engineer sebelum merge. Untuk kebutuhan ini, saya membangun platform keamanan kode berbasis AI milik MII, sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap dapat ditinjau, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
             },
             "decisions": [
               {
@@ -6241,8 +6241,8 @@
             {
               "src": "/media/ai-code-security-platform/01-overview.webp",
               "alt": {
-                "en": "Pris.AI overview: open critical and high findings, repositories scanned, merge gate status and top risks ranked with KEV and EPSS signals; repository names blurred",
-                "id": "Overview Pris.AI: temuan critical dan high yang terbuka, repositori yang dipindai, status merge gate, dan risiko teratas dengan sinyal KEV dan EPSS; nama repositori diburamkan"
+                "en": "AI code security platform overview: open critical and high findings, repositories scanned, merge gate status and top risks ranked with KEV and EPSS signals; repository names blurred",
+                "id": "Overview platform keamanan kode AI: temuan critical dan high yang terbuka, repositori yang dipindai, status merge gate, dan risiko teratas dengan sinyal KEV dan EPSS; nama repositori diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -6318,8 +6318,8 @@
             "id": "Review Dokumen Fraud AI"
           },
           "tagline": {
-            "en": "MII Fraud Detection: OCR and two-pass LLM procurement review, with offline development-set evaluation. The hybrid engine remains in shadow mode only.",
-            "id": "MII Fraud Detection: OCR dan review LLM dua tahap untuk dokumen pengadaan. Evaluasi memakai set development offline; engine hybrid tetap di shadow mode."
+            "en": "AI document fraud review: OCR and two-pass LLM procurement review, with offline development-set evaluation. The hybrid engine remains in shadow mode only.",
+            "id": "Review fraud dokumen berbasis AI: OCR dan LLM dua tahap untuk pengadaan. Evaluasi memakai set development offline; engine hybrid tetap di shadow mode."
           },
           "period": {
             "start": "2026-05",
@@ -6579,8 +6579,8 @@
           ],
           "story": {
             "situation": {
-              "en": "Procurement teams needed to review evidence across document packets, but early versions of MII Fraud Detection flagged clean packets too often. As its creator and sole engineer, I needed to reduce false positives without losing high-risk cases in the evaluation set. A lower false-positive rate alone would not justify release.",
-              "id": "Tim pengadaan membutuhkan review fraud yang cepat dan dapat dipercaya untuk paket dokumen. Versi awal menandai paket bersih sebagai bermasalah, sehingga mengurangi kepercayaan terhadap hasilnya. Sebagai pembuat dan engineer tunggal MII Fraud Detection, saya harus membuktikan bahwa false positive bisa turun tanpa melewatkan fraud yang sebenarnya."
+              "en": "Procurement teams needed to review evidence across document packets, but early versions of the AI document fraud review platform flagged clean packets too often. As its creator and sole engineer, I needed to reduce false positives without losing high-risk cases in the evaluation set. A lower false-positive rate alone would not justify release.",
+              "id": "Tim pengadaan membutuhkan review fraud yang cepat dan dapat dipercaya untuk paket dokumen. Versi awal menandai paket bersih sebagai bermasalah, sehingga mengurangi kepercayaan terhadap hasilnya. Sebagai pembuat dan engineer tunggal platform review fraud dokumen berbasis AI, saya harus membuktikan bahwa false positive bisa turun tanpa melewatkan fraud yang sebenarnya."
             },
             "decisions": [
               {
@@ -6638,8 +6638,8 @@
             {
               "src": "/media/fraud-review-platform/01-home.webp",
               "alt": {
-                "en": "MII Fraud Detection home: the October 2026 Calm UI with analyses over 14 days by verdict, risk counts, cases that need attention and the verdict mix; people renamed",
-                "id": "Beranda MII Fraud Detection: Calm UI Oktober 2026 dengan analisis 14 hari terakhir per verdict, jumlah per tingkat risiko, kasus yang perlu perhatian, dan komposisi verdict; nama orang diganti"
+                "en": "AI document fraud review home: the October 2026 Calm UI with analyses over 14 days by verdict, risk counts, cases that need attention and the verdict mix; people renamed",
+                "id": "Beranda review fraud dokumen berbasis AI: Calm UI Oktober 2026 dengan analisis 14 hari terakhir per verdict, jumlah per tingkat risiko, kasus yang perlu perhatian, dan komposisi verdict; nama orang diganti"
               },
               "width": 1600,
               "height": 1000,
@@ -6701,8 +6701,8 @@
             "id": "AI CV Screening dan Evaluasi"
           },
           "tagline": {
-            "en": "MII E-Recruitment: ~45% failures in the original 22-pair screening run; no recorded rerun. AI supplies evidence; the recruiter makes the final decision.",
-            "id": "MII E-Recruitment: tingkat kegagalan ~45% pada run awal 22 pasang, tanpa rerun tercatat. AI memberikan bukti; recruiter tetap mengambil keputusan."
+            "en": "AI CV screening: ~45% failures in the original 22-pair screening run; no recorded rerun. AI supplies evidence; the recruiter makes the final decision.",
+            "id": "Screening CV berbasis AI: kegagalan ~45% pada run awal 22 pasang, tanpa rerun tercatat. AI memberikan bukti; recruiter tetap mengambil keputusan akhir."
           },
           "period": {
             "start": "2026-06",
@@ -7735,8 +7735,8 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "MII Microsoft AI Portfolio and Assistant",
-            "id": "Portofolio dan Asisten MII Microsoft AI"
+            "en": "AI Solutions Portfolio and Assistant",
+            "id": "Portofolio dan Asisten Solusi AI"
           },
           "tagline": {
             "en": "The bilingual portfolio site of MII's Microsoft AI practice, in dark and light themes, with a multi-agent RAG assistant that answers with citations and a /dashboard Studio for content and analytics.",
@@ -8274,8 +8274,8 @@
               "id": "Saya mengimplementasikan metering per jam yang idempotent di keempat produk: satu catatan per dimensi dan jam, managed identity, dan hanya unit produk yang dihitung. Metering tetap dinonaktifkan sampai offer tersedia."
             },
             {
-              "en": "I ran real Service Catalog test installs of public and private plans in a capped test subscription and fixed every install-blocking defect, including a managed resource group lock that stopped the apps' own identities from calling their AI services. For MII Fraud Detection, Starter public and Enterprise private test installs succeeded on Container Apps after five findings were fixed; its internal deployment still runs on App Service.",
-              "id": "Saya menjalankan test install Service Catalog sungguhan untuk plan publik dan privat di subscription uji yang anggarannya dibatasi, lalu memperbaiki setiap defect penghambat instalasi, termasuk lock managed resource group yang membuat identitas milik aplikasi sendiri tidak bisa memanggil layanan AI-nya. Untuk MII Fraud Detection, test install Starter publik dan Enterprise privat berhasil di Container Apps setelah lima temuan diperbaiki; deployment internalnya tetap berjalan di App Service."
+              "en": "I ran real Service Catalog test installs of public and private plans in a capped test subscription and fixed every install-blocking defect, including a managed resource group lock that stopped the apps' own identities from calling their AI services. For the AI document fraud review platform, Starter public and Enterprise private test installs succeeded on Container Apps after five findings were fixed; its internal deployment still runs on App Service.",
+              "id": "Saya menjalankan test install Service Catalog sungguhan untuk plan publik dan privat di subscription uji yang anggarannya dibatasi, lalu memperbaiki setiap defect penghambat instalasi, termasuk lock managed resource group yang membuat identitas milik aplikasi sendiri tidak bisa memanggil layanan AI-nya. Untuk platform review fraud dokumen berbasis AI, test install Starter publik dan Enterprise privat berhasil di Container Apps setelah lima temuan diperbaiki; deployment internalnya tetap berjalan di App Service."
             }
           ],
           "results": [
@@ -8549,8 +8549,8 @@
             "id": "Migrasi Asisten Ticketing AI"
           },
           "tagline": {
-            "en": "MII AI Ticketing, moved from LangGraph to Microsoft Agent Framework while preserving the public API.",
-            "id": "MII AI Ticketing, dimigrasikan dari LangGraph ke Microsoft Agent Framework dengan API publik tetap sama."
+            "en": "An AI ticketing assistant, moved from LangGraph to Microsoft Agent Framework while preserving the public API.",
+            "id": "Asisten ticketing AI, dimigrasikan dari LangGraph ke Microsoft Agent Framework dengan API publik tetap sama."
           },
           "period": {
             "start": "2026-02",
@@ -8915,16 +8915,16 @@
             "id": "Penyusunan dan Hosting Presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck, a slide-authoring and hosting app with MII light and dark components, plus Deck Studio inside the colleague-led MII Cowork platform. Agent drafts need owner approval and publish through checked pull requests.",
-            "id": "MII Deck, aplikasi penyusunan dan hosting slide dengan komponen terang dan gelap MII, serta Deck Studio di platform MII Cowork yang dipimpin rekan. Draf agent perlu persetujuan pemilik dan dipublikasikan melalui pull request yang lolos pemeriksaan."
+            "en": "AI presentation authoring and hosting with MII light and dark components, plus a presentation studio inside a colleague-led AI workspace. Agent drafts need owner approval and publish through checked pull requests.",
+            "id": "Penyusunan dan hosting presentasi AI dengan komponen terang dan gelap MII, serta studio presentasi di workspace AI yang dipimpin rekan. Draf agent perlu persetujuan pemilik dan dipublikasikan melalui pull request yang lolos pemeriksaan."
           },
           "period": {
             "start": "2026-07",
             "end": "2026-10"
           },
           "role": {
-            "en": "Sole engineer of MII Deck and of its Deck Studio integration in MII Cowork, from agent authoring to CI/CD and hosting (the Cowork platform is led by a colleague)",
-            "id": "Engineer tunggal MII Deck dan integrasi Deck Studio-nya di MII Cowork, dari penyusunan oleh agent hingga CI/CD dan hosting (platform Cowork dipimpin rekan)"
+            "en": "Sole engineer of AI presentation authoring and hosting and its AI presentation studio integration in an AI workspace, from agent authoring to CI/CD and hosting (the workspace platform is led by a colleague)",
+            "id": "Engineer tunggal penyusunan dan hosting presentasi AI serta integrasi studio presentasi AI di workspace AI, dari penyusunan oleh agent hingga CI/CD dan hosting (platform workspace dipimpin rekan)"
           },
           "problem": {
             "en": "MII teams wanted AI agents to help draft client-ready presentations without losing the MII design or human control over publication. Each change needed owner approval, and private decks needed their own access protection.",
@@ -8932,16 +8932,16 @@
           },
           "approach": [
             {
-              "en": "I built the MII Deck kit around light and dark slide components and 32 slide blueprints with motion. Layout, contrast and text-depth checks run alongside a critic that scores each deck against a rubric.",
-              "id": "Saya membangun kit MII Deck: komponen slide terang dan gelap, 32 blueprint slide dengan animasi, serta gate QA untuk layout, kontras, dan kedalaman teks, ditambah critic yang menilai setiap deck dengan rubrik."
+              "en": "I built the AI presentation kit around light and dark slide components and 32 slide blueprints with motion. Layout, contrast and text-depth checks run alongside a critic that scores each deck against a rubric.",
+              "id": "Saya membangun kit presentasi AI: komponen slide terang dan gelap, 32 blueprint slide dengan animasi, serta gate QA untuk layout, kontras, dan kedalaman teks, ditambah critic yang menilai setiap deck dengan rubrik."
             },
             {
-              "en": "I built Deck Studio inside MII Cowork. Agents draft presentations in the conversation's sandbox; the owner approves each stage, locks slides and can export an editable PPTX.",
-              "id": "Saya membangun Deck Studio di dalam MII Cowork. Agent menyusun presentasi di sandbox percakapan; pemiliknya menyetujui setiap tahap, mengunci slide, dan dapat mengekspor PPTX yang bisa diedit."
+              "en": "I built the AI presentation studio inside the AI workspace. Agents draft presentations in the conversation's sandbox; the owner approves each stage, locks slides and can export an editable PPTX.",
+              "id": "Saya membangun studio presentasi AI di dalam workspace AI. Agent menyusun presentasi di sandbox percakapan; pemiliknya menyetujui setiap tahap, mengunci slide, dan dapat mengekspor PPTX yang bisa diedit."
             },
             {
-              "en": "I built the publish path: Cowork opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
-              "id": "Saya membangun alur publikasi: Cowork membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang berhasil jika gagal."
+              "en": "I built the publish path: the workspace opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
+              "id": "Saya membangun alur publikasi: workspace AI membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang berhasil jika gagal."
             },
             {
               "en": "I added private decks with generated passwords, shared password links and rate limits on failed attempts.",
@@ -8952,8 +8952,8 @@
             {
               "value": "21 PRs",
               "label": {
-                "en": "Merged pull requests in MII Deck, Sep to Oct 2026",
-                "id": "Pull request yang di-merge di MII Deck, Sep hingga Okt 2026"
+                "en": "Merged pull requests in the AI presentation app, Sep to Oct 2026",
+                "id": "Pull request yang di-merge di aplikasi presentasi AI, Sep hingga Okt 2026"
               },
               "context": {
                 "en": "Repository history.",
@@ -9000,8 +9000,8 @@
             {
               "src": "/media/agent-deck-platform/deck-aria-01.webp",
               "alt": {
-                "en": "ARIA product deck cover in the dark MII theme, with a live call card showing grounded retrieval and a human handoff",
-                "id": "Sampul deck produk ARIA dengan tema gelap MII, berisi kartu panggilan live yang menampilkan retrieval berbasis dokumen dan handoff ke manusia"
+                "en": "Grounded realtime voice agent deck cover in the dark MII theme, with a live call card showing grounded retrieval and a human handoff",
+                "id": "Sampul deck voice agent AI realtime dengan grounding dengan tema gelap MII, berisi kartu panggilan live yang menampilkan retrieval berbasis dokumen dan handoff ke manusia"
               },
               "width": 1600,
               "height": 1000,
@@ -9129,24 +9129,24 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "MII Cowork UI Revamp and Deck Studio",
-            "id": "Revamp UI MII Cowork dan Deck Studio"
+            "en": "AI Workspace UI Revamp and Presentation Studio",
+            "id": "Revamp UI Workspace AI dan Studio Presentasi"
           },
           "tagline": {
-            "en": "A frontend revamp for MII Cowork, the AI workspace with a sandbox for each conversation, plus Deck Studio for creating MII Deck presentations alongside the chat.",
-            "id": "Pembaruan frontend MII Cowork, workspace AI dengan sandbox tersendiri untuk setiap percakapan, serta Deck Studio untuk menyusun presentasi MII Deck di samping chat."
+            "en": "A frontend revamp for an AI workspace with a sandbox for each conversation, plus an AI presentation studio for authoring and hosting slides alongside the chat.",
+            "id": "Pembaruan frontend workspace AI dengan sandbox tersendiri untuk setiap percakapan, serta studio presentasi AI untuk menyusun dan menghosting slide di samping chat."
           },
           "period": {
             "start": "2026-09",
             "end": "2026-10"
           },
           "role": {
-            "en": "Frontend revamp lead and Deck Studio engineer (the platform and backend are led by a colleague)",
-            "id": "Pemimpin revamp frontend dan engineer Deck Studio (platform dan backend dipimpin rekan)"
+            "en": "Frontend revamp lead and AI presentation studio engineer (the platform and backend are led by a colleague)",
+            "id": "Pemimpin revamp frontend dan engineer studio presentasi AI (platform dan backend dipimpin rekan)"
           },
           "problem": {
-            "en": "The colleague-led MII Cowork platform already ran agents in a sandbox for each conversation. My work was on the frontend: replacing inconsistent controls and creating a path from a chat to a finished MII presentation through Deck Studio, without changing the backend.",
-            "id": "MII Cowork sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih memakai dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
+            "en": "The colleague-led AI workspace already ran agents in a sandbox for each conversation. My work was on the frontend: replacing inconsistent controls and creating a path from a chat to a finished MII presentation through the AI presentation studio, without changing the backend.",
+            "id": "Workspace AI sudah menjalankan agent di sandbox per percakapan, tetapi antarmukanya masih memakai dialog konfirmasi bawaan browser dan set ikon yang bercampur, dan belum ada jalur dari percakapan ke presentasi MII yang siap pakai."
           },
           "approach": [
             {
@@ -9158,8 +9158,8 @@
               "id": "Saya mendesain ulang tata letak: navigasi samping dengan panel konteks, panel file dan tugas yang dapat tampil di atas chat atau berdampingan dengannya, kolom chat di tengah, serta langkah tool sebagai baris aktivitas."
             },
             {
-              "en": "I integrated MII Deck as Deck Studio: a Decks hub and a Deck mode on the home page, a studio panel beside the chat, and publishing through the MII Deck pipeline.",
-              "id": "Saya mengintegrasikan MII Deck sebagai Deck Studio: hub Decks dan mode Deck di halaman utama, panel studio di samping chat, serta publikasi melalui pipeline MII Deck."
+              "en": "I integrated the AI presentation app as a presentation studio: a Decks hub and a Deck mode on the home page, a studio panel beside the chat, and publishing through the presentation app's pipeline.",
+              "id": "Saya mengintegrasikan aplikasi presentasi AI sebagai studio presentasi: hub Decks dan mode Deck di halaman utama, panel studio di samping chat, serta publikasi melalui pipeline aplikasi presentasi AI."
             },
             {
               "en": "I checked AA contrast in every theme, focus traps, keyboard focus and reduced motion, and tested the revamp at 1440, 1100, 768 and 390 px without changing a backend file or API contract.",
@@ -9217,8 +9217,8 @@
             {
               "src": "/media/mii-cowork/01-home.webp",
               "alt": {
-                "en": "MII Cowork home in MII Light, with workspace navigation, a prompt composer offering Chat and Deck modes, starter ideas and the MII Deck panel; email blurred",
-                "id": "Beranda MII Cowork bertema MII Light, dengan navigasi workspace, kolom prompt bermode Chat dan Deck, ide awal, dan panel MII Deck; email diburamkan"
+                "en": "AI workspace home in MII Light, with workspace navigation, a prompt composer offering Chat and Deck modes, starter ideas and the AI presentation panel; email blurred",
+                "id": "Beranda workspace AI bertema MII Light, dengan navigasi workspace, kolom prompt bermode Chat dan Deck, ide awal, dan panel presentasi AI; email diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9257,8 +9257,8 @@
             {
               "src": "/media/mii-cowork/05-deck-studio-brief.webp",
               "alt": {
-                "en": "Deck Studio beside the chat: a demo deck brief, the agent's first steps and the stage rail from ingest to ready, with a blueprint slide in the live preview; email blurred",
-                "id": "Deck Studio di samping chat: brief deck demo, langkah awal agent, dan rail tahap dari ingest hingga ready, dengan slide blueprint di preview live; email diburamkan"
+                "en": "the AI presentation studio beside the chat: a demo deck brief, the agent's first steps and the stage rail from ingest to ready, with a blueprint slide in the live preview; email blurred",
+                "id": "studio presentasi AI di samping chat: brief deck demo, langkah awal agent, dan rail tahap dari ingest hingga ready, dengan slide blueprint di preview live; email diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9267,8 +9267,8 @@
             {
               "src": "/media/mii-cowork/06-deck-studio-ready.webp",
               "alt": {
-                "en": "The demo deck ready in Deck Studio: critic scores after three rounds, QA warnings per slide, PPTX download and Publish, with the QA and critic loop slide in the preview; email blurred",
-                "id": "Deck demo yang siap di Deck Studio: skor critic setelah tiga putaran, peringatan QA per slide, unduhan PPTX dan Publish, dengan slide loop QA dan critic di preview; email diburamkan"
+                "en": "The demo deck ready in the AI presentation studio: critic scores after three rounds, QA warnings per slide, PPTX download and Publish, with the QA and critic loop slide in the preview; email blurred",
+                "id": "Deck demo yang siap di studio presentasi AI: skor critic setelah tiga putaran, peringatan QA per slide, unduhan PPTX dan Publish, dengan slide loop QA dan critic di preview; email diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9277,8 +9277,8 @@
             {
               "src": "/media/mii-cowork/07-home-dark.webp",
               "alt": {
-                "en": "MII Cowork home in the MII Dark theme with the navigation rail, composer, starter ideas and MII Deck promo; email blurred",
-                "id": "Halaman utama MII Cowork dengan tema MII Dark beserta navigation rail, composer, ide awal, dan promo MII Deck; email diburamkan"
+                "en": "AI workspace home in the MII Dark theme with the navigation rail, composer, starter ideas and AI presentation promo; email blurred",
+                "id": "Halaman utama workspace AI dengan tema MII Dark beserta navigation rail, composer, ide awal, dan promo presentasi AI; email diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9287,8 +9287,8 @@
             {
               "src": "/media/mii-cowork/08-mobile.webp",
               "alt": {
-                "en": "Phone layouts: the home page with Chat and Deck modes, a conversation, and Deck Studio with its stage rail and slide preview",
-                "id": "Tampilan ponsel: halaman utama dengan mode Chat dan Deck, sebuah percakapan, dan Deck Studio dengan rail tahap dan preview slide"
+                "en": "Phone layouts: the home page with Chat and Deck modes, a conversation, and the AI presentation studio with its stage rail and slide preview",
+                "id": "Tampilan ponsel: halaman utama dengan mode Chat dan Deck, sebuah percakapan, dan studio presentasi AI dengan rail tahap dan preview slide"
               },
               "width": 1600,
               "height": 1000,
@@ -9305,12 +9305,12 @@
           "accent": "cyan",
           "wing": "ai",
           "title": {
-            "en": "Clearbox AI Inbox Cleanup for Gmail and Outlook",
-            "id": "Clearbox, Pembersih Inbox AI untuk Gmail dan Outlook"
+            "en": "AI Inbox Assistant for Gmail and Outlook",
+            "id": "Asisten Inbox AI untuk Gmail dan Outlook"
           },
           "shortTitle": {
-            "en": "Clearbox AI Inbox Cleanup",
-            "id": "Clearbox Pembersih Inbox AI"
+            "en": "AI Inbox Assistant",
+            "id": "Asisten Inbox AI"
           },
           "tagline": {
             "en": "A self-hosted Gmail and Outlook assistant: Microsoft-Decision-1 scores email, code adds guardrails and reasons, and the owner approves every move to Trash or Archive.",
@@ -9404,8 +9404,8 @@
             {
               "src": "/media/clearbox/01-review.webp",
               "alt": {
-                "en": "Clearbox Review on synthetic data: 186 emails ready to clean up, sender groups with verdicts and confidence bands, and the reasons for one group in the detail panel",
-                "id": "Review Clearbox dengan data sintetis: 186 email siap dibersihkan, grup pengirim dengan verdict dan tingkat keyakinan, serta alasan untuk satu grup di panel detail"
+                "en": "AI inbox assistant review on synthetic data: 186 emails ready to clean up, sender groups with verdicts and confidence bands, and the reasons for one group in the detail panel",
+                "id": "Review asisten inbox AI dengan data sintetis: 186 email siap dibersihkan, grup pengirim dengan verdict dan tingkat keyakinan, serta alasan untuk satu grup di panel detail"
               },
               "width": 1600,
               "height": 1000,
@@ -9424,8 +9424,8 @@
             {
               "src": "/media/clearbox/03-accounts.webp",
               "alt": {
-                "en": "Accounts: Gmail and Outlook mailboxes with backfill progress, Scan now, Pause, Reconnect and Disconnect; Clearbox can never permanently delete or send email",
-                "id": "Accounts: mailbox Gmail dan Outlook dengan progres backfill, Scan now, Pause, Reconnect, dan Disconnect; Clearbox tidak pernah bisa menghapus permanen atau mengirim email"
+                "en": "Accounts: Gmail and Outlook mailboxes with backfill progress, Scan now, Pause, Reconnect and Disconnect; the assistant can never permanently delete or send email",
+                "id": "Accounts: mailbox Gmail dan Outlook dengan progres backfill, Scan now, Pause, Reconnect, dan Disconnect; asisten ini tidak pernah bisa menghapus permanen atau mengirim email"
               },
               "width": 1440,
               "height": 900,
@@ -9843,8 +9843,8 @@
           "wing": "software",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "MII Microsoft Solutions Website",
-            "id": "Situs Web MII Microsoft Solutions"
+            "en": "Microsoft Solutions Website",
+            "id": "Situs Solusi Microsoft"
           },
           "tagline": {
             "en": "MII's public Microsoft Solutions website in English and Indonesian, built from 17 specs to present its practice areas, completed work, products, licensing and promotions.",
@@ -9986,12 +9986,12 @@
           "accent": "pink",
           "wing": "software",
           "title": {
-            "en": "Sewise Fashion Labs: Made-to-Measure Sewing Patterns",
-            "id": "Sewise Fashion Labs: Pola Jahit Sesuai Ukuran"
+            "en": "Made-to-Measure Sewing Pattern Generator",
+            "id": "Generator Pola Jahit Sesuai Ukuran"
           },
           "shortTitle": {
-            "en": "Sewise Fashion Labs",
-            "id": "Sewise Fashion Labs"
+            "en": "Sewing Pattern Generator",
+            "id": "Generator Pola Jahit"
           },
           "tagline": {
             "en": "A 2026 hackathon project that turns a garment sketch and five body measurements into a made-to-measure pattern, calculated fabric lengths for each roll width and a shopping list, with tools for reusing old clothes.",
@@ -10084,8 +10084,8 @@
             {
               "src": "/media/sewise-fashion-labs/01-landing.webp",
               "alt": {
-                "en": "Sewise Fashion Labs landing page: from sketch to stitch, made to measure, with a sketch, the drafted pattern pieces and the fabric layout counted in metres",
-                "id": "Halaman utama Sewise Fashion Labs: dari sketsa ke jahitan, sesuai ukuran, dengan sketsa, potongan pattern hasil drafting, dan tata letak kain yang dihitung dalam meter"
+                "en": "Made-to-measure sewing pattern generator landing page: from sketch to stitch, made to measure, with a sketch, the drafted pattern pieces and the fabric layout counted in metres",
+                "id": "Halaman utama generator pola jahit sesuai ukuran: dari sketsa ke jahitan, sesuai ukuran, dengan sketsa, potongan pattern hasil drafting, dan tata letak kain yang dihitung dalam meter"
               },
               "width": 1600,
               "height": 1000,
@@ -10239,12 +10239,12 @@
           "wing": "data",
           "timelineRef": "sentiboard-2022",
           "title": {
-            "en": "Sentiboard: IndoBERT University Sentiment Dashboard",
-            "id": "Sentiboard: Dashboard Sentimen Universitas Berbasis IndoBERT"
+            "en": "University Sentiment Dashboard with IndoBERT",
+            "id": "Dashboard Sentimen Universitas Berbasis IndoBERT"
           },
           "shortTitle": {
-            "en": "Sentiboard (IndoBERT)",
-            "id": "Sentiboard (IndoBERT)"
+            "en": "University Sentiment",
+            "id": "Sentimen Universitas"
           },
           "tagline": {
             "en": "A fine-tuned IndoBERT model, a FastAPI inference API and a Django dashboard that tracks sentiment in university-related posts.",
@@ -10276,8 +10276,8 @@
               "id": "Saya menjalankan model melalui layanan FastAPI dalam container Docker yang mengembalikan teks bersih, logit, dan label untuk setiap unggahan."
             },
             {
-              "en": "I built Sentiboard, a Django dashboard that collects posts through the Twitter API, labels them with the model and shows sentiment by month with word clouds and topic views.",
-              "id": "Saya membangun Sentiboard, dashboard Django yang mengumpulkan unggahan lewat Twitter API, memberi label dengan model tersebut, dan menampilkan sentimen per bulan dengan word cloud dan tampilan topik."
+              "en": "I built a Django university sentiment dashboard that collects posts through the Twitter API, labels them with the model and shows sentiment by month with word clouds and topic views.",
+              "id": "Saya membangun dashboard sentimen universitas berbasis Django yang mengumpulkan unggahan lewat Twitter API, memberi label dengan model tersebut, dan menampilkan sentimen per bulan dengan word cloud dan tampilan topik."
             }
           ],
           "results": [
@@ -10861,8 +10861,8 @@
         {
           "slug": "aria-acs-to-livekit",
           "title": {
-            "en": "Moving ARIA From ACS to LiveKit",
-            "id": "Migrasi ARIA dari ACS ke LiveKit"
+            "en": "Grounded Voice AI: From ACS to LiveKit",
+            "id": "Migrasi Voice AI dari ACS ke LiveKit"
           },
           "date": "2026-10-27",
           "track": "ai-in-production",
@@ -10877,8 +10877,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "ARIA moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS-to-LiveKit speedup was measured.",
-            "id": "ARIA pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur secara sebanding."
+            "en": "The AI voice agent moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS speedup was measured.",
+            "id": "Voice agent AI pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur setara."
           },
           "icon": "server"
         },
@@ -10960,7 +10960,7 @@
         {
           "slug": "clearbox-inbox-cleanup-with-microsoft-decision-1",
           "title": {
-            "en": "Clearbox: Triage with Microsoft-Decision-1",
+            "en": "AI Inbox Triage with Microsoft-Decision-1",
             "id": "Memilah Inbox dengan Microsoft-Decision-1"
           },
           "date": "2026-10-16",
@@ -10977,8 +10977,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox.",
-            "id": "Clearbox memilah email Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
+            "en": "An AI inbox assistant pre-sorts Gmail and Outlook email for approval with Microsoft-Decision-1 and guardrails. Evaluation: 40 synthetic emails, not an inbox.",
+            "id": "Asisten inbox AI memilah Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
           },
           "icon": "inbox"
         },
@@ -11243,8 +11243,8 @@
           "kind": "thesis",
           "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
           "summary": {
-            "en": "My BSc thesis: Sentiboard, a university sentiment dashboard using IndoBERT.",
-            "id": "Skripsi S1 saya: Sentiboard, dashboard sentimen universitas menggunakan IndoBERT."
+            "en": "My BSc thesis: a university sentiment dashboard using IndoBERT.",
+            "id": "Skripsi S1 saya: dashboard sentimen universitas menggunakan IndoBERT."
           },
           "abstract": "My BSc final project (Tugas Akhir) at Telkom University: Sentiboard, a web dashboard that monitors social media sentiment about a university, so it can see how students respond to its services without manual surveys. A fine-tuned IndoBERT model classifies Indonesian posts by sentiment, and a Django dashboard turns the results into trends, filters and exports. The system was built with an iterative incremental method and checked with black box testing and a user acceptance test.",
           "document": {
@@ -11378,10 +11378,13 @@
   "sideProjects": [
     {
       "id": "jagarupa",
-      "title": "JagaRupa",
+      "title": {
+        "en": "Product Campaign Image Generator",
+        "id": "Generator Gambar Kampanye Produk"
+      },
       "summary": {
-        "en": "I built JagaRupa to help small sellers turn real product photos into campaign images that fit their brand. Art director, brand guardian and copywriter agents work from a brief, with a critique loop and checks against Indonesian marketplace rules. Code composites the text and logos rather than asking the image model to render them. I delivered it solo through 15 feature specs, directing a GitHub Copilot coding agent.",
-        "id": "Saya membangun JagaRupa untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Brief diproses oleh agent art director, brand guardian, dan copywriter, dengan peninjauan berulang serta pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render oleh model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
+        "en": "I built this product campaign image generator to help small sellers turn real product photos into campaign images that fit their brand. Art director, brand guardian and copywriter agents work from a brief, with a critique loop and checks against Indonesian marketplace rules. Code composites the text and logos rather than asking the image model to render them. I delivered it solo through 15 feature specs, directing a GitHub Copilot coding agent.",
+        "id": "Saya membangun generator gambar kampanye produk ini untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Brief diproses oleh agent art director, brand guardian, dan copywriter, dengan peninjauan berulang serta pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render oleh model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
       },
       "stack": [
         "Next.js",
@@ -11397,10 +11400,13 @@
     },
     {
       "id": "caloriq",
-      "title": "CalorIQ",
+      "title": {
+        "en": "Meal Nutrition Tracker",
+        "id": "Pelacak Gizi Makanan"
+      },
       "summary": {
-        "en": "CalorIQ estimates nutrition from meal logs submitted as text or photos, including Indonesian food. It uses a vision model, with daily to monthly summaries, per-user rate limits and a clearly labelled fallback.",
-        "id": "CalorIQ memperkirakan kandungan gizi dari catatan makanan berupa teks atau foto, termasuk makanan Indonesia. Aplikasi ini menggunakan vision model, dengan ringkasan harian hingga bulanan, rate limit per pengguna, dan fallback yang diberi label jelas."
+        "en": "The meal nutrition tracker estimates nutrition from meal logs submitted as text or photos, including Indonesian food. It uses a vision model, with daily to monthly summaries, per-user rate limits and a clearly labelled fallback.",
+        "id": "Pelacak gizi makanan ini memperkirakan kandungan gizi dari catatan makanan berupa teks atau foto, termasuk makanan Indonesia. Aplikasi ini menggunakan vision model, dengan ringkasan harian hingga bulanan, rate limit per pengguna, dan fallback yang diberi label jelas."
       },
       "stack": [
         "FastAPI",
@@ -11415,10 +11421,13 @@
     },
     {
       "id": "devlens",
-      "title": "DevLens",
+      "title": {
+        "en": "AI Coding Session Analytics",
+        "id": "Analitik Sesi AI Coding"
+      },
       "summary": {
-        "en": "I built DevLens to understand my AI coding sessions across repositories, tools and costs. It is self-hosted; an AI agent implemented it in one day while I directed the product and reviewed the work.",
-        "id": "DevLens adalah dashboard self-hosted untuk sesi AI coding saya, mencakup repositori, tool, biaya, dan insight. AI agent mengimplementasikannya dalam satu hari; saya menentukan arah produk dan meninjau hasilnya."
+        "en": "I built this AI coding session analytics app to understand my AI coding sessions across repositories, tools and costs. It is self-hosted; an AI agent implemented it in one day while I directed the product and reviewed the work.",
+        "id": "Analitik sesi AI coding ini adalah dashboard self-hosted untuk sesi AI coding saya, mencakup repositori, tool, biaya, dan insight. AI agent mengimplementasikannya dalam satu hari; saya menentukan arah produk dan meninjau hasilnya."
       },
       "stack": [
         "FastAPI",
@@ -11431,7 +11440,10 @@
     },
     {
       "id": "ai-jury-council",
-      "title": "AI Jury Council",
+      "title": {
+        "en": "Multi-Agent Product Idea Review",
+        "id": "Review Ide Produk Multi-Agent"
+      },
       "summary": {
         "en": "I use this multi-agent jury to challenge my product ideas. Ten AI juror roles, a devil's advocate and a meta-judge work through eight rounds with blind-review rules, fresh research and peer challenges.",
         "id": "Saya menggunakan juri multi-agent ini untuk menguji ide produk saya. Sepuluh peran juri AI, devil's advocate, dan meta-judge menjalankan delapan ronde dengan aturan blind review, riset terbaru, dan sanggahan antarjuri."
@@ -11582,8 +11594,8 @@
       "name": "Django_Thesis-Sentiboard-University-Sentiment-App",
       "url": "https://github.com/ShinyQ/Django_Thesis-Sentiboard-University-Sentiment-App",
       "description": {
-        "en": "Django university sentiment dashboard built for my BSc thesis, Sentiboard.",
-        "id": "Dashboard sentimen universitas berbasis Django untuk skripsi S1 saya, Sentiboard."
+        "en": "Django university sentiment dashboard built for my BSc thesis.",
+        "id": "Dashboard sentimen universitas berbasis Django untuk skripsi S1 saya."
       },
       "language": "JavaScript",
       "stars": 3
@@ -11662,8 +11674,8 @@
       "name": "ShinyQ-Dev",
       "url": "https://github.com/ShinyQ/ShinyQ-Dev",
       "description": {
-        "en": "Monorepo for my v2 portfolio and the CalorIQ calorie tracker.",
-        "id": "Monorepo untuk portofolio v2 saya dan pelacak kalori CalorIQ."
+        "en": "Monorepo for my v2 portfolio and meal nutrition tracker.",
+        "id": "Monorepo untuk portofolio v2 saya dan pelacak gizi makanan."
       },
       "language": "TypeScript",
       "stars": 0

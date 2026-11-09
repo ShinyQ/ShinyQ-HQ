@@ -235,11 +235,14 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 ## Side projects
 
 - `sideProjects` lists only work that has no project pod (owner decision).
+- `title` accepts bilingual `{ en, id }` capability names or an existing shared title string. Resolve it through
+  `sideProjectTitle` in `selectors.ts` before rendering or serializing it for Classic pages, search, Workshop
+  drawers, 3D labels and Ask. Title Case checks cover both localized leaves.
 - When a side project gets a full pod (a pod `repos` entry equals its `repo`):
   - remove it from `sideProjects` (no Workshop bench, Classic site list or Ask chunk);
   - add its old room to `RETIRED_SIDE_ROOMS`;
   - `tests/unit/career-workshop.test.ts` fails on a duplicate.
-- Sentiboard, e-wallet sentiment and the S&P 500 optimizer went this way: they are Data and ML pods.
+- The university sentiment dashboard, e-wallet sentiment and the S&P 500 optimizer went this way: they are Data and ML pods.
 
 ## Confidence and positioning
 

@@ -126,15 +126,15 @@ describe("content/site-content.json", () => {
     const site = pods.find((p) => p.slug === "solutions-marketing-site")!;
     const ai = pods.find((p) => p.slug === "ai-solutions-assistant")!;
     expect([site.title.en, site.title.id, site.wing, site.tier, site.role.en]).toEqual([
-      "MII Microsoft Solutions Website",
-      "Situs Web MII Microsoft Solutions",
+      "Microsoft Solutions Website",
+      "Situs Solusi Microsoft",
       "software",
       "featured",
       "Sole engineer",
     ]);
     expect([ai.title.en, ai.title.id, ai.wing, ai.tier, ai.role.en]).toEqual([
-      "MII Microsoft AI Portfolio and Assistant",
-      "Portofolio dan Asisten MII Microsoft AI",
+      "AI Solutions Portfolio and Assistant",
+      "Portofolio dan Asisten Solusi AI",
       "ai",
       "featured",
       "Sole engineer",
@@ -276,8 +276,8 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
   it("is shown as Metrodata work with the employer's name, never a sector label", () => {
     expect(vendor?.client).toBe("Metrodata");
     expect(vendor?.timelineRef).toBe("metrodata-2026");
-    expect(vendor?.tagline.en).toMatch(/^eVendor, Metrodata's vendor portal/);
-    expect(vendor?.tagline.id).toContain("portal vendor Metrodata");
+    expect(vendor?.tagline.en).toMatch(/^Metrodata's vendor management portal/);
+    expect(vendor?.tagline.id).toContain("Portal manajemen vendor Metrodata");
     expect(vendor?.problem.en).toMatch(/^Metrodata needed/);
     expect(vendor?.problem.id).toMatch(/^Metrodata membutuhkan/);
     expect(text).not.toMatch(/MII's internal|internal MII|group business unit|Unit bisnis dalam grup/);
@@ -359,12 +359,12 @@ describe("spec-driven development post facts (R5-P11)", () => {
   });
 });
 
-describe("AI Fraud Document Review gallery names its own product (R5-P11)", () => {
-  it("calls the app MII Fraud Detection, never FREDDY (the automotive client's product)", () => {
+describe("AI Fraud Document Review gallery uses capability naming (R5-P11)", () => {
+  it("describes fraud review, never FREDDY (the automotive client's product)", () => {
     const pods = parsed.success ? parsed.data.floors.labs.pods : [];
     const assets = pods.find((p) => p.slug === "fraud-review-platform")?.assets ?? [];
-    expect(assets[0]?.alt.en).toMatch(/^MII Fraud Detection home:/);
-    expect(assets[0]?.alt.id).toMatch(/^Beranda MII Fraud Detection:/);
+    expect(assets[0]?.alt.en).toMatch(/^AI document fraud review home:/);
+    expect(assets[0]?.alt.id).toMatch(/^Beranda review fraud dokumen berbasis AI:/);
     for (const a of assets) expect(`${a.alt.en} ${a.alt.id}`).not.toMatch(/FREDDY/i);
   });
 });

@@ -20,9 +20,9 @@ describe("parseTermList", () => {
   });
 });
 
-describe("product allowlist (C3, revised 2026-10-10)", () => {
-  it("loads the product names that feed the Ask entity allowlist", () => {
-    expect(loadAllowlist()).toEqual(expect.arrayContaining(["ARIA", "Pris.AI", "MII Deck"]));
+describe("capability allowlist (C3)", () => {
+  it("loads the capability names that feed the Ask entity allowlist", () => {
+    expect(loadAllowlist()).toEqual(expect.arrayContaining(["Realtime AI Voice Agent with Grounding", "AI Code Security Platform", "AI Presentation Authoring and Hosting"]));
   });
 
   it("keeps the public MII Microsoft app names out of it, which would make Microsoft look like a known employer", () => {

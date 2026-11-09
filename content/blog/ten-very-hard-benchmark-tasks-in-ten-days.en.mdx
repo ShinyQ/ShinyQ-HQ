@@ -1,7 +1,7 @@
 ---
 title: "Ten Very Hard Benchmark Tasks in Ten Days"
 date: "2026-11-02"
-updated: "2026-11-08"
+updated: "2026-11-09"
 excerpt: "First AI benchmark job: ten Indonesian tasks in ten days, half merged, most rated very hard, the top band. Over 300 ideas killed. The method, not the tasks."
 tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workflow", "case-study"]
 readingTime: "12 min"
@@ -111,7 +111,7 @@ The sessions ran in the GitHub Copilot app, with the Copilot CLI for probes and 
 - **Lanes with fences.** A round usually had three lanes, each a child session with its own angle, its own spec file and its own backlog prefix. Lanes wrote only in their own section; the coordinator wrote the consensus.
 - **Kickoff prompts that stand alone.** Every lane started from one message with five parts: my request quoted word for word, the decisions already made (marked "do not reopen"), the spec sections that were the source of truth, numbered steps, and limits such as a container cap per lane and no edits to shared docs or other worktrees.
 - **Short messages.** Lead with the ask or the verdict, skip acknowledgements, and allow at most two round-trips on any disagreement before the coordinator decides or brings it to me.
-- **Decisions come to me as options.** In those 54 hours the coordinator asked me 101 questions. 83 were a pick from two to four options with one marked as recommended, and 25 were about a commit, push or pull request. My own messages were short; a lot of them just said "continue".
+- **Decisions come to me as options.** In those 54 hours the coordinator asked me 101 questions. 83 were a pick from two to four options with one marked as recommended, and 25 were about a commit, push or pull request. My replies were short, but I also read the specs and plans and remained accountable for the output.
 - **Other model families as independent researchers.** Separate GPT, Gemini and Grok sessions proposed and attacked ideas. In one round, three agents from three families each proposed ideas alone, then red-teamed the other two agents' ideas, then converged on at most three to probe. Different families miss different things, which is the point. That round also taught me a lesson: it killed all 18 of its ideas in 34 minutes with questions asked without tools, and a later round showed that this kind of kill was not evidence.
 - **A read-only red team.** One session's only job was to attack a task under review, with no write access to its worktree.
 - **Automations, honestly.** I scheduled two researchers (one reading academic sources, one real-world practice) and a verifier. In one day they ran six times, rejected 57 leads and proposed nothing that survived, so I paused them. The automation that earned its keep was boring: a refresh of every open and merged task in my language, every 12 hours, which caught collisions with other contributors early. The ideas that became tasks started from my own native intuition; the agents stress-tested them.
@@ -173,7 +173,7 @@ The changes I had identified at publication were:
 - **Fairness first, difficulty second.** A stricter fairness rule arrived on day seven, and I re-audited every task and idea against it. Ideas that looked very hard were often hard only because something was hidden. The fairness check then came before the first probe.
 - **Make the blind checkers truly independent.** My answer-key checkers never saw the key, but they came from the same model family as the agent that wrote it. They can share its blind spots. For the next version, I wanted to mix families.
 - **Budget the probes.** Nine agent runs per idea, plus reruns, add up, and they are noisy. By publication, I was running the cheap plain-words variant first.
-- **Plan for bad nights.** One evening, network drops caused 59 session errors across five sessions, and I typed "continue" 64 times by hand. Sessions also lost context when their history was compacted.
+- **Plan for bad nights.** One evening, network drops caused 59 session errors across five sessions and required repeated manual intervention. Sessions also lost context when their history was compacted.
 - **Keep the rulebook honest.** The digest grew back: by publication, the normalized rulebook was larger than the file it replaced, and I relaxed gates three times mid-flight. Each relaxation was a recorded decision, but the file needed pruning, not only appending.
 - **Seed the automations.** Two empty runs suggested the open brief was the problem. For the next version, I wanted to start from concrete seeds.
 - **An approval is not a merge.** At publication, half of the first ten submissions were still waiting for review, and a review could still close them.

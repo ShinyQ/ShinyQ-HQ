@@ -64,6 +64,8 @@ describe("buildExperienceData", () => {
     const data = buildCareerData("en");
     expect(data.years.reduce((n, y) => n + y.awards, 0)).toBe(getAwards().length);
     expect(data.sideProjects.map((p) => p.id)).toEqual(getSideProjects().map((p) => p.id));
+    expect(data.sideProjects.find((p) => p.id === "jagarupa")?.title).toBe("Product Campaign Image Generator");
+    expect(buildCareerData("id").sideProjects.find((p) => p.id === "jagarupa")?.title).toBe("Generator Gambar Kampanye Produk");
     // The skyline gets every repo with its room slug, language and stars.
     expect(data.repos.map((r) => r.name)).toEqual(getPublicRepos().map((r) => r.name));
     expect(data.repos.map((r) => r.stars)).toEqual(getPublicRepos().map((r) => r.stars));

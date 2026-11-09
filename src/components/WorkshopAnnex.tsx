@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, RepoRef, SideProject } from "@/content/schema";
+import { sideProjectTitle } from "@/content/selectors";
 import { TechLogoRow } from "./Chip";
 import { ExternalLink } from "./ExternalLink";
 
@@ -11,7 +12,7 @@ export async function SideProjectGrid({ projects, locale }: { projects: readonly
         <li key={p.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[90px_minmax(0,1fr)] md:py-6">
           <p className="pv-date md:pt-1.5">{p.year}</p>
           <div className="min-w-0">
-            <h3 className="pv-h3">{p.title}</h3>
+            <h3 className="pv-h3">{sideProjectTitle(p, locale)}</h3>
             <p className="mt-2 max-w-[64ch] text-[15px] leading-6 text-ink-2">{p.summary[locale]}</p>
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
               <TechLogoRow items={p.stack} max={10} />

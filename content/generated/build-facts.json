@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-31",
-  "commit": "2fe0a3d",
+  "generatedAt": "2026-11-08",
+  "commit": "23515b0",
   "git": {
-    "commits": 299,
+    "commits": 343,
     "firstCommit": "2026-10-09",
-    "mergedPrs": 283,
-    "latestPr": 351
+    "mergedPrs": 329,
+    "latestPr": 412
   },
   "rounds": [
     {
@@ -383,6 +383,7 @@
       "prs": [
         326,
         327,
+        328,
         329,
         331,
         332,
@@ -395,7 +396,7 @@
         344
       ],
       "first": "2026-10-26",
-      "last": "2026-10-27"
+      "last": "2026-10-31"
     },
     {
       "id": "r17",
@@ -405,21 +406,66 @@
         348,
         349,
         350,
-        351
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        358,
+        359,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        379,
+        380,
+        381,
+        382,
+        385,
+        386,
+        389,
+        390,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        400,
+        403,
+        406,
+        407,
+        409,
+        410,
+        411,
+        412
       ],
       "first": "2026-10-28",
-      "last": "2026-10-31"
+      "last": "2026-11-08"
     }
   ],
   "tests": {
-    "unitFiles": 494,
-    "e2e": 713,
+    "unitFiles": 512,
+    "e2e": 773,
     "e2eFiles": 62,
     "perfFiles": 7
   },
   "docs": {
-    "specs": 29,
-    "plans": 124
+    "specs": 33,
+    "plans": 132
   },
   "ci": {
     "jobs": [
@@ -430,19 +476,19 @@
       "E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}",
       "3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}",
       "Build, CV and e2e",
+      "Lighthouse shard ${{ matrix.shard }}/${{ needs.changes.outputs.lighthouse_total }}",
       "Lighthouse CI",
-      "Nightly report",
-      "Cloudflare Pages preview"
+      "Nightly report"
     ],
     "workflows": 13
   },
   "log": {
     "decisions": {
-      "total": 248,
+      "total": 271,
       "areas": [
         {
           "area": "Content",
-          "count": 38
+          "count": 43
         },
         {
           "area": "3D experience",
@@ -450,85 +496,95 @@
         },
         {
           "area": "Ask",
-          "count": 21
+          "count": 22
         },
         {
           "area": "L1 Agent Office",
           "count": 20
         },
         {
-          "area": "CI",
-          "count": 13
-        },
-        {
           "area": "Classic site",
-          "count": 13
+          "count": 18
         },
         {
-          "area": "L4 Writing",
-          "count": 11
+          "area": "CI",
+          "count": 16
+        },
+        {
+          "area": "L1 Lobby",
+          "count": 13
         },
         {
           "area": "Stats",
-          "count": 11
+          "count": 12
         }
       ],
       "latest": [
         {
-          "date": "2026-10-31",
-          "area": "L4 Writing",
-          "file": "2026-10-31-l4-writing-labels-calibration.md",
-          "text": "Two end-of-month calibration fixes on L4 labels, both under the owner rule that no label covers another."
+          "date": "2026-11-09",
+          "area": "Content: capability naming and owner accountability",
+          "file": "2026-11-09-minimal-capability-naming.md",
+          "text": "The owner approved a minimal bilingual pass replacing project/product brands with capability names across editable public copy, including employer, freelance, personal and hackathon work."
         },
         {
-          "date": "2026-10-31",
-          "area": "Content: LinkedIn alignment",
-          "file": "2026-10-31-content-linkedin-alignment.md",
-          "text": "Owner review of the site against the LinkedIn profile, item by item."
+          "date": "2026-11-08",
+          "area": "Content: Benchmark and reading navigation",
+          "file": "2026-11-08-benchmark-and-reading-navigation.md",
+          "text": "The owner keeps the original ten-day benchmark retrospective and adds a distinct later-lessons section in English and Indonesian, publishing the method without identifying private tasks."
         },
         {
-          "date": "2026-10-31",
-          "area": "Content: certifications and study guides",
-          "file": "2026-10-31-content-gh-300-earned-ab-100-ten-book-vault.md",
-          "text": "Owner request: GH-300 (GitHub Copilot) is earned (credential 15A85CAB4BE4E174, earned 2026-10-31, valid until 2028-10-31), and the AB-100 (Agentic AI Business Solutions Architect Expert) study guide goes up now, before the exam, with the…"
+          "date": "2026-11-06",
+          "area": "Classic site: quiet availability line",
+          "file": "2026-11-06-quiet-availability-line.md",
+          "text": "Owner rule (2026-11-06): searching on the Classic site and opening a result must never scroll straight down to \"I am open to freelance and part-time software and AI engineering work.\", and this goes into the constitution."
         },
         {
-          "date": "2026-10-31",
-          "area": "B1 Engine Room",
-          "file": "2026-10-31-b1-engine-room-content.md",
-          "text": "Owner request: the B1 content felt redundant; the owner chose all three fixes."
+          "date": "2026-11-04",
+          "area": "L1 Lobby",
+          "file": "2026-11-04-highlights-hall-one-gate-premium.md",
+          "text": "Owner decisions (2026-11-04, after the hall extension deploy): \"One grand entrance from the Lobby; remove the Agent Office road so the hall is a dead-end gallery\", the neon Holo Cathedral at the \"B4."
         },
         {
-          "date": "2026-10-31",
-          "area": "Ask",
-          "file": "2026-10-31-ask-calibration-and-evals.md",
-          "text": "Ask calibration and the nightly eval."
+          "date": "2026-11-03",
+          "area": "Content: English editorial rewrite",
+          "file": "2026-11-03-english-editorial-rewrite.md",
+          "text": "Review all public English writing in a natural, technically grounded voice, including all ten hosted English articles, forty projects, thirty-seven career entries, approved perspectives, build-story, interface and accessibility copy…"
         },
         {
-          "date": "2026-10-29",
-          "area": "Content: certifications and study guides",
-          "file": "2026-10-29-content-gh-300-in-progress-and-study-guide.md",
-          "text": "Owner request: add the GH-300 (GitHub Copilot) study guide to the site now, before the exam is passed."
+          "date": "2026-11-02",
+          "area": "L1 Lobby: Proof Park contribution data",
+          "file": "2026-11-02-l1-proof-park-data.md",
+          "text": "Owner request: square off the L1 floor around the Agent Office with new landmarks (the L1 Proof Park design)."
         },
         {
-          "date": "2026-10-29",
-          "area": "3D experience",
-          "file": "2026-10-29-phone-first-3d-part-3.md",
-          "text": "Phone-first 3D, part 3: landscape phones (wider than tall, under 500 px high) get their own camera class landscape, held to the same reading rule as portrait phones (every L2 to RF title and name at least 10 CSS px at 844 x 390 and 9 px…"
+          "date": "2026-11-02",
+          "area": "L1 Lobby",
+          "file": "2026-11-02-l1-proof-park.md",
+          "text": "Owner request: \"So as you know the L1 was not realy square because the addition of agent office im thinking of how can we make it square by adding some wow things into it or expand highlights so its fully square and think and become as…"
         },
         {
-          "date": "2026-10-28",
-          "area": "3D experience",
-          "file": "2026-10-28-phone-first-3d-part-2.md",
-          "text": "Phone-first 3D, part 2: floor framing and legibility plus the keyboard hints are part 2; joystick on demand, gestures and a landscape camera go to part 3."
+          "date": "2026-11-02",
+          "area": "L1 Lobby",
+          "file": "2026-11-02-highlights-hall-extension.md",
+          "text": "Owner decision (2026-11-02, after the Proof Park look): \"Looks bad im not approve this lets just extend the highlight hall\"."
         }
       ]
     },
     "plans": {
-      "shipped": 123,
-      "inProgress": 0,
+      "shipped": 125,
+      "inProgress": 6,
       "dropped": 1,
       "latest": [
+        {
+          "file": "2026-11-02-classic-css-split.md",
+          "title": "Classic CSS Split (CL-1)",
+          "pr": 392
+        },
+        {
+          "file": "2026-11-02-l1-proof-park-outline.md",
+          "title": "L1 Proof Park, PR 2: One Rectangle (outline)",
+          "pr": 390
+        },
         {
           "file": "2026-10-29-phone-first-3d-part-3.md",
           "title": "Phone-First 3D, Part 3",
@@ -543,16 +599,6 @@
           "file": "2026-10-26-phone-first-3d.md",
           "title": "Phone-First 3D",
           "pr": 329
-        },
-        {
-          "file": "2026-10-25-l4-writing-revamp.md",
-          "title": "L4 Writing Revamp: Reader Tracks",
-          "pr": 327
-        },
-        {
-          "file": "2026-10-25-b1-material-detail.md",
-          "title": "B1 Material Detail",
-          "pr": 324
         }
       ],
       "droppedPlans": [
@@ -565,8 +611,8 @@
     }
   },
   "ask": {
-    "golden": 108,
-    "passMark": 105,
+    "golden": 116,
+    "passMark": 113,
     "promptDate": "2026-10-27",
     "packKb": 384,
     "historyTurns": 5,
@@ -574,7 +620,7 @@
     "perDay": 40
   },
   "activity": {
-    "last7Days": 23,
+    "last7Days": 20,
     "busiestDay": {
       "date": "2026-10-15",
       "prs": 25

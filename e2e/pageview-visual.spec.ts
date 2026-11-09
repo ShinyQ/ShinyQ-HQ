@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, openPage, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase } from "./hq";
 import { content, heroPod } from "./routes";
 import { captureShot, diffShotDirs, type Box } from "./region-diff";
 import { LOBBY } from "../src/experience/config";
@@ -25,6 +25,51 @@ test.skip(!process.env.SCREENSHOTS, "Set SCREENSHOTS=1 to capture screenshots");
 test.describe.configure({ timeout: 120_000 });
 
 const readerLabel = process.env.READER_SHOTS;
+const editorialDir = process.env.EDITORIAL_SHOTS;
+for (const locale of ["en", "id"] as const) {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    test(`Editorial review ${locale} ${viewport.width}`, async ({ browser }) => {
+      test.skip(!editorialDir, "Set EDITORIAL_SHOTS to capture editorial review");
+      const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+      await context.addInitScript(() => {
+        localStorage.setItem("hq:terminal-seen", "1");
+        localStorage.setItem("hq:onboarded", "done");
+      });
+      const page = await context.newPage();
+      const rendered = [];
+      for (const [name, segment] of [
+        ["home", ""],
+        ["work", "labs"],
+        ["journey", "journey"],
+        ["migration", "blog/aria-acs-to-livekit"],
+        ["inbox", "blog/clearbox-inbox-cleanup-with-microsoft-decision-1"],
+        ["benchmark", "blog/ten-very-hard-benchmark-tasks-in-ten-days"],
+        ["case", "labs/voice-ai-contact-center"],
+        ["build", "build"],
+      ]) {
+        await openPage(page, `/${locale}${segment ? `/${segment}` : ""}?tier=static`);
+        await page.evaluate(() => document.fonts.ready);
+        rendered.push(await page.evaluate(() => ({
+          url: location.href,
+          title: document.title,
+          heading: document.querySelector("h1")?.textContent,
+          description: document.querySelector('meta[name="description"]')?.getAttribute("content"),
+          og: document.querySelector('meta[property="og:title"]')?.getAttribute("content"),
+          text: document.querySelector("main")?.textContent,
+          overflow: document.documentElement.scrollWidth > innerWidth,
+        })));
+        mkdirSync(editorialDir!, { recursive: true });
+        await page.screenshot({ path: `${editorialDir}/${locale}-${name}-${viewport.width}.png`, animations: "disabled" });
+        if (name === "benchmark") {
+          await page.getByText(locale === "en" ? /My replies were short|a lot of them just said/ : /Balasan saya singkat|banyak.*continue/).first().scrollIntoViewIfNeeded();
+          await page.screenshot({ path: `${editorialDir}/${locale}-${name}-${viewport.width}-ownership.png`, animations: "disabled" });
+        }
+      }
+      writeFileSync(`${editorialDir}/${locale}-${viewport.width}-rendered.json`, `${JSON.stringify(rendered, null, 2)}\n`);
+      await context.close();
+    });
+  }
+}
 for (const locale of ["en", "id"] as const) {
   for (const item of [
     { name: "benchmark", segment: "blog/ten-very-hard-benchmark-tasks-in-ten-days" },

@@ -680,8 +680,8 @@ describe("perspectives through the Function (spec section 13)", () => {
 });
 
 describe("multi-turn memory (owner decision 2026-10-17)", () => {
-  const FIRST = "Tell me about Clearbox";
-  const ANSWER = "Clearbox is an AI inbox cleanup tool for Gmail and Outlook.";
+  const FIRST = "Tell me about the AI inbox assistant";
+  const ANSWER = "The AI inbox assistant is an inbox cleanup tool for Gmail and Outlook.";
 
   async function firstTurn(s: ReturnType<typeof setup>) {
     const done = doneOf(await frames(await s.call({ body: { q: FIRST, locale: "en" } })));
@@ -702,7 +702,7 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
   it("sends the same verified history to a Groq backup tier and signs its answer", async () => {
     const s = setup({ answer: ANSWER });
     const turn = await firstTurn(s);
-    const q = setup({ quota: true, groq: "Clearbox uses TypeScript.", env: { GROQ_API_KEY: "gsk_test" } });
+    const q = setup({ quota: true, groq: "The AI inbox assistant uses TypeScript.", env: { GROQ_API_KEY: "gsk_test" } });
     const done = doneOf(await frames(await q.call({ body: { q: "What stack did it use?", locale: "en", history: [turn] } })));
     expect(done.source).toBe("backup");
     expect(done.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
@@ -760,17 +760,17 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
   });
 
   it("a signed turn the pipeline drops still blocks the cache write, so it cannot overwrite a shared answer (audit 2026-10-24)", async () => {
-    const answers = [ANSWER, "Clearbox cleans Gmail and Outlook inboxes with AI.", "Clearbox is a tool."];
+    const answers = [ANSWER, "The AI inbox assistant cleans Gmail and Outlook inboxes.", "The AI inbox assistant is a tool."];
     let n = 0;
     const s = setup({ answer: () => (async function* () { yield answers[Math.min(n++, answers.length - 1)]; })() });
     const entry = () => s.kv.store.get(answerKeys(s.kv)[0]);
     await firstTurn(s);
     const before = entry();
     // A mixed question is answered for its answerable clause and signed with the full question, private clause included.
-    const mixedFrames = await frames(await s.call({ body: { q: "Tell me about Clearbox and is he married?", locale: "en" } }));
+    const mixedFrames = await frames(await s.call({ body: { q: "Tell me about the AI inbox assistant and is he married?", locale: "en" } }));
     const mixed = doneOf(mixedFrames);
     expect(mixed.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    const turn = { q: "Tell me about Clearbox and is he married?", a: answerOf(mixedFrames), sig: mixed.sig as string };
+    const turn = { q: "Tell me about the AI inbox assistant and is he married?", a: answerOf(mixedFrames), sig: mixed.sig as string };
     // The turn verifies (the read is skipped), usableHistory then drops it (historyUsed 0): the shared entry must stay.
     const reads = s.kv.gets.filter((k) => k.startsWith(CACHE_PREFIX)).length;
     const entries = answerKeys(s.kv).length;

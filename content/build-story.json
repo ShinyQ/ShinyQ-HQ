@@ -3,8 +3,8 @@
   "published": "2026-10-17",
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
-    "en": "AI coding agents built ShinyQ HQ in the open from written specs and plans. Kurniadi reviewed their changes and approved each merge. This page explains the architecture, the decisions behind it and the checks a change must pass before release.",
-    "id": "ShinyQ HQ dibangun secara terbuka oleh AI coding agent berdasarkan spec dan rencana tertulis. Kurniadi meninjau perubahan dan menyetujui setiap merge. Halaman ini mengikuti proses pembangunannya, dari cetak biru hingga pemeriksaan wajib sebelum rilis."
+    "en": "Kurniadi built ShinyQ HQ in the open with AI coding agents, reading the written specs and plans, reviewing their changes and approving each merge. This page explains the architecture, the decisions behind it and the checks a change must pass before release.",
+    "id": "Kurniadi membangun ShinyQ HQ secara terbuka bersama AI coding agent, membaca spec dan rencana tertulis, meninjau perubahan, dan menyetujui setiap merge. Halaman ini mengikuti proses pembangunannya, dari cetak biru hingga pemeriksaan wajib sebelum rilis."
   },
   "stations": {
     "blueprint": {
@@ -477,8 +477,8 @@
         {
           "title": { "en": "Owner Gates", "id": "Tahap Persetujuan Pemilik" },
           "text": {
-            "en": "The owner reviews the spec, any list requiring approval, screenshots on phone, tablet and desktop for visual changes, and the final merge. The Rejected Designs on this floor went through that approval process too.",
-            "id": "Pemilik meninjau pada tahap yang sudah ditentukan: spec, daftar yang memerlukan persetujuan (termasuk Desain yang Ditolak di lantai ini), screenshot ponsel, tablet, dan desktop untuk perubahan visual, lalu merge."
+            "en": "The owner reviews the spec, plan, any list requiring approval, screenshots on phone, tablet and desktop for visual changes, and the final merge. The Rejected Designs on this floor went through that approval process too.",
+            "id": "Pemilik meninjau pada tahap yang sudah ditentukan: spec, rencana, daftar yang memerlukan persetujuan (termasuk Desain yang Ditolak di lantai ini), screenshot ponsel, tablet, dan desktop untuk perubahan visual, lalu merge."
           }
         },
         {

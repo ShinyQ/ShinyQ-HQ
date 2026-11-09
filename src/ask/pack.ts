@@ -3,7 +3,7 @@ import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, Perspective, Pod, SiteBuild, SiteContent } from "@/content/schema";
 import { perspectiveSourcePath } from "@/content/perspectives";
 import { overlayStats } from "@/content/load";
-import { clientLabel, podLiveLink } from "@/content/selectors";
+import { clientLabel, podLiveLink, sideProjectTitle } from "@/content/selectors";
 import { topicTagsOf } from "../../functions/_lib/tags";
 import { isAskContact } from "./protocol";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
@@ -485,11 +485,11 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     out.push({
       id: `side-${sp.id}`,
       type: "side-project",
-      title: sp.title,
+      title: sideProjectTitle(sp, "en"),
       url: "/labs",
       updatedAt: sp.year ? String(sp.year) : undefined,
       keywords: ["project", "side", ...sp.stack.map((s) => s.toLowerCase())],
-      text: join([{ en: `Side project: ${sp.title}${sp.year ? ` (${sp.year})` : ""}.`, id: `Side project: ${sp.title}${sp.year ? ` (${sp.year})` : ""}.` }, loc(sp.summary), label("Stack", "Stack", sp.stack.join(", "))]),
+      text: join([{ en: `Side project: ${sideProjectTitle(sp, "en")}${sp.year ? ` (${sp.year})` : ""}.`, id: `Side project: ${sideProjectTitle(sp, "id")}${sp.year ? ` (${sp.year})` : ""}.` }, loc(sp.summary), label("Stack", "Stack", sp.stack.join(", "))]),
     });
   }
 

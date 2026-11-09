@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
+import { sideProjectTitle } from "../src/content/selectors";
 import {
   chooseMotion,
   asReturningVisitor,
@@ -161,7 +162,7 @@ test.describe("L2 Workshop", () => {
     await page.mouse.click(benchPoint.x, benchPoint.y);
     await waitForRoom(page, `L2:side-${project.id}`);
     const drawer = page.getByTestId("room-drawer");
-    await expect(drawer.getByRole("heading", { name: project.title })).toBeVisible();
+    await expect(drawer.getByRole("heading", { name: sideProjectTitle(project, "en") })).toBeVisible();
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
     await waitForCameraSettle(page);

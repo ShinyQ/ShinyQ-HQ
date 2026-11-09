@@ -23,9 +23,9 @@ const localized = (path: string, text: LocalizedText): TitleSlot[] =>
     },
   }));
 
-const plain = <T extends { title: string }>(path: string, item: T): TitleSlot => ({
+const plain = <T extends { title: string | LocalizedText }>(path: string, item: T): TitleSlot => ({
   path,
-  get: () => item.title,
+  get: () => typeof item.title === "string" ? item.title : item.title.en,
   set: (value) => {
     item.title = value;
   },
@@ -46,7 +46,9 @@ export function titleSlots(content: SiteContent): TitleSlot[] {
     ...library.posts.flatMap((p, i) => localized(`floors.library.posts[${i}](${p.slug}).title`, p.title)),
     ...library.publications.map((p, i) => plain(`floors.library.publications[${i}](${p.id}).title`, p)),
     ...library.talks.flatMap((t, i) => localized(`floors.library.talks[${i}](${t.id}).title`, t.title)),
-    ...content.sideProjects.map((p, i) => plain(`sideProjects[${i}](${p.id}).title`, p)),
+    ...content.sideProjects.flatMap((p, i) => typeof p.title === "string"
+      ? [plain(`sideProjects[${i}](${p.id}).title`, p)]
+      : localized(`sideProjects[${i}](${p.id}).title`, p.title)),
     ...content.awards.map((a, i) => plain(`awards[${i}](${a.id}).title`, a)),
     ...content.profile.principles.flatMap((p, i) => localized(`profile.principles[${i}](${p.id}).title`, p.title)),
   ];

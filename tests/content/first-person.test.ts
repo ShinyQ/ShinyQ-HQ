@@ -13,7 +13,7 @@ describe("hasFirstPerson", () => {
   });
 
   it("ignores AI, plural voice and third person", () => {
-    expect(hasFirstPerson("Pris.AI, MII's AI code security platform", "en")).toBe(false);
+    expect(hasFirstPerson("AI code security platform, built at MII", "en")).toBe(false);
     expect(hasFirstPerson("How We Made a Voice Agent Interruptible", "en")).toBe(false);
     expect(hasFirstPerson("dikerjakan oleh satu engineer", "id")).toBe(false);
   });
