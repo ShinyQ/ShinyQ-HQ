@@ -46,3 +46,7 @@ e2e/perf/*-snapshots/
 
 # Classic sheet's lazy-only sources (bun scripts/client-sheet/sources.ts, run by build and dev): rebuilt every build.
 /src/app/lazy-sources.css
+
+# Stryker mutation testing (bun run mutation)
+/.stryker-tmp/
+/reports/mutation/
