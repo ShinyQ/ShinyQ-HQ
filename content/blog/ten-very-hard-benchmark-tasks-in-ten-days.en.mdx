@@ -1,13 +1,15 @@
 ---
 title: "Ten Very Hard Benchmark Tasks in Ten Days"
 date: "2026-11-02"
-updated: "2026-11-09"
-excerpt: "First AI benchmark job: ten Indonesian tasks in ten days, half merged, most rated very hard, the top band. Over 300 ideas killed. The method, not the tasks."
+updated: "2026-11-10"
+excerpt: "First AI benchmark job: ten Indonesian tasks in ten days, all ten merged in the end, five after a redesign. Over 300 ideas killed. The method I used."
 tags: ["ai-benchmarks", "llm-evaluation", "ai-coding-agents", "multi-agent-workflow", "case-study"]
 readingTime: "12 min"
 ---
 
 On 24 October 2026 I started freelancing as an AI benchmark engineer. I had never built a benchmark task before. In the first ten days I opened ten tasks as pull requests. By the time I published this article, five had merged. Most were rated very hard, the benchmark's highest difficulty band.
+
+*Update, 10 November 2026: the work has wrapped up. All ten ideas eventually merged, five of them after a redesign. The full ending is in [How it ended](#how-it-ended).*
 
 I build Indonesian-language tasks for Terminal-Bench, a public benchmark for AI coding agents. In each task, an agent gets a terminal, realistic Indonesian workplace files and an instruction written in Indonesian. It has to write a program that does the job. Hidden tests then grade the output, including on data the agent never saw. Frontier models from OpenAI, Google and Anthropic run every task many times, and their pass rate decides which difficulty band it lands in.
 
@@ -138,7 +140,7 @@ Most of my mistakes were in reading results, not in building tasks.
 
 ## After the first ten days
 
-These notes come from later reviews, as of 8 November 2026, not the original ten-day window. Later work included hard-rated tasks, so the title's very-hard label does not apply to everything that followed. Some work was still open on that date. Review approval was not the same as a merge.
+These notes come from later reviews, as of 8 November 2026, not the original ten-day window. Some work was still open on that date. Review approval was not the same as a merge.
 
 ### Verify dependencies against the evidence
 
@@ -164,6 +166,18 @@ Successful checks on covered inputs do not establish that an entire input family
 
 That discipline also applies to difficulty and completion. A later task's result does not revise the first sprint's result, and an approved open contribution is still open. The stronger retrospective is not the one with the broadest claims. It is the one whose claims a reader could check, without being given the private task.
 
+## How it ended
+
+The work wound down once the Indonesian quota was full in every difficulty band, so no more submissions were needed. My last task merged on 9 November, a little over two weeks after I started.
+
+The final count was sixteen pull requests: ten merged and six closed. Every one of the ten ideas from the first ten days made it into the benchmark in the end. The five that had merged by the time I first published this stayed as they were. The other five took a longer road.
+
+Partway through, the submission rules changed. Medium submissions closed, and new tasks were expected to carry real systems work, not only a language judgment. I closed my five pending pull requests myself and rebuilt each one as a harder task. The language skill stayed at the centre, but now it sat inside a realistic engineering job: a tool that reports only totals, an older data export, a library whose output has to be checked rather than trusted. One of those redesigns was closed when open submissions were cleared. Its next version became the last of the ten to merge.
+
+All five redesigns merged. They were harder to build than the first versions, because each one now asked for more of the work an engineer actually does, and rebuilding them taught me more about designing evaluations than anything else in those weeks.
+
+By the end, the backlog held more than 400 ideas from more than two dozen research rounds. Most were still killed on paper or by a probe. That ratio barely changed, and I don't think it should have.
+
 ## What I would keep and change
 
 Looking back at the first ten days, I would keep the digest layer, the kill-early habit, real agentic probes, the independent answer check and the human gates.
@@ -176,7 +190,7 @@ The changes I had identified at publication were:
 - **Plan for bad nights.** One evening, network drops caused 59 session errors across five sessions and required repeated manual intervention. Sessions also lost context when their history was compacted.
 - **Keep the rulebook honest.** The digest grew back: by publication, the normalized rulebook was larger than the file it replaced, and I relaxed gates three times mid-flight. Each relaxation was a recorded decision, but the file needed pruning, not only appending.
 - **Seed the automations.** Two empty runs suggested the open brief was the problem. For the next version, I wanted to start from concrete seeds.
-- **An approval is not a merge.** At publication, half of the first ten submissions were still waiting for review, and a review could still close them.
+- **An approval is not a merge.** At publication, half of the first ten submissions were still waiting for review, and a review could still close them. In the end, none of those five merged as first submitted. All five merged after a redesign.
 
 I also had no baseline without agents for those ten days, so I can't say how much faster they made me. What I can say is that ten tasks in ten days, from someone doing this for the first time, depended on writing the rules down and making the agents read them.
 
@@ -193,3 +207,4 @@ I also had no baseline without agents for those ten days, so I can't say how muc
 9. Keep a human gate on everything that leaves the machine.
 10. Read the raw artifacts, and sweep infrastructure deaths before you count.
 11. Publish the method, never the task.
+12. Treat a closed pull request as feedback on the design, not the end of the idea.

@@ -75,8 +75,9 @@ bypasses the ACS media plane and is not a controlled migration-speedup compariso
 The bilingual `ten-very-hard-benchmark-tasks-in-ten-days` post belongs to **Engineering
 with AI Agents**. It teaches the method, never a task: no client or benchmark-vendor
 name beyond the public Terminal-Bench, no task names, data, mechanisms or per-task
-scores. Its only outcome numbers are aggregates (ten tasks, half merged, most in the
-hardest band); its process numbers come from the owner's workspace. Its two
+scores. Its only outcome numbers are aggregates (ten tasks, half merged at publication
+and most in the hardest band; in the end sixteen pull requests, ten merged, five of
+them after a redesign); its process numbers come from the owner's workspace. Its two
 post-local figures show the idea funnel and the agent organisation.
 
 The bilingual personal essay `before-it-looked-like-talent` ("Before It Looked Like Talent" /

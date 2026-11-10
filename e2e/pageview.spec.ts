@@ -999,9 +999,10 @@ test.describe("reading a post", () => {
     await expect(page.locator("article header .pv-meta")).toContainText(/\d+ min read/);
 
     const ids = await page.locator(".prose-hq > h2").evaluateAll((hs) => hs.map((h) => h.id));
-    expect(ids).toHaveLength(10);
+    expect(ids).toHaveLength(11);
     expect(ids).toContain("after-the-first-ten-days");
-    await expect(contents(page).locator(".pv-toc-count:visible")).toHaveText("10 chapters");
+    expect(ids).toContain("how-it-ended");
+    await expect(contents(page).locator(".pv-toc-count:visible")).toHaveText("11 chapters");
     const box = await contents(page).boundingBox();
     if (!box) throw new Error("Missing desktop contents box");
     expect(box.x).toBeGreaterThanOrEqual(columns[0][0] + columns[0][1]);
