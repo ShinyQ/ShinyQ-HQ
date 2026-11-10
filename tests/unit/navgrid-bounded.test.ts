@@ -15,7 +15,7 @@ const rng = (seed: number) => {
 describe("findPath returns exactly what the pre-round-5 implementation returned", () => {
   const layouts = realLayouts();
   for (const id of Object.keys(layouts) as FloorId[]) {
-    it(`on ${id}: 20 seeded pairs (some off the slab or inside obstacles), spawn, approach and every door`, () => {
+    it(`on ${id}: 60 seeded pairs (some off the slab or inside obstacles), spawn, approach and every door`, () => {
       const layout = layouts[id];
       const grid = buildNavGrid(layout, ROVER.radius);
       const { minX, maxX, minZ, maxZ } = slabBox(layout);
@@ -26,7 +26,7 @@ describe("findPath returns exactly what the pre-round-5 implementation returned"
         [layout.approach, layout.spawn],
       ];
       for (const door of layout.doors ?? []) pairs.push([layout.approach, door.at]);
-      for (let k = 0; k < 20; k++) pairs.push([point(), point()]);
+      for (let k = 0; k < 60; k++) pairs.push([point(), point()]);
       for (const [a, b] of pairs) expect(findPath(grid, a, b), `${id} ${JSON.stringify([a, b])}`).toEqual(legacy.findPath(grid, a, b));
       for (let k = 0; k < 20; k++) {
         const p = point();
