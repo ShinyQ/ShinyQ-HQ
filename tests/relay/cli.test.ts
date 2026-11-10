@@ -174,16 +174,20 @@ describe("office-relay CLI", () => {
     expect(queued.status).toBe(0);
     expect(queued.stdout + queued.stderr).toBe("");
     expect(a.states()).toEqual(["testing"]);
+
+    // The cancel case runs in its own home while the first window is still open: the two waits overlap.
+    const b = relayIn(2000);
+    expect(b.hook("preToolUse", HOOK_FIXTURES.copilot.preToolUse).status).toBe(0);
+    expect(b.hook("postToolUse", HOOK_FIXTURES.copilot.postToolUseView).status).toBe(0);
+    expect(b.hook("agentStop", HOOK_FIXTURES.copilot.agentStop).status).toBe(0);
+    const bWindow = sleep(2600);
+
     for (let i = 0; i < 100 && a.states().length < 2; i++) await sleep(50);
     expect(a.states()).toEqual(["testing", "reviewing"]);
     expect(a.log()).toContain("copilot postToolUse reviewing queued");
     expect(a.log()).toContain("flush reviewing trailing sent");
 
-    const b = relayIn(2000);
-    expect(b.hook("preToolUse", HOOK_FIXTURES.copilot.preToolUse).status).toBe(0);
-    expect(b.hook("postToolUse", HOOK_FIXTURES.copilot.postToolUseView).status).toBe(0);
-    expect(b.hook("agentStop", HOOK_FIXTURES.copilot.agentStop).status).toBe(0);
-    await sleep(2600);
+    await bWindow;
     expect(b.states()).toEqual(["testing", "done"]);
   }, 30_000);
 
