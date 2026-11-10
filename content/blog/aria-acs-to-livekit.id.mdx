@@ -1,7 +1,7 @@
 ---
 title: "Migrasi Voice AI dari ACS ke LiveKit"
 date: "2026-10-27"
-updated: "2026-11-09"
+updated: "2026-11-10"
 excerpt: "Voice agent AI pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur setara."
 tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
 readingTime: "9 min"
@@ -101,6 +101,14 @@ Karena itu, angka ACS tersebut belum dapat dipakai untuk menghitung persentase p
 Perubahan yang paling terasa pada alur panggilan adalah hand-back dalam session yang sama dengan kalimat resume dari cache, disertai kemampuan drain node dan pemulihan panggilan ke node lain. Hasilnya berasal dari perubahan pada keseluruhan alur, bukan dari pemilihan media server saja.
 
 Struktur biaya juga berubah. Komponen layanan panggilan bermeter diganti dengan infrastruktur yang kami operasikan sendiri. Repositori memuat estimasi perencanaan, tetapi belum ada perbandingan tagihan sebelum dan sesudah yang setara untuk disebut sebagai penghematan. Pengelolaan sertifikat, patch, kapasitas, serta penanganan insiden tetap membutuhkan penanggung jawab.
+
+## Catatan Lanjutan: Test Instalasi Bukan Test Percakapan
+
+Pada 10 November, saya memeriksa catatan instalasi 7/8 November bersama hasil uji panggilan di atas. Instalasi Service Catalog yang lebih baru lolos 27 dari 27 pemeriksaan otomatis: manifest bertanda tangan, hash artefak dan digest image, container media minimal yang berjalan non-root, serta admin API yang tetap nonaktif. Artefak yang sengaja diubah juga ditolak sebelum deployment infrastruktur.
+
+Dari instalasi itu saya menemukan race saat mengambil sertifikat. Node media bisa memintanya sebelum proses instalasi selesai mengimpor sertifikat, lalu menunggu siklus renewal berikutnya. Saya menambahkan retry terbatas khusus pengambilan pertama. Pada drill tercatat, kedua node menerima sertifikat dalam dua menit sejak import.
+
+Hasil tersebut belum membuktikan percakapan berjalan baik. Sign-in admin pertama, pembuatan agent, dan panggilan browser interaktif di instalasi itu masih menunggu validasi langsung. Test instalasi tidak menggantikan jendela PoC terbatas, menghapus kegagalan gate setup, atau membuktikan turn-taking membaik.
 
 ## Hal yang Masih Perlu Diuji
 

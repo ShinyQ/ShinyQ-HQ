@@ -1,6 +1,7 @@
 ---
 title: "Why the Fraud Engine Stayed in Shadow Mode"
 date: "2026-10-09"
+updated: "2026-11-10"
 excerpt: "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
@@ -98,9 +99,9 @@ A packet takes two paths through the platform:
 4. The backend stores the review history and the report in Cosmos DB and Blob Storage.
 5. In parallel, the backend starts a shadow run of the hybrid risk engine. Its results go to storage for comparison and never return to the web app.
 
-The rollout record counts 0 of 3,780 runs in which the shadow engine changed user-visible output. That tells me the shadow path is isolated. It does not tell me the engine is accurate.
+Evidence correction, 10 November 2026: the underlying record is 3,780 synthetic offline comparison runs, with no change to the legacy verdict or score when shadow execution was added. The rollout note cited that invariant; it was not a count of production calls or real document packets. It supports isolation within that test profile, not engine accuracy.
 
-Real case volume on this platform is still small, and my notes do not break down what those 3,780 runs were.
+Real case volume on this platform is still small. The synthetic repeat count does not fill that gap.
 
 ## What real deployment exposed
 
@@ -115,6 +116,14 @@ All three were fixed. I have no before-and-after metric for them, and my notes c
 Switching to Document Intelligence Layout extraction exposed a related issue. Account numbers wrapped onto the next line with a hyphen produced 7 false bank-account mismatch findings. After a normalization fix, a live evaluation measured High-risk recall at 1.000 and FPR at 0 on v0.2.1.
 
 That was a good development-set run. The engine is still in shadow mode.
+
+## Follow-Up: A Different Gate for a Framework Upgrade
+
+In the 10 November source review, I also found a later decision worth separating from the hybrid engine. An Agent Framework upgrade had failed earlier comparisons. I fixed streamed-text assembly, strict structured output and client handling, then extended the comparison to five runs per case before approving it.
+
+That comparison used 21 held-out cases and a fresh 20-case sample: 205 runs per system, not 205 independent cases. Pooled High-risk recall and FPR were slightly better, but false negatives rose from 5/105 to 7/105; the paired test did not establish a difference (p=0.625). One failed incumbent clean run was excluded from FPR, so those denominators differed. Parse/schema failures and fail-open were zero in the recorded comparison; Prompt Shields was off.
+
+The framework upgrade passed its own gate. That did not clear the hybrid engine's cutover gate, establish production accuracy or turn repeated cases into a larger independent sample. I still need the evidence described below before letting that engine decide.
 
 ## What would justify giving it control of the verdict
 

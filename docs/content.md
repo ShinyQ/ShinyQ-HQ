@@ -159,6 +159,7 @@ The six featured case studies (`STORY_SLUGS` in `src/content/schema.ts`) read as
 - Keep `problem` and `approach`: the 3D drawer, the missions and Ask still use them.
 - EN and ID are written independently, like every other text; no client names (C3).
 - **Engineering detail** (optional `engineering`, any pod): 1 to 4 topics for a technical reviewer (the voice AI case study has Latency Budget, Failover Design, Evaluation Method, Security and Identity). Each has a Title Case heading, a one-line summary, 2 to 5 points, the known limits and optionally a related post slug. Every number must trace to the project's own docs or measurements (measured results over intent); leave out what cannot be sourced, keep security at the pattern level (no resource names, hosts or ids), and write EN and ID independently.
+- The four AI product case studies separate current capabilities from historical results: seven current code scanners versus earlier usage totals, synthetic offline shadow-isolation runs versus production traffic, and automated installation checks versus interactive validation or Marketplace approval. Source-main features that remain disabled are labelled as such. Later framework evaluations do not clear a different engine's release gate.
 - The landing hero's three proof numbers are `profile.heroProof` (exactly three stat ids); each needs a `short` label of at most 28 characters.
 
 ## Skills

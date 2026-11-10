@@ -1,6 +1,7 @@
 ---
 title: "Mengapa Fraud Engine yang Lebih Baik Dirilis dalam Shadow Mode"
 date: "2026-10-09"
+updated: "2026-11-10"
 excerpt: "Uji offline di set development: FPR paket bersih yang noisy turun 36,4% ke 9,1%, tetapi recall High-risk turun. Dirilis hanya dalam shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
@@ -100,9 +101,9 @@ Satu paket melewati dua jalur di platform ini:
 4. Backend menyimpan riwayat review dan laporan di Cosmos DB dan Blob Storage.
 5. Secara paralel, backend menjalankan risk engine hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
 
-Dalam catatan rollout, ada 0 dari 3.780 run yang output penggunanya berubah akibat shadow engine. Angka tersebut menunjukkan bahwa jalur shadow terisolasi, tetapi tidak mengukur akurasi engine.
+Koreksi bukti, 10 November 2026: sumber angkanya adalah 3.780 run perbandingan sintetis offline. Tidak ada verdict atau skor lama yang berubah saat eksekusi shadow ditambahkan. Catatan rollout mengutip hasil uji itu, bukan menghitung trafik produksi atau paket dokumen nyata. Hasilnya mendukung isolasi pada profil uji tersebut, bukan akurasi engine.
 
-Volume kasus nyata di platform ini masih kecil. Catatan saya juga tidak merinci isi 3.780 run tersebut.
+Volume kasus nyata di platform ini masih kecil. Banyaknya pengulangan sintetis tidak menggantikan kekurangan kasus nyata.
 
 ## Temuan Setelah Deployment
 
@@ -117,6 +118,14 @@ Ketiganya sudah diperbaiki. Saya tidak mencatat metrik sebelum dan sesudah perba
 Masalah serupa muncul saat beralih ke ekstraksi Document Intelligence Layout. Nomor rekening yang terpotong ke baris berikutnya dengan tanda hubung menghasilkan 7 temuan palsu ketidakcocokan rekening bank. Setelah perbaikan normalisasi, evaluasi live di v0.2.1 mencatat recall High-risk 1,000 dan FPR 0.
 
 Meski hasil pada set development membaik, saya tetap menjalankan engine dalam shadow mode.
+
+## Catatan Lanjutan: Gate Berbeda untuk Upgrade Framework
+
+Saat memeriksa source pada 10 November, saya menemukan keputusan berikutnya yang perlu dipisahkan dari engine hybrid. Upgrade Agent Framework sempat gagal dalam perbandingan awal. Saya memperbaiki penyusunan teks streaming, structured output yang ketat, serta pengelolaan client, lalu memperpanjang perbandingan menjadi lima run per kasus sebelum menyetujuinya.
+
+Ujinya memakai 21 kasus held-out dan sampel baru berisi 20 kasus: 205 run per sistem, bukan 205 kasus independen. Recall High-risk dan FPR gabungan sedikit membaik, tetapi false negative naik dari 5/105 ke 7/105; uji berpasangan tidak membuktikan perbedaan (p=0,625). Satu run bersih pada sistem lama yang gagal dikeluarkan dari perhitungan FPR, sehingga penyebutnya berbeda. Parse/schema failure dan fail-open tercatat nol; Prompt Shields nonaktif dalam evaluasi ini.
+
+Upgrade framework lolos gate-nya sendiri. Itu tidak meloloskan gate cutover engine hybrid, membuktikan akurasi produksi, atau membuat kasus berulang menjadi sampel independen yang lebih besar. Bukti di bagian berikut tetap saya butuhkan sebelum engine itu boleh menentukan verdict.
 
 ## Syarat Sebelum Engine Menentukan Verdict
 

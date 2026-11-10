@@ -1,6 +1,7 @@
 ---
 title: "Cara Kami Membuat Voice Agent Bisa Diinterupsi"
 date: "2026-10-09"
+updated: "2026-11-10"
 excerpt: "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
@@ -104,7 +105,7 @@ Dari trace tersebut, sebagian besar bukti tidak mendukung dugaan saya: hanya sek
 
 Saya merilis start-hold dan stale-response cancel, lalu mengukur ulang di lingkungan live. Tingkat cut-off tercatat 60,0%, lebih tinggi daripada pengukuran sebelumnya.
 
-Catatan saya tidak menyimpan jumlah turn untuk kedua persentase tersebut, sehingga angkanya hanya dapat dibaca sebagai indikasi arah. Hasilnya tidak menunjukkan perbaikan, dan saya mencatatnya sebagai hasil negatif. Masalah cut-off tetap belum selesai.
+Klarifikasi bukti, 10 November 2026: catatan eksperimen ternyata mencantumkan penyebutnya, 8 dari 15 ujaran sebelum perubahan dan 9 dari 15 sesudahnya. Sampelnya kecil dan hasilnya tetap negatif. Interupsi yang lebih cepat saat pencarian knowledge belum membuktikan turn-taking live membaik.
 
 Dalam rangkaian eksperimen itu, saya juga menguji acknowledgement clip saat pencarian knowledge dan aturan agar model mengucapkan kalimat pertama yang pendek lebih awal. Keduanya tidak memenuhi kriteria penerimaan yang sudah ditetapkan sebelum pengujian. Penyajian hasil prefetch belum dapat diuji secara terpisah dengan kondisi yang memadai, sehingga saya melaporkannya sebagai blocked.
 
