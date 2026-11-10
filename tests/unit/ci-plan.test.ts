@@ -107,7 +107,7 @@ const lhciUrls = (JSON.parse(readFileSync("lighthouserc.json", "utf8")) as { ci:
 
 describe("ci-plan shared perf keys", () => {
   const files: Record<string, string> = {
-    "src/experience/Experience.tsx": 'import { core } from "@/lib/core";\nimport { X } from "./floors/lobby/X";',
+    "src/experience/Experience.tsx": 'import { core } from "@/lib/core";\nimport { X } from "./floors/lobby/X";\nimport { r } from "@/content/rings";',
     "src/experience/floors/lobby/X.tsx": 'import { l } from "@/lib/lobby-only";\nimport { d } from "@/lib/deep";',
     "src/experience/Unknown.tsx": 'import { o } from "@/lib/odd";',
     "src/experience/gate-data.ts": 'import { p } from "@/content/payload-only";\nimport { c } from "@/content/certs";\nimport { q } from "@/content/asks";\nimport { e } from "@/content/room-views/engine";',
@@ -124,6 +124,7 @@ describe("ci-plan shared perf keys", () => {
     "src/content/asks.ts": 'import { a } from "@/ask/protocol";',
     "src/ask/protocol.ts": "",
     "src/content/room-views/engine.ts": "",
+    "src/content/rings.ts": "",
   };
   const read = (f: string) => files[f] ?? null;
   const roots = Object.keys(files).filter((f) => ROOTS.test(f));
@@ -145,9 +146,16 @@ describe("ci-plan shared perf keys", () => {
     expect(keys("src/lib/page-only.ts")).toEqual([]);
   });
 
-  it("falls back to every key but memory for an unknown 3D importer or an unmapped payload module", () => {
+  it("falls back to every key but memory for an unknown 3D importer", () => {
     expect(keys("src/lib/odd.ts")).toEqual([...ALL_BUT_MEMORY]);
-    expect(keys("src/content/payload-only.ts")).toEqual([...ALL_BUT_MEMORY]);
+  });
+
+  it("gives a content module only the bytes gate plus its own rule's keys, never its 3D importers' (owner decision 2026-11-11)", () => {
+    // Experience.tsx alone would give every key; the payload builder every key but memory.
+    expect(keys("src/content/rings.ts")).toEqual(["bytes"]);
+    expect(keys("src/content/payload-only.ts")).toEqual(["bytes"]);
+    // A content module no 3D file imports moves no gate.
+    expect(sharedPerfKeys("src/content/unused.ts", importers)).toEqual([]);
   });
 
   it("uses the module to gate map for the payload path", () => {
@@ -163,6 +171,8 @@ describe("ci-plan shared perf keys", () => {
     const floorsOf = (f: string) => sharedPerfKeys(f, repo).filter((k) => k.startsWith("floor:") || k.startsWith("ride:"));
     expect(sharedPerfKeys("src/content/certs.ts", repo)).toEqual(["boot", "bytes", "floor:L1", "hover"]);
     expect(floorsOf("src/content/cert-views.ts")).toEqual(["floor:L1"]);
+    // Content modules the main 3D path imports: the bytes gate only (they once ran the whole lane).
+    for (const f of ["src/content/tech-rings.ts", "src/content/schema.ts", "src/content/experience.ts"]) expect(sharedPerfKeys(f, repo), f).toEqual(["bytes"]);
     for (const f of ["src/ask/client.ts", "src/ask/protocol.ts"]) expect(sharedPerfKeys(f, repo), f).toEqual(["boot", "bytes"]);
     expect(sharedPerfKeys("src/lib/audio/engine.ts", repo)).toEqual([...ALL_PERF_KEYS]);
     expect(sharedPerfKeys("src/components/stats/VisitsPanel.tsx", repo)).toEqual(["bytes"]);
@@ -241,6 +251,13 @@ describe("ci-plan spec map changes", () => {
     expect(mapDiff(base, maps({ "src/components/page/A.tsx": "all" }, {}, { smoke: [{ spec: "ride", title: "a" }] }), tracked).specs).toBe("all");
     expect(mapDiff(base, maps({ "src/components/page/A.tsx": ["pageview"] }, {}, { smoke: [{ spec: "ride", title: "b" }] }), tracked).specs).toEqual(["ride"]);
     expect(mapDiff(base, maps({ "src/components/page/A.tsx": ["pageview"] }, {}, { smoke: [{ spec: "ride", title: "a" }], grep: { hover: "(new)" } }), tracked).keys).toEqual(["hover"]);
+  });
+
+  it("runs every key but memory for a file that becomes or stops being a content module", () => {
+    const base = maps({}, {});
+    const head: PlanMaps = { ...base, perf: { ...base.perf, contentModule: (f) => f.startsWith("src/components/page/") } };
+    expect(mapDiff(base, head, tracked).keys).toEqual([...ALL_BUT_MEMORY]);
+    expect(mapDiff(head, head, tracked).keys).toEqual([]);
   });
 
   it("on this repo: the checked-out maps against themselves move nothing", () => {

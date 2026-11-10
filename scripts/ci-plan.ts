@@ -24,7 +24,7 @@ import * as headE2ePlan from "./e2e-plan";
 import { ALL_SPECS, e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import type { MergedPr } from "./merge-gate";
 import * as headPerfPlan from "./perf-plan";
-import { ALL_BUT_MEMORY, ALL_PERF_KEYS, nightlyPerfFor, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, contentModule, nightlyPerfFor, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
 
 export { HEAVY_SHARDS };
 
@@ -139,11 +139,16 @@ export function importing3d(file: string, importers: ReadonlyMap<string, Readonl
 /**
  * The perf keys of a shared (non-3D) file: the keys an edit of the 3D files importing it would get (unknown 3D
  * files: ALL_BUT_MEMORY), plus its SHARED_PERF_RULES keys. The payload builder counts through the rule, and as
- * ALL_BUT_MEMORY without one. A file no 3D file imports gets none.
+ * ALL_BUT_MEMORY without one. A file no 3D file imports gets none. A content module (`contentModule`, `src/content/`)
+ * gets only `bytes` plus its own rule's keys.
  */
 export function sharedPerfKeys(file: string, importers: ReadonlyMap<string, ReadonlySet<string>>): PerfKey[] {
   const via = importing3d(file, importers);
   if (via.length === 0) return [];
+  if (contentModule(file)) {
+    const own = new Set<PerfKey>(["bytes", ...(sharedRuleKeys(file) ?? [])]);
+    return ALL_PERF_KEYS.filter((k) => own.has(k));
+  }
   const client = via.filter((f) => f !== PAYLOAD_BUILDER);
   const own = sharedRuleKeys(file) ?? (client.length < via.length ? ALL_BUT_MEMORY : []);
   const keys = new Set<PerfKey>([...perfKeysFor(client), ...own]);
@@ -160,6 +165,7 @@ export interface PlanMaps {
   perf: {
     perfKeysFor(files: readonly string[]): readonly string[];
     sharedRuleKeys?(file: string): readonly string[] | null;
+    contentModule?(file: string): boolean;
     pagePerfKeys?(file: string): readonly string[];
     perfGrep?(keys: readonly string[]): string;
   };
@@ -191,6 +197,9 @@ export function mapDiff(base: PlanMaps, head: PlanMaps, tracked: readonly string
     if (cls === "code3d") both(base.perf.perfKeysFor([file]), head.perf.perfKeysFor([file]), keys);
     if (cls === "ui" && file.startsWith("src/")) {
       both(base.perf.sharedRuleKeys?.(file) ?? [], head.perf.sharedRuleKeys?.(file) ?? [], keys);
+      // A file that becomes (or stops being) a content module trades its 3D importers' keys for `bytes`: the map diff
+      // cannot see the importers, so it runs every key but memory, as an unknown 3D importer would.
+      if ((base.perf.contentModule?.(file) ?? false) !== (head.perf.contentModule?.(file) ?? false)) for (const k of ALL_BUT_MEMORY) keys.add(k);
       both(base.perf.pagePerfKeys?.(file) ?? [], head.perf.pagePerfKeys?.(file) ?? [], keys);
     }
   }
