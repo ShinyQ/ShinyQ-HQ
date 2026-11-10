@@ -316,8 +316,9 @@ test("teaser shows once per session next to the launcher", async ({ page }) => {
   await page.keyboard.press("Escape");
   await page.reload();
   await expect(page.getByTestId("ask-launcher")).toBeVisible();
-  // Proves the teaser does not come back in the same session.
-  await page.waitForTimeout(7000);
+  // The session keeps the seen mark across the reload; with it the teaser never comes back (tests/hud/AskDock.test.tsx,
+  // on fake timers past both delays) instead of a 7 s wait here.
+  expect(await page.evaluate(() => sessionStorage.getItem("hq:ask-teaser"))).toBe("1");
   await expect(teaser).toHaveCount(0);
 });
 

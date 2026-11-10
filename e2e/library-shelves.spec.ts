@@ -118,7 +118,8 @@ for (const device of [
   test.describe(`L4 track shelves (${device.id}, ${device.motion} motion)`, () => {
     test.use(device.use);
 
-    test("the nearest spine pulls at its bay, the pointed one pulls and shows its title, and opening it drives to the bay and opens the post", async ({ page }) => {
+    // The phone (tap, reduced motion) variant runs in the nightly; pull requests and main keep the desktop one.
+    test(`the nearest spine pulls at its bay, the pointed one pulls and shows its title, and opening it drives to the bay and opens the post${device.id === "phone" ? " @nightly" : ""}`, async ({ page }) => {
       const errors = collectErrors(page);
       await skipFloorLines(page);
       await chooseMotion(page, device.motion);

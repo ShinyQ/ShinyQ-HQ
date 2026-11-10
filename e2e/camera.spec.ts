@@ -461,7 +461,8 @@ test.describe("low camera", () => {
     ["L3", "/en/labs"],
     ["L4", "/en/library"],
   ] as const) {
-    test(`${floor}: at the lowest tilt the camera turns all the way around and never looks off the slab into the void`, async ({ page }) => {
+    // L1 on pull requests and main; the other floors' slabs in the nightly (a second floor of the same camera rule).
+    test(`${floor}: at the lowest tilt the camera turns all the way around and never looks off the slab into the void${floor === "L1" ? "" : " @nightly"}`, async ({ page }) => {
       test.setTimeout(360_000);
       await enterFloorRoute(page, path);
       expect((await snapshot(page)).floor).toBe(floor);

@@ -283,7 +283,8 @@ for (const viewport of [
   test.describe(`phone part 2 (${viewport.width}x${viewport.height})`, () => {
     test.use({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
 
-    test("each floor's first-visit line is a whole top toast clear of the rover and every control", async ({ page }) => {
+    // The tightest portrait phone (375x667) and the landscape phone run on pull requests and main; 390x844 in the nightly.
+    test(`each floor's first-visit line is a whole top toast clear of the rover and every control${viewport.width === 390 ? " @nightly" : ""}`, async ({ page }) => {
       test.setTimeout(300_000);
       await mockAsk(page);
       // B1 already unlocked, so its offer on the fifth floor never takes the line's place.

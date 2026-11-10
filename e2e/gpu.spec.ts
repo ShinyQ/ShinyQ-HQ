@@ -89,7 +89,7 @@ test("boot warms every floor: first arrivals add at most 3 programs each (full t
  * arrival a frame lands on compiles one (the pennant's DoubleSide variant did, a flaky +1 in the L1 replay perf gate). Drives
  * until a frame drew the flag (a slow runner can miss its 1.4 s), then holds the programs to the settled set.
  */
-test("an arrival flag adds no shader program (full tier)", async ({ page }) => {
+test("an arrival flag adds no shader program (full tier) @nightly", async ({ page }) => {
   await asReturningVisitor(page);
   await page.goto("/en?tier=full");
   await waitForHQ(page);

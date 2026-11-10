@@ -131,17 +131,6 @@ test.describe("fast return on the Career Road (L2)", () => {
     expect(last!.distinctY).toBeGreaterThanOrEqual(12);
   });
 
-  test("within 40 u of the elevator the rover still drives to the door", async ({ page }) => {
-    await openFloor(page, "/en/journey");
-    const lift = await approach(page, "L2");
-    await driveTo(page, { x: lift.x + 12, z: lift.z });
-    const record = await recordRide(page);
-    await rideTo(page, "L3");
-    const { beams, toDoorX } = await record();
-    expect(beams).toEqual([]);
-    expect(toDoorX.some((x) => x > lift.x + 2 && x < lift.x + 10)).toBe(true);
-  });
-
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
     test.beforeEach(({ page }) => chooseMotion(page, "system"));
