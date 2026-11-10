@@ -125,12 +125,9 @@ describe("privateTopic", () => {
     "What does he think about working with clients?",
     // The settings panel is "Pengaturan" in Indonesian: a question about this site is never policy.
     "Pengaturan apa saja yang ada di situs ini?",
-    // SOFT topic words (owner decision 2026-10-24): answered from his written views, never declined on the word alone.
-    "What is his political view?",
-    "Apa pandangan politik Kurniadi?",
+    // SOFT topic words (owner decision 2026-10-24): answered from his written views, never declined on the word alone
+    // (the political views themselves: the civic route table below, which asserts the same null).
     "I love this site! What does he think about the government tax policy?",
-    "What does he think about the president's AI plans?",
-    "How does he feel about AI regulation in Indonesia's parliament (DPR)?",
     "Has he built anything for healthcare or consumer health?",
     "How is the health of Indonesia's tech ecosystem?",
     "Does he work with health data?",

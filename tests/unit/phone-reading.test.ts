@@ -123,13 +123,12 @@ function failures(): string[] {
 }
 
 describe("phone reading rule (L2, L3, L4, RF)", () => {
+  // A tuning report, not a check: PHONE_READING_ALL=1 prints every label's sizes (the per-floor tests name each miss).
+  it.runIf(process.env.PHONE_READING_ALL)("prints every label's sizes", () => {
+    console.log(`Phone reading (390x844, 375x667, 844x390, 667x375; 932x430 reported):\n${failures().join("\n")}`);
+  });
   it("lists the RF channel names at the sizes SignalGarden draws", () => {
     expect([CHANNEL_LABEL.fontSize, CHANNEL_LABEL.phone]).toEqual([CHANNEL_FONT.size, CHANNEL_FONT.phone]);
-  });
-  it("prints the labels that miss the rule", () => {
-    const list = failures();
-    if (list.length) console.log(`Phone reading failures (390x844, 375x667, 844x390, 667x375; 932x430 reported):\n${list.join("\n")}`);
-    expect(Array.isArray(list)).toBe(true);
   });
   for (const floor of FLOORS) {
     const list = LABELS[floor];
@@ -138,8 +137,8 @@ describe("phone reading rule (L2, L3, L4, RF)", () => {
       for (const l of list) expect(l.phoneFontSize ?? l.fontSize, l.id).toBeGreaterThanOrEqual(l.fontSize);
       expect([...new Set(list.map((l) => l.fontSize))].sort((a, b) => a - b)).toEqual(DESKTOP_SIZES[floor]);
     });
-    for (const l of list) {
-      it(`${floor} ${l.id} reads on portrait and landscape phones`, () => {
+    it(`${floor}: every title and name reads on portrait and landscape phones`, () => {
+      for (const l of list) {
         for (const { w, h, min, safe } of SIZES) {
           const m = measure(floor, l, w, h, safe);
           const what = `${floor} ${l.id} "${l.text.slice(0, 24)}" at ${w}x${h}`;
@@ -149,7 +148,7 @@ describe("phone reading rule (L2, L3, L4, RF)", () => {
           expect(m.px, `${what}: em ${m.px.toFixed(1)} px`).toBeGreaterThanOrEqual(min);
           expect(m.facing, `${what}: facing ${((m.facing * 180) / Math.PI).toFixed(0)} deg`).toBeLessThanOrEqual(MAX_FACING);
         }
-      });
-    }
+      }
+    });
   }
 });
