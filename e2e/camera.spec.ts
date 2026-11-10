@@ -156,6 +156,9 @@ async function hoverNothing(page: Page) {
           return null;
         });
         if (!point) return "no canvas point without a target";
+        // Chromium drops a mouse move to the pointer's current position, so a repeat pick of the same point would never
+        // re-run the hover pick (a target hovered there while the view still turned stayed hovered): step off it first.
+        await page.mouse.move(point.x + 3, point.y);
         await page.mouse.move(point.x, point.y);
         await waitForFrames(page, 5);
         return page.evaluate(() => (window as unknown as HoverWindow).__hq.store.getState().hover?.item.id ?? null);

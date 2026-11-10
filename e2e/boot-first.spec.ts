@@ -13,18 +13,27 @@ test.describe.configure({ timeout: 90_000 });
 
 /**
  * Samples every animation frame from document creation (before the inline head script runs) and
- * records frames where the Page View shell is visible while the 3D HQ is not mounted yet.
+ * records frames where the Page View shell is visible while the 3D HQ is not mounted yet, and the frames where the
+ * boot cover showed under `html[data-hq-boot]` before the HQ mounted. The cover's frames are recorded in the page:
+ * a fast boot can release the cover before a Playwright poll first looks at it.
  */
 async function recordShellFlash(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { __flash: string[]; __frames: number };
+    const w = window as unknown as { __flash: string[]; __frames: number; __coverFrames: number };
     w.__flash = [];
     w.__frames = 0;
+    w.__coverFrames = 0;
     const tick = () => {
       w.__frames++;
       const shell = document.getElementById("site-shell");
-      if (shell && !document.querySelector("[data-testid='hq']") && getComputedStyle(shell).visibility !== "hidden") {
+      const mounted = document.querySelector("[data-testid='hq']") !== null;
+      if (shell && !mounted && getComputedStyle(shell).visibility !== "hidden") {
         w.__flash.push(`${Math.round(performance.now())}ms`);
+      }
+      const cover = document.getElementById("hq-boot-cover");
+      if (cover && !mounted && document.documentElement.getAttribute("data-hq-boot") === "1") {
+        const box = cover.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && getComputedStyle(cover).visibility !== "hidden") w.__coverFrames++;
       }
       if (w.__frames < 2000) requestAnimationFrame(tick);
     };
@@ -37,10 +46,9 @@ test("3D-capable visit never shows the Page View before the HQ", async ({ page }
   await recordShellFlash(page);
   await page.goto("/en?tier=lite", { waitUntil: "commit" });
   await page.waitForSelector("#hq-boot-cover", { state: "attached" });
-  expect(await page.locator("html").getAttribute("data-hq-boot")).toBe("1");
-  await expect(page.locator("#site-shell")).toBeHidden();
-  await expect(page.getByTestId("boot-cover")).toBeVisible();
   await expect(page.getByTestId("hq")).toBeVisible({ timeout: 30_000 });
+  // The cover showed (with the shell hidden, the flash check below) from the first frames until the HQ mounted.
+  expect(await page.evaluate(() => (window as unknown as { __coverFrames: number }).__coverFrames)).toBeGreaterThan(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-hq-boot", "1", { timeout: 30_000 });
   await expect(page.locator("html")).toHaveAttribute("data-hq-boot-released", "ready");
   await expect(page.getByTestId("boot-cover")).toBeHidden();
