@@ -46,6 +46,7 @@ describe("ci-plan classify", () => {
     [".github/dependabot.yml", "docs"],
     ["tests/unit/x.test.ts", "tests"],
     ["e2e/durations.json", "tests"],
+    ["stryker.config.mjs", "tests"],
     ["weird/file.bin", "other"],
   ])("%s is %s", (file, cls) => {
     expect(classify(file)).toBe(cls);
