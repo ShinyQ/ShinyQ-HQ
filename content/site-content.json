@@ -8554,11 +8554,11 @@
           },
           "period": {
             "start": "2026-02",
-            "end": "2026-09"
+            "end": "2026-10"
           },
           "role": {
-            "en": "Largest contributor since February 2026",
-            "id": "Kontributor terbesar sejak Februari 2026"
+            "en": "Core contributor, February to October 2026",
+            "id": "Kontributor inti, Februari hingga Oktober 2026"
           },
           "problem": {
             "en": "The internal ticketing assistant needed managed persistence, enterprise sign-in and a move to Microsoft Agent Framework. The migration had to preserve the public API while replacing the agent framework and stored state underneath it.",
@@ -8572,6 +8572,10 @@
             {
               "en": "I migrated the agent from LangGraph to Microsoft Agent Framework with 14 tools and vector search. I also added Key Vault, Entra sign-in, health-checked deployments with rollback and secret rotation.",
               "id": "Saya memigrasikan agent dari LangGraph ke Microsoft Agent Framework dengan 14 tool dan vector search. Saya juga menambahkan Key Vault, sign-in Entra, deployment dengan health check dan rollback, serta rotasi secret."
+            },
+            {
+              "en": "I later redesigned the web app: design tokens with light and dark themes, a simpler navigation shell, board, list and timeline views, a ticket detail drawer, and clear loading, empty and error states. I also moved chat to a newer Azure OpenAI model, set up CI/CD to App Service and patched the October 2026 Node.js CVEs.",
+              "id": "Setelah itu saya mendesain ulang aplikasi web: design token dengan tema terang dan gelap, navigasi yang lebih sederhana, tampilan board, list, dan timeline, drawer detail tiket, serta state loading, kosong, dan error yang jelas. Saya juga memindahkan chat ke model Azure OpenAI yang lebih baru, menyiapkan CI/CD ke App Service, dan menambal CVE Node.js Oktober 2026."
             }
           ],
           "results": [
@@ -8602,8 +8606,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/01-home.webp",
               "alt": {
-                "en": "Ticketing home: tickets assigned, in progress and overdue, with a list across boards",
-                "id": "Beranda ticketing: tiket yang ditugaskan, sedang dikerjakan, dan terlambat, dengan daftar lintas board"
+                "en": "Ticketing home: tickets assigned, in progress, due soon and overdue, a ticket table across boards and recent boards in the sidebar",
+                "id": "Beranda ticketing: tiket yang ditugaskan, sedang dikerjakan, segera jatuh tempo, dan terlambat, tabel tiket lintas board, serta board terbaru di sidebar"
               },
               "width": 1600,
               "height": 1000,
@@ -8612,8 +8616,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/02-kanban-board.webp",
               "alt": {
-                "en": "Kanban board with priority, SLA breach bars and assignees per ticket",
-                "id": "Kanban board dengan prioritas, bar pelanggaran SLA, dan assignee per tiket"
+                "en": "Kanban board with status-tinted columns, priority, SLA breach bars and assignees per ticket",
+                "id": "Kanban board dengan kolom berwarna sesuai status, prioritas, bar pelanggaran SLA, dan assignee per tiket"
               },
               "width": 1600,
               "height": 1000,
@@ -8622,8 +8626,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/03-ticket-detail.webp",
               "alt": {
-                "en": "Ticket detail panel with status, priority, SLA, description and activity, plus an AI Assist action",
-                "id": "Panel detail tiket dengan status, prioritas, SLA, deskripsi, dan aktivitas, serta aksi AI Assist"
+                "en": "Ticket detail drawer with status, priority, SLA, watchers and description, plus AI Assist and AI triage actions",
+                "id": "Drawer detail tiket dengan status, prioritas, SLA, watcher, dan deskripsi, serta aksi AI Assist dan AI triage"
               },
               "width": 1600,
               "height": 1000,
@@ -8632,8 +8636,8 @@
             {
               "src": "/media/ticketing-assistant-replatform/04-ai-assistant.webp",
               "alt": {
-                "en": "AI Assistant that answers questions about tickets, boards, workload and documents",
-                "id": "AI Assistant yang menjawab pertanyaan tentang tiket, board, beban kerja, dan dokumen"
+                "en": "AI Assistant ready for questions about tickets, boards, workload and documents, with suggested prompts",
+                "id": "AI Assistant siap menjawab pertanyaan tentang tiket, board, beban kerja, dan dokumen, dengan contoh pertanyaan"
               },
               "width": 1600,
               "height": 1000,
@@ -8644,6 +8648,16 @@
               "alt": {
                 "en": "Boards overview for engineering, operations, data, security and AI teams",
                 "id": "Ringkasan board untuk tim engineering, operations, data, security, dan AI"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/ticketing-assistant-replatform/06-dark-board.webp",
+              "alt": {
+                "en": "The same kanban board in the dark theme",
+                "id": "Kanban board yang sama dalam tema gelap"
               },
               "width": 1600,
               "height": 1000,
