@@ -2,7 +2,7 @@
 // tests a pruning change touched, never the whole repo. Run `bun run mutation`; pass `--mutate <file[:lines]>` to scope
 // another module. The report lands in reports/mutation/ (git-ignored).
 /** @type {import("@stryker-mutator/api/core").PartialStrykerOptions} */
-export default {
+const config = {
   testRunner: "vitest",
   plugins: ["@stryker-mutator/vitest-runner"],
   vitest: { configFile: "vitest.config.mts", related: true },
@@ -30,3 +30,5 @@ export default {
   concurrency: 4,
   timeoutMS: 30_000,
 };
+
+export default config;
