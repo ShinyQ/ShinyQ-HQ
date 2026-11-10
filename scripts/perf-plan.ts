@@ -110,6 +110,20 @@ export function sharedRuleKeys(file: string): readonly PerfKey[] | null {
 }
 
 /**
+ * Content modules (owner decision 2026-11-11: on pull requests the 3D perf gates run only for 3D code and 3D assets): the
+ * content data and its derivations under `src/content/` that the Classic site, Ask and the floors share. On a pull request
+ * such a module moves only the 3D bytes gate (it ships in the 3D chunks) plus its own rule's keys (SHARED_PERF_RULES,
+ * PERF_RULES), not the keys of every 3D file that imports it; the floors' draw-call, program and memory gates then run
+ * on `main` (the complement run) and in the nightly, like a `content/` data change.
+ */
+const CONTENT_MODULE = /^src\/content\//;
+
+/** True for a content module: its perf keys are `bytes` plus its own rule's, never its 3D importers' (scripts/ci-plan.ts `sharedPerfKeys`). */
+export function contentModule(file: string): boolean {
+  return CONTENT_MODULE.test(file);
+}
+
+/**
  * Page code behind the study guide reader gate (`e2e/perf/guide-reader.spec.ts`, key `guides`): the shared PDF reader
  * (`src/components/pdf-reader/`), pdf.js loading and the dialogs and page that open it. Not 3D code, so scripts/ci-plan.ts adds the key on its own.
  */

@@ -411,7 +411,9 @@ describe("the follow rig's look offset", () => {
               oldStepOrbit(o, dt, reduced, hold);
               got.push(pick(s), [s.lookForward, s.lookUp, s.lookRight]);
               want.push(pick(o), [0, 0, 0]);
-              if (!rail) {
+              // The pose is a pure function of the orbit fields compared every frame (and followPose matches the frozen
+              // one for any zero offset, the test above), so one settled pose per step is enough.
+              if (!rail && frame === 39) {
                 got.push(newPose(floor, s, cls, aspect, at));
                 want.push(oldPose(floor, o, cls, aspect, at));
               }

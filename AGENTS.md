@@ -160,6 +160,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | `bun scripts/readme-hero.ts` | Regenerate the README hero GIF and stills |
 | `bun run e2e:durations` | Refresh `e2e/durations.json` for the CI shard split (needs `gh`) |
 | `bun run cv:pages` / `paper:pages` | Render CV / paper PDF page images (needs poppler and webp) |
+| `bun run mutation` | Stryker mutation testing of the modules in `stryker.config.mjs` (before pruning or rewriting their tests) |
 | `bunx wrangler ...` | Cloudflare CLI from the lockfile (Pages deploy, the `workers/stats` Worker); never `bunx wrangler@<range>` |
 
 ## Budgets

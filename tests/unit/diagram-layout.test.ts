@@ -143,10 +143,19 @@ describe("diagram layout", () => {
     expect(arrowHead([20, 20], [0, 1])).toBe("M20 20L15.8 13L24.2 13Z");
   });
 
-  for (const [name, preset] of Object.entries(DIAGRAM_PRESETS)) {
+  // Each real diagram is laid out once per preset (the slow part); the three checks below share the layouts.
+  const layouts = new Map<string, ReturnType<typeof layoutArchitecture>>();
+  const layoutOf = (d: (typeof localizedDiagrams)[number], name: keyof typeof DIAGRAM_PRESETS) => {
+    const key = `${localizedDiagrams.indexOf(d)} ${name}`;
+    if (!layouts.has(key)) layouts.set(key, layoutArchitecture(d.graph, d.texts, DIAGRAM_PRESETS[name]));
+    return layouts.get(key)!;
+  };
+
+  for (const name of Object.keys(DIAGRAM_PRESETS) as (keyof typeof DIAGRAM_PRESETS)[]) {
     it(`lays out every real diagram soundly (${name})`, () => {
-      for (const { id, graph, texts } of localizedDiagrams) {
-        const layout = layoutArchitecture(graph, texts, preset);
+      for (const d of localizedDiagrams) {
+        const { id, graph } = d;
+        const layout = layoutOf(d, name);
         expectSound(`${id} ${name}`, graph, layout);
       }
     });
@@ -156,13 +165,13 @@ describe("diagram layout", () => {
     const postPods = ["voice-ai-contact-center", "ai-cv-screening-platform", "fraud-review-platform", "vendor-management-portal"];
     const inPosts = localizedDiagrams.filter(({ id }) => id.startsWith("post:") || postPods.some((slug) => id.startsWith(`pod:${slug} `)));
     expect(inPosts.length).toBeGreaterThanOrEqual(7);
-    for (const [name, preset] of Object.entries(DIAGRAM_PRESETS))
-      for (const { id, graph, texts } of inPosts) expect(edgeCrossings(layoutArchitecture(graph, texts, preset).edges).crossings, `${id} ${name}`).toBe(0);
+    for (const name of Object.keys(DIAGRAM_PRESETS) as (keyof typeof DIAGRAM_PRESETS)[])
+      for (const d of inPosts) expect(edgeCrossings(layoutOf(d, name).edges).crossings, `${d.id} ${name}`).toBe(0);
   });
 
   it("fits phones at scale 1 with text of at least 12 px", () => {
     const p = DIAGRAM_PRESETS.phone;
     expect(Math.min(p.kindSize, p.labelSize, p.subSize, p.edgeSize)).toBeGreaterThanOrEqual(12);
-    for (const { id, graph, texts } of localizedDiagrams) expect(layoutArchitecture(graph, texts, p).width, id).toBeLessThanOrEqual(p.maxWidth);
+    for (const d of localizedDiagrams) expect(layoutOf(d, "phone").width, d.id).toBeLessThanOrEqual(p.maxWidth);
   });
 });

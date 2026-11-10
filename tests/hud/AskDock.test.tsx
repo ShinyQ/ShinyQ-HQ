@@ -183,6 +183,14 @@ describe("Ask dock launcher", () => {
     await userEvent.click(screen.getByRole("button", { name: d.teaserDismiss }));
     expect(screen.queryByTestId("ask-teaser")).toBeNull();
   });
+
+  it("never shows the teaser again once the session marked it seen (a reload or the next page)", async () => {
+    sessionStorage.setItem(TEASER_KEY, "1");
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await ready();
+    await act(async () => vi.advanceTimersByTime(20_000));
+    expect(screen.queryByTestId("ask-teaser")).toBeNull();
+  });
 });
 
 describe("Ask dock chat", () => {

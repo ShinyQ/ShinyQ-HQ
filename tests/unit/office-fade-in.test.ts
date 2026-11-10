@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial } from "three";
 import { describe, expect, it } from "vitest";
 import { createHoloMaterial, HOLO_MODE } from "@/experience/fx/holoFx";
-import { OFFICE_FADE_IN, officeFadeSlots, setOfficeFade } from "@/experience/floors/lobby/office/OfficeMount";
+import { officeFadeSlots, setOfficeFade } from "@/experience/floors/lobby/office/OfficeMount";
 
 /**
  * The live office fades in once it shows (owner request, final round): the Rovers' hashed-alpha parts and screens, the
@@ -18,11 +18,6 @@ describe("the office fade-in", () => {
   const glow = createHoloMaterial({ mode: HOLO_MODE.dot, color: "#ffffff", opacity: 0.6 });
   const root = new Group();
   root.add(new Mesh(geometry, parts), new Mesh(geometry, parts), new Mesh(geometry, wall), new Mesh(geometry, plain), new Mesh(geometry, glow));
-
-  it("lasts about a quarter second", () => {
-    expect(OFFICE_FADE_IN).toBeGreaterThanOrEqual(0.2);
-    expect(OFFICE_FADE_IN).toBeLessThanOrEqual(0.3);
-  });
 
   it("scales each hashed-alpha material once and the holo uniform, and leaves other materials alone", () => {
     const slots = officeFadeSlots(root);

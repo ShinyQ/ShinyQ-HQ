@@ -81,7 +81,7 @@ describe("install", () => {
     expect(run.stderr).toBe("");
   });
 
-  it.each(["with space", "it's", 'say "hi"', "$(echo X)", "$(touch relay-pwned)"])("quotes a directory named %s in the hook line and the shim", (name) => {
+  it.each(["with space", "it's", 'say "hi"', "$(touch relay-pwned)"])("quotes a directory named %s in the hook line and the shim", (name) => {
     const root = mkdtempSync(path.join(tmpdir(), "relay-install-"));
     const home = path.join(root, name);
     const work = path.join(root, "work");

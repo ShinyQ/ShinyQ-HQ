@@ -769,6 +769,18 @@ describe("shard plan against the real Playwright list", () => {
     });
     return listTestIds(JSON.parse(out) as { suites: ListSuite[] });
   };
+  // One `playwright test --list` per lane (each call costs about a second); the tag selections filter it the way
+  // Playwright's `--grep` does (the tags are literal words in the titles). One real `--grep-invert @nightly` call below
+  // proves the filter matches the runner's.
+  const lanes = new Map<boolean, string[]>();
+  const select = (perf: boolean, args: string[] = []) => {
+    if (!lanes.has(perf)) lanes.set(perf, list(perf));
+    const all = lanes.get(perf)!;
+    if (args.length === 0) return all;
+    const [flag, pattern] = args;
+    const re = new RegExp(pattern);
+    return all.filter((t) => re.test(t) === (flag === "--grep"));
+  };
 
   it.each([
     { lane: "e2e" as const, perf: false, args: [], totals: [4, 5, 6] },
@@ -776,7 +788,7 @@ describe("shard plan against the real Playwright list", () => {
     { lane: "perf" as const, perf: true, args: ["--grep-invert", "@nightly|@look|@timeline"], totals: [1, 2, 3, 4] },
     { lane: "perf" as const, perf: true, args: ["--grep-invert", "@look|@timeline"], totals: [4] },
   ])("$lane: every listed test lands in exactly one shard", ({ lane, perf, args, totals }) => {
-    const all = list(perf, args);
+    const all = select(perf, args);
     expect(all.length).toBeGreaterThan(perf ? 10 : 100);
     expect(new Set(all).size).toBe(all.length);
     for (const total of totals) {
@@ -790,24 +802,25 @@ describe("shard plan against the real Playwright list", () => {
   }, 120_000);
 
   it("pull requests and main skip exactly the tagged nightly-only tests, each with a measured duration", () => {
-    const nightly = list(false, ["--grep", "@nightly"]);
+    const nightly = select(false, ["--grep", "@nightly"]);
     // The moved tests and why: docs/agents/performance.md (Nightly-only e2e tests). Update both together.
-    expect(nightly).toHaveLength(10);
+    expect(nightly).toHaveLength(16);
     expect(nightly.every(isNightlyTest)).toBe(true);
     for (const t of nightly) expect(durations.e2e?.[durationKey(t)], t).toBeGreaterThan(0);
-    const skipped = new Set(list(false, ["--grep-invert", "@nightly"]));
-    expect(nightly.some((t) => skipped.has(t))).toBe(false);
+    const skipped = list(false, ["--grep-invert", "@nightly"]);
+    expect(nightly.some((t) => skipped.includes(t))).toBe(false);
+    expect([...skipped].sort()).toEqual([...select(false, ["--grep-invert", "@nightly"])].sort());
     for (const smoke of PR_SMOKE) if (smoke.title) expect(isNightlyTest(smoke.title)).toBe(false);
   }, 120_000);
 
   it("the perf lane's nightly-only tests are the twelve L1 poses past the arrival, each with a measured duration", () => {
-    const nightly = list(true, ["--grep", "@nightly"]);
+    const nightly = select(true, ["--grep", "@nightly"]);
     // Owner decision 2026-11-01: the beacon, the office in view, the Agent Office stop and the day replay, both tiers; the Highlights Hall poses in two halves (2026-11-04).
     expect(nightly).toHaveLength(12);
     expect(nightly.every((t) => isNightlyTest(t) && /› L1 (full|lite): settled /.test(t))).toBe(true);
     for (const t of nightly) expect(durations.perf?.[durationKey(t)], t).toBeGreaterThan(0);
     // The timeline runs only in perf-nightly.yml: never in a CI perf shard, the nightly included.
-    expect(list(true, ["--grep", "@timeline"]).length).toBeGreaterThan(0);
-    expect(list(true, ["--grep-invert", "@look|@timeline"]).some((t) => t.includes("@timeline"))).toBe(false);
+    expect(select(true, ["--grep", "@timeline"]).length).toBeGreaterThan(0);
+    expect(select(true, ["--grep-invert", "@look|@timeline"]).some((t) => t.includes("@timeline"))).toBe(false);
   }, 120_000);
 });

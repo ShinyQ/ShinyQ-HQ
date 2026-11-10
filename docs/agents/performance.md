@@ -255,6 +255,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | Before every push, after it | `bun run e2e:changed` (only the specs that cover your changed paths) | usually 1 to 4 minutes |
 | Render path, materials, floor mounting, the elevator or what the 3D chunk imports changed | `E2E_PORT=<port> bun run e2e:perf` (3D bytes, floors, peaks, the full-tier memory gate); `e2e:perf:nightly` adds the L1 poses past the arrival when the Lobby or the office changed | about 10 to 12 minutes on 2 workers |
 | CPU changes | `bun run bench` | |
+| Before deleting, trimming or rewriting unit tests | `bun run mutation` (scope it in `stryker.config.mjs`), on the base and on the branch | about 2 to 10 minutes |
 | Unsure | `bun run e2e:smoke` (static routes, SEO, deploy rules, game-first load, Page View) | about 1 to 2 minutes |
 | Shared test infrastructure changed, before a phase PR, or to reproduce a CI failure | `bun run e2e:full` (whole suite) | about 6 to 10 minutes locally |
 | Look-preserving changes | `bun scripts/visual-gate.ts` (see below) | about 20 minutes plus builds |
@@ -315,6 +316,13 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 
 - `bun run bench` runs the Vitest benches in `tests/bench/` (path finding on the real layouts, palette typing) against frozen copies of the old code in `tests/helpers/*-legacy.ts`.
 - Use it for CPU changes and paste the table into the PR.
+
+### Mutation testing
+
+- `bun run mutation` runs Stryker (`stryker.config.mjs`, dev only, never in CI) over the `mutate` list: line ranges of the modules whose tests a change prunes or rewrites, never the whole repo. It runs the related Vitest files per mutant (`related`, `perTest` coverage) and writes `reports/mutation/mutation.json` (git-ignored).
+- It mutates in place (several suites read the repo through git, which a sandbox copy lacks) and restores every file when it ends: commit first, and edit no mutated file while it runs.
+- A pruning change compares the score on its base (the base's tests, the same `mutate` list) with its branch: a mutant the base killed and the branch lets survive is a lost check; restore or rewrite the test that killed it. The 2026-11-11 pruning lost three this way and kept those checks (the floor intro line's face, the grid floor's fade radius, the 60-pair navgrid oracle: 40 pairs miss a path-smoothing mutant).
+- A file Stryker adds at the root needs a class in `scripts/ci-plan.ts` (`stryker.config.mjs` is `tests`): an unclassified path plans a full run.
 
 ### Screenshots
 
@@ -416,6 +424,9 @@ Each check lives in one place, at the cheapest level that can see the regression
 - One ride tour covers the elevator panel, arrivals and routes on every floor (`e2e/arrivals.spec.ts`); add per-floor ride checks there rather than in a new tour.
 - Before adding an e2e, search the suite for the same flow (`grep -rn "<the probe or test id>" e2e/`); fold a new assertion into the test that already reaches that state.
 - A slow budget sweep, or a second viewport or tier of the same behavior, ends its title with ` @nightly` (see [Nightly-only e2e tests](#nightly-only-e2e-tests)).
+- A frozen-copy equivalence oracle (old code kept in `tests/helpers/*-legacy.ts` or inline) runs a seeded sample, and compares what is a pure function of state it already compares only once per step (`camera-look-offset`: the orbit fields every frame, the pose at each step's settled frame).
+- No test for a constant's literal value, a uniform that echoes its argument or a library's behavior; one `it.each` row per regex alternative or branch, not per spelling (`gpu-tier`: one renderer string per `WEAK_GPU` alternative and wrapper format plus the range edges).
+- A wait that only proves nothing happens belongs in Vitest on fake timers when the gate is a timer (the Ask teaser's no-return check, `tests/hud/AskDock.test.tsx`); the e2e keeps the real-browser part (the session mark across a reload).
 - Size a full-tier sweep for CI, not for your machine: in an E2E shard the full tier renders about 1 fps on SwiftShader, so one settled spot (drive, camera settle, budget window) costs about 45 s against about 5 s locally. Keep each test to about half its timeout; split a longer sweep into parts with literal titles (`hallHeadroom` in `highlights.spec.ts`) and keep each spot's approach, since the follow camera faces the way the rover came.
 
 ### Nightly-only e2e tests
@@ -436,6 +447,11 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 | `highlights`: L1 headroom under the floor budget (full), four parts of three spots (plaza to gate, north stations, south stations, contact and centrepieces) | 63 + 95 + 95 + 95 | The L1 perf gate on both tiers; the reduced-motion station and gate checks in `highlights.spec.ts`. |
 | `memory`: 10 Lobby to Roof round trips (lite) | 162 | `e2e/perf/memory-full.spec.ts` (the same round trips on the full tier); the B1 round trips and Page View toggles stay. |
 | `labs-paths`: arrival (1440x900 full) | 54.7 | The phone arrival; the desktop full tier through the reactor drive. |
+| `gpu`: an arrival flag adds no shader program (full tier) | 333 | The L1 full program baseline in `e2e/perf/floors.spec.ts` on `main` and on 3D pull requests (2026-11-11). |
+| `camera`: low camera on L3 and L4 | 84 + 84 | The L1 low camera (the same rule on another slab). |
+| `phone-first`: floor-line toasts at 390x844 | 38 | The 375x667 (tighter) and 844x390 variants. |
+| `library-shelves`: phone, reduced motion | 33.8 | The desktop shelf workflow; touch select-then-go in `interact.spec.ts`. |
+| `guides-vault`: phone, reduced motion | 22.3 | The desktop vault workflow and the vault point-and-go test. |
 
 - Not moved: the remaining viewport or tier pairs cost under 25 s per variant (HUD corners, drawer, Page View landing) or test tier-specific behavior (the first boost's programs, the Labs arrival calls per tier).
 - The gpu, daynight and highlights checks do not follow a PR's perf selection: the perf lane runs only `e2e/perf/`, so it would need a second test directory and a per-floor grep in the e2e job.
@@ -445,4 +461,7 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 - No blanket retries: CI retries once; fix a flaky test instead of adding retries.
 - The `Build, CV and e2e` job summary lists every test that passed only on retry (`scripts/flaky-report.ts`, plus a warning annotation), in the e2e lane and the perf lane (the perf shards' blob reports, merged to JSON): a slow perf test that passes on its retry adds its whole time again to its shard.
 - Give each one an issue with an owner, never a quarantine.
+- Fix it at the source. Two causes seen in CI (2026-11-11):
+  - A transient state polled after `goto(..., { waitUntil: "commit" })`: a fast boot released the boot cover before the first poll (`boot-first`). Record such a state in the page from document creation (an init script's frame loop) and assert the record.
+  - A repeat `page.mouse.move` to the pointer's current position: Chromium drops it, so the hover pick never re-runs (`camera` first-person hints). Step off the point, then onto it.
 - Unit tests (Vitest, jsdom): `waitFor` passes on the DOM commit, and on a loaded runner React can run the passive effects (`useEffect`) a task later, so an element can be on the page before its effect has run. Settle lazy chunks and mocked fetches inside `await act(...)`: inject the loader, and let fetch return promises the test holds and awaits (`tests/hud/OfficePanel.test.tsx`, the `OfficeLazy` tests). Never raise a `waitFor` timeout to fix this.

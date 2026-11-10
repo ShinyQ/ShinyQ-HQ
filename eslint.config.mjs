@@ -16,6 +16,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Static design mockups and their generator.
     "docs/design/**",
+    // Stryker's working files and reports (bun run mutation).
+    ".stryker-tmp/**",
+    "reports/**",
   ]),
 ]);
 

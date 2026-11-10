@@ -850,7 +850,8 @@ describe("Agent Office chips at the office stop", { timeout: 30_000 }, () => {
     });
 
     it("a hand turn or drag in the zone (the view no longer applies) turns them into compact dots at once, the row clear and in order", () => {
-      for (const turn of [(o: OrbitState) => rotate(o, 0.35, 0), (o: OrbitState) => rotate(o, -0.35, -0.1), (o: OrbitState) => rotateStep(o, 1), (o: OrbitState) => rotateStep(o, -1)]) {
+      // A drag (yaw and pitch) and a rotate step; their mirror images take the same branch.
+      for (const turn of [(o: OrbitState) => rotate(o, -0.35, -0.1), (o: OrbitState) => rotateStep(o, 1)]) {
         const { orbit, drawn, hold } = settledAtStop();
         turn(orbit);
         const modes: ReturnType<typeof officeChipMode>[] = [];

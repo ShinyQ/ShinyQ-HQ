@@ -110,7 +110,8 @@ for (const device of [
   test.describe(`Study Vault (${device.id}, ${device.motion} motion)`, () => {
     test.use(device.use);
 
-    test("at the vault the covers open with the rover's distance, a book opens its study guide in this tab, and Esc gives the 3D view back", async ({ page, context }) => {
+    // The phone (tap, reduced motion) variant runs in the nightly; pull requests and main keep the desktop one.
+    test(`at the vault the covers open with the rover's distance, a book opens its study guide in this tab, and Esc gives the 3D view back${device.id === "phone" ? " @nightly" : ""}`, async ({ page, context }) => {
       const errors = collectErrors(page);
       const log = await routeGuides(page, PAGES);
       const opened = countPages(context);

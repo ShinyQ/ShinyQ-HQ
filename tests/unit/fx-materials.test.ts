@@ -15,6 +15,7 @@ describe("fx materials", () => {
     expect(m.blending).toBe(AdditiveBlending);
     expect(m.uniforms.uLen.value).toBe(12);
   });
+  // Kept after mutation testing (2026-11-11): the only check that the grid floor's fade radius reaches its shader.
   it("grid floor fades by radius", () => {
     expect(createGridFloorMaterial({ line: "#4f46e5", bg: "#05050c", radius: 32 }).uniforms.uRadius.value).toBe(32);
   });

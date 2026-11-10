@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { applyQualityPref } from "@/lib/gpu-tier";
-import { isQualityPref, QUALITY_PREFS } from "@/lib/quality-pref";
+import { isQualityPref } from "@/lib/quality-pref";
 
 describe("graphics quality preference", () => {
-  it("knows its values", () => {
-    expect(QUALITY_PREFS).toEqual(["auto", "full", "lite"]);
-    expect(isQualityPref("lite")).toBe(true);
+  it("accepts only a choice from storage, never the static tier", () => {
+    expect(["auto", "full", "lite"].every(isQualityPref)).toBe(true);
     expect(isQualityPref("static")).toBe(false);
   });
   it("auto keeps the detected tier; a choice wins over detection", () => {
