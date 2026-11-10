@@ -1,6 +1,7 @@
 # CI: test suite pruning and PR perf gates
 
 - Date: 2026-11-11
+- PR: [#422](https://github.com/ShinyQ/ShinyQ-HQ/pull/422)
 
 The owner approved an aggressive pruning of the test suite and a faster PR pipeline, with the protection of the
 critical paths kept (content safety, Ask security, routes and SEO, i18n parity, the no-WebGL Classic site,
