@@ -214,9 +214,14 @@ describe("golden set (mocked model)", () => {
     const id = golden.items.find((i) => i.id === "q116") as GoldenItem;
     expect(scoreGolden("Kurniadi opened ten tasks as pull requests in his first ten days; half of them are already merged.", en).pass).toBe(true);
     expect(scoreGolden("Kurniadi opened ten tasks as pull requests in his first ten days.", en).pass).toBe(false);
-    expect(scoreGolden("Kurniadi opened ten tasks in ten days, and all ten merged; half of them landed in the hardest band.", en).pass).toBe(false);
+    expect(scoreGolden("Kurniadi opened ten tasks in ten days, and all ten merged within ten days; half of them landed in the hardest band.", en).pass).toBe(false);
+    expect(scoreGolden("Kurniadi opened ten tasks in his first ten days; five had merged by publication, and all ten merged in the end, five after a redesign.", en).pass).toBe(true);
+    expect(scoreGolden("Five had merged by publication; by 9 November all ten had merged, five after a redesign. Kurniadi opened ten tasks in his first ten days.", en).pass).toBe(true);
+    expect(scoreGolden("Kurniadi opened ten tasks, and all of them merged within ten days; half landed in the hardest band.", en).pass).toBe(false);
     expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task sebagai pull request, dan separuhnya sudah di-merge.", id).pass).toBe(true);
     expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task sebagai pull request.", id).pass).toBe(false);
+    expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task, dan semuanya merged dalam sepuluh hari.", id).pass).toBe(false);
+    expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task; separuhnya sudah di-merge saat artikel terbit, dan akhirnya merged semua, lima setelah didesain ulang.", id).pass).toBe(true);
   });
 
   it("has 116 unique items with a 113 pass threshold", () => {
