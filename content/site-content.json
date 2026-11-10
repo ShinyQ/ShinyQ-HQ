@@ -5362,28 +5362,28 @@
           },
           "period": {
             "start": "2026-05",
-            "end": "2026-10"
+            "end": "2026-11"
           },
           "role": {
             "en": "Owner and lead engineer, responsible for design, AI coding agent direction, review and release",
             "id": "Owner dan lead engineer, bertanggung jawab atas desain, arahan AI coding agent, review, dan rilis"
           },
           "problem": {
-            "en": "Callers needed an alternative to rigid phone menus: a voice agent with company knowledge-base answers, interruption during speech or search, and transfer to a human and back within the same call. Supervisors needed a live console.",
+            "en": "MII's contact center needed an alternative to rigid phone menus: a voice agent with knowledge-base answers, interruption during speech or search, and human transfer and return within the same call. Supervisors needed a live console.",
             "id": "Penelepon membutuhkan pengganti menu telepon yang kaku: voice agent yang menjawab dari knowledge base perusahaan, dapat disela saat berbicara atau mencari, dan beralih ke petugas lalu kembali dalam satu panggilan. Supervisor membutuhkan console live."
           },
           "approach": [
             {
-              "en": "I combined two prototypes into one product and ported the realtime backend to Python and FastAPI.",
-              "id": "Saya menggabungkan dua prototipe menjadi satu produk dan memindahkan backend realtime ke Python dan FastAPI."
+              "en": "I combined two team prototypes, keeping a colleague's voice and indexing foundations, then ported realtime to Python and FastAPI. I owned the specs, review and releases, with AI coding agents helping implement them.",
+              "id": "Saya menyatukan dua prototipe tim, melanjutkan fondasi voice dan indexing dari rekan saya, lalu memindahkan realtime ke Python dan FastAPI. Spec, review, dan rilis saya tangani, dengan bantuan AI coding agent pada implementasi."
             },
             {
-              "en": "I made barge-in account for audio playout and moved knowledge-base tool calls out of the realtime loop into cancellable tasks sharing one time budget.",
-              "id": "Saya membuat barge-in memperhitungkan audio yang sedang diputar dan memindahkan tool call knowledge base dari realtime loop ke task yang bisa dibatalkan dengan satu batas waktu bersama."
+              "en": "I tracked audio playout and moved knowledge tools off the realtime loop into cancellable tasks with one deadline. Knowledge-turn interruption fell from ~2 s to ~0.2 s in a controlled A/B, n=4 calls per arm, not production traffic.",
+              "id": "Saya melacak audio playout dan memisahkan tool knowledge dari realtime loop ke task yang bisa dibatalkan dengan satu deadline. Interupsi saat pencarian turun ~2 s ke ~0.2 s pada A/B terkontrol, n=4 panggilan per jalur, bukan trafik produksi."
             },
             {
-              "en": "I prepared the system for production with atomic writes, crash recovery, a replayable dead-letter queue, drain-gated releases, managed identity and infrastructure as code for each environment. As a Managed Application, its Marketplace test installs passed 25 of 25 (public) and 22 of 22 (private) post-install checks.",
-              "id": "Saya menyiapkan sistem untuk produksi dengan atomic write, crash recovery, dead-letter queue yang bisa di-replay, rilis dengan drain gate, managed identity, dan infrastructure as code per environment. Sebagai Managed Application, test install Marketplace-nya lolos 25 dari 25 (publik) dan 22 dari 22 (privat) pemeriksaan pasca-instalasi."
+              "en": "I added atomic writes, crash recovery, replayable dead letters and drain-gated releases, with managed identity and infrastructure as code. Earlier Managed Application test installs passed 25/25 public and 22/22 private checks. A November install passed 27/27 automated checks, but first-admin sign-in, agent creation and browser calls still needed human validation.",
+              "id": "Saya menambahkan atomic write, crash recovery, replay dead-letter, dan rilis dengan drain gate, memakai managed identity serta infrastructure as code. Test install Managed Application sebelumnya lolos 25/25 pemeriksaan publik dan 22/22 privat. Instalasi November lolos 27/27 pemeriksaan otomatis, tetapi sign-in admin pertama, pembuatan agent, dan panggilan browser masih perlu diuji langsung."
             },
             {
               "en": "I documented the decision to replace a retiring voice service with self-hosted WebRTC media on zonal VMs, then verified failover through hard VM-stop drills.",
@@ -5555,12 +5555,12 @@
             {
               "value": "2 of 2",
               "label": {
-                "en": "Node-loss drills passed; live calls survived",
-                "id": "Drill kehilangan node lulus; panggilan aktif tetap berjalan"
+                "en": "Hard node-loss drills recovered caller-audible AI, with an interruption",
+                "id": "Drill kehilangan node memulihkan suara AI, dengan jeda panggilan"
               },
               "context": {
-                "en": "Hard VM-stop failover and caller-reconnect drills after diagnosing and fixing four root causes.",
-                "id": "Drill failover dengan mematikan VM secara paksa dan reconnect penelepon setelah empat akar masalah ditemukan dan diperbaiki."
+                "en": "After four root causes were fixed, AI audio resumed after 11.5 s and 13.0 s in two hard VM-stop drills, with context preserved. This was audible recovery, not seamless failover.",
+                "id": "Setelah empat akar masalah diperbaiki, suara AI kembali dalam 11,5 detik dan 13,0 detik pada dua drill pemadaman VM, dengan konteks tetap tersimpan. Ada jeda yang terdengar, bukan failover tanpa putus."
               },
               "confidence": "verified"
             },
@@ -5591,8 +5591,8 @@
           ],
           "story": {
             "situation": {
-              "en": "Callers were stuck in rigid phone menus. MII needed a voice agent that answers from the company knowledge base, lets callers interrupt while it speaks or searches, and hands over to a human and back within the same call, with a live console for supervisors.",
-              "id": "Penelepon terjebak di menu telepon yang kaku. MII membutuhkan voice agent yang menjawab dari knowledge base perusahaan, dapat disela saat berbicara atau mencari informasi, serta dapat mengalihkan panggilan ke petugas lalu kembali ke agent dalam panggilan yang sama. Supervisor juga membutuhkan konsol live."
+              "en": "MII needed a voice agent that could answer from its knowledge base, listen when interrupted and bring in a human without ending the call. I inherited voice and indexing work from a colleague, brought the prototypes together, then led the realtime backend, evaluation and release work. A connected call was only the start: I needed to check what the caller actually heard.",
+              "id": "MII membutuhkan voice agent yang menjawab dari knowledge base, bisa disela, dan dapat mengalihkan percakapan ke petugas tanpa menutup panggilan. Saya melanjutkan fondasi voice dan indexing dari rekan saya, menyatukan prototipenya, lalu memimpin pengembangan backend realtime, evaluasi, dan rilis. Panggilan yang berhasil tersambung belum cukup; saya perlu memeriksa apa yang benar-benar didengar penelepon."
             },
             "decisions": [
               {
@@ -5611,8 +5611,8 @@
                   "id": "Mengganti layanan suara yang akan dihentikan dengan WebRTC self-hosted di VM zonal"
                 },
                 "why": {
-                  "en": "The managed service was being retired; I documented the decision, then proved the new path with hard VM-stop failover drills.",
-                  "id": "Layanan managed tersebut akan dihentikan. Saya mendokumentasikan keputusan penggantinya, lalu memverifikasi jalur baru melalui drill failover dengan mematikan VM secara paksa."
+                  "en": "The managed service was being retired, so I kept the agent logic and changed the media path. Hard VM-stop drills recovered the call with context intact, but callers still heard a gap. Later install checks covered release integrity, not a rerun of the failed call-setup gate.",
+                  "id": "Layanan managed akan dihentikan, jadi logika agent saya pertahankan dan jalur medianya saya ganti. Drill pemadaman VM berhasil memulihkan panggilan beserta konteksnya, tetapi penelepon tetap mendengar jeda. Pemeriksaan instalasi berikutnya menguji integritas rilis, bukan mengulang gate setup panggilan yang sebelumnya gagal."
                 }
               },
               {
@@ -5638,30 +5638,30 @@
                 "id": "Latency Budget"
               },
               "summary": {
-                "en": "Latency is measured where the caller hears it: a harness plays recorded caller audio over the real call path and joins its timeline with per-turn backend telemetry, so every stage has its own number.",
-                "id": "Latensi diukur dari sisi penelepon: harness memutar audio penelepon yang sudah direkam melalui jalur panggilan sebenarnya, lalu menggabungkan timeline-nya dengan telemetry backend per giliran, sehingga setiap tahap punya angkanya sendiri."
+                "en": "I measure what the caller hears, joining recorded audio on the real call path with backend telemetry for each turn.",
+                "id": "Saya mengukur dari sisi penelepon, lalu mencocokkan rekaman audio di jalur panggilan sebenarnya dengan telemetry backend tiap giliran."
               },
               "points": [
                 {
-                  "en": "On the live WebRTC path, the caller hears an answer 1,204 ms after speaking at P50 (P95 1,257 ms, n=6 turns without a tool call). The largest stages are the model's end-of-turn wait (about 520 ms) and its time to first audio (408 ms); the media path adds about 136 ms.",
-                  "id": "Pada jalur WebRTC live, penelepon mendengar jawaban 1.204 ms setelah selesai berbicara pada P50 (P95 1.257 ms, n=6 giliran tanpa tool call). Tahap terbesar adalah waktu tunggu model untuk mendeteksi akhir giliran (sekitar 520 ms) dan waktu hingga audio pertama (408 ms); jalur media menambah sekitar 136 ms."
+                  "en": "Live WebRTC answer latency: P50 1,204 ms, P95 1,257 ms (n=6 turns, no tool calls). The model's end-of-turn wait takes about 520 ms, first audio 408 ms, and the media path about 136 ms.",
+                  "id": "Latensi jawaban WebRTC live: P50 1.204 ms, P95 1.257 ms (n=6 giliran tanpa tool call). Model menunggu akhir giliran sekitar 520 ms, menghasilkan audio pertama dalam 408 ms, dan jalur media menambah sekitar 136 ms."
                 },
                 {
-                  "en": "Knowledge lookups run as cancellable tasks under one 2.5 s budget. Search and embeddings each get a 1.5 s timeout per attempt, and the remaining deadline travels with every retry, so no retry starts that cannot finish in time.",
-                  "id": "Akses knowledge base berjalan sebagai task yang bisa dibatalkan dengan satu batas waktu 2,5 detik. Search dan embeddings masing-masing mendapat timeout 1,5 detik per percobaan, dan sisa deadline ikut dibawa ke setiap retry, sehingga tidak ada retry yang dimulai jika tidak sempat selesai."
+                  "en": "Cancellable knowledge lookups share a 2.5 s budget. Search and embeddings each allow 1.5 s per attempt; retries inherit the remaining deadline and cannot start without enough time.",
+                  "id": "Task pencarian knowledge base bisa dibatalkan dan berbagi batas 2,5 detik. Search dan embeddings mendapat 1,5 detik per percobaan; retry hanya dimulai jika sisa waktunya cukup."
                 },
                 {
-                  "en": "Moving knowledge search into the backend's geography cut retrieval P50 by 1,351 ms in a live A/B, so the move was kept.",
-                  "id": "Memindahkan knowledge search ke geografi yang sama dengan backend memangkas P50 retrieval sebesar 1.351 ms pada A/B live, sehingga perubahan ini dipertahankan."
+                  "en": "I kept search in the backend's geography after a live A/B cut retrieval P50 by 1,351 ms.",
+                  "id": "Search saya pertahankan di geografi backend setelah A/B live memangkas P50 retrieval sebesar 1.351 ms."
                 },
                 {
-                  "en": "Tuning that saved too little was rejected against thresholds set before the run: minimal model reasoning saved 39 ms and a 500 ms server-side silence window saved 69 ms across 84 calls. An end-of-turn model that added 220 ms stays off.",
-                  "id": "Tuning yang penghematannya terlalu kecil ditolak berdasarkan ambang yang ditetapkan sebelum pengujian: reasoning model minimal hanya menghemat 39 ms dan jendela hening 500 ms di sisi server hanya menghemat 69 ms dari 84 panggilan. Model deteksi akhir giliran yang menambah 220 ms tetap dinonaktifkan."
+                  "en": "Across 84 calls, minimal reasoning saved 39 ms and a 500 ms server silence window saved 69 ms. Both missed pre-set thresholds. An end-of-turn model added 220 ms and stays off.",
+                  "id": "Dari 84 panggilan, reasoning minimal menghemat 39 ms dan jendela hening server 500 ms menghemat 69 ms. Keduanya gagal memenuhi ambang awal. Model deteksi akhir giliran menambah 220 ms dan tetap nonaktif."
                 }
               ],
               "limits": {
-                "en": "The samples are small and come from test runs, not production traffic, and the largest stage, the end-of-turn wait, happens inside the model service.",
-                "id": "Sampelnya kecil dan berasal dari test run, bukan trafik produksi, dan tahap terbesar, yaitu waktu tunggu akhir giliran, terjadi di dalam layanan model."
+                "en": "Small test samples, not production traffic. The largest delay, end-of-turn detection, sits inside the model service.",
+                "id": "Sampel test kecil, bukan trafik produksi. Jeda terbesar, deteksi akhir giliran, berada di dalam layanan model."
               },
               "post": "making-a-voice-agent-interruptible"
             },
@@ -5671,34 +5671,34 @@
                 "id": "Desain Failover"
               },
               "summary": {
-                "en": "Every dependency on the call path has a per-attempt timeout, retries for idempotent calls only, and a circuit breaker that opens after 5 failures in 60 s and probes again after 30 s. Breaker state shows on the readiness endpoint.",
-                "id": "Setiap dependensi di jalur panggilan punya timeout per percobaan, retry hanya untuk panggilan idempotent, dan circuit breaker yang terbuka setelah 5 kegagalan dalam 60 detik lalu mencoba lagi setelah 30 detik. Status breaker terlihat di endpoint readiness."
+                "en": "Call-path dependencies have per-attempt timeouts, idempotent-only retries and breakers: 5 failures in 60 s, then a probe after 30 s. Readiness exposes breaker state.",
+                "id": "Dependensi panggilan memakai timeout per percobaan, retry hanya untuk operasi idempotent, dan breaker: 5 kegagalan dalam 60 detik, lalu probe setelah 30 detik. Statusnya terlihat di readiness."
               },
               "points": [
                 {
-                  "en": "Media runs on two self-hosted LiveKit nodes in separate availability zones. New calls go to the healthy, non-draining node with the fewest rooms, checked every 5 s.",
-                  "id": "Media berjalan di dua node LiveKit self-hosted pada availability zone yang berbeda. Panggilan baru diarahkan ke node yang sehat, tidak sedang drain, dan memiliki room paling sedikit, dicek setiap 5 detik."
+                  "en": "Two self-hosted LiveKit nodes span availability zones. Every 5 s, routing selects the healthy, non-draining node with the fewest rooms for new calls.",
+                  "id": "Dua node LiveKit self-hosted berada di availability zone berbeda. Routing diperbarui tiap 5 detik; panggilan baru menuju node sehat dengan room paling sedikit yang tidak sedang drain."
                 },
                 {
-                  "en": "Call bridges run in supervised worker processes with a 2 s heartbeat. When a worker dies, its calls rejoin a live worker, and a caller who is still present is handed to a human rather than hung up.",
-                  "id": "Bridge panggilan berjalan di proses worker yang diawasi supervisor dengan heartbeat 2 detik. Saat sebuah worker mati, panggilannya bergabung kembali ke worker yang masih hidup, dan penelepon yang masih terhubung dialihkan ke petugas, bukan diputus."
+                  "en": "Supervised bridge workers heartbeat every 2 s. A dead worker's calls rejoin a live worker; callers still present go to a human rather than being hung up.",
+                  "id": "Worker bridge diawasi dengan heartbeat 2 detik. Jika worker mati, panggilannya pindah ke worker aktif; penelepon yang masih terhubung dialihkan ke petugas, bukan diputus."
                 },
                 {
-                  "en": "A chaos suite on a fake model passed 16 of 17 failure modes in 3 consecutive runs (region outage was not applicable): failed database writes go to a replayable dead-letter queue, search and embedding failures fall back to keyword search, and an admin API outage starts calls from the last good agent config.",
-                  "id": "Chaos suite dengan model tiruan lolos 16 dari 17 mode kegagalan dalam 3 run berturut-turut (gangguan region tidak berlaku): write database yang gagal masuk ke dead-letter queue yang bisa di-replay, kegagalan search dan embedding beralih ke keyword search, dan saat admin API mati panggilan tetap dimulai dengan konfigurasi agent terakhir yang valid."
+                  "en": "Fake-model chaos tests first passed 16 of 17 modes in 3 runs, then repeated the 16 passes across 20 iterations (region outage not applicable). Failed writes enter replayable dead letters; search/embedding failures use keyword search; admin API failure uses the last good agent config.",
+                  "id": "Chaos test model tiruan awalnya lolos 16 dari 17 mode dalam 3 run, lalu mengulang 16 kelulusan itu selama 20 iterasi (gangguan region tidak berlaku). Write gagal masuk dead-letter untuk replay; search/embedding gagal memakai keyword search; admin API mati memakai konfigurasi agent terakhir yang valid."
                 },
                 {
-                  "en": "Admission control refuses a new call with 429 when capacity is full or the model is throttled, and 503 when a dependency's breaker is open, so calls already in progress keep their capacity.",
-                  "id": "Admission control menolak panggilan baru dengan 429 saat kapasitas penuh atau model terkena throttling, dan 503 saat breaker sebuah dependensi terbuka, sehingga panggilan yang sedang berjalan tetap mendapat kapasitasnya."
+                  "en": "Admission control protects active calls: 429 for new calls at capacity or model throttling, 503 when a dependency breaker is open.",
+                  "id": "Admission control menjaga kapasitas panggilan aktif: panggilan baru menerima 429 saat penuh atau model di-throttle, dan 503 jika breaker dependensi terbuka."
                 },
                 {
-                  "en": "A live handover drill of 44 calls traced failed takeovers to model throttling and a failed response the bridge dropped silently. Failed responses are now logged and retried.",
-                  "id": "Drill handover live dengan 44 panggilan menelusuri takeover yang gagal ke throttling model dan respons gagal yang dibuang bridge tanpa jejak. Kini respons yang gagal dicatat dan di-retry."
+                  "en": "A 44-call live handover drill traced failures to model throttling and a silently dropped response. Failed responses are now logged and retried.",
+                  "id": "Drill handover live 44 panggilan menemukan throttling model dan respons gagal yang dibuang tanpa jejak. Respons gagal kini dicatat dan di-retry."
                 }
               ],
               "limits": {
-                "en": "The backend still runs as one instance that is not zone-redundant, there is no fallback model deployment or second region yet, and regional disaster recovery is designed but has never been drilled.",
-                "id": "Backend masih berjalan sebagai satu instance yang belum zone-redundant, belum ada deployment model cadangan atau region kedua, dan disaster recovery lintas region baru sebatas desain dan belum pernah di-drill."
+                "en": "One backend instance, no zone redundancy, fallback model or second region. Regional DR is designed, not drilled. The reduced PoC setup gate still failed: 70/74 calls, below 99%; install checks do not replace it.",
+                "id": "Backend satu instance, tanpa zone redundancy, model cadangan, atau region kedua. DR lintas region belum di-drill. Gate setup PoC terbatas tetap gagal: 70/74 panggilan, di bawah 99%; test instalasi bukan penggantinya."
               }
             },
             {
@@ -5707,34 +5707,34 @@
                 "id": "Metode Evaluasi"
               },
               "summary": {
-                "en": "Decision rules are written and committed before any measurement, and only a pass changes a default. A change without supporting evidence stays off.",
-                "id": "Kriteria keputusan ditulis dan di-commit sebelum pengukuran apa pun, dan hanya hasil lulus yang boleh mengubah default. Perubahan tanpa bukti pendukung tetap dinonaktifkan."
+                "en": "I commit decision rules before measuring. Only a pass changes a default; unsupported changes stay off.",
+                "id": "Kriteria saya tulis dan commit sebelum pengukuran. Default hanya berubah jika lulus; perubahan tanpa bukti tetap nonaktif."
               },
               "points": [
                 {
-                  "en": "The harness drives the real call bridge three ways: a media emulator for deterministic runs, a fake realtime endpoint for no-cost runs and a headless WebRTC caller for live runs.",
-                  "id": "Harness menjalankan bridge panggilan yang sebenarnya dengan tiga cara: media emulator untuk run deterministik, endpoint realtime tiruan untuk run tanpa biaya, dan penelepon WebRTC headless untuk run live."
+                  "en": "The real bridge runs against a deterministic media emulator, a no-cost fake realtime endpoint or a headless WebRTC caller for live tests.",
+                  "id": "Bridge sebenarnya diuji lewat media emulator deterministik, endpoint realtime tiruan tanpa biaya, atau penelepon WebRTC headless untuk test live."
                 },
                 {
-                  "en": "Scenarios cover quiet turns, knowledge questions, interruptions, escalation, long pauses, Indonesian callers, street noise at 15 dB and office noise with speakerphone echo.",
-                  "id": "Skenarionya mencakup giliran tenang, pertanyaan knowledge base, interupsi, eskalasi, jeda panjang, penelepon berbahasa Indonesia, kebisingan jalan pada 15 dB, dan kebisingan kantor dengan gema speakerphone."
+                  "en": "Scenarios cover quiet turns, knowledge questions, interruptions, escalation, long pauses, Indonesian callers, 15 dB street noise and office noise with speakerphone echo.",
+                  "id": "Skenario meliputi giliran tenang, pertanyaan knowledge base, interupsi, eskalasi, jeda panjang, bahasa Indonesia, bising jalan 15 dB, dan bising kantor dengan gema speakerphone."
                 },
                 {
-                  "en": "Answer quality uses 16 golden questions in English and Indonesian, 2 runs per model, scored 1 to 5 on groundedness, correctness, completeness, language match and brevity by an LLM judge. The judge first had to agree with 10 hand-labelled items: 0.8 per item and 1.0 on hallucination flags.",
-                  "id": "Kualitas jawaban diukur dengan 16 golden question dalam bahasa Inggris dan Indonesia, 2 run per model, dinilai 1 sampai 5 untuk groundedness, correctness, completeness, kesesuaian bahasa, dan keringkasan oleh LLM judge. Judge tersebut harus lebih dulu sesuai dengan 10 item yang dilabeli manual: 0,8 per item dan 1,0 untuk penanda halusinasi."
+                  "en": "An LLM judge scores 16 EN/ID golden questions, 2 runs per model, from 1 to 5 for groundedness, correctness, completeness, language and brevity. Calibration on 10 hand-labelled items reached 0.8 per-item agreement and 1.0 on hallucination flags.",
+                  "id": "LLM judge menilai 16 golden question EN/ID, 2 run per model, pada skala 1 sampai 5: groundedness, correctness, completeness, bahasa, dan keringkasan. Kalibrasi 10 item berlabel manual mencapai kesesuaian 0,8 per item dan 1,0 untuk penanda halusinasi."
                 },
                 {
-                  "en": "Turn-taking is scored on false end-of-turn rate, cut-off rate and spurious events per 100 utterances, next to latency, against limits set before each run.",
-                  "id": "Turn-taking dinilai dari tingkat salah deteksi akhir giliran, tingkat ucapan terpotong, dan event palsu per 100 ucapan, di samping latensi, terhadap batas yang ditetapkan sebelum setiap run."
+                  "en": "Turn-taking gates cover false end-of-turn, cut-offs, spurious events per 100 utterances and latency, with limits set before each run.",
+                  "id": "Gate turn-taking mengukur salah deteksi akhir giliran, ucapan terpotong, event palsu per 100 ucapan, dan latensi, dengan batas sebelum tiap run."
                 },
                 {
-                  "en": "A retrieval regression gate checks recall at k=4 on a fixed question set (0.909 in English, n=44), and its guard flagged all 4 poisoned chunks that the injection probes retrieved.",
-                  "id": "Retrieval regression gate memeriksa recall pada k=4 dengan set pertanyaan tetap (0,909 untuk bahasa Inggris, n=44), dan guard-nya menandai keempat chunk beracun yang terambil oleh probe injeksi."
+                  "en": "Fixed-set retrieval recall at k=4 was 0.909 for English (n=44). The injection guard flagged all 4 retrieved poisoned chunks.",
+                  "id": "Recall retrieval set tetap pada k=4 mencapai 0,909 untuk Inggris (n=44). Guard injeksi menandai keempat chunk beracun yang terambil."
                 }
               ],
               "limits": {
-                "en": "Evaluation runs on demand, not on every pull request, the samples are small, there is no word error rate or real-traffic containment metric yet, and Indonesian retrieval recall on the regression set is still low (0.182, n=11).",
-                "id": "Evaluasi dijalankan sesuai kebutuhan, bukan di setiap pull request, sampelnya kecil, belum ada metrik word error rate atau containment dari trafik nyata, dan recall retrieval bahasa Indonesia pada set regresi masih rendah (0,182, n=11)."
+                "en": "On-demand evals, not every PR; small samples, no word error rate or real-traffic containment metric. Indonesian retrieval recall remains low: 0.182 (n=11).",
+                "id": "Evaluasi sesuai kebutuhan, bukan tiap PR; sampel kecil, belum ada word error rate atau containment trafik nyata. Recall retrieval Indonesia masih rendah: 0,182 (n=11)."
               }
             },
             {
@@ -5743,34 +5743,34 @@
                 "id": "Keamanan dan Identitas"
               },
               "summary": {
-                "en": "Each app runs on its own managed identity with least-privilege data-plane roles, and key-based access is disabled on the database, search, AI services and storage, so no data-store keys sit in app config.",
-                "id": "Setiap aplikasi berjalan dengan managed identity masing-masing dan role data-plane dengan hak akses minimum, dan akses berbasis key dinonaktifkan pada database, search, layanan AI, dan storage, sehingga tidak ada key data store di konfigurasi aplikasi."
+                "en": "Each app has its own least-privilege managed identity. Database, search, AI and storage key access is disabled; app config holds no data-store keys.",
+                "id": "Tiap aplikasi memakai managed identity dengan hak minimum. Akses key untuk database, search, AI, dan storage dinonaktifkan; konfigurasi aplikasi tidak menyimpan key data store."
               },
               "points": [
                 {
-                  "en": "Service-to-service calls use Entra app roles plus a signed actor context, with no shared keys between the apps.",
-                  "id": "Panggilan antarlayanan memakai Entra app role ditambah actor context yang ditandatangani, tanpa key yang dibagi antaraplikasi."
+                  "en": "Service calls use Entra app roles and signed actor context, not shared keys.",
+                  "id": "Panggilan antarlayanan memakai Entra app role dan actor context bertanda tangan, bukan key bersama."
                 },
                 {
-                  "en": "Operators sign in with Entra single sign-on, access control fails closed and maps Entra groups to roles, and the first admin is bound only for the right tenant, a member account and a verified email.",
-                  "id": "Operator masuk dengan Entra single sign-on, kontrol akses bersifat fail-closed dan memetakan grup Entra ke role, dan admin pertama hanya bisa diikat untuk tenant yang benar, akun member, dan email yang terverifikasi."
+                  "en": "Entra SSO maps groups to roles and fails closed. First-admin binding requires the correct tenant, a member account and verified email.",
+                  "id": "Entra SSO memetakan grup ke role secara fail-closed. Admin pertama harus dari tenant yang benar, berstatus member, dan memakai email terverifikasi."
                 },
                 {
-                  "en": "Public callers are anonymous, so each call gets a signed, scoped token that lasts at most 45 minutes. Media join tokens are scoped per role, webhooks are signed with a replay guard, and per-install secrets are generated inside the install and kept in Key Vault.",
-                  "id": "Penelepon publik bersifat anonim, sehingga setiap panggilan mendapat token bertanda tangan dengan cakupan terbatas yang berlaku paling lama 45 menit. Token join media dibatasi per role, webhook ditandatangani dengan proteksi replay, dan secret setiap instalasi dibuat di dalam instalasi itu sendiri lalu disimpan di Key Vault."
+                  "en": "Anonymous calls get signed, scoped tokens lasting at most 45 minutes. Media tokens are role-scoped; signed webhooks reject replay. Per-install secrets stay in Key Vault. Minimal media images run non-root with the admin API off; signed artifact checks rejected tampering before deployment.",
+                  "id": "Panggilan anonim mendapat token bertanda tangan dan terbatas, maksimal 45 menit. Token media dibatasi per role; webhook menolak replay. Secret instalasi disimpan di Key Vault. Image media minimal berjalan non-root tanpa admin API; verifikasi artefak bertanda tangan menolak perubahan ilegal sebelum deploy."
                 },
                 {
-                  "en": "Every ingested document chunk is scanned for prompt injection, and quarantined chunks are filtered out at query time, which adds no call latency.",
-                  "id": "Setiap chunk dokumen yang di-ingest dipindai untuk prompt injection, dan chunk yang dikarantina disaring saat query, sehingga tidak menambah latensi panggilan."
+                  "en": "Ingestion scans every document chunk for prompt injection. Queries exclude quarantined chunks without adding a call-time scan.",
+                  "id": "Saat ingestion, tiap chunk diperiksa untuk prompt injection. Query mengecualikan chunk karantina tanpa scan tambahan saat panggilan."
                 },
                 {
-                  "en": "No call audio is recorded. Transcripts can be PII-redacted after the call, retention is set per data category, data-subject deletion is supported, and an AI disclosure plays first on every call with tools off and cannot be cut short.",
-                  "id": "Audio panggilan tidak direkam. Transkrip dapat diredaksi PII-nya setelah panggilan, retensi diatur per kategori data, penghapusan data subjek didukung, dan pemberitahuan AI selalu diputar pertama di setiap panggilan tanpa tool dan tidak dapat dipotong."
+                  "en": "No audio recording. Post-call transcript PII redaction, per-category retention and data-subject deletion are supported. Every call starts with an uninterruptible AI disclosure, with tools off.",
+                  "id": "Audio tidak direkam. Tersedia redaksi PII transkrip setelah panggilan, retensi per kategori, dan penghapusan data subjek. Tiap panggilan dimulai dengan pemberitahuan AI yang tidak bisa dipotong, tanpa tool."
                 }
               ],
               "limits": {
-                "en": "Callers are not identity-verified, private endpoints are built into the templates but off by default and not yet deployed, and an external penetration test is planned before the first customer install.",
-                "id": "Identitas penelepon tidak diverifikasi, private endpoint sudah ada di template tetapi nonaktif secara default dan belum pernah di-deploy, dan penetration test eksternal direncanakan sebelum instalasi pelanggan pertama."
+                "en": "Caller identity is unverified. Private endpoints passed a private test install, not customer-production or full call validation. External penetration testing and Marketplace submission remain pending.",
+                "id": "Identitas penelepon belum diverifikasi. Private endpoint sudah diuji pada test install privat, bukan produksi pelanggan atau validasi panggilan lengkap. Penetration test eksternal dan pengajuan Marketplace masih tertunda."
               }
             }
           ],
@@ -5926,12 +5926,12 @@
             "id": "Platform Keamanan Kode AI"
           },
           "tagline": {
-            "en": "MII's AI code security platform: eight scanners per pull request, readable AI triage and a fix agent that opens PRs with validation and guardrails.",
-            "id": "Platform keamanan kode berbasis AI milik MII: delapan scanner per PR, triage AI yang mudah dibaca, dan fix agent pembuka PR dengan validasi serta guardrail."
+            "en": "MII's AI code security platform: seven scanners per pull request, offline rules with source credits, and fixes previewed and rescanned before human review.",
+            "id": "Platform keamanan kode berbasis AI milik MII: tujuh scanner per PR, rules offline dengan atribusi sumber, serta preview dan rescan fix sebelum review manusia."
           },
           "period": {
             "start": "2026-06",
-            "end": "2026-10"
+            "end": "2026-11"
           },
           "role": {
             "en": "Creator, sole engineer and operator, responsible for design, AI coding agent direction, review and release",
@@ -5943,24 +5943,24 @@
           },
           "approach": [
             {
-              "en": "I integrated eight open-source engines through a GitHub App, normalizing results, enriching exploit-likelihood and known-exploited data, and preserving stable finding identities.",
-              "id": "Saya mengintegrasikan delapan engine open-source lewat GitHub App, menormalisasi hasil, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas temuan tetap stabil."
+              "en": "I brought the scanners behind one GitHub App, normalized their findings and added exploit-likelihood and known-exploited signals. The November release uses seven engines after removing live-secret verification. I packaged offline rules with upstream credits and hash-locked scanner dependencies so builds can check for drift.",
+              "id": "Saya menyatukan scanner lewat satu GitHub App, menormalisasi temuan, dan menambahkan sinyal exploit-likelihood serta known-exploited. Rilis November memakai tujuh engine setelah verifikasi secret aktif dihapus. Rules saya kemas untuk pemakaian offline dengan kredit sumber, sementara dependency scanner dikunci beserta hash agar perubahan build terdeteksi."
             },
             {
-              "en": "I added Azure OpenAI triage and executive summaries, a check run for merge gating and a security assistant backed by a vector index.",
-              "id": "Saya menambahkan triage dan ringkasan eksekutif dengan Azure OpenAI, check run untuk merge gate, serta chat asisten keamanan berbasis vector index."
+              "en": "I added Azure OpenAI triage, executive summaries, merge checks and a vector-backed security assistant. A separate read-only AI audit workflow is now merged on main, with coverage tracking and sealed reports, but remains disabled by default; its scripted evaluation is not evidence of live-model accuracy.",
+              "id": "Saya menambahkan triage Azure OpenAI, ringkasan eksekutif, merge check, dan asisten keamanan berbasis vector index. Workflow audit AI terpisah sudah masuk main, dengan akses read-only, pelacakan cakupan, dan laporan yang disegel. Fitur ini masih default nonaktif; evaluasi dengan model simulasi belum membuktikan akurasi model live."
             },
             {
-              "en": "I built a fix agent that limits code context to a token budget and patches only the selected code regions. Dependency upgrades use package-manager resolution and never downgrade; protected-path guards and rescan validation run before publication.",
-              "id": "Saya membangun fix agent yang membatasi konteks kode sesuai token budget dan menerapkan patch hanya pada bagian kode yang dipilih. Upgrade dependency memakai resolusi package manager tanpa downgrade; proteksi path sensitif dan validasi rescan berjalan sebelum publikasi."
+              "en": "I kept fixes narrow: selected code regions, a token budget and package-manager upgrades without downgrades. The agent checks protected paths, compares scanner results before and after, and reverts rejected changes. Engineers inspect a preview before opening a PR; target-repository builds and tests stay off.",
+              "id": "Cakupan fix saya batasi pada bagian kode terpilih, dengan token budget dan upgrade lewat package manager tanpa downgrade. Agent memeriksa path sensitif, membandingkan hasil scanner sebelum dan sesudah, lalu membatalkan perubahan yang ditolak. Engineer melihat preview sebelum membuka PR; build dan test repositori target tetap nonaktif."
             },
             {
               "en": "After an internal audit reproduced untrusted repository code executing alongside production secrets, I led a 14-item hardening program. Scans moved to isolated, autoscaled jobs with tokens scoped per job.",
               "id": "Audit internal berhasil mereproduksi eksekusi kode repositori tak tepercaya dalam lingkungan yang juga menyimpan secret produksi. Setelah itu, saya memimpin program hardening 14 item dan memindahkan scan ke job terisolasi dengan autoscaling serta token yang dibatasi per job."
             },
             {
-              "en": "I added Prompt Shields, redacted secrets from prompts and built an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days). For Azure Marketplace readiness, I packaged it as a Managed Application with signed images; public and private test installs passed 16 of 16 and 24 of 24 post-install checks.",
-              "id": "Saya menambahkan Prompt Shields, menyamarkan secret di dalam prompt, dan membangun suite prompt injection offline, lalu merilis lewat staging, canary revision, dan health gate (13 rilis dalam 7 hari). Untuk kesiapan Azure Marketplace, saya mengemasnya sebagai Managed Application dengan image yang ditandatangani; test install paket publik dan privat lolos 16 dari 16 dan 24 dari 24 pemeriksaan pasca-instalasi."
+              "en": "I added Prompt Shields, prompt-secret redaction and offline injection tests, then released through staging, canaries and health gates (13 releases in 7 days). Earlier Managed Application installs passed 16/16 public and 24/24 private checks; the November tagged release passed 18/18 in a separate Service Catalog install. Those are install checks, not Marketplace approval.",
+              "id": "Saya menambahkan Prompt Shields, redaksi secret pada prompt, dan test injeksi offline, lalu merilis lewat staging, canary, dan health gate (13 rilis dalam 7 hari). Instalasi Managed Application sebelumnya lolos 16/16 pemeriksaan publik dan 24/24 privat; rilis bertag November lolos 18/18 pada instalasi Service Catalog terpisah. Ini bukti instalasi, bukan persetujuan Marketplace."
             }
           ],
           "architecture": {
@@ -6041,8 +6041,8 @@
                 "id": "scan-jobs",
                 "label": "Container Apps Jobs",
                 "sublabel": {
-                  "en": "8 isolated engines, scaled by KEDA",
-                  "id": "8 engine terisolasi, dengan scaling oleh KEDA"
+                  "en": "7 isolated engines, scaled by KEDA",
+                  "id": "7 engine terisolasi, dengan scaling oleh KEDA"
                 },
                 "layer": 4,
                 "row": 0,
@@ -6125,14 +6125,14 @@
           },
           "results": [
             {
-              "value": "8 engines",
+              "value": "7 engines",
               "label": {
                 "en": "Scanning engines per pull request in a 100+ repository organization",
                 "id": "Engine scanning per pull request dalam organisasi dengan 100+ repositori"
               },
               "context": {
-                "en": "Run in production through a GitHub App: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, TruffleHog and Checkov.",
-                "id": "Dijalankan di produksi melalui GitHub App: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, TruffleHog, dan Checkov."
+                "en": "November release inventory: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks and Checkov. TruffleHog and live-secret verification were removed; the older usage totals below cover the earlier eight-engine platform.",
+                "id": "Daftar rilis November: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, dan Checkov. TruffleHog serta verifikasi secret aktif dihapus; total penggunaan di bawah berasal dari platform delapan engine sebelumnya."
               },
               "confidence": "verified"
             },
@@ -6155,8 +6155,8 @@
                 "id": "PR fix agent dibuka di 7 repositori; 8 di-merge setelah review manusia"
               },
               "context": {
-                "en": "Human review is required for every fix PR. This does not claim a higher merge rate.",
-                "id": "Setiap fix PR wajib melewati review manusia. Angka ini tidak menyatakan merge rate yang lebih tinggi."
+                "en": "Historical total retained from the earlier record, not a new November measurement. Every fix PR requires human review; this does not establish a higher merge rate.",
+                "id": "Total historis dari catatan sebelumnya, bukan pengukuran baru pada November. Setiap fix PR wajib melewati review manusia; ini tidak membuktikan kenaikan merge rate."
               },
               "confidence": "verified"
             },
@@ -6181,12 +6181,12 @@
             "decisions": [
               {
                 "title": {
-                  "en": "Unified eight open-source scanners behind one GitHub App",
-                  "id": "Menyatukan delapan scanner open-source di balik satu GitHub App"
+                  "en": "Kept scanner results consistent and their inputs reviewable",
+                  "id": "Menjaga konsistensi hasil scanner dan meninjau sumber rules"
                 },
                 "why": {
-                  "en": "Engineers needed one consistent result per pull request, so I normalized every engine's output, added exploit-likelihood and known-exploited data, and kept finding identities stable across scans.",
-                  "id": "Engineer membutuhkan satu hasil yang konsisten per pull request. Karena itu, saya menormalisasi output setiap engine, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas temuan tetap stabil antar-scan."
+                  "en": "Engineers needed findings they could follow across scans, so I normalized outputs and kept identities stable. Later I moved rule inputs offline with source credits and locked scanner dependencies. Adding another engine mattered less than knowing what the existing ones would run.",
+                  "id": "Engineer perlu mengikuti temuan yang sama dari satu scan ke scan berikutnya, jadi output saya normalkan dan identitasnya saya jaga. Kemudian rules saya pindahkan ke paket offline dengan kredit sumber, dan dependency scanner saya kunci. Yang penting bukan menambah engine, melainkan mengetahui apa yang dijalankan engine yang sudah ada."
                 }
               },
               {
@@ -6195,8 +6195,8 @@
                   "id": "Membatasi cakupan setiap fix PR dan mewajibkan review manusia"
                 },
                 "why": {
-                  "en": "A fix that engineers cannot review is a new risk, so the agent patches only selected code regions within a token budget, never downgrades a dependency, and must pass protected-path guards and a rescan before it opens a PR.",
-                  "id": "Perbaikan yang tidak dapat ditinjau oleh engineer justru menambah risiko. Karena itu, agent hanya menerapkan patch pada bagian kode yang dipilih sesuai token budget, tidak pernah menurunkan versi dependency, dan harus lolos proteksi path sensitif serta rescan sebelum membuka PR."
+                  "en": "I wanted the engineer to see a small diff and its validation before publishing. The agent keeps a token budget, guards protected paths, rejects downgrades and compares scanner results before and after. That is static validation, not proof that the repository's build or tests pass.",
+                  "id": "Saya ingin engineer melihat diff kecil beserta validasinya sebelum dipublikasikan. Agent dibatasi token budget, menjaga path sensitif, menolak downgrade, dan membandingkan hasil scanner sebelum serta sesudah. Validasi ini bersifat statis, bukan bukti build atau test repositorinya lolos."
                 }
               },
               {
@@ -6215,6 +6215,55 @@
               "id": "Buat threat model sejak deploy pertama: menjalankan scan secara inline adalah kompromi yang masuk akal dengan izin yang tersedia, tetapi saat itu juga seharusnya ada threat model tertulis, bukan menunggu audit belakangan. Flag mengurangi risiko dalam hitungan jam; isolasi memperkecil risiko yang tersisa."
             }
           },
+          "engineering": [
+            {
+              "title": { "en": "Scanner Supply Chain", "id": "Supply Chain Scanner" },
+              "summary": {
+                "en": "I made rules and dependencies part of the reviewed release, rather than fetching a changing ruleset at scan time.",
+                "id": "Rules dan dependency saya masukkan ke rilis yang ditinjau, bukan mengambil ruleset yang bisa berubah saat scan."
+              },
+              "points": [
+                {
+                  "en": "Seven engines remain. Semgrep uses a baked offline ruleset with upstream notices and provenance checks; scanner dependencies are exact, hash-locked and wheel-only.",
+                  "id": "Tersisa tujuh engine. Semgrep memakai ruleset offline dalam image, dengan notice sumber dan pemeriksaan asal; dependency scanner dikunci ke versi serta hash tepat, hanya dari wheel."
+                },
+                {
+                  "en": "The local rule corpus caught 80/80 deliberately seeded cases across 11 languages, versus 45/80 for the former registry pack. This is a regression fixture, not production recall.",
+                  "id": "Korpus lokal menangkap 80/80 kasus yang sengaja disisipkan dalam 11 bahasa, dibanding 45/80 paket registry lama. Ini fixture regresi, bukan recall produksi."
+                },
+                {
+                  "en": "Signed images and manifests are checked during install. The November tagged release passed 18/18 Service Catalog post-install checks, separately from earlier public/private drills.",
+                  "id": "Tanda tangan image dan manifest diperiksa saat instalasi. Rilis bertag November lolos 18/18 pemeriksaan Service Catalog, terpisah dari drill publik/privat sebelumnya."
+                }
+              ],
+              "limits": {
+                "en": "No independent scanner-efficacy result or Marketplace approval is established. Secret detection no longer includes live-credential verification.",
+                "id": "Belum ada hasil efektivitas scanner independen atau persetujuan Marketplace. Deteksi secret tidak lagi memverifikasi kredensial aktif."
+              },
+              "post": "untrusted-code-next-to-production-secrets"
+            },
+            {
+              "title": { "en": "Fix Validation and Audit", "id": "Validasi Fix dan Audit" },
+              "summary": {
+                "en": "A proposed change needs a reviewable diff; a source audit needs an honest account of what it did not inspect.",
+                "id": "Usulan fix harus bisa ditinjau. Audit source juga harus menjelaskan bagian yang belum diperiksa."
+              },
+              "points": [
+                {
+                  "en": "Fixes compare before/after scanner results, reject suppression and protected-path changes, and revert failed units. Preview comes before PR publication; repository builds and tests are disabled.",
+                  "id": "Fix membandingkan hasil scanner sebelum/sesudah, menolak suppression serta perubahan path sensitif, dan membatalkan unit gagal. Preview mendahului publikasi PR; build dan test repositori nonaktif."
+                },
+                {
+                  "en": "The separate AI audit uses bounded read-only tools, a model proxy and sealed reports. Deferred coverage produces an incomplete outcome, not a falsely complete report.",
+                  "id": "Audit AI terpisah memakai tool read-only terbatas, proxy model, dan laporan tersegel. Cakupan yang tertunda menghasilkan status belum lengkap, bukan laporan seolah semua sudah diperiksa."
+                }
+              ],
+              "limits": {
+                "en": "The audit is merged on main but disabled by default, with no established live release. Its scripted-model baseline checks plumbing, not live-model accuracy or achieved launch thresholds.",
+                "id": "Audit sudah masuk main tetapi default nonaktif; rilis live belum terbukti. Baseline model simulasi menguji alur, bukan akurasi model live atau tercapainya ambang peluncuran."
+              }
+            }
+          ],
           "stack": [
             "Next.js",
             "FastAPI",
@@ -6232,7 +6281,6 @@
             "OSV-Scanner",
             "Grype",
             "Gitleaks",
-            "TruffleHog",
             "Checkov",
             "Bicep"
           ],
@@ -6271,8 +6319,8 @@
             {
               "src": "/media/ai-code-security-platform/04-security-policy.webp",
               "alt": {
-                "en": "Security policy for the merge gate: KEV and verified secret blocking, EPSS threshold and enforcement mode",
-                "id": "Security policy untuk merge gate: blokir KEV dan secret terverifikasi, ambang EPSS, dan mode enforcement"
+                "en": "Earlier merge-gate policy screenshot: KEV, verified-secret blocking, EPSS threshold and enforcement mode; live-secret verification was removed in November",
+                "id": "Screenshot policy merge gate versi lama: KEV, blokir secret terverifikasi, ambang EPSS, dan mode enforcement; verifikasi secret aktif dihapus pada November"
               },
               "width": 1600,
               "height": 1000,
@@ -6323,7 +6371,7 @@
           },
           "period": {
             "start": "2026-05",
-            "end": "2026-10"
+            "end": "2026-11"
           },
           "role": {
             "en": "Creator and sole engineer, responsible for design, AI coding agent direction, review and release",
@@ -6351,8 +6399,8 @@
               "id": "Saya merancang risk engine hybrid berbasis rules dan LLM dengan katalog rules, severity floor, evidence verifier, dan fingerprint duplikat. Karena gagal di recall gate, engine tetap saya jalankan hanya dalam shadow mode."
             },
             {
-              "en": "I responded to a secret-exposure incident by purging git history, rotating two keys without downtime and moving to Key Vault references.",
-              "id": "Saya menangani insiden secret terekspos dengan membersihkan git history, merotasi dua key tanpa downtime, dan beralih ke Key Vault reference."
+              "en": "After a secret-exposure incident, I purged git history, rotated two keys without downtime and moved to Key Vault references. I later packaged the product as a single-organization Managed Application with keyless services and signed, digest-pinned releases. A November test install and redeploy passed the recorded checks; Marketplace submission and human sign-in checks remained open, and malware scanning was not active in that install.",
+              "id": "Setelah insiden secret terekspos, saya membersihkan git history, merotasi dua key tanpa downtime, dan memakai Key Vault reference. Berikutnya saya mengemas produk sebagai Managed Application satu organisasi, dengan layanan keyless serta rilis bertanda tangan yang dikunci ke digest. Test install dan redeploy November lolos pemeriksaan tercatat, tetapi pengajuan Marketplace serta sign-in langsung belum selesai, dan malware scanning belum aktif pada instalasi itu."
             }
           ],
           "architecture": {
@@ -6555,12 +6603,12 @@
             {
               "value": "0 of 3,780",
               "label": {
-                "en": "Production runs with user-visible output changed by the shadow engine",
-                "id": "Run produksi dengan hasil bagi pengguna yang diubah oleh shadow engine"
+                "en": "Synthetic offline runs whose legacy verdict or score changed when shadow execution was added",
+                "id": "Run sintetis offline yang verdict atau skor lamanya berubah saat eksekusi shadow ditambahkan"
               },
               "context": {
-                "en": "Offline false positives fell to 9.1%, but recall dropped to 0.841. The hybrid engine failed its gate and remained in shadow mode only.",
-                "id": "False positive secara offline turun menjadi 9,1%, tetapi recall turun ke 0,841. Engine hybrid gagal melewati gate dan tetap berjalan hanya dalam shadow mode."
+                "en": "The fixed synthetic comparison profile checked shadow isolation, not production volume or accuracy. Offline development FPR fell to 9.1% but recall to 0.841; held-out recall was 0.429. The hybrid engine remains shadow-only.",
+                "id": "Profil perbandingan sintetis tetap ini menguji isolasi shadow, bukan volume atau akurasi produksi. FPR development offline turun ke 9,1%, tetapi recall ke 0,841; recall held-out 0,429. Engine hybrid tetap hanya di shadow mode."
               },
               "confidence": "verified"
             },
@@ -6609,8 +6657,8 @@
                   "id": "Mempertahankan risk engine hybrid di shadow mode setelah gagal di recall gate"
                 },
                 "why": {
-                  "en": "It cut offline false positives to 9.1%, but recall dropped to 0.841 and it failed its gate. I kept it in shadow mode, where it changed user-visible output in 0 of 3,780 production runs.",
-                  "id": "Engine ini menurunkan false positive offline menjadi 9,1%, tetapi recall turun ke 0,841 sehingga gagal di gate-nya. Saya tetap menjalankannya di shadow mode, tanpa mengubah hasil yang dilihat pengguna dalam run produksi."
+                  "en": "Offline false positives fell to 9.1%, but recall dropped to 0.841; held-out recall was 0.429. I kept the engine out of the verdict path. A separate isolation check changed no legacy verdict or score in 3,780 synthetic offline runs; that was not production traffic or proof of accuracy.",
+                  "id": "False positive offline turun ke 9,1%, tetapi recall menjadi 0,841 dan hanya 0,429 di held-out. Saya tetap tidak memberi engine kendali verdict. Uji isolasi sintetis offline tidak mengubah verdict atau skor lama; itu bukan trafik produksi atau bukti akurasi."
                 }
               }
             ],
@@ -6619,6 +6667,55 @@
               "id": "Tulis release gate sebelum menjalankan evaluasi; jika perubahan gagal di salah satu gate, jangan gunakan perubahan itu untuk menentukan keputusan, meskipun angka lain terlihat lebih baik. Satu run development yang bagus memang menggembirakan, tetapi belum cukup untuk menjadikan engine penentu verdict."
             }
           },
+          "engineering": [
+            {
+              "title": { "en": "Verdict Boundaries", "id": "Batas Verdict" },
+              "summary": {
+                "en": "I kept a lower false-positive rate from becoming permission to miss more high-risk packets.",
+                "id": "Penurunan false positive tidak saya jadikan alasan untuk menerima lebih banyak paket berisiko yang terlewat."
+              },
+              "points": [
+                {
+                  "en": "Rules, severity floors and evidence checks produce a traceable shadow score. The live two-pass LLM pipeline still owns the user-visible verdict.",
+                  "id": "Rules, severity floor, dan pemeriksaan bukti menghasilkan skor shadow yang bisa ditelusuri. Verdict pengguna tetap berasal dari pipeline LLM dua tahap."
+                },
+                {
+                  "en": "Hybrid recall was 0.841 on development and 0.429 on held-out. Its 3,780-run synthetic offline isolation check showed unchanged legacy output, not accuracy or real-case volume.",
+                  "id": "Recall hybrid mencapai 0,841 di development dan 0,429 di held-out. Uji isolasi 3.780 run sintetis offline menunjukkan output lama tidak berubah, bukan akurasi atau volume kasus nyata."
+                },
+                {
+                  "en": "A later framework upgrade passed a separate gate after streamed-output fixes and five repeats on 41 cases. That approval did not qualify the hybrid engine for cutover.",
+                  "id": "Upgrade framework berikutnya lolos gate terpisah setelah perbaikan output streaming dan lima pengulangan pada 41 kasus. Kelulusan itu bukan izin cutover engine hybrid."
+                }
+              ],
+              "limits": {
+                "en": "Small development/held-out sets, no established production accuracy or reviewer-agreement result. Hybrid cutover remains blocked; repeated runs do not add independent cases.",
+                "id": "Set development/held-out kecil, tanpa bukti akurasi produksi atau kesesuaian dengan reviewer. Cutover hybrid tetap diblokir; run berulang bukan kasus independen tambahan."
+              },
+              "post": "why-the-better-fraud-engine-shipped-in-shadow-mode"
+            },
+            {
+              "title": { "en": "Deployment and Data", "id": "Deployment dan Data" },
+              "summary": {
+                "en": "Install checks need to show what is protected and what is merely configured.",
+                "id": "Pemeriksaan instalasi harus membedakan proteksi yang sudah aktif dari yang baru dikonfigurasi."
+              },
+              "points": [
+                {
+                  "en": "The Managed Application path uses Container Apps, keyless data/AI access and signed, digest-pinned artifacts verified before import and redeploy. The older App Service path remains a separate deployment.",
+                  "id": "Jalur Managed Application memakai Container Apps, akses data/AI keyless, dan artefak bertanda tangan yang dikunci ke digest, diverifikasi sebelum import serta redeploy. Jalur App Service lama adalah deployment terpisah."
+                },
+                {
+                  "en": "Organization-level pseudonymization can tokenize model inputs and rehydrate results server-side. Unavailable settings fail closed before model calls; only offline/simulated checks were established.",
+                  "id": "Pseudonymization per organisasi dapat mengganti identitas di input model dengan token dan memulihkan hasil di server. Setting yang tidak tersedia menghentikan panggilan model; bukti pengujiannya baru offline/simulasi."
+                }
+              ],
+              "limits": {
+                "en": "Pseudonymization still needs live paired validation. Malware scanning was inactive in the recorded install. Human sign-in checks and Marketplace submission remain open; install success is not a launch.",
+                "id": "Pseudonymization masih perlu validasi live berpasangan. Malware scanning belum aktif pada instalasi tercatat. Uji sign-in langsung dan pengajuan Marketplace belum selesai; instalasi berhasil bukan berarti sudah diluncurkan."
+              }
+            }
+          ],
           "stack": [
             "Next.js",
             "FastAPI",
@@ -6629,6 +6726,9 @@
             "Cosmos DB",
             "Blob Storage",
             "App Service",
+            "Azure Container Apps",
+            "Key Vault",
+            "Managed Identity",
             "Bicep",
             "GitHub Actions",
             "Azure Managed Applications"
@@ -6706,15 +6806,15 @@
           },
           "period": {
             "start": "2026-06",
-            "end": "2026-10"
+            "end": "2026-11"
           },
           "role": {
             "en": "Creator and lead engineer, responsible for evaluation decisions",
             "id": "Pembuat dan lead engineer, bertanggung jawab atas keputusan evaluasi"
           },
           "problem": {
-            "en": "The screening system had two problems: model calls frequently failed, and successful calls could still produce hire-or-reject verdicts without evidence. With no tests or release gates, prompt and model changes could make either problem worse without being caught.",
-            "id": "Screening berbasis LLM sering gagal dan memberikan keputusan terima atau tolak tanpa bukti. Belum ada test atau release gate untuk mendeteksi regresi akibat perubahan prompt maupun model."
+            "en": "The CV screening system had two problems: model calls frequently failed, and successful calls could still produce hire-or-reject verdicts without evidence. With no tests or release gates, prompt and model changes could make either problem worse without being caught.",
+            "id": "Screening CV pelamar berbasis LLM sering gagal dan memberikan keputusan terima atau tolak tanpa bukti. Belum ada test atau release gate untuk mendeteksi regresi akibat perubahan prompt maupun model."
           },
           "approach": [
             {
@@ -6726,16 +6826,16 @@
               "id": "Saya menambahkan test suite pertama dan evaluation harness dengan CI gate, menggunakan golden set 40 pasang (37,5% berbahasa Indonesia), pengecekan fairness counterfactual, dan 20+ kelas prompt injection."
             },
             {
-              "en": "I removed AI hire-or-reject verdicts and added AI disclosure, a system card and identity redaction before model calls. In October 2026 I redesigned every page in English and Indonesian: the candidate result now leads with a fit band, requirement coverage and must-haves beside one merged AI summary, framed as decision support while the recruiter decides. Touch screens get 44 px targets, and every route was captured with accessibility (axe), overflow and touch-target checks.",
-              "id": "Saya menghapus keputusan terima atau tolak dari AI, serta menambahkan AI disclosure, system card, dan penyamaran identitas sebelum pemanggilan model. Pada Oktober 2026, saya mendesain ulang setiap halaman dalam bahasa Inggris dan Indonesia: hasil kandidat kini diawali fit band, cakupan persyaratan, dan must-have di samping satu ringkasan AI gabungan. Semua ini menjadi pendukung keputusan, sementara rekruter tetap yang memutuskan. Target sentuh berukuran 44 px, dan setiap route di-capture dengan pemeriksaan aksesibilitas (axe), overflow, dan target sentuh."
+              "en": "I removed AI hire-or-reject verdicts, added disclosure and a system card, and redacted identity before model calls. I led the bilingual redesign around fit bands, requirement coverage and one evidence summary, leaving the decision to the recruiter. AI coding agents helped implement it; a teammate contributed menu and tab work. Routes were checked for axe, overflow and 44 px touch targets.",
+              "id": "Saya menghapus verdict terima atau tolak dari AI, menambahkan disclosure serta system card, dan meredaksi identitas sebelum pemanggilan model. Redesign bilingual saya arahkan ke fit band, cakupan persyaratan, dan satu ringkasan bukti; recruiter tetap memutuskan. AI coding agent membantu implementasi, sementara rekan saya berkontribusi pada menu dan tab. Route diperiksa dengan axe, pengecekan overflow, dan target sentuh 44 px."
             },
             {
               "en": "I adopted passwordless managed identity and HMAC-signed calls between the web tier and backend.",
               "id": "Saya menerapkan managed identity tanpa password dan panggilan bertanda tangan HMAC antara web tier dan backend."
             },
             {
-              "en": "For Azure Marketplace readiness, I packaged it as a single-organization Managed Application with signed releases and a private-network option behind Front Door WAF, then fixed 12 install findings until test installs of public and private plans passed.",
-              "id": "Untuk kesiapan Azure Marketplace, saya mengemasnya sebagai Managed Application untuk satu organisasi dengan rilis yang ditandatangani dan opsi jaringan privat di belakang Front Door WAF, lalu memperbaiki 12 temuan instalasi hingga test install plan publik dan privat berhasil."
+              "en": "I packaged it as a single-organization Managed Application, with a private-network option behind Front Door WAF, and fixed 12 install findings. November work added private artifact delivery, revocable read credentials, pinned publisher controls and plan-capacity enforcement. Signature/hash checks and negative install tests passed; sign-in, real screening, metering acceptance and upgrade/rollback in that installation remain unproven.",
+              "id": "Saya mengemasnya sebagai Managed Application satu organisasi, dengan opsi jaringan privat di belakang Front Door WAF, lalu memperbaiki 12 temuan instalasi. Pada November saya menambahkan distribusi artefak privat, kredensial baca yang bisa dicabut, kontrol publisher terkunci, dan batas kapasitas per plan. Verifikasi signature/hash serta test negatif instalasi lolos; sign-in, screening nyata, penerimaan metering, dan upgrade/rollback di instalasi itu belum terbukti."
             }
           ],
           "architecture": {
@@ -6857,12 +6957,12 @@
             {
               "value": "0.13%",
               "label": {
-                "en": "Parse failure rate in the later baseline (1 of 800 calls)",
-                "id": "Tingkat parse failure pada baseline berikutnya (1 dari 800 panggilan)"
+                "en": "Parse failure in a later offline synthetic baseline (1 of 800 calls)",
+                "id": "Parse failure pada baseline sintetis offline berikutnya (1 dari 800 panggilan)"
               },
               "context": {
-                "en": "Measured in a later evaluation baseline using a newer model and prompt, not a before/after estimate of the original fixes.",
-                "id": "Diukur pada baseline evaluasi berikutnya menggunakan model dan prompt yang lebih baru, bukan perbandingan sebelum dan sesudah perbaikan awal."
+                "en": "After retries, using a newer model and prompt on synthetic offline inputs, without human reference labels or production sampling. Not a before/after estimate of the original fixes.",
+                "id": "Setelah retry, memakai model dan prompt lebih baru pada input sintetis offline, tanpa label referensi manusia atau sampling produksi. Bukan pengukuran sebelum/sesudah perbaikan awal."
               },
               "confidence": "verified"
             },
@@ -6881,14 +6981,59 @@
             {
               "value": "21.1 s to 12.1 s",
               "label": {
-                "en": "Screening p95 latency in controlled evaluations, medium vs high reasoning effort",
-                "id": "Latensi p95 screening pada evaluasi terkontrol, reasoning effort medium vs high"
+                "en": "Screening p95 in controlled offline evaluations, high to medium reasoning",
+                "id": "P95 screening pada evaluasi offline terkontrol, reasoning high ke medium"
               },
               "context": {
-                "en": "Measured in controlled evaluation rounds; the selected setting still passed fairness and injection gates.",
-                "id": "Diukur dalam putaran evaluasi terkontrol; pengaturan yang dipilih tetap lolos gate fairness dan injection."
+                "en": "Controlled offline synthetic rounds, not production latency. Medium passed the recorded fairness and injection gates; limited samples do not establish fairness across all groups.",
+                "id": "Putaran sintetis offline terkontrol, bukan latensi produksi. Medium lolos gate fairness dan injection tercatat; sampel terbatas belum membuktikan fairness untuk semua kelompok."
               },
               "confidence": "verified"
+            }
+          ],
+          "engineering": [
+            {
+              "title": { "en": "Structured Output and Evaluation", "id": "Structured Output dan Evaluasi" },
+              "summary": {
+                "en": "I separated a parser fix from proof that the original screening batch had recovered.",
+                "id": "Perbaikan parser saya bedakan dari bukti bahwa batch screening awal sudah pulih."
+              },
+              "points": [
+                {
+                  "en": "JSON mode, output caps, quote-aware extraction and bounded retries address the two recorded failures. Seven regressions cover real error strings; the original 22-pair batch has no recorded rerun.",
+                  "id": "JSON mode, batas output, ekstraksi yang mengenali kutip, dan retry terbatas menangani dua kegagalan tercatat. Tujuh test regresi memakai pesan error asli; batch 22 pasangan awal belum punya rerun tercatat."
+                },
+                {
+                  "en": "The later 1/800 parse-failure baseline used a newer model and prompt. The 40-pair golden set, counterfactual checks and injection suite gate changes, not hiring decisions.",
+                  "id": "Baseline parse failure 1/800 berikutnya memakai model dan prompt baru. Golden set 40 pasangan, counterfactual check, dan suite injeksi membatasi rilis perubahan, bukan mengambil keputusan rekrutmen."
+                }
+              ],
+              "limits": {
+                "en": "Offline synthetic evaluation, without human reference labels or production sampling. Some fairness strata remain too small/noisy to bound. The recruiter remains the decision maker.",
+                "id": "Evaluasi sintetis offline, tanpa label referensi manusia atau sampling produksi. Sebagian strata fairness masih terlalu kecil/noisy untuk dibatasi. Recruiter tetap mengambil keputusan."
+              },
+              "post": "45-percent-of-our-llm-calls-failed"
+            },
+            {
+              "title": { "en": "Verifiable Installation", "id": "Instalasi yang Dapat Diverifikasi" },
+              "summary": {
+                "en": "I made release delivery refuse bad credentials and changed artifacts, not just succeed on the happy path.",
+                "id": "Distribusi rilis saya uji agar menolak kredensial tidak sah dan artefak berubah, bukan hanya berhasil pada alur normal."
+              },
+              "points": [
+                {
+                  "en": "Private release storage uses revocable read credentials. Installation verifies the signed manifest, release identity and pinned hashes before importing artifacts; forged/revoked credentials and tampered hashes were rejected.",
+                  "id": "Storage rilis privat memakai kredensial baca yang bisa dicabut. Installer memverifikasi manifest bertanda tangan, identitas rilis, dan hash terkunci sebelum import; kredensial palsu/dicabut serta hash yang diubah berhasil ditolak."
+                },
+                {
+                  "en": "Plan-specific packages pin publisher settings and enforce hard capacity limits separately from AI guardrails and usage accounting. Installed-package checks rejected publisher-setting overrides.",
+                  "id": "Paket per plan mengunci setting publisher dan menerapkan batas kapasitas terpisah dari guardrail AI serta pencatatan usage. Uji paket terpasang menolak override setting publisher."
+                }
+              ],
+              "limits": {
+                "en": "Read credentials cover a container, not only one release. Automated install checks do not prove sign-in, real screening, metering acceptance or upgrade/rollback. No Marketplace listing is established.",
+                "id": "Kredensial baca mencakup container, bukan hanya satu rilis. Test instalasi otomatis belum membuktikan sign-in, screening nyata, penerimaan metering, atau upgrade/rollback. Listing Marketplace belum tersedia."
+              }
             }
           ],
           "stack": [

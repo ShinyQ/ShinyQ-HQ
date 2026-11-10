@@ -216,7 +216,7 @@ describe("adjacent grounded questions: retrieval", () => {
 
 describe("adjacent grounded questions: output check", () => {
   it("passes an answer that cites a retrieved case study and links it", () => {
-    const r = check("From Kurniadi's work on AI Fraud Document Review, a model's score supports a reviewer rather than making the final call.", "How should teams decide an AI change is ready to release?");
+    const r = check("From Kurniadi's work on AI Fraud Document Review, the hybrid engine stayed in shadow mode after it failed the recall gate.", "How should teams decide an AI change is ready to release?");
     expect(r).toMatchObject({ ok: true, outcome: "answer", cite: "/labs/fraud-review-platform" });
   });
 

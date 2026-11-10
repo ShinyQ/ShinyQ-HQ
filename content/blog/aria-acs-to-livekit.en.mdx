@@ -1,7 +1,7 @@
 ---
 title: "Grounded Voice AI: From ACS to LiveKit"
 date: "2026-10-27"
-updated: "2026-11-09"
+updated: "2026-11-10"
 excerpt: "The AI voice agent moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS speedup was measured."
 tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
 readingTime: "9 min"
@@ -103,6 +103,14 @@ Putting those figures beside the LiveKit results does not isolate a transport ga
 For me, the most useful changes were in-session hand-back with a cached resume line, the ability to drain nodes, and recovery onto another node. Each depended on coordination between the browser, backend and media layer. None was a benefit I could attribute to the media server alone.
 
 Cost changed shape too: a metered call-provider component was replaced by infrastructure we operate. The repository has planning estimates, but no matched billed before-and-after result I can publish as savings. Certificates, patching, capacity and incident response remain work someone must own.
+
+## Follow-Up: Install Checks Are Not Call Tests
+
+On 10 November I reviewed the November 7/8 install record alongside these call results. The newer Service Catalog installation passed 27 of 27 automated checks. That covered signed manifests, artifact hashes and image digests, minimal non-root media containers, and an administrative API that stayed disabled. A tampered artifact was rejected before infrastructure deployment.
+
+The install also exposed a certificate race: the media nodes could ask for a certificate before installation had imported it, then wait until the next renewal cycle. I added a bounded first-fetch retry. In the recorded drill, both nodes picked up the certificate within two minutes of import, without needing that long wait.
+
+Those checks prove something different from a working conversation. First-admin sign-in, agent creation and interactive browser calls in that installation were still awaiting human validation. They do not replace the reduced PoC window, clear its failed setup gate or establish better turn-taking.
 
 ## The Remaining Gaps
 

@@ -1,6 +1,7 @@
 ---
 title: "Making a Voice Agent Interruptible"
 date: "2026-10-09"
+updated: "2026-11-10"
 excerpt: "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
@@ -104,7 +105,7 @@ The traces mostly refuted my hypothesis: only about 80 ms of audio was heard aft
 
 I shipped a start-hold and a stale-response cancel, then measured live again. The cut-off rate was 60.0%. It had not gone down.
 
-My notes do not record the number of turns behind either percentage, so these are directional figures. They still do not show an improvement. I recorded a negative result rather than calling the problem fixed.
+Evidence clarification, 10 November 2026: the experiment record does give the denominators, 8 of 15 utterances before and 9 of 15 after. These are small samples, and the result is still negative. Faster interruption during knowledge search did not establish better live turn-taking.
 
 That experiment series also tested an acknowledgement clip during knowledge search and a rule asking the model to speak a short first sentence earlier. Both failed their pre-registered verdicts. Serving prefetched results could not be tested cleanly, so I reported it as blocked.
 

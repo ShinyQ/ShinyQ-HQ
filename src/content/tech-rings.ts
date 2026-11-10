@@ -143,7 +143,6 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   "osv-scanner": "devops",
   grype: "devops",
   gitleaks: "devops",
-  trufflehog: "devops",
   checkov: "devops",
   keda: "devops",
   "arm templates": "devops",
