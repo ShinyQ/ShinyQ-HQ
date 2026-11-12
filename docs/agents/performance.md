@@ -278,7 +278,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
 | `src/experience/data-client.ts` (with `ExperienceGate.tsx`) and `src/app/data/**` (the static client data, the 3D page data included) | `boot-first`, `experience` and more (`src/app/data/**` also `labs` and `library-roof`) |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
-| `messages/**` | `static-routes`, `pageview`, `seo`, `time-travel`, `library-roof` and `roof` (including the contact mission and actions) |
+| `messages/**` | `static-routes`, `pageview`, `seo`, `library-roof` and `roof` (including the contact mission and actions) |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
 | `src/hud/dialog/{EngineUnlockLayer,engineRoomAction}`, `hud/{floorRows,FloorButtons}` and `hud/pads/**` | `b1-unlock`, `hud-corners`, `hud` and `pads` (the specs they matched before stay through `ALSO_RULES`) |
 | `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `ChunkFailed`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |

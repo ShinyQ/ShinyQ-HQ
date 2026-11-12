@@ -138,21 +138,6 @@ never a contents target.
 - One class set for every page, so it adds no CSS; case study HTML grows by the section only.
 - Tests: `e2e/pageview.spec.ts` ("closing section"), `tests/ask/case-question.test.ts`.
 
-### Time Travel (`/journey`)
-
-- Placement: the `#time-travel` section sits between the intro and the year filter (`src/components/time-travel/`). It is Classic only: nothing in the 3D `Experience.tsx` closure imports it.
-- Server-rendered SVG skyline, one building per stop (`pre-2019`, then 2019 to 2026), each kind's blocks one `<path>`, plus the 9 year panels (2026 visible, the rest `hidden`) and the small `TimeTravelControls` island (range and Play). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick is "<2019", `timeTravel.prologueShort`).
-- DOM contract the island and the tests rely on: `data-tt-panel` (one per stop, in order), `data-tt-stop={index}` (the building `<g>`), `data-tt-outline={index}` (its outline `<rect>`) and `data-tt-link={index}` (the `<a>` around a building). Each building also has a transparent hit-area `<rect>` so the whole slot is clickable. The panels carry no other attribute for tests: read them by order or text.
-- The panel tally reads "+{count} new" / "+{count} baru" when a stop added items; an `in-progress` certification is not counted (its `issued` is only the planned month). Highlight links read "role, organization" for an entry, the title for a pod, publication or certification, and a stop's `highlights[].label` (`{ en, id }`) replaces either; no two highlights share link text (`tests/content/time-travel.test.ts`).
-- The announcement is a separate `sr-only` `aria-live="polite"` paragraph owned by the island, not a panel heading.
-- The labels come as props from the server-only `timeTravel` namespace, which is in neither namespace list. The island imports locale values only from `@/content/locales`.
-- Colors use the `ACCENT_TEXT` classes with `currentColor`, so the section adds almost no CSS.
-- Motion follows `html[data-motion]` and `html[data-hq-still]`; the building rise and the panel fade use WAAPI on `transform` and `opacity` only. The URL never changes while scrubbing.
-- Play restarts from the prologue when the current stop is the last one; otherwise it resumes from the held stop. Any pointer press or slider key (arrows, Home, End, Page Up and Down, even where the value cannot change) and any plain building click stops it. A building click with a modifier key or a non-primary button keeps the link behavior (no select, no halt).
-- Without JS, building links go to `#yYYYY` (the prologue to `#y2019`) and the controls do not render.
-- Budgets: 0 3D bytes, CSS +34 B gzip, island about 727 B gzip. The journey HTML grew about 8.6 KB gzip (`/en/journey` 47,564 to 56,157 B, `/id/journey` 48,428 to 57,266 B, cap 83,968 B) because the RSC flight payload carries the section a second time; the parent session accepted it (option A, 2026-10-25), and no cap rises. What it buys: every stop's caption, tally and highlights ship in the server HTML (crawlers, reader modes and no-JS link targets). Without JS the visitor sees now (2026) plus building links to every year's rows below; the other 8 panels carry `hidden`. `/en/quick` is unchanged.
-- Tests: `e2e/time-travel.spec.ts`, `tests/hud/TimeTravelControls.test.tsx`, `tests/unit/time-travel.test.ts`, `tests/content/time-travel.test.ts`.
-
 ### Other Classic pages (Hallmark redesign, part 3)
 
 - Page intros (`PageIntro`): no floor eyebrow; the title on seven columns, an aside on four.
@@ -177,7 +162,6 @@ never a contents target.
   [closing section](#closing-section) without View CV.
 - `/library` research: the paper title is text with its button laid over it (named by the title, so it never wraps
   inside a control label); Preview (`paper-cite`) and Read the paper sit below it.
-- The Time Travel skyline is named as a chart (`tt-chart` on its SVG).
 - Guide cards and repo rows join their meta with commas, never middle dots.
 - Quick view (`/quick`, owner decision 2026-11-01) is a short brief, every list capped with a link to its full page
   (`SectionSplit` `more`): the profile carries the contact line (`quick-contact`: availability and the email) and View

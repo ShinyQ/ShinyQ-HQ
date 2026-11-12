@@ -234,23 +234,6 @@
     "all": "Semua",
     "navTitle": "Perjalanan"
   },
-  "timeTravel": {
-    "title": "Mesin Waktu",
-    "lead": "Setiap gedung adalah satu tahun perjalanan, dari proyek sekolah pertama hingga hari ini. Pilih satu tahun, atau putar seluruh perjalanan.",
-    "skyline": "Panorama perjalanan, satu gedung per tahun",
-    "slider": "Tahun",
-    "play": "Putar perjalanan",
-    "pause": "Jeda",
-    "prologue": "Sebelum 2019",
-    "prologueShort": "<2019",
-    "building": "{label}: {count} item",
-    "seeYear": "Lihat {label} selengkapnya",
-    "seePrologue": "Lihat tahun-tahun awal",
-    "added": "+{count} baru",
-    "highlights": "Sorotan",
-    "tally": { "roles": "Peran", "projects": "Proyek", "awards": "Penghargaan", "papers": "Paper", "certs": "Sertifikasi" },
-    "kinds": { "roles": "Peran", "study": "Studi dan pencapaian", "projects": "Proyek", "awards": "Penghargaan", "writing": "Tulisan dan riset", "certs": "Sertifikasi" }
-  },
   "labs": {
     "scaleLine": "Skala:",
     "title": "Labs",

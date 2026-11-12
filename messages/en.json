@@ -234,23 +234,6 @@
     "all": "All",
     "navTitle": "Journey"
   },
-  "timeTravel": {
-    "title": "Time Travel",
-    "lead": "Each building marks a year, from the first school projects to today. Pick a year or play through the journey.",
-    "skyline": "The journey as a skyline, one building per year",
-    "slider": "Year",
-    "play": "Play the journey",
-    "pause": "Pause",
-    "prologue": "Before 2019",
-    "prologueShort": "<2019",
-    "building": "{label}: {count, plural, one {# item} other {# items}}",
-    "seeYear": "See {label} in full",
-    "seePrologue": "See the early years",
-    "added": "+{count} new",
-    "highlights": "Highlights",
-    "tally": { "roles": "Roles", "projects": "Projects", "awards": "Awards", "papers": "Papers", "certs": "Certifications" },
-    "kinds": { "roles": "Roles", "study": "Study and milestones", "projects": "Projects", "awards": "Awards", "writing": "Writing and research", "certs": "Certifications" }
-  },
   "labs": {
     "scaleLine": "Scale:",
     "title": "Labs",
