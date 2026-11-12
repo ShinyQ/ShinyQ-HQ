@@ -11,6 +11,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - [Project galleries and live sites](#project-galleries-and-live-sites)
 - [Time Travel stops](#time-travel-stops)
 - [Writing a story case study](#writing-a-story-case-study)
+- [Impact and scale results](#impact-and-scale-results)
 - [Skills](#skills)
 - [Certifications](#certifications)
 - [CV](#cv)
@@ -150,7 +151,7 @@ The `/journey` skyline has one stop per year (`floors.careerArchive.timeTravel.s
 
 ## Writing a story case study
 
-The six featured case studies (`STORY_SLUGS` in `src/content/schema.ts`) read as a story on the Classic site: Situation, Role and key decisions, Results, Lesson. The text lives in the pod's `story` in `content/site-content.json` (rules: [`agents/content.md`](agents/content.md#pod)).
+The six featured case studies and the AI app template (`STORY_SLUGS` in `src/content/schema.ts`) read as a story on the Classic site: Situation, Role and key decisions, Results, Lesson. The text lives in the pod's `story` in `content/site-content.json` (rules: [`agents/content.md`](agents/content.md#pod)).
 
 - **Situation**: two or three sentences on where things stood and what was at stake, grounded in the pod's own problem text. Body text, so the first person is fine.
 - **Decisions**: 2 to 4, each a short title in sentence case that starts with the action (a heading: no first person, at most 90 characters) and the why in one or two sentences. Each reason must be true to the pod's own text; do not invent motives.
@@ -160,7 +161,19 @@ The six featured case studies (`STORY_SLUGS` in `src/content/schema.ts`) read as
 - EN and ID are written independently, like every other text; no client names (C3).
 - **Engineering detail** (optional `engineering`, any pod): 1 to 4 topics for a technical reviewer (the voice AI case study has Latency Budget, Failover Design, Evaluation Method, Security and Identity). Each has a Title Case heading, a one-line summary, 2 to 5 points, the known limits and optionally a related post slug. Every number must trace to the project's own docs or measurements (measured results over intent); leave out what cannot be sourced, keep security at the pattern level (no resource names, hosts or ids), and write EN and ID independently.
 - The four AI product case studies separate current capabilities from historical results: seven current code scanners versus earlier usage totals, synthetic offline shadow-isolation runs versus production traffic, and automated installation checks versus interactive validation or Marketplace approval. Source-main features that remain disabled are labelled as such. Later framework evaluations do not clear a different engine's release gate.
-- The landing hero's three proof numbers are `profile.heroProof` (exactly three stat ids); each needs a `short` label of at most 28 characters.
+- The landing hero's three proof numbers are `profile.heroProof` (exactly three stat ids, never a scale stat); each needs a `short` label of at most 28 characters.
+- Every key project (hero with screenshots) needs all 8 chapters: a story with a lesson, an architecture and 1 to 4 engineering topics; the build fails naming what is missing.
+
+## Impact and scale results
+
+Owner decision 2026-11-13: show the improvement, not the volume.
+
+- Mark each result `kind: "scale"` when it counts output or speed of building (PRs, commits, share of commits, tests, specs, files, repos, "N weeks to production"); leave the kind off for impact (a before and after, quality, latency, cost, accuracy, reliability, a placing, adoption by others, a sourced capability).
+- A before and after gets `delta: { before, after }`, and `value` must read the before then the after ("~2 s to ~0.2 s" or "11.7 MB → 156 KB").
+- Flag the strongest impact results `headline` (at most 3; never scale). Every pod needs one impact result.
+- New numbers come from the project's own sources (PR descriptions, eval reports, CI and perf artifacts, telemetry, git history). Only the number, its unit and a public-safe measurement boundary go into the dataset; the private pointer stays in the owner's notes. With no traceable number, use a sourced qualitative outcome ("Resumable"), never an estimate.
+- Put the essential boundary (offline, n, window, who wrote it) in the label: strips and share cards drop the context.
+- After a results change, run `bun scripts/ask-embed.ts --cli` and keep the Ask knowledge pack under its cap (`tests/ask/hybrid.test.ts`).
 
 ## Skills
 

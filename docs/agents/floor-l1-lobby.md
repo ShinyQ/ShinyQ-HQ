@@ -140,7 +140,7 @@ Code: `floors/lobby/hallLayout.ts`; the interiors in `floors/lobby/hallPremium/`
 - Projects come from `pickFeaturedPods` (the landing's three).
 - Experience comes from timeline entries of type `job` and `freelance`, newest first (`highlightEntries`, `experienceRows`).
 - Wins come from `awards` (`winTiers`, `winCounts` in `src/content/highlights.ts`): an award's tier is its English placement (1st, 2nd, 3rd place, every other placing an honor); every count is derived. The station reads "awards and honors" (the Lobby's stat tile counts the 20 placings; the 4 finalist and Top 100 honors make 24).
-- Results come from the case studies (`beforeAfterResults`): only results with `confidence: "verified"` whose value reads as a before and after ("→" or " to "), in site order, each with its case study (`L3:<slug>`); side-by-side comparisons ("6 vs 18") and single numbers stay out. Today 10 results from 7 case studies.
+- Results come from the case studies (`beforeAfterResults`): only impact results with `confidence: "verified"` and a numeric `delta` (owner decision 2026-11-13), in site order, each with its case study (`L3:<slug>`); side-by-side comparisons ("6 vs 18") and single numbers stay out. Today 10 results from 7 case studies.
 - Now comes from the timeline entries still running (`currentRoles`: `end: "present"`, employment first): Metrodata and LILT today, with their timeline text.
 - The 3D payload carries them in `ExperienceData.highlights` (`wins`, `results`, `now`); the drawers (`buildHighlightsViews`) list every award grouped by tier, every role as a card to its L2 room and every result as a card to its case study.
 - The work experience columns use the career type labels (`common.type.job` "Employment", `common.type.freelance`).

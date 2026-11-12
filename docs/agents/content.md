@@ -305,10 +305,17 @@ Keep them documented here.
   - Render it with `LiveSiteLink`.
   - Ask chunks say a live site exists but never carry the hostname.
   - Adding a host is an owner decision, never a content-only edit.
-- `Result.headline`: optional `true` puts a result in the case study's metric strip; at most `HEADLINE_MAX` (3) per pod (schema check). Read the strip's results through `headlineResults(results)` from `@/content/selectors`: the flagged ones in dataset order, else the first three. `HEADLINE_MAX` lives in `selectors.ts` (client-safe) and is re-exported from `schema.ts`. The room-view builder marks those metrics `RoomMetric.headline`.
+- `Result.kind` (owner decision 2026-11-13, impact first): `impact` (absent) or `scale`.
+  - impact: what the work changed or achieved: a before and after, quality, latency, cost, accuracy or reliability, a placing, adoption by other people or projects, or a sourced capability outcome ("Resumable"). scale: how much was produced or how fast: PRs, commits, share of commits, tests, specs, files, repos, artifact counts, dataset sizes, "N weeks to production".
+  - Every pod needs at least one impact result (schema check naming the pod). Where no measured number traces to the project's own sources, a sourced qualitative outcome is the impact result; never an estimate.
+  - Scale results stay in the dataset and Ask; the case study shows them as one muted line after the impact results ([page-view.md](page-view.md#case-study-labsslug)).
+- `Result.delta`: optional `{ before, after }` on an impact result (schema: never on scale, and `value` must read the before then the after, so Ask, OG and SEO text match the drawn delta). `value` stays the plain-text form.
+- `Result.headline`: optional `true` puts an impact result in the case study's metric strip (never on scale, schema check); at most `HEADLINE_MAX` (3) per pod (schema check). Read the strip's results through `headlineResults(results)` from `@/content/selectors`: the flagged impact ones in dataset order, else the first three impact results. `HEADLINE_MAX` lives in `selectors.ts` (client-safe) and is re-exported from `schema.ts`. The room-view builder marks those metrics `RoomMetric.headline` and lists impact results first (`impactFirst`). Rows, featured cards, the OG card and the SEO description lead with `leadResult` (a headline before and after first) through `keyResult`.
+- Numbers mined from employer or client repositories reach the dataset as numbers with a public-safe measurement boundary only: never client names, hosts, resource or private repository names, code, PR numbers or links.
 - `Pod.story`: optional `PodStorySchema` (owner decision 2026-10-25), the case study told as a story on the Classic page ([page-view.md](page-view.md#case-study-labsslug)).
   - `situation` (`{ en, id }`), 2 to 4 `decisions` (`{ title, why }`, each `{ en, id }`) and an optional `lesson`.
-  - Every pod in `STORY_SLUGS` (`src/content/schema.ts`, the six featured case studies) needs one: a `SiteContentSchema` check when the pod is in the dataset, and `tests/content/recruiter-pass.test.ts` checks all six are there.
+  - Every pod in `STORY_SLUGS` (`src/content/schema.ts`, the six featured case studies plus the AI app template key project) needs one: a `SiteContentSchema` check when the pod is in the dataset, and `tests/content/recruiter-pass.test.ts` checks all seven are there.
+  - Every key project (tier `hero` with a gallery, `isKeyProject`) needs a story with a `lesson`, an `architecture` and `engineering` (the 8 standard chapters, owner decision 2026-11-13): a `PodSchema` check naming the missing chapters; `tests/content/impact.test.ts` checks the chapter order with `caseChapters`.
   - `situation` and `why` are body text (first person fine); decision titles read as headings: no first person, at most 90 characters (`recruiter-pass.test.ts`).
   - No new numbers: every number in the situation or a decision must already appear in the pod's tagline, problem, approach, results or role (same test).
 - `Pod.engineering`: optional 1 to 4 `EngineeringTopicSchema` topics (owner decision 2026-11-02), the "Engineering detail" chapter for a technical reviewer ([page-view.md](page-view.md#case-study-labsslug)).
@@ -323,7 +330,10 @@ Keep them documented here.
 - `Profile.heroProof`: exactly 3 `stats` ids (owner decision 2026-10-25), the landing hero's proof strip in that order ([page-view.md](page-view.md#hero)). The schema rejects an unknown or repeated id.
 - `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (the home stats ledger, 3D stats ring, Ask).
   - Required on every `heroProof` stat, at most `STAT_SHORT_MAX` (28) characters per locale (schema check); no first person.
-- `stats` stays at exactly six entries: the 3D Lobby stats ring reads them (`tests/content/recruiter-pass.test.ts`).
+- `Stat.kind` and `Stat.delta`: as on results (owner decision 2026-11-13). Read the row through `leadStats` and the footnote through `scaleStats` (`@/content/selectors`).
+  - `stats` keeps exactly six lead (non-scale) entries: the 3D Lobby stats ring reads them (`tests/content/recruiter-pass.test.ts`; the schema allows 4 to 6 for fixtures). At most `SCALE_STATS_MAX` (2) scale stats, each with a `short` label: the muted footnote under the home ledger and `/quick` (PRs merged, GitHub contributions).
+  - A `heroProof` stat is never scale (schema check). The ring shows a delta stat's `after` (its label keeps the before).
+  - A homepage delta must equal a verified case study result's delta (`tests/content/impact.test.ts`).
 
 ### Hologram ids
 
