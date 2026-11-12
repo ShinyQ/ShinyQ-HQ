@@ -47,8 +47,8 @@ describe("landing proof strip data (owner decision 2026-10-25)", () => {
 
 describe("case study stories (owner decision 2026-10-25)", () => {
   const pods = content.floors.labs.pods;
-  it("the six featured slugs carry a story with 2 to 4 decisions", () => {
-    expect([...STORY_SLUGS].sort()).toEqual(["ai-code-security-platform", "ai-solutions-assistant", "digital-banking-integrations", "fabric-forecasting-dashboard", "fraud-review-platform", "voice-ai-contact-center"]);
+  it("the six featured slugs and the AI app template carry a story with 2 to 4 decisions", () => {
+    expect([...STORY_SLUGS].sort()).toEqual(["ai-app-accelerator", "ai-code-security-platform", "ai-solutions-assistant", "digital-banking-integrations", "fabric-forecasting-dashboard", "fraud-review-platform", "voice-ai-contact-center"]);
     for (const slug of STORY_SLUGS) {
       const story = pods.find((p) => p.slug === slug)?.story;
       expect(story, slug).toBeDefined();

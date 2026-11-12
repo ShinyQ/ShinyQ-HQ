@@ -3121,7 +3121,7 @@
           "id": "vendor-management-portal",
           "slug": "vendor-management-portal",
           "order": 3,
-          "tier": "hero",
+          "tier": "featured",
           "accent": "blue",
           "wing": "software",
           "client": "Metrodata",
@@ -7620,7 +7620,189 @@
               "redacted": true
             }
           ],
-          "sculpture": "rocket"
+          "sculpture": "rocket",
+          "story": {
+            "situation": {
+              "en": "At MII, each new client PoC meant rebuilding much of the same web tier, sign-in, persistence and infrastructure. I created a shared full-stack AI application template as the starting point and stayed responsible for maintaining it. Teammates helped define the conventions; I built the packaging and the agent layer, then used the template to start derivative projects.",
+              "id": "Di MII, setiap PoC klien baru berarti membangun ulang sebagian besar web tier, sign-in, penyimpanan percakapan, dan infrastruktur yang sama. Saya membuat template aplikasi AI full-stack sebagai fondasi bersama dan tetap bertanggung jawab atas pemeliharaannya. Rekan tim ikut menetapkan konvensinya; saya membangun paket template dan agent layer, lalu memakai template ini untuk memulai proyek turunan."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Kept every browser call behind a server-side BFF",
+                  "id": "Menjaga semua panggilan browser di balik BFF sisi server"
+                },
+                "why": {
+                  "en": "A derivative project should inherit the security boundary instead of deciding it again. The browser reaches FastAPI only through Next.js route handlers, server actions use the same server-only transport, and model credentials never leave the backend.",
+                  "id": "Proyek turunan sebaiknya mewarisi batas keamanan, bukan menentukannya ulang. Browser hanya menjangkau FastAPI melalui route handler Next.js, server action memakai transport sisi server yang sama, dan kredensial model tidak pernah keluar dari backend."
+                }
+              },
+              {
+                "title": {
+                  "en": "Made agents configuration, not code",
+                  "id": "Menjadikan agent sebagai konfigurasi, bukan kode"
+                },
+                "why": {
+                  "en": "Each engagement needs different agents and models. Agents are a YAML default plus definitions managed at runtime, tools bind by name from one registry, and Microsoft Agent Framework lets a setting switch the model provider. If every definition fails to load, a default built in code keeps chat working.",
+                  "id": "Setiap engagement membutuhkan agent dan model yang berbeda. Agent terdiri dari default YAML dan definisi yang dikelola saat runtime, tool dihubungkan berdasarkan nama dari satu registry, dan Microsoft Agent Framework memungkinkan provider model diganti lewat setting. Jika semua definisi gagal dimuat, agent default yang dibangun di kode menjaga chat tetap berjalan."
+                }
+              },
+              {
+                "title": {
+                  "en": "Showed real data or nothing on the dashboards",
+                  "id": "Menampilkan data nyata atau tidak sama sekali di dashboard"
+                },
+                "why": {
+                  "en": "A template that ships mock data invites a demo that looks finished but is not. The dashboards read per-turn usage telemetry from Cosmos DB, chart sections without a real source were removed rather than faked, and the build fails if a mock service stub is still unwired.",
+                  "id": "Template yang membawa data tiruan mudah menghasilkan demo yang tampak selesai padahal belum. Dashboard membaca usage telemetry per giliran dari Cosmos DB, bagian grafik tanpa sumber data nyata dihapus alih-alih dipalsukan, dan build gagal jika masih ada stub layanan tiruan yang belum tersambung."
+                }
+              },
+              {
+                "title": {
+                  "en": "Started derivative projects from the template, then let them diverge",
+                  "id": "Memulai proyek turunan dari template, lalu membiarkannya berkembang sendiri"
+                },
+                "why": {
+                  "en": "Derivatives import the template rather than fork it, so each client project can change freely. I used it to start projects such as two report chatbots for a steel manufacturer, where teammates carried much of the later work. Keeping the shared primitive library intact makes later template syncs easier.",
+                  "id": "Proyek turunan mengimpor template, bukan mem-fork-nya, sehingga tiap proyek klien bebas berubah. Saya memakainya untuk memulai proyek seperti dua chatbot laporan untuk produsen baja, dan rekan tim mengerjakan sebagian besar pengembangan berikutnya. Library primitive bersama sengaja dipertahankan agar sinkronisasi dengan template tetap mudah."
+                }
+              }
+            ],
+            "lesson": {
+              "en": "A template pays off when other engineers can adopt what worked without depending on me. It should be honest about thin data, real where sourced and removed rather than faked, and carry checks for the failures that still typecheck and build cleanly.",
+              "id": "Template baru benar-benar bermanfaat jika engineer lain bisa mengadopsi praktik yang terbukti berhasil tanpa bergantung pada saya. Template harus jujur saat datanya tipis: nyata jika ada sumbernya, dihapus alih-alih dipalsukan, dan membawa pemeriksaan untuk kegagalan yang tetap lolos typecheck dan build."
+            }
+          },
+          "engineering": [
+            {
+              "title": {
+                "en": "Agent Runtime",
+                "id": "Agent Runtime"
+              },
+              "summary": {
+                "en": "One registry turns YAML and runtime agent definitions into Microsoft Agent Framework agents across five model providers.",
+                "id": "Satu registry mengubah definisi agent dari YAML dan runtime menjadi agent Microsoft Agent Framework dengan lima pilihan provider model."
+              },
+              "points": [
+                {
+                  "en": "A bundled YAML default agent sits beside agents stored in Cosmos DB and managed from the dashboard. Each write rebuilds that one agent in memory, so a new agent is selectable in chat without a restart; the default cannot be edited or deleted.",
+                  "id": "Agent default YAML bawaan berdampingan dengan agent yang disimpan di Cosmos DB dan dikelola dari dashboard. Setiap perubahan membangun ulang agent tersebut di memori, sehingga agent baru langsung bisa dipilih di chat tanpa restart; agent default tidak bisa diubah atau dihapus."
+                },
+                {
+                  "en": "Tools are Python functions bound by name from a single registry. An invalid definition is logged and skipped, and if none load, a default agent is built in code from settings.",
+                  "id": "Tool berupa fungsi Python yang dihubungkan berdasarkan nama dari satu registry. Definisi yang tidak valid dicatat lalu dilewati, dan jika tidak ada yang berhasil dimuat, agent default dibangun di kode dari setting."
+                },
+                {
+                  "en": "A client factory switches between Azure AI Foundry, Azure OpenAI, OpenAI, Anthropic and Amazon Bedrock by setting. The reasoning-effort setting applies only to OpenAI-compatible providers, and an agent's own spec takes precedence.",
+                  "id": "Client factory berpindah antara Azure AI Foundry, Azure OpenAI, OpenAI, Anthropic, dan Amazon Bedrock lewat setting. Setting reasoning effort hanya berlaku untuk provider yang kompatibel dengan OpenAI, dan spesifikasi agent tetap diutamakan."
+                },
+                {
+                  "en": "The chat endpoint streams text, tool-call and tool-result events, so the UI shows each tool run as it happens. Thread file search lets an agent query only the files attached to the active thread.",
+                  "id": "Endpoint chat mengirim event teks, tool call, dan hasil tool secara streaming, sehingga UI menampilkan setiap tool yang sedang berjalan. File search per thread membuat agent hanya mencari file yang dilampirkan ke thread aktif."
+                }
+              ],
+              "limits": {
+                "en": "The registry is per process: a multi-instance deployment must call its reload hook to converge. A new tool still needs code and a restart.",
+                "id": "Registry berjalan per proses: deployment multi-instance harus memanggil hook reload agar konsisten. Tool baru tetap membutuhkan perubahan kode dan restart."
+              }
+            },
+            {
+              "title": {
+                "en": "Security Boundary",
+                "id": "Batas Keamanan"
+              },
+              "summary": {
+                "en": "The Next.js server owns every session and forwards a trusted identity; FastAPI never reads browser cookies or exposes model credentials.",
+                "id": "Server Next.js memegang semua sesi dan meneruskan identitas tepercaya; FastAPI tidak membaca cookie browser dan tidak mengekspos kredensial model."
+              },
+              "points": [
+                {
+                  "en": "Sessions are HMAC-signed, HTTP-only cookies with a seven-day TTL. In production, sessions cannot be read or written without a configured secret.",
+                  "id": "Sesi memakai cookie HTTP-only yang ditandatangani HMAC dengan masa berlaku tujuh hari. Di production, sesi tidak dapat dibaca atau ditulis tanpa secret yang dikonfigurasi."
+                },
+                {
+                  "en": "BFF handlers check the session and forward the user identity as headers; repositories scope threads and messages by that identity.",
+                  "id": "Handler BFF memeriksa sesi dan meneruskan identitas pengguna lewat header; repository membatasi thread dan pesan berdasarkan identitas tersebut."
+                },
+                {
+                  "en": "Demo sessions are marked in the signed payload and enforced in one place: reads and three allowlisted chat writes pass, every other mutation returns 403, and turning the demo flag off invalidates cookies already issued.",
+                  "id": "Sesi demo ditandai di payload bertanda tangan dan ditegakkan di satu titik: operasi baca dan tiga write chat yang diizinkan bisa lolos, mutasi lain mendapat 403, dan mematikan flag demo membatalkan cookie yang sudah terbit."
+                },
+                {
+                  "en": "Bicep defaults to managed identity: the backend gets data-plane roles for Cosmos DB and the model service, Cosmos DB local auth is disabled, and keys enter app settings only when managed identity is turned off.",
+                  "id": "Bicep memakai managed identity secara default: backend mendapat role data-plane untuk Cosmos DB dan layanan model, local auth Cosmos DB dinonaktifkan, dan key hanya masuk ke app setting jika managed identity dimatikan."
+                }
+              ],
+              "limits": {
+                "en": "Template defaults, not finished access control: each derivative must restrict backend ingress and add its own roles.",
+                "id": "Ini default template, bukan kontrol akses final: setiap proyek turunan harus membatasi akses ke backend dan menambahkan role sendiri."
+              }
+            },
+            {
+              "title": {
+                "en": "Persistence and Telemetry",
+                "id": "Persistensi dan Telemetry"
+              },
+              "summary": {
+                "en": "Threads persist to Cosmos DB with a browser fallback, and every turn records its own usage.",
+                "id": "Thread disimpan di Cosmos DB dengan fallback di browser, dan setiap giliran mencatat penggunaannya sendiri."
+              },
+              "points": [
+                {
+                  "en": "Failed message, thread and delete writes queue in per-user browser storage and replay on reconnect and every 30 s, up to 8 attempts. Upserts use stable IDs and deletes tolerate 404, so replay is safe across tabs.",
+                  "id": "Write pesan, thread, dan penghapusan yang gagal masuk antrean di storage browser per pengguna, lalu diputar ulang saat koneksi pulih dan setiap 30 detik, hingga 8 percobaan. Upsert memakai ID tetap dan delete menoleransi 404, sehingga replay aman lintas tab."
+                },
+                {
+                  "en": "A thread sanitizer repairs stored history when a thread reloads: it strips tool-call residue, removes duplicates, repairs broken assistant turns and enforces alternating user and assistant messages.",
+                  "id": "Thread sanitizer memperbaiki riwayat tersimpan saat thread dimuat ulang: membuang sisa tool call, menghapus duplikat, memperbaiki giliran asisten yang rusak, dan memastikan pesan pengguna dan asisten bergantian."
+                },
+                {
+                  "en": "Each turn writes model, provider-reported tokens, latency and status to a usage container that feeds the Home, Analytics, Models and Logs pages, with server-side pagination for logs.",
+                  "id": "Setiap giliran mencatat model, token yang dilaporkan provider, latensi, dan status ke container usage yang menjadi sumber halaman Home, Analytics, Models, dan Logs, dengan pagination sisi server untuk log."
+                },
+                {
+                  "en": "Cosmos DB calls run off the event loop, so a slow query does not stall other requests.",
+                  "id": "Panggilan Cosmos DB dijalankan di luar event loop, sehingga query yang lambat tidak menahan request lain."
+                }
+              ],
+              "limits": {
+                "en": "Usage writes are best effort, so a failed write leaves a gap in the dashboards rather than an error.",
+                "id": "Penulisan usage bersifat best effort, sehingga write yang gagal meninggalkan celah di dashboard, bukan error."
+              }
+            },
+            {
+              "title": {
+                "en": "Delivery Checks",
+                "id": "Pemeriksaan Delivery"
+              },
+              "summary": {
+                "en": "CI tests the production build without secrets, and CD deploys only the side that changed, then health-checks it.",
+                "id": "CI menguji build production tanpa secret, dan CD hanya men-deploy sisi yang berubah lalu menjalankan health check."
+              },
+              "points": [
+                {
+                  "en": "CI runs typecheck, lint and a production build, then Playwright smoke tests against the production build with the database skipped and the model replaced by a canned SSE stream.",
+                  "id": "CI menjalankan typecheck, lint, dan build production, lalu smoke test Playwright pada build production dengan database dilewati dan model diganti stream SSE rekaman."
+                },
+                {
+                  "en": "The smoke suite asserts zero console errors and uncaught exceptions on all 9 authenticated routes, a full streamed chat turn with code and math rendered, and a theme toggle that actually repaints, a guard against dark mode failing silently after the Tailwind CSS v4 upgrade.",
+                  "id": "Smoke test memastikan tidak ada console error maupun uncaught exception di 9 route terautentikasi, satu giliran chat streaming lengkap dengan kode dan rumus yang ter-render, serta toggle tema yang benar-benar mengubah tampilan, untuk mencegah dark mode rusak tanpa terdeteksi setelah upgrade Tailwind CSS v4."
+                },
+                {
+                  "en": "A prebuild guard fails the build if any dashboard service is still an unwired mock stub, so fake data cannot reach production.",
+                  "id": "Guard prebuild menggagalkan build jika masih ada layanan dashboard berupa stub tiruan yang belum tersambung, sehingga data palsu tidak bisa sampai ke production."
+                },
+                {
+                  "en": "Subscription-scoped Bicep provisions separate frontend and backend plans, serverless Cosmos DB with six containers and the model deployment. CD deploys only the changed side and polls the login page and the backend health endpoint until both return 200.",
+                  "id": "Bicep tingkat subscription menyiapkan plan frontend dan backend yang terpisah, Cosmos DB serverless dengan enam container, dan deployment model. CD hanya men-deploy sisi yang berubah dan memeriksa halaman login serta endpoint health backend sampai keduanya mengembalikan 200."
+                }
+              ],
+              "limits": {
+                "en": "No backend unit tests, and CI never calls a real model. CD signs in with publish profiles, which need basic-auth publishing enabled on each app.",
+                "id": "Belum ada unit test backend, dan CI tidak pernah memanggil model sungguhan. CD memakai publish profile, yang mengharuskan publishing basic auth aktif di setiap aplikasi."
+              }
+            }
+          ]
         },
         {
           "id": "fabric-forecasting-dashboard",
@@ -7953,7 +8135,7 @@
           "slug": "ai-solutions-assistant",
           "order": 7,
           "selected": 3,
-          "tier": "featured",
+          "tier": "hero",
           "accent": "violet",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -7991,8 +8173,8 @@
               "id": "Saya menggabungkan vector search Cosmos DB dan hybrid retrieval Azure AI Search dengan citation gating, Prompt Shields, serta pemeriksaan output per kalimat."
             },
             {
-              "en": "I built the /dashboard Studio behind Microsoft Entra ID: a project catalogue editor, document indexing, consultation reservations, cookieless analytics and reviews of assistant conversations.",
-              "id": "Saya membangun Studio /dashboard di balik Microsoft Entra ID: editor katalog proyek, pengindeksan dokumen, reservasi konsultasi, analitik tanpa cookie, dan peninjauan percakapan asisten."
+              "en": "I built the /dashboard Studio behind Microsoft Entra ID: a project catalogue editor, cookieless analytics and assistant conversation transcripts. A teammate added the indexing of uploaded files and consultation reservations.",
+              "id": "Saya membangun Studio /dashboard di balik Microsoft Entra ID: editor katalog proyek, analitik tanpa cookie, dan transkrip percakapan asisten. Rekan tim menambahkan pengindeksan file unggahan dan reservasi konsultasi."
             },
             {
               "en": "I fixed production failures that were not being surfaced: broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens.",
@@ -8279,7 +8461,149 @@
             }
           ],
           "liveUrl": "https://mii-microsoft-ai.azurewebsites.net",
-          "sculpture": "chat-bubble"
+          "sculpture": "chat-bubble",
+          "engineering": [
+            {
+              "title": {
+                "en": "Routing and Fallback Tiers",
+                "id": "Routing dan Tier Fallback"
+              },
+              "summary": {
+                "en": "Routing, intent detection and the output guard use no model, so they are deterministic and unit-testable, and every failure has a tier that still answers.",
+                "id": "Routing, deteksi intent, dan output guard tidak memakai model sehingga deterministik dan dapat diuji unit; setiap kegagalan punya tier yang tetap menjawab."
+              },
+              "points": [
+                {
+                  "en": "Regex intent rules route each turn to one of three YAML agents on Microsoft Agent Framework. The site concierge has no project retrieval tools, so a greeting cannot produce project cards.",
+                  "id": "Aturan intent berbasis regex mengarahkan tiap giliran ke salah satu dari tiga YAML agent di Microsoft Agent Framework. Site concierge tidak punya tool retrieval proyek, sehingga sapaan tidak mungkin memunculkan kartu proyek."
+                },
+                {
+                  "en": "If embeddings fail, search drops to lexical BM25. The rate limit (10 requests per minute per visitor), the daily cap or a missing agent config moves the turn to the deterministic tier with a visible notice. A throttled model gets one retry, only before any text is sent.",
+                  "id": "Jika embeddings gagal, pencarian beralih ke BM25 leksikal. Rate limit (10 request per menit per pengunjung), batas harian, atau konfigurasi agent yang tidak tersedia memindahkan giliran ke tier deterministik dengan pemberitahuan. Model yang di-throttle mendapat satu retry, hanya sebelum teks pertama terkirim."
+                },
+                {
+                  "en": "Visitors never get a 5xx: if the backend is unreachable, the BFF streams a degraded notice with a 200, and a remote turn that produces no text falls back to a scripted engine in the browser.",
+                  "id": "Pengunjung tidak pernah menerima 5xx: jika backend tidak terjangkau, BFF mengirim stream berisi pemberitahuan degraded dengan status 200, dan giliran remote yang tidak menghasilkan teks beralih ke engine skrip di browser."
+                },
+                {
+                  "en": "Follow-up chips ride at the end of the same completion instead of a separate tool call, verified live at two model requests per turn in both languages.",
+                  "id": "Chip lanjutan ikut di akhir completion yang sama, bukan lewat tool call terpisah; terverifikasi live dengan dua request model per giliran dalam kedua bahasa."
+                }
+              ],
+              "limits": {
+                "en": "The rate limiter and the daily counter live in process: correct on the single instance the site runs on, not under scale-out.",
+                "id": "Rate limiter dan penghitung harian berjalan di dalam proses: benar untuk satu instance yang dipakai situs ini, tetapi tidak saat scale-out."
+              }
+            },
+            {
+              "title": {
+                "en": "Grounding and Output Guard",
+                "id": "Grounding dan Output Guard"
+              },
+              "summary": {
+                "en": "Answers draw only on published content, and every sentence passes a guard before a visitor sees it.",
+                "id": "Jawaban hanya bersumber dari konten yang sudah terbit, dan setiap kalimat melewati guard sebelum terlihat oleh pengunjung."
+              },
+              "points": [
+                {
+                  "en": "Cosmos DB vector search on 3,072-dimension embeddings is fused with an in-memory BM25 index by reciprocal rank fusion (k=60, vector weighted 2 to 1). A source card must clear relative and absolute score floors, and at most 3 appear. The corpus is built from the public project serializer, so confidentiality is inherited.",
+                  "id": "Vector search Cosmos DB dengan embedding 3.072 dimensi digabung dengan indeks BM25 in-memory melalui reciprocal rank fusion (k=60, bobot vector 2 banding 1). Kartu sumber harus melewati ambang skor relatif dan absolut, maksimal 3 kartu. Korpus dibangun dari serializer proyek publik, sehingga aturan kerahasiaan ikut terwariskan."
+                },
+                {
+                  "en": "The endpoint, not the model, emits the sources, documents and context frames, so no prompt can fabricate or suppress a citation.",
+                  "id": "Frame sources, documents, dan context dikirim oleh endpoint, bukan oleh model, sehingga tidak ada prompt yang bisa memalsukan atau menyembunyikan sitasi."
+                },
+                {
+                  "en": "Every tier streams through a sentence-level guard that blocks restricted client names, price, timeline, effort or headcount commitments, and Azure services outside the curated list. Token-level checks were rejected: a term can span tokens and streamed text cannot be retracted. One post-guard buffer feeds transcripts, cards and exports.",
+                  "id": "Semua tier melewati guard per kalimat yang memblokir nama klien terlarang, komitmen harga, timeline, effort, atau jumlah personel, serta layanan Azure di luar daftar kurasi. Pemeriksaan per token ditolak karena satu istilah bisa terpecah di beberapa token dan teks yang sudah di-stream tidak bisa ditarik. Satu buffer pasca-guard menjadi sumber transkrip, kartu, dan ekspor."
+                },
+                {
+                  "en": "Prompt Shields screens the message before the model runs. A detected attack gets a deterministic bilingual refusal with zero model calls; the screen fails open because the output guard stays authoritative.",
+                  "id": "Prompt Shields memeriksa pesan sebelum model berjalan. Serangan yang terdeteksi mendapat penolakan dwibahasa deterministik tanpa panggilan model; screening ini fail-open karena output guard tetap menjadi kontrol utama."
+                },
+                {
+                  "en": "Measuring showed the shield API rejects more than 5 documents or 10,000 characters per call, so passages from larger document results had never been screened. Batched concurrent calls now screen 20 documents in 355 ms.",
+                  "id": "Pengukuran menunjukkan API shield menolak lebih dari 5 dokumen atau 10.000 karakter per panggilan, sehingga passage dari hasil dokumen yang lebih besar tidak pernah diperiksa. Kini panggilan dibagi menjadi batch paralel dan 20 dokumen diperiksa dalam 355 ms."
+                }
+              ],
+              "limits": {
+                "en": "Adversarial cases run offline against the guard, not end to end through the live model. Uploaded-document answers stay switched off in production pending a content review.",
+                "id": "Kasus adversarial diuji offline terhadap guard, belum end-to-end melalui model live. Jawaban dari dokumen unggahan tetap dinonaktifkan di production sampai review konten selesai."
+              }
+            },
+            {
+              "title": {
+                "en": "Spend Cap and Silent Failures",
+                "id": "Spend Cap dan Kegagalan Senyap"
+              },
+              "summary": {
+                "en": "The daily cap charges what the provider reports, and each production fix started from what visitors and operators actually received.",
+                "id": "Batas harian membebankan token sesuai laporan provider, dan setiap perbaikan produksi berangkat dari apa yang benar-benar diterima pengunjung dan operator."
+              },
+              "points": [
+                {
+                  "en": "The original cap booked the message plus a flat 600 tokens, missing history and retrieved context (about a 4.2x undercount), and its in-process counter reset whenever the idle app unloaded. Always On came first, then real accounting.",
+                  "id": "Batas awal hanya mencatat pesan ditambah 600 token tetap, tanpa riwayat percakapan dan konteks retrieval (kurang hitung sekitar 4,2x), dan penghitungnya ter-reset setiap kali aplikasi idle di-unload. Always On diaktifkan lebih dulu, lalu perhitungannya diperbaiki."
+                },
+                {
+                  "en": "Each turn is now charged the model-reported input and output tokens. If the provider reports nothing, the estimator is used rather than zero, and output the guard blocked is still charged because the model produced it.",
+                  "id": "Setiap giliran kini dibebankan sesuai token input dan output yang dilaporkan model. Jika provider tidak melapor, estimator dipakai alih-alih nol, dan output yang diblokir guard tetap dihitung karena model sudah menghasilkannya."
+                },
+                {
+                  "en": "Measured over n=57 warm turns, a turn costs 9,200 tokens at p50, so the previous cap covered about 33 model-answered turns a day against about 33 expected. It was re-sized on p90 (11,610) to 1,200,000 for a 100-turn day, with warnings at 80% and at the cap.",
+                  "id": "Dari n=57 giliran warm, satu giliran memakai 9.200 token pada p50, sehingga batas sebelumnya hanya cukup untuk sekitar 33 giliran model per hari terhadap perkiraan sekitar 33. Batas dihitung ulang dari p90 (11.610) menjadi 1.200.000 untuk 100 giliran per hari, dengan peringatan pada 80% dan saat batas tercapai."
+                },
+                {
+                  "en": "The server ended SSE frames with CRLF while the client split on LF only, so no frame parsed and every visitor got the keyword fallback behind a working 200. Reading raw bytes in a browser found it; tests now cover all three terminator styles.",
+                  "id": "Server mengakhiri frame SSE dengan CRLF, sedangkan client hanya memisahkan dengan LF, sehingga tidak ada frame yang terbaca dan setiap pengunjung menerima fallback keyword di balik respons 200. Masalah ini ditemukan dengan membaca byte mentah di browser; test kini mencakup ketiga gaya terminator."
+                },
+                {
+                  "en": "Thirty days of production telemetry held 10,140 traces, 0 requests and 0 dependencies: the app bound the un-instrumented FastAPI class, and every trace was the exporter logging its own traffic. Explicit instrumentation and a wiring test fixed it.",
+                  "id": "Telemetry produksi selama 30 hari berisi 10.140 trace, 0 request, dan 0 dependency: aplikasi memakai kelas FastAPI yang belum diinstrumentasi, dan semua trace berasal dari exporter yang mencatat trafiknya sendiri. Instrumentasi eksplisit dan test wiring memperbaikinya."
+                }
+              ],
+              "limits": {
+                "en": "Embedding requests inside a chat turn are not yet charged to the cap, nothing outside the app alerts as the cap nears, and delivery of app-level logs to production telemetry was still to be confirmed.",
+                "id": "Request embedding di dalam giliran chat belum dibebankan ke batas, belum ada alert di luar aplikasi saat batas hampir tercapai, dan pengiriman log level aplikasi ke telemetry produksi masih perlu dikonfirmasi."
+              }
+            },
+            {
+              "title": {
+                "en": "Latency Budget",
+                "id": "Latency Budget"
+              },
+              "summary": {
+                "en": "Per-turn diagnostics showed the model, not the pipeline, dominates the wait, so only measured levers changed defaults.",
+                "id": "Diagnostik per giliran menunjukkan bahwa waktu tunggu didominasi model, bukan pipeline, sehingga default hanya berubah berdasarkan hasil pengukuran."
+              },
+              "points": [
+                {
+                  "en": "Warm turns against live services (n=32): p50 6,438 ms in total. Everything before the model call, Content Safety included, takes 458 ms; the first visible model token takes another 5,010 ms. Production through the BFF (n=16) was within noise of local.",
+                  "id": "Giliran warm terhadap layanan live (n=32): total p50 6.438 ms. Semua tahap sebelum panggilan model, termasuk Content Safety, memakan 458 ms; token model pertama yang terlihat butuh 5.010 ms berikutnya. Produksi melalui BFF (n=16) berada dalam batas noise hasil lokal."
+                },
+                {
+                  "en": "The framework sends one model request per tool-call iteration, so the median turn makes two. Tool execution itself is cheap: project search p50 927 ms.",
+                  "id": "Framework mengirim satu request model untuk setiap iterasi tool call, sehingga giliran median membuat dua request. Eksekusi tool sendiri ringan: pencarian proyek p50 927 ms."
+                },
+                {
+                  "en": "Prompt caching already hit 98% at p50, leaving 198 uncached input tokens, so prompt restructuring was dropped as a latency lever.",
+                  "id": "Prompt caching sudah mencapai 98% pada p50, menyisakan 198 token input tanpa cache, sehingga restrukturisasi prompt tidak dipakai untuk menurunkan latensi."
+                },
+                {
+                  "en": "Low reasoning effort cut time to first token by 1,402 ms (n=16 per arm) with refusals unchanged, but softened grounding on one of eight probe questions, so agents stay at medium. Query rewrite returned 0 usable variants in 12 calls within its 0.8 s budget and stays off.",
+                  "id": "Reasoning effort low memangkas waktu ke token pertama sebesar 1.402 ms (n=16 per kelompok) tanpa mengubah penolakan, tetapi melemahkan grounding pada satu dari delapan pertanyaan uji, sehingga agent tetap di medium. Query rewrite menghasilkan 0 varian yang bisa dipakai dari 12 panggilan dalam batas 0,8 detik dan tetap nonaktif."
+                },
+                {
+                  "en": "Two measured production boots took 125 s and 228 s because warm-ups ran before serving; they now run beside traffic.",
+                  "id": "Dua boot produksi yang terukur memakan 125 dan 228 detik karena warm-up berjalan sebelum melayani request; kini warm-up berjalan bersamaan dengan trafik."
+                }
+              ],
+              "limits": {
+                "en": "Small fixed probe sets (8 questions), not production traffic. No committed retrieval-accuracy baseline yet.",
+                "id": "Set pertanyaan uji kecil dan tetap (8 pertanyaan), bukan trafik produksi. Baseline akurasi retrieval belum di-commit."
+              }
+            }
+          ]
         },
         {
           "id": "agent-orchestrated-delivery",

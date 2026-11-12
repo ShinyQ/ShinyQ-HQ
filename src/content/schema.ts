@@ -270,8 +270,8 @@ export const EngineeringTopicSchema = z.strictObject({
   post: SlugSchema.optional(),
 });
 
-/** The featured case studies that must read as stories (owner decision 2026-10-25). */
-export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard"] as const;
+/** The featured case studies that must read as stories (owner decision 2026-10-25), plus the AI app template key project (2026-11-13). */
+export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard", "ai-app-accelerator"] as const;
 
 /** Longest `Pod.shortTitle` in either locale (one line on an L3 directory board). */
 export const SHORT_TITLE_MAX = 32;
@@ -352,6 +352,16 @@ export const PodSchema = z
         path: ["architecture"],
         message: "Hero pods need an architecture with at least 3 nodes",
       });
+    }
+    // A key project (hero with a gallery, `isKeyProject`) shows the 8 standard chapters (owner decision 2026-11-13, `caseChapters`).
+    if (pod.tier === "hero" && pod.assets.length > 0) {
+      const missing = [
+        ...(pod.story ? [] : ["Situation", "Role and key decisions"]),
+        ...(pod.story?.lesson ? [] : ["Lesson"]),
+        ...(pod.architecture ? [] : ["Architecture"]),
+        ...(pod.engineering ? [] : ["Engineering details"]),
+      ];
+      if (missing.length > 0) ctx.addIssue({ code: "custom", path: ["tier"], message: `Key project "${pod.slug}" is missing chapters: ${missing.join(", ")}` });
     }
   });
 

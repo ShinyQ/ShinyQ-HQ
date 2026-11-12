@@ -4,6 +4,8 @@ import { ResultSchema, SiteContentSchema, StatSchema } from "@/content/schema";
 import { headlineResults, leadResult, leadStats, scaleStats } from "@/content/selectors";
 import { beforeAfterResults } from "@/content/highlights";
 import { keyResult } from "@/lib/seo";
+import { caseChapters, KEY_PROJECT_CHAPTERS } from "@/content/case";
+import { isKeyProject } from "@/content/pageview";
 
 const base = { label: { en: "x", id: "x" }, confidence: "verified" as const };
 type Data = { floors: { labs: { pods: { slug: string; results: Record<string, unknown>[] }[] } } };
@@ -86,5 +88,26 @@ describe("the dataset", () => {
   });
   it("never leads a share card or description with a scale result when an impact result exists", () => {
     for (const pod of pods) expect(keyResult(pod).kind, pod.slug).not.toBe("scale");
+  });
+});
+
+describe("key projects (owner decision 2026-11-13)", () => {
+  const content = SiteContentSchema.parse(rawData);
+  const keys = content.floors.labs.pods.filter(isKeyProject);
+
+  it("are the voice, code security, fraud review, AI app template and AI solutions assistant case studies", () => {
+    expect(keys.map((p) => p.slug).sort()).toEqual(["ai-app-accelerator", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "voice-ai-contact-center"]);
+  });
+  it("each shows the 8 standard chapters in order, like the voice case study", () => {
+    for (const pod of keys) expect(caseChapters(pod).filter((c) => c !== "code"), pod.slug).toEqual([...KEY_PROJECT_CHAPTERS]);
+  });
+  it("fails a key project missing a lesson or engineering details, naming it", () => {
+    const data = structuredClone(rawData) as unknown as { floors: { labs: { pods: { slug: string; story?: { lesson?: unknown }; engineering?: unknown }[] } } };
+    const pod = data.floors.labs.pods.find((p) => p.slug === "ai-solutions-assistant")!;
+    delete pod.story!.lesson;
+    delete pod.engineering;
+    const parsed = SiteContentSchema.safeParse(data);
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toContain('Key project \\"ai-solutions-assistant\\" is missing chapters: Lesson, Engineering details');
   });
 });

@@ -100,13 +100,15 @@ describe("content/site-content.json", () => {
     expect(pods.filter((p) => p.timelineRef && !entryIds.has(p.timelineRef)).map((p) => p.id)).toEqual([]);
   });
 
-  it("has 3 Product Engineering and 4 AI Engineering hero pods (hologram view), at most 7 featured per wing, all docked on L3", () => {
-    // AI has a fourth hero since the owner made the Full-Stack AI Application Template a key project (2026-10-16).
-    const heroes = { software: 3, ai: 4 } as const;
+  it("has 2 Product Engineering and 5 AI Engineering hero pods (hologram view), at most 8 featured per wing, all docked on L3", () => {
+    // AI has a fourth hero since the owner made the Full-Stack AI Application Template a key project (2026-10-16), and a
+    // fifth since the AI Solutions Portfolio and Assistant swapped tiers with the vendor portal (owner decision 2026-11-13).
+    const heroes = { software: 2, ai: 5 } as const;
     for (const wing of ["software", "ai"] as const) {
       expect(pods.filter((p) => p.wing === wing && p.tier === "hero")).toHaveLength(heroes[wing]);
       // 6 until MII Deck and MII Cowork joined the AI wing as featured pods (owner request 2026-10-16).
-      expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(7);
+      // 8 since the vendor portal moved from hero to featured (owner decision 2026-11-13); the dock cap below is the real limit.
+      expect(pods.filter((p) => p.wing === wing && p.tier === "featured").length).toBeLessThanOrEqual(8);
       expect(pods.filter((p) => p.wing === wing && p.tier !== "listed").length).toBeLessThanOrEqual(LABS.maxPerWing);
     }
     expect(pods.find((p) => p.slug === "ai-app-accelerator")?.tier).toBe("hero");
@@ -136,7 +138,7 @@ describe("content/site-content.json", () => {
       "AI Solutions Portfolio and Assistant",
       "Portofolio dan Asisten Solusi AI",
       "ai",
-      "featured",
+      "hero",
       "Sole engineer",
     ]);
     expect(ai.tagline.en).toMatch(/multi-agent RAG assistant/);
@@ -285,10 +287,9 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
     expect(text).not.toMatch(/MII's internal|internal MII|group business unit|Unit bisnis dalam grup/);
   });
 
-  it("sorts after AI Fraud Document Review among hero pods, so the landing top three stay (coordinator decision)", () => {
-    const fraud = data?.floors.labs.pods.find((p) => p.slug === "fraud-review-platform");
-    expect(vendor?.tier).toBe("hero");
-    expect(vendor!.order).toBeGreaterThan(fraud!.order);
+  it("is a featured project since it swapped tiers with the AI Solutions Portfolio and Assistant (owner decision 2026-11-13)", () => {
+    expect(vendor?.tier).toBe("featured");
+    expect(data?.floors.labs.pods.find((p) => p.slug === "ai-solutions-assistant")?.tier).toBe("hero");
   });
 
   it("matches the repository: 51 specs, 21 domains, 109 migrations, six weeks, the measured cookie", () => {
@@ -319,7 +320,10 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
   it("keeps the landing top three when the gallery moves it ahead of pods without one", () => {
     const pods = getPods();
     expect(pickFeaturedPods(pods).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant"]);
-    expect(pods.findIndex((p) => p.slug === "vendor-management-portal")).toBe(3);
+    // A featured pod with a gallery: after every key project (hero with a gallery), ahead of pods without one.
+    const at = pods.findIndex((p) => p.slug === "vendor-management-portal");
+    expect(pods.slice(0, at).every((p) => p.assets.length > 0)).toBe(true);
+    expect(pods.slice(0, at).filter((p) => p.tier === "hero")).toHaveLength(5);
   });
 });
 
