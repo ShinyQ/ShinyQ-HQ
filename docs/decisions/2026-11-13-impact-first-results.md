@@ -1,6 +1,7 @@
 # Content: impact-first results, pagination and complete key projects
 
 - Date: 2026-11-13
+- PR: [#425](https://github.com/ShinyQ/ShinyQ-HQ/pull/425)
 
 The owner asked for results that show the improvement rather than volume ("1000+ PR sound not wow since i use AI
 anyway"). Every result and homepage stat is now `impact` (default) or `scale`; before and after deltas lead the case
