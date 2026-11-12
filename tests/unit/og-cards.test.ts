@@ -67,10 +67,8 @@ describe("OG cards", () => {
     expect(label("voice-ai-contact-center")).toMatch(/(?:per|each|tiap|setiap|\/)\s*(?:arm|jalur|kelompok)/i);
     expect(label("fraud-review-platform")).toMatch(/offline|development|pengembangan/i);
     expect(label("covid-herd-immunity-forecast")).toMatch(/in-sample/i);
-    const cv = label("ai-cv-screening-platform");
-    expect(cv).toMatch(/22/);
-    expect(cv).toMatch(/rerun|uji ulang|pengujian ulang|diulang/i);
-    expect(cv).toMatch(/\b(?:no|not|without|unrecorded|belum|tidak|tanpa)\b/i);
+    // The CV screening card leads with its before and after (`leadResult`), which keeps its offline boundary.
+    expect(label("ai-cv-screening-platform")).toMatch(/offline/i);
   });
 
   it("never speaks in the first person singular", () => {

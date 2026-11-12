@@ -61,11 +61,12 @@ describe("hall interiors: instances and texts", () => {
   });
 
   it("bars only the results that parse, proportional within each", () => {
-    const parsed = data.highlights.results.filter((r) => resultBars(r.value)).length;
+    // The station holds 9 results (3 monoliths of 3); only those that parse get bars.
+    const parsed = data.highlights.results.slice(0, 9).filter((r) => resultBars(r.value)).length;
     const results = HALL_LAYOUT.stations.findIndex((s) => s.station === "results") + 1;
     const bars = premiumInstances(data, "full").south.filter((i) => i.a[0] === PREMIUM_MODE.bar && i.a[3] === results);
     // Two bars per parsed result, plus the header underline.
-    expect(bars).toHaveLength(Math.min(parsed, 9) * 2 + 1);
+    expect(bars).toHaveLength(parsed * 2 + 1);
     const [b, a] = barLengths({ before: 90.9, after: 36.4, scale: "linear" }, 1);
     expect(b).toBe(1);
     expect(a).toBeCloseTo(36.4 / 90.9);

@@ -35,7 +35,7 @@ export function winCounts(awards: readonly Pick<Award, "placement">[]): { placin
  * impact results with a `delta` (a before and after), from the case studies in site order (`getPods`), each with its case study.
  */
 export function beforeAfterResults(pods: readonly Pod[] = getPods()): { pod: Pod; result: Pod["results"][number] }[] {
-  return pods.flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && isImpact(r) && r.delta).map((result) => ({ pod, result })));
+  return pods.flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && isImpact(r) && r.delta && /\d/.test(r.delta.before) && /\d/.test(r.delta.after)).map((result) => ({ pod, result })));
 }
 
 /** The now station: the roles still running (no end date), employment first, then freelance, newest first. */

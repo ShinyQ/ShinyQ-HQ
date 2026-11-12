@@ -8,7 +8,7 @@ import { createTranslator } from "next-intl";
 import { postUpdated } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile, getTimeline, getTimelineEntry } from "@/content/load";
 import type { Locale, Pod, PostRef, Result, TimelineEntry } from "@/content/schema";
-import { impactFirst, isImpact, leadResult } from "@/content/selectors";
+import { isImpact, leadResult } from "@/content/selectors";
 import { hasFirstPerson } from "@/lib/first-person";
 import type { Metadata } from "next";
 import { pathLocales } from "@/lib/routes";
@@ -37,9 +37,9 @@ export function keyResult(pod: Pick<Pod, "results">): Result {
   const clean = (r: Result) => !hasFirstPerson(r.label.en, "en") && !hasFirstPerson(r.label.id, "id");
   const lead = leadResult(pod.results);
   if (lead && clean(lead) && /\d/.test(lead.value)) return lead;
-  const ordered = impactFirst(pod.results);
-  const pool = ordered.filter(clean).length > 0 ? ordered.filter(clean) : ordered;
-  return pool.find((r) => isImpact(r) && /\d/.test(r.value)) ?? pool.find(isImpact) ?? pool[0];
+  const impact = pod.results.filter(isImpact);
+  const pool = impact.filter(clean).length > 0 ? impact.filter(clean) : impact.length > 0 ? impact : pod.results;
+  return pool.find((r) => /\d/.test(r.value)) ?? pool[0];
 }
 
 /** First and last year on the career timeline, e.g. { from: "2016", to: "2026" }. */

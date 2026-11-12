@@ -36,8 +36,9 @@ describe("Highlights Hall station data", () => {
       expect(result.value).toMatch(/→|\sto\s/);
       expect(pod.results).toContain(result);
     }
-    // Every verified before and after result is there, in site order; side-by-side comparisons ("6 vs 18") stay out.
-    const all = getPods().flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && /→|\sto\s/.test(r.value)));
+    // Every verified impact result with a numeric before and after (`delta`) is there, in site order; side-by-side
+    // comparisons ("6 vs 18") and a non-numeric before ("Not run") stay out.
+    const all = getPods().flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && r.kind !== "scale" && r.delta && /\d/.test(r.delta.before) && /\d/.test(r.delta.after)));
     expect(list.map((r) => r.result)).toEqual(all);
     expect(list.some(({ result }) => / vs /.test(result.value))).toBe(false);
   });

@@ -297,7 +297,7 @@ describe("vendor management portal (owner request 2026-10-13)", () => {
     expect(text).toContain("109 Alembic migrations");
     expect(text).toContain("109 migrasi Alembic");
     expect(text).not.toMatch(/\b110\b/);
-    expect(vendor?.results.map((r) => r.value)).toEqual(["6 weeks", "21 domains", "4.5 KB → 2.1 KB"]);
+    expect(vendor?.results.map((r) => r.value)).toEqual(["6 weeks", "21 domains", "4.5 KB → 2.1 KB", "361.5 KB → 256.5 KB"]);
     expect(vendor?.results[2].context?.en).toContain("4,491 bytes");
     expect(vendor?.liveUrl).toBeUndefined();
   });

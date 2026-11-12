@@ -73,7 +73,7 @@ describe("portfolio evidence and ownership", () => {
     expect(sewise.tagline[locale]).toMatch(/calculated|perhitungan/);
     expect(sewise.tagline[locale]).not.toMatch(/exact fabric|kain yang tepat/);
     expect(packed("sewise-fashion-labs", locale)).toMatch(/not physical|bukan.{0,20}fisik/);
-    expect(sewise.results.map((r) => r.value)).toEqual(["1,390", "118", "9"]);
+    expect(sewise.results.map((r) => r.value)).toEqual(["1,390", "118", "9", "0 of 60"]);
   });
 
   it("localizes explanatory labels in all 20 graphs without translating canonical technologies", () => {

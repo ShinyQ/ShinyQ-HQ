@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
+import { leadStats } from "@/content/selectors";
 import { getStats } from "@/content/load";
 import {
   coverCrop,
@@ -99,7 +100,8 @@ describe("Highlights Hall scenery", () => {
     const all = texts.map((t) => t.text);
     expect(all).toContain(data.profile.name);
     expect(all).toContain(data.profile.headline);
-    for (const stat of getStats().slice(0, 4)) expect(all).toContain(stat.value);
+    // The lead stats (owner decision 2026-11-13); a before and after shows its after, the label keeps the before.
+    for (const stat of leadStats(getStats()).slice(0, 4)) expect(all).toContain(stat.delta?.after ?? stat.value);
     for (const p of data.highlights.projects) expect(all).toContain(p.title);
     expect(all).toContain(experienceRows(data.career).employment[0].org);
     expect(all).toContain(data.roof.email);

@@ -2745,7 +2745,8 @@
                 "en": "Insurance partners integrated; operational errors reduced by about 30%",
                 "id": "Mitra asuransi terintegrasi; error operasional berkurang sekitar 30%"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "kind": "scale"
             },
             {
               "value": "~30%",
@@ -2753,7 +2754,8 @@
                 "en": "Throughput increase after moving flows to Kafka and Redis",
                 "id": "Peningkatan throughput setelah beralih ke Kafka dan Redis"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "99%",
@@ -2761,7 +2763,8 @@
                 "en": "In-house SFTP uptime, with about 1,000 transfers per month",
                 "id": "Uptime SFTP in-house, dengan sekitar 1.000 transfer per bulan"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-30%",
@@ -2769,7 +2772,8 @@
                 "en": "Reduction in production issues after adopting full unit-test coverage",
                 "id": "Penurunan masalah produksi setelah menerapkan unit-test coverage penuh"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "story": {
@@ -3064,7 +3068,8 @@
                 "en": "Counted in the client repository's git history.",
                 "id": "Dihitung dari riwayat git repositori klien."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "2 → 1",
@@ -3080,7 +3085,8 @@
               "delta": {
                 "before": "2",
                 "after": "1"
-              }
+              },
+              "headline": true
             },
             {
               "value": "3 roles",
@@ -3092,7 +3098,8 @@
                 "en": "From the route middleware and commit history.",
                 "id": "Dari route middleware dan riwayat commit."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -3328,7 +3335,8 @@
                 "en": "Repository history from 21 Aug to 4 Oct 2026.",
                 "id": "Riwayat repositori dari 21 Agu hingga 4 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "21 domains",
@@ -3340,7 +3348,8 @@
                 "en": "Counted in the repository. The product itself has no AI features.",
                 "id": "Dihitung dari repositori. Produk ini sendiri tidak memiliki fitur AI."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "4.5 KB → 2.1 KB",
@@ -3356,6 +3365,24 @@
               "delta": {
                 "before": "4.5 KB",
                 "after": "2.1 KB"
+              },
+              "headline": true
+            },
+            {
+              "value": "361.5 KB → 256.5 KB",
+              "label": {
+                "en": "JavaScript loaded by the portal home page (gzip), after wiring the charts to load on demand",
+                "id": "JavaScript yang dimuat halaman beranda portal (gzip), setelah grafik dimuat sesuai kebutuhan"
+              },
+              "context": {
+                "en": "Bundle check on a production build; the route had been over its 350 KB budget.",
+                "id": "Pengecekan bundle pada build produksi; route ini sempat melewati batas 350 KB."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "361.5 KB",
+                "after": "256.5 KB"
               }
             }
           ],
@@ -3617,7 +3644,8 @@
                 "en": "Users served by the multi-tenant SaaS platforms",
                 "id": "Pengguna yang dilayani platform SaaS multi-tenant"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "~30%",
@@ -3625,7 +3653,8 @@
                 "en": "Increase in workflow automation efficiency through Go APIs and Next.js dashboards",
                 "id": "Peningkatan efisiensi otomasi alur kerja melalui API Go dan dashboard Next.js"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-60%",
@@ -3633,7 +3662,8 @@
                 "en": "Reduction in SonarQube technical debt after refactoring",
                 "id": "Penurunan technical debt di SonarQube setelah refactor"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "stack": [
@@ -3820,7 +3850,8 @@
                 "en": "Reduction in realtime request latency with WebSocket and Redis",
                 "id": "Penurunan latensi request realtime dengan WebSocket dan Redis"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+30%",
@@ -3828,7 +3859,8 @@
                 "en": "Increase in transaction speed after the payment gateway refactor",
                 "id": "Peningkatan kecepatan transaksi setelah refactor payment gateway"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-40%",
@@ -3836,7 +3868,8 @@
                 "en": "Reduction in errors after MySQL and service tuning; queries ran about 20% faster",
                 "id": "Penurunan error setelah tuning MySQL dan layanan; query berjalan sekitar 20% lebih cepat"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+25%",
@@ -4029,7 +4062,8 @@
                 "en": "My longest engagement, spanning Sep 2019 to Dec 2022",
                 "id": "Kerja sama terpanjang saya, berlangsung dari Sep 2019 hingga Des 2022"
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "Live",
@@ -4041,7 +4075,8 @@
                 "en": "Checked in Oct 2026; the site responded normally.",
                 "id": "Diperiksa pada Okt 2026; situs merespons normal."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4303,7 +4338,17 @@
                 "en": "Counted in the repository's pull request history.",
                 "id": "Dihitung dari riwayat pull request di repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "Every 15 min",
+              "label": {
+                "en": "Scheduled job that exports and compares each asset's vulnerabilities between scan dates",
+                "id": "Job terjadwal yang mengekspor dan membandingkan kerentanan tiap aset antar tanggal scan"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4376,8 +4421,8 @@
             "id": "Ticketing Acara Berkuota Terbatas"
           },
           "tagline": {
-            "en": "Ticketing for limited-quota premium events, with atomic booking designed to prevent overselling, online payments and QR e-tickets.",
-            "id": "Ticketing acara premium berkuota terbatas, dengan booking atomik untuk mencegah overselling, pembayaran online, dan e-ticket QR."
+            "en": "Ticketing for limited-quota premium events, with transactional checkout, online payments and QR e-tickets.",
+            "id": "Ticketing acara premium berkuota terbatas, dengan checkout transaksional, pembayaran online, dan e-ticket QR."
           },
           "period": {
             "start": "2025-07",
@@ -4397,8 +4442,8 @@
               "id": "Saya menata API route Next.js 15 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
             },
             {
-              "en": "I put each ticket tier's quota check and stock decrement in the same Prisma transaction, so two concurrent checkouts could not both claim the last seat.",
-              "id": "Saya menempatkan pengecekan dan pengurangan kuota secara atomik per tier tiket dalam satu transaksi checkout Prisma untuk mencegah tiket terjual dua kali."
+              "en": "I put each ticket tier's stock decrement in the checkout's Prisma transaction; the availability check still runs before that transaction, so concurrent checkouts can still claim the last seat.",
+              "id": "Saya menempatkan pengurangan stok tiap tier tiket di dalam transaksi checkout Prisma; pengecekan ketersediaan masih berjalan sebelum transaksi itu, sehingga checkout bersamaan masih bisa mengambil kursi terakhir."
             },
             {
               "en": "I built ticket issuance, a My Tickets page with QR codes and the payment channel list from iPaymu, and redesigned the emails; my teammate integrated iPaymu checkout, callbacks and PDF invoices.",
@@ -4525,19 +4570,17 @@
                 "en": "Counted in git history and pull requests from Jul to Aug 2025.",
                 "id": "Dihitung dari riwayat git dan pull request pada Jul hingga Agu 2025."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
-              "value": "1 transaction",
+              "value": "Push-to-deploy",
               "label": {
-                "en": "Atomic quota check and decrement prevent selling the last seat twice",
-                "id": "Pengecekan dan pengurangan kuota secara atomik mencegah kursi terakhir terjual dua kali"
+                "en": "Every merge to main deploys automatically: database migration, build and restart, with no manual server steps",
+                "id": "Setiap merge ke main ter-deploy otomatis: migrasi database, build, dan restart tanpa langkah manual di server"
               },
-              "context": {
-                "en": "A design property of the booking code, not a measured production incident count.",
-                "id": "Berdasarkan rancangan kode booking, bukan pengukuran jumlah insiden produksi."
-              },
-              "confidence": "strongly-inferred"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4845,7 +4888,8 @@
                 "en": "From the three project repositories.",
                 "id": "Dari tiga repositori proyek."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "95%",
@@ -4857,7 +4901,8 @@
                 "en": "Non-merge commits in git history from Jun to Aug 2025, excluding commits generated by v0.",
                 "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025, tanpa commit yang dihasilkan v0."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "34%",
@@ -4869,7 +4914,17 @@
                 "en": "Non-merge commits in git history from Jun to Aug 2025.",
                 "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "Resume payment",
+              "label": {
+                "en": "Unpaid orders keep a pay link on the attendee's tickets page for one hour, so checkout can finish later",
+                "id": "Pesanan belum dibayar menyimpan link pembayaran di halaman tiket peserta selama satu jam agar checkout bisa dilanjutkan"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -5152,7 +5207,8 @@
                 "en": "The measurement method was not recorded.",
                 "id": "Metode pengukurannya tidak tercatat."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-25%",
@@ -5160,7 +5216,8 @@
                 "en": "Reduction in server response time after PostgreSQL tuning",
                 "id": "Penurunan waktu respons server setelah tuning PostgreSQL"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "96%",
@@ -5172,7 +5229,8 @@
                 "en": "Based on a small evaluation set.",
                 "id": "Berdasarkan evaluation set dengan jumlah sampel kecil."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+50%",
@@ -5250,7 +5308,17 @@
                 "en": "Counted in the client organization's pull request history.",
                 "id": "Dihitung dari riwayat pull request dalam organisasi klien."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "26 routes",
+              "label": {
+                "en": "Routes written by three teammates that rely on the shared role check Kurniadi built for the API",
+                "id": "Route yang ditulis tiga rekan tim dan memakai pengecekan peran bersama yang dibangun Kurniadi untuk API"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -5315,7 +5383,8 @@
                 "en": "University platforms delivered, covering a public portal and admin analytics",
                 "id": "Platform universitas yang diserahkan, mencakup portal publik dan analitik admin"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "stack": [
@@ -5604,7 +5673,8 @@
               "delta": {
                 "before": "~2 s",
                 "after": "~0.2 s"
-              }
+              },
+              "headline": true
             },
             {
               "value": "2 of 2",
@@ -5616,7 +5686,8 @@
                 "en": "After four root causes were fixed, AI audio resumed after 11.5 s and 13.0 s in two hard VM-stop drills, with context preserved. This was audible recovery, not seamless failover.",
                 "id": "Setelah empat akar masalah diperbaiki, suara AI kembali dalam 11,5 detik dan 13,0 detik pada dua drill pemadaman VM, dengan konteks tetap tersimpan. Ada jeda yang terdengar, bukan failover tanpa putus."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "6 vs 18",
@@ -5628,7 +5699,8 @@
                 "en": "Evaluated offline with a calibrated LLM judge; mean score 4.71 vs 4.28.",
                 "id": "Dievaluasi secara offline dengan LLM judge terkalibrasi; skor rata-rata 4,71 vs 4,28."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "Migrated",
@@ -6188,7 +6260,8 @@
                 "en": "November release inventory: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks and Checkov. TruffleHog and live-secret verification were removed; the older usage totals below cover the earlier eight-engine platform.",
                 "id": "Daftar rilis November: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, dan Checkov. TruffleHog serta verifikasi secret aktif dihapus; total penggunaan di bawah berasal dari platform delapan engine sebelumnya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "628 PRs",
@@ -6200,7 +6273,8 @@
                 "en": "Recorded by 24 Oct 2026; about 4.9k scans and 645k findings were processed by late September 2026.",
                 "id": "Tercatat hingga 24 Okt 2026; sekitar 4,9 ribu scan dan 645 ribu temuan diproses hingga akhir September 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "31 fix PRs",
@@ -6212,7 +6286,8 @@
                 "en": "Historical total retained from the earlier record, not a new November measurement. Every fix PR requires human review; this does not establish a higher merge rate.",
                 "id": "Total historis dari catatan sebelumnya, bukan pengukuran baru pada November. Setiap fix PR wajib melewati review manusia; ini tidak membuktikan kenaikan merge rate."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "~9 min",
@@ -6224,7 +6299,8 @@
                 "en": "Completed within the 14-item isolation hardening using Contributor-level cloud rights.",
                 "id": "Dikerjakan dalam hardening isolasi 14 item dengan hak akses cloud level Contributor."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "story": {
@@ -6644,7 +6720,8 @@
               "delta": {
                 "before": "90.9%",
                 "after": "36.4%"
-              }
+              },
+              "headline": true
             },
             {
               "value": "76.2% to 0%",
@@ -6660,7 +6737,8 @@
               "delta": {
                 "before": "76.2%",
                 "after": "0%"
-              }
+              },
+              "headline": true
             },
             {
               "value": "0 of 3,780",
@@ -6688,7 +6766,8 @@
               "delta": {
                 "before": "11.1%",
                 "after": "3.7%"
-              }
+              },
+              "headline": true
             }
           ],
           "story": {
@@ -7018,7 +7097,8 @@
                 "en": "Observed in a 22-pair evaluation run, with fixes covered by 7 regression tests from real error strings. A rerun of that exact evaluation was not recorded.",
                 "id": "Teramati pada run evaluasi 22 pasang, dengan perbaikan diuji melalui 7 regression test dari pesan error asli. Rerun evaluasi yang persis sama tidak tercatat."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "0.13%",
@@ -7030,7 +7110,8 @@
                 "en": "After retries, using a newer model and prompt on synthetic offline inputs, without human reference labels or production sampling. Not a before/after estimate of the original fixes.",
                 "id": "Setelah retry, memakai model dan prompt lebih baru pada input sintetis offline, tanpa label referensi manusia atau sampling produksi. Bukan pengukuran sebelum/sesudah perbaikan awal."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "270+",
@@ -7042,7 +7123,8 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "21.1 s to 12.1 s",
@@ -7058,7 +7140,8 @@
               "delta": {
                 "before": "21.1 s",
                 "after": "12.1 s"
-              }
+              },
+              "headline": true
             }
           ],
           "engineering": [
@@ -7322,7 +7405,8 @@
                 "en": "Replay benchmark over 4 runs with data stores wiped clean; all 4 retained 99.3 to 99.4% analysis confidence, with accuracy unchanged.",
                 "id": "Replay benchmark sebanyak 4 run pada data store yang dikosongkan; keempatnya mempertahankan confidence analisis 99,3 hingga 99,4%, dengan akurasi tidak berubah."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "748 tests",
@@ -7334,7 +7418,8 @@
                 "en": "Enforced during builds and checked with mutation testing.",
                 "id": "Dijalankan sebagai syarat build dan diperiksa dengan mutation testing."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "8 evaluators",
@@ -7346,7 +7431,8 @@
                 "en": "Used during hands-on PoC evaluation; the outcome is not public.",
                 "id": "Digunakan selama evaluasi PoC secara langsung; hasil akhirnya tidak dipublikasikan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -7532,19 +7618,21 @@
                 "en": "Byte-level lineage of the 8 client repositories analyzed found 36 to 90% of each derivative's initial files came from the template.",
                 "id": "Analisis asal file hingga level byte pada 8 repositori klien menunjukkan bahwa 36 hingga 90% file awal setiap proyek turunan berasal dari template."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
-              "value": "3 engineers",
+              "value": "3 apps",
               "label": {
-                "en": "Other engineers who continued developing the template",
-                "id": "Engineer lain yang melanjutkan pengembangan template"
+                "en": "Client apps started from the template and then developed mostly or jointly by other engineers",
+                "id": "Aplikasi klien yang dimulai dari template lalu dikembangkan sebagian besar atau bersama oleh engineer lain"
               },
               "context": {
-                "en": "Based on repository history.",
-                "id": "Berdasarkan riwayat repositori."
+                "en": "Repository history: other engineers wrote most or many of the commits.",
+                "id": "Riwayat repositori: engineer lain menulis sebagian besar atau banyak commit."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -7968,7 +8056,8 @@
               "delta": {
                 "before": "~21 s",
                 "after": "~1.1 s"
-              }
+              },
+              "headline": true
             },
             {
               "value": "61.0 s vs 9.5 s",
@@ -7980,7 +8069,8 @@
                 "en": "Capacity probe isolated the admission delay per request caused by throttling.",
                 "id": "Capacity probe mengisolasi jeda admission per request akibat throttling."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~5 weeks",
@@ -7992,7 +8082,8 @@
                 "en": "Based on repository and deployment history.",
                 "id": "Berdasarkan riwayat repositori dan deployment."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "11.7 MB → 156 KB",
@@ -8008,7 +8099,8 @@
               "delta": {
                 "before": "11.7 MB",
                 "after": "156 KB"
-              }
+              },
+              "headline": true
             }
           ],
           "story": {
@@ -8299,7 +8391,8 @@
                 "en": "Measured in pull-request benchmarks on a low-traffic site, about 33 turns per day.",
                 "id": "Diukur dalam benchmark pull request pada situs dengan trafik rendah, sekitar 33 giliran per hari."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~4.2x",
@@ -8311,7 +8404,25 @@
                 "en": "Identified during a production review.",
                 "id": "Teridentifikasi dalam review produksi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
+            },
+            {
+              "value": "Not run → 355 ms",
+              "label": {
+                "en": "Prompt-injection screening of 15 to 20 retrieved chunks, which a silent API limit had been skipping",
+                "id": "Screening prompt injection untuk 15 sampai 20 potongan dokumen, sebelumnya terlewat karena batas API tersembunyi"
+              },
+              "context": {
+                "en": "Calls over 5 documents had returned 400 and failed open.",
+                "id": "Panggilan berisi lebih dari 5 dokumen sebelumnya mengembalikan 400 dan lolos tanpa screening."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "Not run",
+                "after": "355 ms"
+              }
             }
           ],
           "story": {
@@ -8744,16 +8855,21 @@
           },
           "results": [
             {
-              "value": "9+ repos",
+              "value": "42% → 4%",
               "label": {
-                "en": "Repositories developed through the spec-first workflow",
-                "id": "Repositori yang dikembangkan melalui alur kerja spec-first"
+                "en": "Failed CI runs on main, 9+ spec-first repositories (Jun to Aug vs Oct to Nov 2026)",
+                "id": "Run CI gagal di main, 9+ repositori spec-first (Jun sampai Agu vs Okt sampai Nov 2026)"
               },
               "context": {
-                "en": "Based on repository analysis; other engineers have not yet adopted this workflow.",
-                "id": "Berdasarkan analisis repositori; alur kerja ini belum diadopsi oleh engineer lain."
+                "en": "CI setups changed between windows; not yet adopted by other engineers.",
+                "id": "Setup CI berubah; belum diadopsi engineer lain."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "42%",
+                "after": "4%"
+              }
             },
             {
               "value": "1,190+ PRs",
@@ -8765,7 +8881,8 @@
                 "en": "A throughput measure only. AI agents wrote much of the code under my specs and review.",
                 "id": "Angka ini hanya mengukur throughput. AI agent menulis sebagian besar kode berdasarkan spec dan review saya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -8836,7 +8953,8 @@
                 "en": "Across four products (14, 12, 5 and 5). Public and private plans were installed in a test subscription and torn down afterwards.",
                 "id": "Di empat produk (14, 12, 5, dan 5). Plan publik dan privat diinstal di subscription uji, lalu dihapus setelahnya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "4 products",
@@ -8848,7 +8966,8 @@
                 "en": "Readiness only: Partner Center offers are not yet created, and metering has never called the live Metering API.",
                 "id": "Baru tahap kesiapan: offer di Partner Center belum dibuat, dan metering belum pernah memanggil Metering API live."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "1 day",
@@ -8860,7 +8979,8 @@
                 "en": "12 stacked pull requests merged on 7 Oct 2026, the day the decision was made.",
                 "id": "12 stacked pull request di-merge pada 7 Okt 2026, di hari keputusan diambil."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -8936,7 +9056,8 @@
                 "en": "Recorded in the Azure activity log.",
                 "id": "Tercatat dalam Azure activity log."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "24 rotations",
@@ -8948,7 +9069,8 @@
                 "en": "Recorded in the Azure activity log.",
                 "id": "Tercatat dalam Azure activity log."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "22 rules",
@@ -8960,19 +9082,25 @@
                 "en": "Counted from resource metadata, excluding personal R&D.",
                 "id": "Dihitung dari metadata resource, tidak termasuk R&D pribadi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
-              "value": "9 repos",
+              "value": "7 → 0",
               "label": {
-                "en": "Repositories patched for the October 2026 Node.js security release within two days",
-                "id": "Repositori yang di-patch untuk rilis keamanan Node.js Oktober 2026 dalam dua hari"
+                "en": "Critical dependency advisories across the AI apps patched in the October 2026 Node.js security sweep, within two days",
+                "id": "Advisory dependency kritis di aplikasi AI yang di-patch dalam sapuan keamanan Node.js Oktober 2026, dalam dua hari"
               },
               "context": {
-                "en": "Dependency fixes merged; bundled-runtime PRs mostly open, one deployed to production with smoke checks.",
-                "id": "Perbaikan dependency sudah di-merge; sebagian besar PR untuk runtime yang disertakan dalam paket masih terbuka, satu sudah di-deploy ke production dengan smoke check."
+                "en": "From the audit tables in the sweep's merged pull requests.",
+                "id": "Dari tabel audit di pull request sapuan yang sudah di-merge."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "7",
+                "after": "0"
+              }
             }
           ],
           "stack": [
@@ -9042,7 +9170,8 @@
                 "en": "Based on repository history; development started from a team prototype.",
                 "id": "Berdasarkan riwayat repositori; pengembangan dimulai dari prototipe tim."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "~38 findings",
@@ -9054,7 +9183,8 @@
                 "en": "About half were closed at the last recorded update. The re-assessment result is not public; no passing result is claimed.",
                 "id": "Sekitar setengahnya ditutup pada pembaruan terakhir yang tercatat. Hasil re-assessment tidak dipublikasikan; tidak ada klaim kelulusan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "A+",
@@ -9066,7 +9196,8 @@
                 "en": "Measured after CSP and security-header hardening.",
                 "id": "Diukur setelah hardening CSP dan security header."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -9136,7 +9267,25 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "1.35 s → 0.65 s",
+              "label": {
+                "en": "p95 server time to load the ticket dashboard in production, before and after removing per-ticket queries",
+                "id": "Waktu server p95 untuk memuat dashboard tiket di produksi, sebelum dan sesudah query per tiket dihapus"
+              },
+              "context": {
+                "en": "Low traffic; an AI coding agent wrote the fix under Kurniadi's review, and other deploys landed in the later window.",
+                "id": "Trafik rendah; AI coding agent menulis perbaikannya dengan review Kurniadi, dan deploy lain juga masuk di periode sesudahnya."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "1.35 s",
+                "after": "0.65 s"
+              }
             }
           ],
           "stack": [
@@ -9266,7 +9415,8 @@
                 "en": "Durable Functions orchestrations are merged to the main branch. No latency metric is claimed.",
                 "id": "Orkestrasi Durable Functions sudah di-merge ke main branch. Tidak ada klaim metrik latensi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -9333,7 +9483,8 @@
                 "en": "PoC models were trained on synthetic data. No accuracy metric is claimed.",
                 "id": "Model PoC dilatih dengan data sintetis. Tidak ada klaim metrik akurasi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -9450,7 +9601,8 @@
                 "en": "Counted from merged pull requests in the team repositories.",
                 "id": "Dihitung dari pull request yang di-merge di repositori tim."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -9520,7 +9672,8 @@
                 "en": "Repository history.",
                 "id": "Riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "20 releases",
@@ -9532,7 +9685,8 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "32 blueprints",
@@ -9544,7 +9698,21 @@
                 "en": "Counted in the kit, Oct 2026.",
                 "id": "Dihitung dari kit, Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "133 → 0",
+              "label": {
+                "en": "Text overflows in the editable PowerPoint export of a 23-slide workshop deck, old and new exporter",
+                "id": "Teks meluap pada ekspor PowerPoint yang bisa diedit untuk deck workshop 23 slide, exporter lama dan baru"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "133",
+                "after": "0"
+              }
             }
           ],
           "stack": [
@@ -9738,7 +9906,8 @@
                 "en": "Repository history, 23 Sep to 6 Oct 2026.",
                 "id": "Riwayat repositori, 23 Sep hingga 6 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "133 files",
@@ -9750,7 +9919,8 @@
                 "en": "Pull request record.",
                 "id": "Catatan pull request."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "57%",
@@ -9762,7 +9932,25 @@
                 "en": "Line authorship (git blame) on the main branch, 15 Oct 2026.",
                 "id": "Atribusi penulis per baris (git blame) di branch main, 15 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "300 s → 10 s",
+              "label": {
+                "en": "p95 sandbox lookup in production after a separate backend timeout and caching fix by Kurniadi (backend led by a colleague)",
+                "id": "p95 lookup sandbox di produksi setelah perbaikan timeout dan caching backend terpisah oleh Kurniadi (backend dipimpin rekan)"
+              },
+              "context": {
+                "en": "Over 9,273 and 1,284 calls; fewer later calls because the sandbox id is now cached.",
+                "id": "Dari 9.273 dan 1.284 panggilan; panggilan sesudahnya lebih sedikit karena id sandbox kini di-cache."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "300 s",
+                "after": "10 s"
+              }
             }
           ],
           "stack": [
@@ -9918,7 +10106,8 @@
                 "en": "Vitest suites for the core, Worker, web app and evaluation harness plus the script tests, run on a fresh clone, 16 Oct 2026.",
                 "id": "Suite Vitest untuk core, Worker, aplikasi web, dan harness evaluasi ditambah pengujian skrip, dijalankan pada clone baru, 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "179",
@@ -9930,7 +10119,8 @@
                 "en": "Repository history, 15 to 16 Oct 2026.",
                 "id": "Riwayat repositori, 15 hingga 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "40",
@@ -9942,7 +10132,21 @@
                 "en": "The evaluation reports delete precision and recall, calibration and latency against the real model deployment, not production inbox precision or proof of the 98% agreement target.",
                 "id": "Evaluasi melaporkan precision dan recall penghapusan, kalibrasi, dan latensi pada deployment model yang sebenarnya, bukan precision inbox produksi atau bukti tercapainya target kesesuaian 98%."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "93.9% → 99.1%",
+              "label": {
+                "en": "Trash suggestion precision on 861 labeled emails, offline replay; recall fell from 56.6% to 16.2%",
+                "id": "Presisi saran Trash pada 861 email berlabel, replay offline; recall turun dari 56,6% menjadi 16,2%"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "93.9%",
+                "after": "99.1%"
+              }
             }
           ],
           "stack": [
@@ -10286,7 +10490,8 @@
               "delta": {
                 "before": "60 s",
                 "after": "<2 s"
-              }
+              },
+              "headline": true
             },
             {
               "value": "~45 hours",
@@ -10298,7 +10503,8 @@
                 "en": "Parallel AI coding agents implemented much of the code under written specs; I reviewed, tested on Azure and merged every pull request.",
                 "id": "Beberapa AI coding agent mengerjakan sebagian besar kode secara paralel berdasarkan spec tertulis; saya me-review, menguji di Azure, dan me-merge setiap pull request."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "61 of 61",
@@ -10310,7 +10516,8 @@
                 "en": "Compared against a read-only copy of production data; 6 bot conversation pages also matched.",
                 "id": "Dibandingkan dengan salinan read-only data production; 6 halaman percakapan bot juga identik."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~2,900 tests",
@@ -10322,7 +10529,8 @@
                 "en": "Up from 31 backend and 12 browser tests at the start of the rebuild.",
                 "id": "Naik dari 31 test backend dan 12 browser test di awal pembaruan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -10456,7 +10664,34 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "218.4 KB → 184.3 KB",
+              "label": {
+                "en": "Shared first-load JavaScript per page after removing a client animation library (compressed, production build)",
+                "id": "JavaScript first-load bersama per halaman setelah library animasi klien dihapus (terkompresi, build produksi)"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "218.4 KB",
+                "after": "184.3 KB"
+              }
+            },
+            {
+              "value": "99 / 100",
+              "label": {
+                "en": "Lighthouse Performance and Accessibility on the home page (mobile profile, production build)",
+                "id": "Skor Lighthouse Performance dan Accessibility di halaman utama (profil mobile, build produksi)"
+              },
+              "context": {
+                "en": "Lab run with throttling: LCP 1,544 ms, CLS 0.",
+                "id": "Uji lab dengan throttling: LCP 1.544 ms, CLS 0."
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10603,7 +10838,8 @@
                 "en": "pytest without the live-model tests, run on a fresh clone, 16 Oct 2026.",
                 "id": "pytest tanpa pengujian model live, dijalankan pada clone baru, 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "118",
@@ -10615,7 +10851,8 @@
                 "en": "Repository history, 9 to 10 Oct 2026.",
                 "id": "Riwayat repositori, 9 hingga 10 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "9",
@@ -10627,7 +10864,17 @@
                 "en": "GitHub Spec Kit overview in the repository.",
                 "id": "Ringkasan GitHub Spec Kit di repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "0 of 60",
+              "label": {
+                "en": "Live AI fabric headlines favouring a roll width other than the calculated one, after a claim guard (60 live runs)",
+                "id": "Headline kain dari AI yang menyarankan lebar kain selain hasil perhitungan, setelah claim guard (60 run live)"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10773,16 +11020,13 @@
           ],
           "results": [
             {
-              "value": "13 diagrams",
+              "value": "Warm transfer",
               "label": {
-                "en": "Architecture diagrams covering network, security, reliability and DR",
-                "id": "Diagram arsitektur untuk jaringan, keamanan, reliability, dan DR"
+                "en": "Architecture hands a live conversation to a human agent with its context (presales, outcome not public)",
+                "id": "Arsitektur mengalihkan percakapan ke agen manusia beserta konteksnya (presales, hasil tidak dipublikasikan)"
               },
-              "context": {
-                "en": "From a team-authored solution architecture document. Presales work; the outcome is not public.",
-                "id": "Dari dokumen solution architecture yang disusun bersama tim. Pekerjaan presales; hasilnya tidak dipublikasikan."
-              },
-              "confidence": "strongly-inferred"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10856,7 +11100,8 @@
                 "en": "On 1,350 held-out tweets after three epochs, weighted F1 0.89 (training notebook output); the Hugging Face model card also reports 89%.",
                 "id": "Pada 1.350 tweet validasi yang tidak dipakai saat training, setelah tiga epoch, weighted F1 0,89 (output notebook training); model card Hugging Face juga mencatat 89%."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "88%",
@@ -10868,7 +11113,8 @@
                 "en": "On 150 test tweets the model never saw in training (classification report in the training notebook).",
                 "id": "Pada 150 tweet uji yang tidak dipakai saat training (classification report di notebook training)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "7,500",
@@ -10880,7 +11126,8 @@
                 "en": "2,500 positive, 2,500 neutral and 2,500 negative (the cleaned dataset file in the model repository).",
                 "id": "2.500 positif, 2.500 netral, dan 2.500 negatif (file dataset bersih di repository model)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -10965,7 +11212,8 @@
                 "en": "Organized by Universitas Padjadjaran; the judges reported the team's 0.79 test accuracy as the highest of all teams (repository README).",
                 "id": "Diselenggarakan oleh Universitas Padjadjaran; juri menyatakan akurasi uji tim sebesar 0,79 sebagai yang tertinggi dari semua tim (README repositori)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "84.8%",
@@ -10977,7 +11225,8 @@
                 "en": "On 1,962 validation tweets after three epochs (fine-tuning notebook output).",
                 "id": "Pada 1.962 tweet validasi setelah tiga epoch (output notebook fine-tuning)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "9,810",
@@ -10989,7 +11238,8 @@
                 "en": "The competition's training data after cleaning (the unbalanced training file in the repository).",
                 "id": "Data latih kompetisi setelah dibersihkan (file training tidak seimbang di repository)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "82.8%",
@@ -11001,7 +11251,8 @@
                 "en": "On 1,108 validation texts, F1 0.83 (training log in the CNN-LSTM notebook).",
                 "id": "Pada 1.108 teks validasi, F1 0,83 (log training di notebook CNN-LSTM)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -11097,7 +11348,8 @@
                 "en": "Historical forecast from 20 March to 22 August 2021 on the training series: an in-sample check, not a held-out test (Darts r2_score, notebook output).",
                 "id": "Historical forecast 20 Maret hingga 22 Agustus 2021 pada deret training: pengecekan in-sample, bukan pengujian pada data terpisah (r2_score Darts, output notebook)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "0.9995",
@@ -11109,7 +11361,8 @@
                 "en": "Same in-sample historical forecast method on cumulative full-dose vaccinations (notebook output).",
                 "id": "Metode historical forecast in-sample yang sama pada vaksinasi dosis lengkap kumulatif (output notebook)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "208 days",
@@ -11121,7 +11374,8 @@
                 "en": "Notebook output of the main case model.",
                 "id": "Output notebook model kasus utama."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "About 10 months",
@@ -11133,7 +11387,8 @@
                 "en": "At an average of 273,318 second doses a day (the paper in the repository).",
                 "id": "Dengan rata-rata 273.318 dosis kedua per hari (paper di repository)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -11239,7 +11494,8 @@
                 "en": "PuLP and SciPy SLSQP with the same constraints (the optimization module in the repository). This uses historical returns, not a guarantee of future returns.",
                 "id": "PuLP dan SciPy SLSQP dengan batasan yang sama (modul optimasi di repository). Perhitungan memakai imbal hasil historis, bukan jaminan imbal hasil di masa depan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "503",
@@ -11251,7 +11507,8 @@
                 "en": "The ticker list in the repository; prices load live from Yahoo Finance.",
                 "id": "Daftar ticker di repository; harga dimuat langsung dari Yahoo Finance."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "8 of 9",
@@ -11263,7 +11520,8 @@
                 "en": "Repository commit history (one commit by a teammate adds the SLSQP solver).",
                 "id": "Riwayat commit repository (satu commit dari rekan tim menambahkan solver SLSQP)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -11334,7 +11592,8 @@
                 "en": "GitHub star count as of October 2026.",
                 "id": "Jumlah bintang GitHub per Oktober 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "2 report types",
@@ -11346,7 +11605,8 @@
                 "en": "One notebook per program in the repository.",
                 "id": "Satu notebook per program di repository."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
