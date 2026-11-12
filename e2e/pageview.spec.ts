@@ -150,7 +150,7 @@ test("the voice AI case study adds an Engineering detail chapter after the archi
   await openPage(page, staticTier(`/en/labs/${storyPod.slug}`));
   const chapters = await page.locator("article section[id] > h2").evaluateAll((els) => els.map((h) => h.parentElement!.id));
   expect(chapters[chapters.indexOf("architecture") + 1]).toBe("engineering");
-  const topics = data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.engineering!;
+  const topics = data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.engineering! as { title: { en: string }; post?: string }[];
   await expect(page.locator("#engineering h2")).toHaveText(en.labs.engineering.title);
   await expect(page.locator("#engineering h3")).toHaveText(topics.map((t) => t.title.en));
   await expect(page.locator("#engineering")).toContainText(`${en.labs.engineering.limits}:`);
