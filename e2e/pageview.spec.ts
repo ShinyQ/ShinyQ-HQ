@@ -150,7 +150,7 @@ test("the voice AI case study adds an Engineering detail chapter after the archi
   await openPage(page, staticTier(`/en/labs/${storyPod.slug}`));
   const chapters = await page.locator("article section[id] > h2").evaluateAll((els) => els.map((h) => h.parentElement!.id));
   expect(chapters[chapters.indexOf("architecture") + 1]).toBe("engineering");
-  const topics = data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.engineering!;
+  const topics = data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.engineering! as { title: { en: string }; post?: string }[];
   await expect(page.locator("#engineering h2")).toHaveText(en.labs.engineering.title);
   await expect(page.locator("#engineering h3")).toHaveText(topics.map((t) => t.title.en));
   await expect(page.locator("#engineering")).toContainText(`${en.labs.engineering.limits}:`);
@@ -494,10 +494,15 @@ test("landing: three featured projects with their screenshots, the stats ledger,
   await expect(strip.getByRole("listitem")).toHaveCount(3);
   for (const id of proofIds) {
     const stat = data.stats.find((s) => s.id === id)!;
-    await expect(strip.locator(`[data-stat="${id}"]`)).toContainText(stat.value);
+    // A before and after shows compact: the after, then "from {before}" (owner decision 2026-11-13).
+    const delta = (stat as { delta?: { before: string; after: string } }).delta;
+    await expect(strip.locator(`[data-stat="${id}"]`)).toContainText(delta ? delta.after : stat.value);
     await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(0);
   }
-  for (const stat of data.stats.filter((s) => !proofIds.includes(s.id))) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
+  const lead = data.stats.filter((s) => (s as { kind?: string }).kind !== "scale");
+  for (const stat of lead.filter((s) => !proofIds.includes(s.id))) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
+  // Scale stats sit in the footnote by their short label (a live stat's value is overlaid from the weekly facts).
+  for (const stat of data.stats.filter((s) => (s as { kind?: string }).kind === "scale")) await expect(page.getByTestId("scale-note")).toContainText(stat.short!.en);
   await expect(page.getByTestId("enter-hq")).toBeHidden();
 });
 
@@ -826,7 +831,7 @@ test.describe("architecture diagrams", () => {
   });
 });
 
-const heroResults: { value: string; headline?: boolean }[] = data.floors.labs.pods.find((p) => p.slug === heroPod.slug)!.results;
+const heroResults = data.floors.labs.pods.find((p) => p.slug === heroPod.slug)!.results as unknown as { value: string; headline?: boolean; kind?: "impact" | "scale"; delta?: { before: string; after: string } }[];
 
 for (const viewport of [
   { width: 1440, height: 900 },
@@ -840,7 +845,7 @@ for (const viewport of [
     const items = strip.getByTestId("metric-strip-item");
     const expected = headlineResults(heroResults);
     await expect(items).toHaveCount(expected.length);
-    await expect(items.first()).toContainText(expected[0].value);
+    await expect(items.first()).toContainText(expected[0].delta ? expected[0].delta.after : expected[0].value);
     await expect(strip).toBeInViewport();
     const tops = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
     // Desktop (md and up): one row, 3 across. Phone: stacked rows.
@@ -1254,5 +1259,74 @@ test.describe("reading a post", () => {
     await expect(page.locator("html")).toHaveAttribute("data-scroll", "down");
     await expect.poll(async () => (await header.boundingBox())!.y + (await header.boundingBox())!.height).toBeLessThanOrEqual(0);
     await expect(page.locator(".pv-progress")).toBeHidden();
+  });
+});
+
+test.describe("impact first and pagination (owner decision 2026-11-13)", () => {
+  const rest = data.floors.labs.pods.filter((p) => !(p.tier === "hero" && p.assets.length > 0)).length;
+  const rows = (page: Page) => page.locator("#all-projects [data-page-item]:visible");
+
+  test("/labs pages More projects 10 at a time, with deep links, filters and clamping", async ({ page }) => {
+    await openPage(page, staticTier("/en/labs"));
+    await expect(rows(page)).toHaveCount(10);
+    await expect(page.locator("#key-projects [data-pod]:visible")).toHaveCount(5);
+    const pager = page.getByRole("navigation", { name: en.common.pager.projects });
+    await expect(pager.getByRole("link", { name: "Page 1" })).toHaveAttribute("aria-current", "page");
+    await expect(pager).toContainText(`Showing 1 to 10 of ${rest}`);
+    await pager.getByRole("link", { name: "Page 2" }).click();
+    await expect(page).toHaveURL(/[?&]page=2/);
+    await expect(pager).toContainText(`Showing 11 to 20 of ${rest}`);
+    await expect(page.locator("#all-projects-title")).toBeFocused();
+    // A filter returns to page 1 and pages only what it leaves visible.
+    await page.getByRole("button", { name: /^AI Engineering/ }).click();
+    await expect(page).not.toHaveURL(/[?&]page=/);
+    const ai = data.floors.labs.pods.filter((p) => p.wing === "ai" && !(p.tier === "hero" && p.assets.length > 0)).length;
+    await expect(rows(page)).toHaveCount(Math.min(10, ai));
+    await openPage(page, staticTier("/en/labs?page=99"));
+    await expect(page).toHaveURL(new RegExp(`[?&]page=${Math.ceil(rest / 10)}`));
+    await expect(rows(page)).toHaveCount(rest - (Math.ceil(rest / 10) - 1) * 10);
+  });
+
+  test("/library pages the Blog 6 at a time, the lead post on page 1", async ({ page }) => {
+    const posts = content.floors.library.posts.length;
+    await openPage(page, staticTier("/en/library"));
+    const items = page.locator("#posts [data-page-item]:visible");
+    await expect(items).toHaveCount(Math.min(6, posts));
+    await expect(page.locator("#posts article[data-page-item]")).toBeVisible();
+    await openPage(page, staticTier("/en/library?posts=2"));
+    await expect(items).toHaveCount(Math.min(6, posts - 6));
+    await expect(page.locator("#posts article[data-page-item]")).toBeHidden();
+    await expect(page.locator("#research [data-topic-row]:visible").first()).toBeVisible();
+  });
+
+  test("without JavaScript every project and post shows and no pager renders", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(staticTier("/en/labs"));
+    await expect(rows(page)).toHaveCount(rest);
+    await expect(page.locator("[data-pager]")).toBeHidden();
+    await page.goto(staticTier("/en/library"));
+    await expect(page.locator("#posts [data-page-item]:visible")).toHaveCount(content.floors.library.posts.length);
+    await context.close();
+  });
+
+  test("case studies lead with impact: the strip never shows scale, scale is one muted line, key projects have 8 chapters", async ({ page }) => {
+    await openPage(page, staticTier("/en/labs/vendor-management-portal"));
+    const strip = page.getByTestId("metric-strip");
+    await expect(strip).not.toContainText("6 weeks");
+    await expect(strip.locator("[data-delta='full']").first()).toContainText("to");
+    await expect(page.getByTestId("scale-line")).toContainText("6 weeks");
+    for (const slug of ["voice-ai-contact-center", "ai-app-accelerator", "ai-solutions-assistant"]) {
+      await openPage(page, staticTier(`/en/labs/${slug}`));
+      await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(8);
+    }
+  });
+
+  test("the landing shows impact and credentials, PR counts only in the footnote", async ({ page }) => {
+    await openPage(page, staticTier("/en"));
+    await expect(page.getByTestId("hero-proof")).not.toContainText("1,190+");
+    await expect(page.getByTestId("hero-proof").locator("[data-stat='voice-interruption-speedup']")).toBeVisible();
+    await expect(page.getByTestId("scale-note")).toContainText("1,190+");
+    await expect(page.locator("#stats [data-stat='prs-merged-2026']")).toHaveCount(0);
   });
 });

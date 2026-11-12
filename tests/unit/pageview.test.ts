@@ -85,8 +85,9 @@ describe("pickFeaturedPods", () => {
     expect(picks.map((p) => p.selected)).toEqual([1, 2, 3]);
     for (const p of picks) expect(p.assets.length).toBeGreaterThan(0);
     expect(picks.map((p) => p.slug)).toContain("ai-solutions-assistant");
-    expect(pods.find((p) => p.slug === "ai-solutions-assistant")?.tier).toBe("featured");
+    // A hero that is not picked stays out (the assistant became a hero in the 2026-11-13 tier swap).
     expect(pods.find((p) => p.slug === "fraud-review-platform")?.tier).toBe("hero");
+    expect(picks.map((p) => p.slug)).not.toContain("fraud-review-platform");
   });
 });
 
@@ -101,7 +102,8 @@ describe("key projects", () => {
     const all = getPods();
     const featured = pickFeaturedPods(all);
     const more = moreKeyProjects(all, featured).map((p) => p.slug);
-    expect(more).toEqual(["fraud-review-platform", "vendor-management-portal", "ai-app-accelerator"]);
+    // The vendor portal left the key projects in the 2026-11-13 tier swap; the assistant is already Selected work 3.
+    expect(more).toEqual(["fraud-review-platform", "ai-app-accelerator"]);
     expect(more).not.toContain("digital-banking-integrations");
     expect(more).not.toContain("ticket-marketplace-backend");
   });

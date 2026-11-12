@@ -4,6 +4,7 @@ import type { Contact, Locale, PostRef, Publication, ResearchMetrics, Talk } fro
 import { getTopicIndex } from "@/content/load";
 import { buildPaperPreview } from "@/content/papers";
 import { topicsOfItem } from "@/content/topic-index";
+import { pageItemAttrs } from "@/content/pagination";
 import { publicationDate, researchPublications } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { formatDate, formatYearMonth } from "@/lib/format";
@@ -38,15 +39,18 @@ async function PostMeta({ post, locale }: { post: PostRef; locale: Locale }) {
   return <span>{post.url ? t("onMedium") : post.languages.map((l) => tc(`langBadge.${l}`)).join(", ")}</span>;
 }
 
-/** Blog posts as ruled rows; with `lead`, the newest one opens as a larger card. */
-export async function PostList({ posts, locale, lead = false }: { posts: readonly PostRef[]; locale: Locale; lead?: boolean }) {
+/**
+ * Blog posts as ruled rows; with `lead`, the newest one opens as a larger card. With `pageSize` every post (the lead
+ * card first) carries `pageItemAttrs`, for `Paginated` on /library.
+ */
+export async function PostList({ posts, locale, lead = false, pageSize }: { posts: readonly PostRef[]; locale: Locale; lead?: boolean; pageSize?: number }) {
   const t = await getTranslations({ locale, namespace: "writing" });
   const [first, ...rest] = posts;
   const rows = lead ? rest : posts;
   return (
     <div>
       {lead && first && (
-        <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]" {...topicAttrs(first.slug)}>
+        <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]" {...topicAttrs(first.slug)} {...(pageSize ? pageItemAttrs(0, pageSize) : {})}>
           <p className="pv-meta flex flex-wrap gap-x-4">
             <span className="pv-date">{formatDate(first.date, locale)}</span>
             <PostMeta post={first} locale={locale} />
@@ -66,8 +70,13 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
         </article>
       )}
       <ul className={`pv-rows pv-rows-closed ${lead ? "mt-6" : ""}`}>
-        {rows.map((post) => (
-          <li key={post.slug} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[120px_minmax(0,1fr)_100px] md:py-6" {...topicAttrs(post.slug)}>
+        {rows.map((post, i) => (
+          <li
+            key={post.slug}
+            className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[120px_minmax(0,1fr)_100px] md:py-6"
+            {...topicAttrs(post.slug)}
+            {...(pageSize ? pageItemAttrs(lead && first ? i + 1 : i, pageSize) : {})}
+          >
             <p className="pv-date md:pt-1.5">{formatDate(post.date, locale)}</p>
             <div className="min-w-0">
               <h3 className="pv-h3 pv-row-title">

@@ -34,6 +34,8 @@
     "RF": "Atap · Komunikasi"
   },
   "common": {
+    "delta": { "from": "dari", "to": "menjadi" },
+    "pager": { "projects": "Halaman proyek lainnya", "posts": "Halaman blog", "prev": "Sebelumnya", "next": "Berikutnya", "page": "Halaman {page}", "range": "Menampilkan {from} sampai {to} dari {total}" },
     "share": "Bagikan",
     "copyClassicLink": "Salin tautan situs klasik",
     "copy3dLink": "Salin tautan 3D",
@@ -76,6 +78,7 @@
     "inProgress": "dalam proses"
   },
   "home": {
+    "scaleNote": "Volume, dibantu AI agent dan ditinjau manusia:",
     "proofLabel": "Angka utama",
     "currentRole": "Saat ini",
     "statsTitle": "Sekilas",
@@ -232,6 +235,7 @@
     "navTitle": "Perjalanan"
   },
   "labs": {
+    "scaleLine": "Skala:",
     "title": "Labs",
     "intro": "Studi kasus software, AI, dan data beserta kontribusi dan hasil saya: software sejak 2019, data dan ML sejak 2021, dan AI enterprise sejak 2026.",
     "softwareIntro": "Sistem backend, full-stack, fintech, dan SaaS.",

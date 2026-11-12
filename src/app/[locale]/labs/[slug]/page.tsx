@@ -21,6 +21,7 @@ import { CrumbLink } from "@/components/page/Layout";
 import { getContent, getLibrary, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
 import { LOCALES } from "@/content/schema";
+import { caseChapters, hasResultsChapter, type ChapterId } from "@/content/case";
 import { adjacent, clientLabel, headlineResults, podLiveLink } from "@/content/selectors";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
@@ -56,34 +57,27 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
   const images = toGalleryImages(pod.assets, locale);
   const live = podLiveLink(pod);
-  const codeResearch = Boolean(pod.repos?.length || pod.publications?.length);
   const headline = headlineResults(pod.results);
-  // The full results chapter only when it adds something to the strip: more results, or how they were measured.
-  const detail = pod.results.length > headline.length || pod.results.some((r) => r.context);
+  const deltaLabels = { from: tc("delta.from"), to: tc("delta.to") };
+  const ledgerLabels = { delta: deltaLabels, scale: t("scaleLine") };
+  const detail = hasResultsChapter(pod);
   const story = pod.story;
   const engineering = pod.engineering;
   const postTitles = engineering ? Object.fromEntries(getLibrary().posts.map((p) => [p.slug, p.title])) : {};
-  const tail = [
-    ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
-    ...(engineering ? [{ id: "engineering", label: t("engineering.title") }] : []),
-    ...(images.length > 0 ? [{ id: "gallery", label: tg("title") }] : []),
-    ...(codeResearch ? [{ id: "code", label: t("codeResearch") }] : []),
-    { id: "stack", label: tc("stack") },
-  ];
-  const toc = story
-    ? [
-        { id: "problem", label: t("situation") },
-        { id: "approach", label: t("decisions") },
-        { id: "results", label: t("results") },
-        ...(story.lesson ? [{ id: "lesson", label: t("lesson") }] : []),
-        ...tail,
-      ]
-    : [
-        ...(detail ? [{ id: "results", label: t("results") }] : []),
-        { id: "problem", label: t("problem") },
-        { id: "approach", label: t("approach") },
-        ...tail,
-      ];
+  const chapterLabel: Record<ChapterId, string> = {
+    problem: story ? t("situation") : t("problem"),
+    approach: story ? t("decisions") : t("approach"),
+    results: t("results"),
+    lesson: t("lesson"),
+    architecture: t("architecture"),
+    engineering: t("engineering.title"),
+    gallery: tg("title"),
+    code: t("codeResearch"),
+    stack: tc("stack"),
+  };
+  // One chapter list for the TOC and the body (`caseChapters`); key projects always have the 8 standard chapters.
+  const toc = caseChapters(pod).map((id) => ({ id, label: chapterLabel[id] }));
+  const codeResearch = toc.some((c) => c.id === "code");
 
   return (
     <ClientMessages>
@@ -111,7 +105,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <h2 id="key-results-title" className="sr-only">
                 {t("keyResults")}
               </h2>
-              <MetricStrip items={headline.map((r) => ({ value: r.value, label: r.label[locale] }))} label={t("keyResults")} />
+              <MetricStrip items={headline.map((r) => ({ value: r.value, label: r.label[locale], delta: r.delta }))} label={t("keyResults")} deltaLabels={deltaLabels} />
             </section>
             {live && (
               <p className="mt-8">
@@ -152,7 +146,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
                   <DecisionList decisions={story.decisions} locale={locale} whyLabel={t("why")} />
                 </Chapter>
                 <Chapter id="results" title={t("results")}>
-                  <MetricLedger results={pod.results} locale={locale} />
+                  <MetricLedger results={pod.results} locale={locale} labels={ledgerLabels} />
                 </Chapter>
                 {story.lesson && (
                   <Chapter id="lesson" title={t("lesson")}>
@@ -164,7 +158,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <>
                 {detail && (
                   <Chapter id="results" title={t("results")}>
-                    <MetricLedger results={pod.results} locale={locale} />
+                    <MetricLedger results={pod.results} locale={locale} labels={ledgerLabels} />
                   </Chapter>
                 )}
                 <Chapter id="problem" title={t("problem")}>

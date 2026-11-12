@@ -54,7 +54,8 @@ const awards = content.awards;
 const firsts = awards.filter((a) => a.placement.en === "1st place");
 const running = roles.filter((e) => e.end === "present");
 const verifiedBeforeAfter = orderPods(content.floors.labs.pods as unknown as Pod[]).flatMap((pod) =>
-  pod.results.filter((r) => r.confidence === "verified" && /→|\sto\s/.test(r.value)).map((r) => ({ pod, r })),
+  // Impact results with a numeric before and after (`beforeAfterResults`, owner decision 2026-11-13).
+  pod.results.filter((r) => r.confidence === "verified" && r.kind !== "scale" && r.delta && /\d/.test(r.delta.before) && /\d/.test(r.delta.after)).map((r) => ({ pod, r })),
 );
 /** Light curtain sweeps of the gateway arch since load (`__hq.probes.hallGate`). */
 async function gateSweeps(page: Page): Promise<{ sweeps: number; active: boolean }> {

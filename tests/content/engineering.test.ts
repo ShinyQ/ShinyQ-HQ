@@ -22,7 +22,7 @@ describe("case study engineering detail (owner decision 2026-11-02)", () => {
   });
 
   it("rejects a topic that links to an unknown post", () => {
-    const bad = structuredClone(data) as typeof data & { floors: { labs: { pods: { slug: string; engineering?: { post?: string }[] }[] } } };
+    const bad = structuredClone(data) as unknown as { floors: { labs: { pods: { slug: string; engineering?: { post?: string }[] }[] } } };
     bad.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-center")!.engineering![0].post = "no-such-post";
     expect(SiteContentSchema.safeParse(bad).success).toBe(false);
   });

@@ -146,6 +146,36 @@
     color: var(--color-ink-2);
   }
 
+  /*
+   * Paginated lists (`Paginated`), `!important` like Tailwind's `[hidden]` so a row's `grid` utility cannot win: rows past the page hide before first paint when scripting is on, and once the
+   * island mounts (`data-paged`) in browsers without the scripting media feature. Without JS every row shows and the
+   * server-rendered pager hides.
+   */
+  @media (scripting: enabled) {
+    [data-paged-out] {
+      display: none !important;
+    }
+  }
+
+  [data-paged] [data-paged-out] {
+    display: none !important;
+  }
+
+  @media (scripting: none) {
+    [data-pager] {
+      display: none !important;
+    }
+  }
+
+  /* Compact before and after (`DeltaValue`): the after in the display face, "from {before}" small beside it. */
+  .hq-delta-from {
+    font-size: 0.45em;
+    font-weight: 500;
+    letter-spacing: 0;
+    white-space: nowrap;
+    color: var(--color-ink-2);
+  }
+
   .pv-small {
     font-size: 14px;
     line-height: 22px;

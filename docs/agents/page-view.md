@@ -117,11 +117,13 @@ never a contents target.
 
 ### Case study (`/labs/<slug>`)
 
-- The header opens with the metric strip (`MetricStrip`, `src/components/MetricStrip.tsx`, server-rendered, no client JS) under the tagline: up to 3 headline results (`headlineResults`), a big value (`pv-num`) and its label, as a list named "Key results" (`labs.keyResults`). 3 across from `md`, stacked rows below.
+- Impact first (owner decision 2026-11-13): results are `impact` or `scale` ([content.md](content.md#pod)); every surface reads them through the selectors in `src/content/selectors.ts`, never `pod.results[0]`. A before and after (`Result.delta`) is drawn by `DeltaValue` (`src/components/DeltaValue.tsx`, hook-free): the before muted and struck, an arrow hidden from screen readers, "to" (`common.delta.to`) read in its place, the after at full ink; `compact` (rows, featured cards, the hero proof) shows the after large and "from {before}" small (`hq-delta-from`).
+- The header opens with the metric strip (`MetricStrip`, `src/components/MetricStrip.tsx`, server-rendered, no client JS) under the tagline: up to 3 headline impact results (`headlineResults`, never scale), a big value (`pv-num`, `DeltaValue`) and its label, as a list named "Key results" (`labs.keyResults`). 3 across from `md`, stacked rows below.
 - No confidence marker: `Result.confidence` is never rendered (decision 2026-10-11, confirmed 2026-10-17).
-- A "Results" chapter (`MetricLedger`, every result with how it was measured) opens the main column only when it adds something: more results than the strip, or any `context`. The TOC lists it only then. Without it, the strip's section carries the `#results` anchor (the drawer's Results tab links there).
+- A "Results" chapter (`MetricLedger`: the impact results with how they were measured, then one muted line `labs.scaleLine` with each scale result's value and label, `data-testid="scale-line"`) opens the main column only when it adds something: more results than the strip, or any `context`. The TOC lists it only then. Without it, the strip's section carries the `#results` anchor (the drawer's Results tab links there).
 - **Story mode** (owner decision 2026-10-25): a pod with `story` (every `STORY_SLUGS` pod, [content.md](content.md#pod)) reads as a story instead.
-  - Chapters in order: Situation (`#problem`, `story.situation`), Role and key decisions (`#approach`, `DecisionList`), Results (`#results`, always the full `MetricLedger`), then Lesson (`#lesson`, only with `story.lesson`), then the usual architecture, gallery, code and stack chapters.
+  - Chapters in order: Situation (`#problem`, `story.situation`), Role and key decisions (`#approach`, `DecisionList`), Results (`#results`, always the full `MetricLedger`), then Lesson (`#lesson`, only with `story.lesson`), then the usual architecture, engineering, gallery, code and stack chapters.
+  - One list drives the TOC and the body: `caseChapters(pod)` (`src/content/case.ts`). Every key project (hero with a gallery) has the 8 chapters of `KEY_PROJECT_CHAPTERS` (Situation, Role and key decisions, Results, Lesson, Architecture, Engineering details, Gallery, Tech stack; Code and research may sit before Tech stack), enforced by the schema (owner decision 2026-11-13).
   - The ids `problem` and `approach` stay, so 3D drawer tabs, missions and old links keep working; only the labels change (`labs.situation`, `labs.decisions`, `labs.results`, `labs.lesson`). The strip never carries `#results` in story mode.
   - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
   - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
@@ -171,6 +173,10 @@ never a contents target.
 ## Filters
 
 - Client islands over server-rendered rows: `WorkIndex`, `JourneyFilter`, and `TopicFilter` on `/library` with `?topic=`.
+- Pagination (owner decision 2026-11-13): one client island, `Paginated` (`src/components/page/Paginated.tsx`), pages a server-rendered list it does not own. `/labs` "More projects" (`#all-projects`) 10 a page with `?page=`; the `/library` Blog (`#posts`) 6 a page with `?posts=`, the lead card being item 1. Key projects and the other Writing sections never page.
+  - Items carry `pageItemAttrs(index, size)` (`src/content/pagination.ts`, with the page math `parsePage`, `clampPage`, `pageRange`, `pageWindow`): `data-page-item`, plus `data-paged-out` past the first page. `pageview.css` hides `data-paged-out` before first paint under `@media (scripting: enabled)` (and under `[data-paged]` once the island mounts), so the default page never shifts; without JS every row shows and the server-rendered pager (`data-pager`) hides.
+  - Filters set `hidden`, the pager sets `data-paged-out`: it pages only the rows a filter left visible, and a `MutationObserver` on `hidden` recounts after a filter change. Every filter write (`WorkIndex`, `TopicFilter`, Clear) also clears the pager param, so a filter change returns to page 1. An out-of-range or malformed page clamps and the URL is rewritten (`replaceState`, like the filters).
+  - The pager: `nav` named by `common.pager.projects` / `common.pager.posts`, Prev, page numbers (`aria-current="page"`, `chip min-h-11`) and Next as real links, "Showing 11 to 20 of 35" (`common.pager.range`). A click moves focus to the list's heading. Canonical URLs stay clean.
 - Row attributes:
   - pods: `data-pod`/`data-wing`/`data-stack` (`podAttrs`)
   - timeline entries: `data-entry`/`data-type`/`data-year`
@@ -205,7 +211,8 @@ never a contents target.
   the Ask bar (`AskHeroBar`, visible "Ask AI about my work" label, outlined send button) on the right.
 - The proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25):
   - the three stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`, in that order), each with its `data-stat` id;
-  - each value in the display face over its `short` label, parted by vertical hairlines, no box;
+  - each value in the display face (`DeltaValue compact` for a before and after) over its `short` label, parted by vertical hairlines, no box;
+  - never a scale stat (schema check): the PR count left the strip for the voice interruption delta (owner decision 2026-11-13);
   - a list named "Key numbers" (`home.proofLabel`), server-rendered, no motion;
   - the stats ledger skips these ids, so no number shows twice.
 - The actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button, solid cyan (full width on phones), then
@@ -225,7 +232,9 @@ never a contents target.
 
 - `#stats` (`StatTicker`, `src/components/page/StatTicker.tsx`, the L1:stats room): a still, ruled ledger in two
   columns under "In short", headed "At a glance" (`home.statsTitle`), the stats from `DYNAMIC_STATS` marked Live, and
-  the visits item (`TickerVisits`) appended.
+  the visits item (`TickerVisits`) appended. It lists the lead stats only (`leadStats`); the scale stats (PRs,
+  contributions) sit under it as one muted footnote (`ScaleNote`, `home.scaleNote`, `data-testid="scale-note"`), as on
+  `/quick` (owner decision 2026-11-13).
 - It replaced the marquee (decision 2026-10-27): nothing on the Classic site moves on its own, so there is no pause
   control, no duplicate track and no date stamp.
 
@@ -239,7 +248,7 @@ never a contents target.
   replaced the 3/2/1 card grid): one project a row (`ul.hx-stack`, `data-testid="featured-grid"`), parted by a
   hairline:
   - from 1024 px the text holds sticky on six columns beside the screenshots on six (640 px, so a 1440 px capture stays sharp at 2x); below, the text comes first
-  - the text: the title (the row's link), the headline result (`pod.results[0]` as a `pv-result` in the display face,
+  - the text: the title (the row's link), the lead result (`leadResult`, a headline before and after first, as a `pv-result` in the display face,
     `data-testid="feature-result"`; recruiters scan results first), the tagline, the facts (wing, period, client) as a
     `dl`, on `/labs` the stack logos, and the live link
   - the screenshots: the cover (also a hidden link to the case study, since the sticky column holds the title's

@@ -94,7 +94,7 @@
     ],
     "heroProof": [
       "enterprise-clients",
-      "prs-merged-2026",
+      "voice-interruption-speedup",
       "microsoft-certifications"
     ]
   },
@@ -306,28 +306,50 @@
       "confidence": "self-reported"
     },
     {
-      "id": "prs-merged-2026",
-      "value": "1,190+",
+      "id": "voice-interruption-speedup",
+      "value": "~2 s to ~0.2 s",
       "label": {
-        "en": "Merged pull requests in 2026",
-        "id": "Pull request yang di-merge selama 2026"
+        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
+        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
       },
+      "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
+      "confidence": "verified",
       "short": {
-        "en": "PRs merged in 2026",
-        "id": "PR di-merge selama 2026"
+        "en": "voice interruption latency",
+        "id": "latensi interupsi suara"
       },
-      "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
-      "confidence": "verified"
+      "delta": {
+        "before": "~2 s",
+        "after": "~0.2 s"
+      }
     },
     {
-      "id": "github-contributions-365",
-      "value": "7,350",
+      "id": "fraud-false-positives",
+      "value": "90.9% to 36.4%",
       "label": {
-        "en": "GitHub contributions over the last 365 days (agent-assisted, human-reviewed)",
-        "id": "Kontribusi GitHub selama 365 hari terakhir (dibantu AI agent, tetap ditinjau manusia)"
+        "en": "Fraud screening false positives: 90.9% to 36.4% on noisy clean packets (offline development set)",
+        "id": "False positive screening fraud: 90,9% menjadi 36,4% pada paket bersih dengan gangguan (set development offline)"
       },
-      "source": "GitHub contribution calendar, Oct 2025 to Oct 2026",
-      "confidence": "verified"
+      "source": "Fraud document review case study result (offline development gold set)",
+      "confidence": "verified",
+      "delta": {
+        "before": "90.9%",
+        "after": "36.4%"
+      }
+    },
+    {
+      "id": "dashboard-payload",
+      "value": "11.7 MB → 156 KB",
+      "label": {
+        "en": "Lighter national summary dashboard: 11.7 MB to 156 KB per load on real data, 39 requests to 5",
+        "id": "Dasbor ringkasan nasional lebih ringan: 11,7 MB menjadi 156 KB per pemuatan dengan data riil, 39 request menjadi 5"
+      },
+      "source": "Fabric forecasting dashboard case study result (pull-request measurements on real data)",
+      "confidence": "verified",
+      "delta": {
+        "before": "11.7 MB",
+        "after": "156 KB"
+      }
     },
     {
       "id": "microsoft-certifications",
@@ -354,14 +376,34 @@
       "confidence": "verified"
     },
     {
-      "id": "voice-interruption-speedup",
-      "value": "10x",
+      "id": "prs-merged-2026",
+      "value": "1,190+",
       "label": {
-        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
-        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
+        "en": "Merged pull requests in 2026",
+        "id": "Pull request yang di-merge selama 2026"
       },
-      "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
-      "confidence": "verified"
+      "short": {
+        "en": "PRs merged in 2026",
+        "id": "PR di-merge selama 2026"
+      },
+      "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
+      "confidence": "verified",
+      "kind": "scale"
+    },
+    {
+      "id": "github-contributions-365",
+      "value": "7,350",
+      "label": {
+        "en": "GitHub contributions over the last 365 days (agent-assisted, human-reviewed)",
+        "id": "Kontribusi GitHub selama 365 hari terakhir (dibantu AI agent, tetap ditinjau manusia)"
+      },
+      "source": "GitHub contribution calendar, Oct 2025 to Oct 2026",
+      "confidence": "verified",
+      "kind": "scale",
+      "short": {
+        "en": "GitHub contributions in the last 365 days",
+        "id": "kontribusi GitHub dalam 365 hari terakhir"
+      }
     }
   ],
   "skills": [
@@ -2595,7 +2637,8 @@
                 "en": "Insurance partners integrated; operational errors reduced by about 30%",
                 "id": "Mitra asuransi terintegrasi; error operasional berkurang sekitar 30%"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "kind": "scale"
             },
             {
               "value": "~30%",
@@ -2603,7 +2646,8 @@
                 "en": "Throughput increase after moving flows to Kafka and Redis",
                 "id": "Peningkatan throughput setelah beralih ke Kafka dan Redis"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "99%",
@@ -2611,7 +2655,8 @@
                 "en": "In-house SFTP uptime, with about 1,000 transfers per month",
                 "id": "Uptime SFTP in-house, dengan sekitar 1.000 transfer per bulan"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-30%",
@@ -2619,7 +2664,8 @@
                 "en": "Reduction in production issues after adopting full unit-test coverage",
                 "id": "Penurunan masalah produksi setelah menerapkan unit-test coverage penuh"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "story": {
@@ -2914,7 +2960,8 @@
                 "en": "Counted in the client repository's git history.",
                 "id": "Dihitung dari riwayat git repositori klien."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "2 → 1",
@@ -2926,7 +2973,12 @@
                 "en": "From the commit history and data models.",
                 "id": "Dari riwayat commit dan model data."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "2",
+                "after": "1"
+              },
+              "headline": true
             },
             {
               "value": "3 roles",
@@ -2938,7 +2990,8 @@
                 "en": "From the route middleware and commit history.",
                 "id": "Dari route middleware dan riwayat commit."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -2967,7 +3020,7 @@
           "id": "vendor-management-portal",
           "slug": "vendor-management-portal",
           "order": 3,
-          "tier": "hero",
+          "tier": "featured",
           "accent": "blue",
           "wing": "software",
           "client": "Metrodata",
@@ -3174,7 +3227,8 @@
                 "en": "Repository history from 21 Aug to 4 Oct 2026.",
                 "id": "Riwayat repositori dari 21 Agu hingga 4 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "21 domains",
@@ -3186,7 +3240,8 @@
                 "en": "Counted in the repository. The product itself has no AI features.",
                 "id": "Dihitung dari repositori. Produk ini sendiri tidak memiliki fitur AI."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "4.5 KB → 2.1 KB",
@@ -3198,7 +3253,29 @@
                 "en": "Measured against a live backend: 4,491 bytes, over the 4,096-byte browser limit, down to 2,083.",
                 "id": "Diukur menggunakan backend live: ukuran awal 4.491 byte melampaui batas browser 4.096 byte, lalu turun menjadi 2.083."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "4.5 KB",
+                "after": "2.1 KB"
+              },
+              "headline": true
+            },
+            {
+              "value": "361.5 KB → 256.5 KB",
+              "label": {
+                "en": "JavaScript loaded by the portal home page (gzip), after wiring the charts to load on demand",
+                "id": "JavaScript yang dimuat halaman beranda portal (gzip), setelah grafik dimuat sesuai kebutuhan"
+              },
+              "context": {
+                "en": "Bundle check on a production build; the route had been over its 350 KB budget.",
+                "id": "Pengecekan bundle pada build produksi; route ini sempat melewati batas 350 KB."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "361.5 KB",
+                "after": "256.5 KB"
+              }
             }
           ],
           "stack": [
@@ -3459,7 +3536,8 @@
                 "en": "Users served by the multi-tenant SaaS platforms",
                 "id": "Pengguna yang dilayani platform SaaS multi-tenant"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "~30%",
@@ -3467,7 +3545,8 @@
                 "en": "Increase in workflow automation efficiency through Go APIs and Next.js dashboards",
                 "id": "Peningkatan efisiensi otomasi alur kerja melalui API Go dan dashboard Next.js"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-60%",
@@ -3475,7 +3554,8 @@
                 "en": "Reduction in SonarQube technical debt after refactoring",
                 "id": "Penurunan technical debt di SonarQube setelah refactor"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "stack": [
@@ -3662,7 +3742,8 @@
                 "en": "Reduction in realtime request latency with WebSocket and Redis",
                 "id": "Penurunan latensi request realtime dengan WebSocket dan Redis"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+30%",
@@ -3670,7 +3751,8 @@
                 "en": "Increase in transaction speed after the payment gateway refactor",
                 "id": "Peningkatan kecepatan transaksi setelah refactor payment gateway"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-40%",
@@ -3678,7 +3760,8 @@
                 "en": "Reduction in errors after MySQL and service tuning; queries ran about 20% faster",
                 "id": "Penurunan error setelah tuning MySQL dan layanan; query berjalan sekitar 20% lebih cepat"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+25%",
@@ -3871,7 +3954,8 @@
                 "en": "My longest engagement, spanning Sep 2019 to Dec 2022",
                 "id": "Kerja sama terpanjang saya, berlangsung dari Sep 2019 hingga Des 2022"
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "Live",
@@ -3883,7 +3967,8 @@
                 "en": "Checked in Oct 2026; the site responded normally.",
                 "id": "Diperiksa pada Okt 2026; situs merespons normal."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4145,7 +4230,17 @@
                 "en": "Counted in the repository's pull request history.",
                 "id": "Dihitung dari riwayat pull request di repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "Every 15 min",
+              "label": {
+                "en": "Scheduled job that exports and compares each asset's vulnerabilities between scan dates",
+                "id": "Job terjadwal yang mengekspor dan membandingkan kerentanan tiap aset antar tanggal scan"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4218,8 +4313,8 @@
             "id": "Ticketing Acara Berkuota Terbatas"
           },
           "tagline": {
-            "en": "Ticketing for limited-quota premium events, with atomic booking designed to prevent overselling, online payments and QR e-tickets.",
-            "id": "Ticketing acara premium berkuota terbatas, dengan booking atomik untuk mencegah overselling, pembayaran online, dan e-ticket QR."
+            "en": "Ticketing for limited-quota premium events, with transactional checkout, online payments and QR e-tickets.",
+            "id": "Ticketing acara premium berkuota terbatas, dengan checkout transaksional, pembayaran online, dan e-ticket QR."
           },
           "period": {
             "start": "2025-07",
@@ -4239,8 +4334,8 @@
               "id": "Saya menata API route Next.js 15 ke dalam lapisan repository dan service, lalu mengotomatiskan deployment dari GitHub."
             },
             {
-              "en": "I put each ticket tier's quota check and stock decrement in the same Prisma transaction, so two concurrent checkouts could not both claim the last seat.",
-              "id": "Saya menempatkan pengecekan dan pengurangan kuota secara atomik per tier tiket dalam satu transaksi checkout Prisma untuk mencegah tiket terjual dua kali."
+              "en": "I put each ticket tier's stock decrement in the checkout's Prisma transaction; the availability check still runs before that transaction, so concurrent checkouts can still claim the last seat.",
+              "id": "Saya menempatkan pengurangan stok tiap tier tiket di dalam transaksi checkout Prisma; pengecekan ketersediaan masih berjalan sebelum transaksi itu, sehingga checkout bersamaan masih bisa mengambil kursi terakhir."
             },
             {
               "en": "I built ticket issuance, a My Tickets page with QR codes and the payment channel list from iPaymu, and redesigned the emails; my teammate integrated iPaymu checkout, callbacks and PDF invoices.",
@@ -4367,19 +4462,17 @@
                 "en": "Counted in git history and pull requests from Jul to Aug 2025.",
                 "id": "Dihitung dari riwayat git dan pull request pada Jul hingga Agu 2025."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
-              "value": "1 transaction",
+              "value": "Push-to-deploy",
               "label": {
-                "en": "Atomic quota check and decrement prevent selling the last seat twice",
-                "id": "Pengecekan dan pengurangan kuota secara atomik mencegah kursi terakhir terjual dua kali"
+                "en": "Every merge to main deploys automatically: database migration, build and restart, with no manual server steps",
+                "id": "Setiap merge ke main ter-deploy otomatis: migrasi database, build, dan restart tanpa langkah manual di server"
               },
-              "context": {
-                "en": "A design property of the booking code, not a measured production incident count.",
-                "id": "Berdasarkan rancangan kode booking, bukan pengukuran jumlah insiden produksi."
-              },
-              "confidence": "strongly-inferred"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4687,7 +4780,8 @@
                 "en": "From the three project repositories.",
                 "id": "Dari tiga repositori proyek."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "95%",
@@ -4699,7 +4793,8 @@
                 "en": "Non-merge commits in git history from Jun to Aug 2025, excluding commits generated by v0.",
                 "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025, tanpa commit yang dihasilkan v0."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "34%",
@@ -4711,7 +4806,17 @@
                 "en": "Non-merge commits in git history from Jun to Aug 2025.",
                 "id": "Commit non-merge di riwayat git dari Jun hingga Agu 2025."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "Resume payment",
+              "label": {
+                "en": "Unpaid orders keep a pay link on the attendee's tickets page for one hour, so checkout can finish later",
+                "id": "Pesanan belum dibayar menyimpan link pembayaran di halaman tiket peserta selama satu jam agar checkout bisa dilanjutkan"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -4994,7 +5099,8 @@
                 "en": "The measurement method was not recorded.",
                 "id": "Metode pengukurannya tidak tercatat."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "-25%",
@@ -5002,7 +5108,8 @@
                 "en": "Reduction in server response time after PostgreSQL tuning",
                 "id": "Penurunan waktu respons server setelah tuning PostgreSQL"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "96%",
@@ -5014,7 +5121,8 @@
                 "en": "Based on a small evaluation set.",
                 "id": "Berdasarkan evaluation set dengan jumlah sampel kecil."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
               "value": "+50%",
@@ -5092,7 +5200,17 @@
                 "en": "Counted in the client organization's pull request history.",
                 "id": "Dihitung dari riwayat pull request dalam organisasi klien."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "26 routes",
+              "label": {
+                "en": "Routes written by three teammates that rely on the shared role check Kurniadi built for the API",
+                "id": "Route yang ditulis tiga rekan tim dan memakai pengecekan peran bersama yang dibangun Kurniadi untuk API"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -5157,7 +5275,8 @@
                 "en": "University platforms delivered, covering a public portal and admin analytics",
                 "id": "Platform universitas yang diserahkan, mencakup portal publik dan analitik admin"
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             }
           ],
           "stack": [
@@ -5442,7 +5561,12 @@
                 "en": "Controlled A/B on the same deployment, index and audio, n=4 calls per arm: 1,875 to 2,140 ms vs 93 to 220 ms.",
                 "id": "A/B test terkontrol pada deployment, index, dan audio yang sama, n=4 panggilan untuk masing-masing jalur: 1.875 hingga 2.140 ms vs 93 hingga 220 ms."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "~2 s",
+                "after": "~0.2 s"
+              },
+              "headline": true
             },
             {
               "value": "2 of 2",
@@ -5454,7 +5578,8 @@
                 "en": "After four root causes were fixed, AI audio resumed after 11.5 s and 13.0 s in two hard VM-stop drills, with context preserved. This was audible recovery, not seamless failover.",
                 "id": "Setelah empat akar masalah diperbaiki, suara AI kembali dalam 11,5 detik dan 13,0 detik pada dua drill pemadaman VM, dengan konteks tetap tersimpan. Ada jeda yang terdengar, bukan failover tanpa putus."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "6 vs 18",
@@ -5466,7 +5591,8 @@
                 "en": "Evaluated offline with a calibrated LLM judge; mean score 4.71 vs 4.28.",
                 "id": "Dievaluasi secara offline dengan LLM judge terkalibrasi; skor rata-rata 4,71 vs 4,28."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "Migrated",
@@ -6026,7 +6152,8 @@
                 "en": "November release inventory: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks and Checkov. TruffleHog and live-secret verification were removed; the older usage totals below cover the earlier eight-engine platform.",
                 "id": "Daftar rilis November: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, dan Checkov. TruffleHog serta verifikasi secret aktif dihapus; total penggunaan di bawah berasal dari platform delapan engine sebelumnya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "628 PRs",
@@ -6038,7 +6165,8 @@
                 "en": "Recorded by 24 Oct 2026; about 4.9k scans and 645k findings were processed by late September 2026.",
                 "id": "Tercatat hingga 24 Okt 2026; sekitar 4,9 ribu scan dan 645 ribu temuan diproses hingga akhir September 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "31 fix PRs",
@@ -6050,7 +6178,8 @@
                 "en": "Historical total retained from the earlier record, not a new November measurement. Every fix PR requires human review; this does not establish a higher merge rate.",
                 "id": "Total historis dari catatan sebelumnya, bukan pengukuran baru pada November. Setiap fix PR wajib melewati review manusia; ini tidak membuktikan kenaikan merge rate."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "~9 min",
@@ -6062,7 +6191,8 @@
                 "en": "Completed within the 14-item isolation hardening using Contributor-level cloud rights.",
                 "id": "Dikerjakan dalam hardening isolasi 14 item dengan hak akses cloud level Contributor."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "story": {
@@ -6478,7 +6608,12 @@
                 "en": "Development gold set.",
                 "id": "Gold set development."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "90.9%",
+                "after": "36.4%"
+              },
+              "headline": true
             },
             {
               "value": "76.2% to 0%",
@@ -6490,7 +6625,12 @@
                 "en": "Same development gold set.",
                 "id": "Gold set development yang sama."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "76.2%",
+                "after": "0%"
+              },
+              "headline": true
             },
             {
               "value": "0 of 3,780",
@@ -6514,7 +6654,12 @@
                 "en": "Live evaluation after a model change; false positives also fell from 26.1% to 21.7%. These are evaluation results, not production outcomes.",
                 "id": "Evaluasi live setelah pergantian model; false positive juga turun dari 26,1% menjadi 21,7%. Ini hasil evaluasi, bukan hasil produksi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "11.1%",
+                "after": "3.7%"
+              },
+              "headline": true
             }
           ],
           "story": {
@@ -6844,7 +6989,8 @@
                 "en": "Observed in a 22-pair evaluation run, with fixes covered by 7 regression tests from real error strings. A rerun of that exact evaluation was not recorded.",
                 "id": "Teramati pada run evaluasi 22 pasang, dengan perbaikan diuji melalui 7 regression test dari pesan error asli. Rerun evaluasi yang persis sama tidak tercatat."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "0.13%",
@@ -6856,7 +7002,8 @@
                 "en": "After retries, using a newer model and prompt on synthetic offline inputs, without human reference labels or production sampling. Not a before/after estimate of the original fixes.",
                 "id": "Setelah retry, memakai model dan prompt lebih baru pada input sintetis offline, tanpa label referensi manusia atau sampling produksi. Bukan pengukuran sebelum/sesudah perbaikan awal."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "270+",
@@ -6868,7 +7015,8 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "21.1 s to 12.1 s",
@@ -6880,7 +7028,12 @@
                 "en": "Controlled offline synthetic rounds, not production latency. Medium passed the recorded fairness and injection gates; limited samples do not establish fairness across all groups.",
                 "id": "Putaran sintetis offline terkontrol, bukan latensi produksi. Medium lolos gate fairness dan injection tercatat; sampel terbatas belum membuktikan fairness untuk semua kelompok."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "21.1 s",
+                "after": "12.1 s"
+              },
+              "headline": true
             }
           ],
           "engineering": [
@@ -7144,7 +7297,8 @@
                 "en": "Replay benchmark over 4 runs with data stores wiped clean; all 4 retained 99.3 to 99.4% analysis confidence, with accuracy unchanged.",
                 "id": "Replay benchmark sebanyak 4 run pada data store yang dikosongkan; keempatnya mempertahankan confidence analisis 99,3 hingga 99,4%, dengan akurasi tidak berubah."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "748 tests",
@@ -7156,7 +7310,8 @@
                 "en": "Enforced during builds and checked with mutation testing.",
                 "id": "Dijalankan sebagai syarat build dan diperiksa dengan mutation testing."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "8 evaluators",
@@ -7168,7 +7323,8 @@
                 "en": "Used during hands-on PoC evaluation; the outcome is not public.",
                 "id": "Digunakan selama evaluasi PoC secara langsung; hasil akhirnya tidak dipublikasikan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -7354,19 +7510,21 @@
                 "en": "Byte-level lineage of the 8 client repositories analyzed found 36 to 90% of each derivative's initial files came from the template.",
                 "id": "Analisis asal file hingga level byte pada 8 repositori klien menunjukkan bahwa 36 hingga 90% file awal setiap proyek turunan berasal dari template."
               },
-              "confidence": "self-reported"
+              "confidence": "self-reported",
+              "headline": true
             },
             {
-              "value": "3 engineers",
+              "value": "3 apps",
               "label": {
-                "en": "Other engineers who continued developing the template",
-                "id": "Engineer lain yang melanjutkan pengembangan template"
+                "en": "Client apps started from the template and then developed mostly or jointly by other engineers",
+                "id": "Aplikasi klien yang dimulai dari template lalu dikembangkan sebagian besar atau bersama oleh engineer lain"
               },
               "context": {
-                "en": "Based on repository history.",
-                "id": "Berdasarkan riwayat repositori."
+                "en": "Repository history: other engineers wrote most or many of the commits.",
+                "id": "Riwayat repositori: engineer lain menulis sebagian besar atau banyak commit."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -7442,7 +7600,189 @@
               "redacted": true
             }
           ],
-          "sculpture": "rocket"
+          "sculpture": "rocket",
+          "story": {
+            "situation": {
+              "en": "At MII, each new client PoC meant rebuilding much of the same web tier, sign-in, persistence and infrastructure. I created a shared full-stack AI application template as the starting point and stayed responsible for maintaining it. Teammates helped define the conventions; I built the packaging and the agent layer, then used the template to start derivative projects.",
+              "id": "Di MII, setiap PoC klien baru berarti membangun ulang sebagian besar web tier, sign-in, penyimpanan percakapan, dan infrastruktur yang sama. Saya membuat template aplikasi AI full-stack sebagai fondasi bersama dan tetap bertanggung jawab atas pemeliharaannya. Rekan tim ikut menetapkan konvensinya; saya membangun paket template dan agent layer, lalu memakai template ini untuk memulai proyek turunan."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Kept every browser call behind a server-side BFF",
+                  "id": "Menjaga semua panggilan browser di balik BFF sisi server"
+                },
+                "why": {
+                  "en": "A derivative project should inherit the security boundary instead of deciding it again. The browser reaches FastAPI only through Next.js route handlers, server actions use the same server-only transport, and model credentials never leave the backend.",
+                  "id": "Proyek turunan sebaiknya mewarisi batas keamanan, bukan menentukannya ulang. Browser hanya menjangkau FastAPI melalui route handler Next.js, server action memakai transport sisi server yang sama, dan kredensial model tidak pernah keluar dari backend."
+                }
+              },
+              {
+                "title": {
+                  "en": "Made agents configuration, not code",
+                  "id": "Menjadikan agent sebagai konfigurasi, bukan kode"
+                },
+                "why": {
+                  "en": "Each engagement needs different agents and models. Agents are a YAML default plus definitions managed at runtime, tools bind by name from one registry, and Microsoft Agent Framework lets a setting switch the model provider. If every definition fails to load, a default built in code keeps chat working.",
+                  "id": "Setiap engagement membutuhkan agent dan model yang berbeda. Agent terdiri dari default YAML dan definisi yang dikelola saat runtime, tool dihubungkan berdasarkan nama dari satu registry, dan Microsoft Agent Framework memungkinkan provider model diganti lewat setting. Jika semua definisi gagal dimuat, agent default yang dibangun di kode menjaga chat tetap berjalan."
+                }
+              },
+              {
+                "title": {
+                  "en": "Showed real data or nothing on the dashboards",
+                  "id": "Menampilkan data nyata atau tidak sama sekali di dashboard"
+                },
+                "why": {
+                  "en": "A template that ships mock data invites a demo that looks finished but is not. The dashboards read per-turn usage telemetry from Cosmos DB, chart sections without a real source were removed rather than faked, and the build fails if a mock service stub is still unwired.",
+                  "id": "Template yang membawa data tiruan mudah menghasilkan demo yang tampak selesai padahal belum. Dashboard membaca usage telemetry per giliran dari Cosmos DB, bagian grafik tanpa sumber data nyata dihapus alih-alih dipalsukan, dan build gagal jika masih ada stub layanan tiruan yang belum tersambung."
+                }
+              },
+              {
+                "title": {
+                  "en": "Started derivative projects from the template, then let them diverge",
+                  "id": "Memulai proyek turunan dari template, lalu membiarkannya berkembang sendiri"
+                },
+                "why": {
+                  "en": "Derivatives import the template rather than fork it, so each client project can change freely. I used it to start projects such as two report chatbots for a steel manufacturer, where teammates carried much of the later work. Keeping the shared primitive library intact makes later template syncs easier.",
+                  "id": "Proyek turunan mengimpor template, bukan mem-fork-nya, sehingga tiap proyek klien bebas berubah. Saya memakainya untuk memulai proyek seperti dua chatbot laporan untuk produsen baja, dan rekan tim mengerjakan sebagian besar pengembangan berikutnya. Library primitive bersama sengaja dipertahankan agar sinkronisasi dengan template tetap mudah."
+                }
+              }
+            ],
+            "lesson": {
+              "en": "A template pays off when other engineers can adopt what worked without depending on me. It should be honest about thin data, real where sourced and removed rather than faked, and carry checks for the failures that still typecheck and build cleanly.",
+              "id": "Template baru benar-benar bermanfaat jika engineer lain bisa mengadopsi praktik yang terbukti berhasil tanpa bergantung pada saya. Template harus jujur saat datanya tipis: nyata jika ada sumbernya, dihapus alih-alih dipalsukan, dan membawa pemeriksaan untuk kegagalan yang tetap lolos typecheck dan build."
+            }
+          },
+          "engineering": [
+            {
+              "title": {
+                "en": "Agent Runtime",
+                "id": "Agent Runtime"
+              },
+              "summary": {
+                "en": "One registry turns YAML and runtime agent definitions into Microsoft Agent Framework agents across five model providers.",
+                "id": "Satu registry mengubah definisi agent dari YAML dan runtime menjadi agent Microsoft Agent Framework dengan lima pilihan provider model."
+              },
+              "points": [
+                {
+                  "en": "A bundled YAML default agent sits beside agents stored in Cosmos DB and managed from the dashboard. Each write rebuilds that one agent in memory, so a new agent is selectable in chat without a restart; the default cannot be edited or deleted.",
+                  "id": "Agent default YAML bawaan berdampingan dengan agent yang disimpan di Cosmos DB dan dikelola dari dashboard. Setiap perubahan membangun ulang agent tersebut di memori, sehingga agent baru langsung bisa dipilih di chat tanpa restart; agent default tidak bisa diubah atau dihapus."
+                },
+                {
+                  "en": "Tools are Python functions bound by name from a single registry. An invalid definition is logged and skipped, and if none load, a default agent is built in code from settings.",
+                  "id": "Tool berupa fungsi Python yang dihubungkan berdasarkan nama dari satu registry. Definisi yang tidak valid dicatat lalu dilewati, dan jika tidak ada yang berhasil dimuat, agent default dibangun di kode dari setting."
+                },
+                {
+                  "en": "A client factory switches between Azure AI Foundry, Azure OpenAI, OpenAI, Anthropic and Amazon Bedrock by setting. The reasoning-effort setting applies only to OpenAI-compatible providers, and an agent's own spec takes precedence.",
+                  "id": "Client factory berpindah antara Azure AI Foundry, Azure OpenAI, OpenAI, Anthropic, dan Amazon Bedrock lewat setting. Setting reasoning effort hanya berlaku untuk provider yang kompatibel dengan OpenAI, dan spesifikasi agent tetap diutamakan."
+                },
+                {
+                  "en": "The chat endpoint streams text, tool-call and tool-result events, so the UI shows each tool run as it happens. Thread file search lets an agent query only the files attached to the active thread.",
+                  "id": "Endpoint chat mengirim event teks, tool call, dan hasil tool secara streaming, sehingga UI menampilkan setiap tool yang sedang berjalan. File search per thread membuat agent hanya mencari file yang dilampirkan ke thread aktif."
+                }
+              ],
+              "limits": {
+                "en": "The registry is per process: a multi-instance deployment must call its reload hook to converge. A new tool still needs code and a restart.",
+                "id": "Registry berjalan per proses: deployment multi-instance harus memanggil hook reload agar konsisten. Tool baru tetap membutuhkan perubahan kode dan restart."
+              }
+            },
+            {
+              "title": {
+                "en": "Security Boundary",
+                "id": "Batas Keamanan"
+              },
+              "summary": {
+                "en": "The Next.js server owns every session and forwards a trusted identity; FastAPI never reads browser cookies or exposes model credentials.",
+                "id": "Server Next.js memegang semua sesi dan meneruskan identitas tepercaya; FastAPI tidak membaca cookie browser dan tidak mengekspos kredensial model."
+              },
+              "points": [
+                {
+                  "en": "Sessions are HMAC-signed, HTTP-only cookies with a seven-day TTL. In production, sessions cannot be read or written without a configured secret.",
+                  "id": "Sesi memakai cookie HTTP-only yang ditandatangani HMAC dengan masa berlaku tujuh hari. Di production, sesi tidak dapat dibaca atau ditulis tanpa secret yang dikonfigurasi."
+                },
+                {
+                  "en": "BFF handlers check the session and forward the user identity as headers; repositories scope threads and messages by that identity.",
+                  "id": "Handler BFF memeriksa sesi dan meneruskan identitas pengguna lewat header; repository membatasi thread dan pesan berdasarkan identitas tersebut."
+                },
+                {
+                  "en": "Demo sessions are marked in the signed payload and enforced in one place: reads and three allowlisted chat writes pass, every other mutation returns 403, and turning the demo flag off invalidates cookies already issued.",
+                  "id": "Sesi demo ditandai di payload bertanda tangan dan ditegakkan di satu titik: operasi baca dan tiga write chat yang diizinkan bisa lolos, mutasi lain mendapat 403, dan mematikan flag demo membatalkan cookie yang sudah terbit."
+                },
+                {
+                  "en": "Bicep defaults to managed identity: the backend gets data-plane roles for Cosmos DB and the model service, Cosmos DB local auth is disabled, and keys enter app settings only when managed identity is turned off.",
+                  "id": "Bicep memakai managed identity secara default: backend mendapat role data-plane untuk Cosmos DB dan layanan model, local auth Cosmos DB dinonaktifkan, dan key hanya masuk ke app setting jika managed identity dimatikan."
+                }
+              ],
+              "limits": {
+                "en": "Template defaults, not finished access control: each derivative must restrict backend ingress and add its own roles.",
+                "id": "Ini default template, bukan kontrol akses final: setiap proyek turunan harus membatasi akses ke backend dan menambahkan role sendiri."
+              }
+            },
+            {
+              "title": {
+                "en": "Persistence and Telemetry",
+                "id": "Persistensi dan Telemetry"
+              },
+              "summary": {
+                "en": "Threads persist to Cosmos DB with a browser fallback, and every turn records its own usage.",
+                "id": "Thread disimpan di Cosmos DB dengan fallback di browser, dan setiap giliran mencatat penggunaannya sendiri."
+              },
+              "points": [
+                {
+                  "en": "Failed message, thread and delete writes queue in per-user browser storage and replay on reconnect and every 30 s, up to 8 attempts. Upserts use stable IDs and deletes tolerate 404, so replay is safe across tabs.",
+                  "id": "Write pesan, thread, dan penghapusan yang gagal masuk antrean di storage browser per pengguna, lalu diputar ulang saat koneksi pulih dan setiap 30 detik, hingga 8 percobaan. Upsert memakai ID tetap dan delete menoleransi 404, sehingga replay aman lintas tab."
+                },
+                {
+                  "en": "A thread sanitizer repairs stored history when a thread reloads: it strips tool-call residue, removes duplicates, repairs broken assistant turns and enforces alternating user and assistant messages.",
+                  "id": "Thread sanitizer memperbaiki riwayat tersimpan saat thread dimuat ulang: membuang sisa tool call, menghapus duplikat, memperbaiki giliran asisten yang rusak, dan memastikan pesan pengguna dan asisten bergantian."
+                },
+                {
+                  "en": "Each turn writes model, provider-reported tokens, latency and status to a usage container that feeds the Home, Analytics, Models and Logs pages, with server-side pagination for logs.",
+                  "id": "Setiap giliran mencatat model, token yang dilaporkan provider, latensi, dan status ke container usage yang menjadi sumber halaman Home, Analytics, Models, dan Logs, dengan pagination sisi server untuk log."
+                },
+                {
+                  "en": "Cosmos DB calls run off the event loop, so a slow query does not stall other requests.",
+                  "id": "Panggilan Cosmos DB dijalankan di luar event loop, sehingga query yang lambat tidak menahan request lain."
+                }
+              ],
+              "limits": {
+                "en": "Usage writes are best effort, so a failed write leaves a gap in the dashboards rather than an error.",
+                "id": "Penulisan usage bersifat best effort, sehingga write yang gagal meninggalkan celah di dashboard, bukan error."
+              }
+            },
+            {
+              "title": {
+                "en": "Delivery Checks",
+                "id": "Pemeriksaan Delivery"
+              },
+              "summary": {
+                "en": "CI tests the production build without secrets, and CD deploys only the side that changed, then health-checks it.",
+                "id": "CI menguji build production tanpa secret, dan CD hanya men-deploy sisi yang berubah lalu menjalankan health check."
+              },
+              "points": [
+                {
+                  "en": "CI runs typecheck, lint and a production build, then Playwright smoke tests against the production build with the database skipped and the model replaced by a canned SSE stream.",
+                  "id": "CI menjalankan typecheck, lint, dan build production, lalu smoke test Playwright pada build production dengan database dilewati dan model diganti stream SSE rekaman."
+                },
+                {
+                  "en": "The smoke suite asserts zero console errors and uncaught exceptions on all 9 authenticated routes, a full streamed chat turn with code and math rendered, and a theme toggle that actually repaints, a guard against dark mode failing silently after the Tailwind CSS v4 upgrade.",
+                  "id": "Smoke test memastikan tidak ada console error maupun uncaught exception di 9 route terautentikasi, satu giliran chat streaming lengkap dengan kode dan rumus yang ter-render, serta toggle tema yang benar-benar mengubah tampilan, untuk mencegah dark mode rusak tanpa terdeteksi setelah upgrade Tailwind CSS v4."
+                },
+                {
+                  "en": "A prebuild guard fails the build if any dashboard service is still an unwired mock stub, so fake data cannot reach production.",
+                  "id": "Guard prebuild menggagalkan build jika masih ada layanan dashboard berupa stub tiruan yang belum tersambung, sehingga data palsu tidak bisa sampai ke production."
+                },
+                {
+                  "en": "Subscription-scoped Bicep provisions separate frontend and backend plans, serverless Cosmos DB with six containers and the model deployment. CD deploys only the changed side and polls the login page and the backend health endpoint until both return 200.",
+                  "id": "Bicep tingkat subscription menyiapkan plan frontend dan backend yang terpisah, Cosmos DB serverless dengan enam container, dan deployment model. CD hanya men-deploy sisi yang berubah dan memeriksa halaman login serta endpoint health backend sampai keduanya mengembalikan 200."
+                }
+              ],
+              "limits": {
+                "en": "No backend unit tests, and CI never calls a real model. CD signs in with publish profiles, which need basic-auth publishing enabled on each app.",
+                "id": "Belum ada unit test backend, dan CI tidak pernah memanggil model sungguhan. CD memakai publish profile, yang mengharuskan publishing basic auth aktif di setiap aplikasi."
+              }
+            }
+          ]
         },
         {
           "id": "fabric-forecasting-dashboard",
@@ -7604,7 +7944,12 @@
                 "en": "Measured after removing capacity-heavy indexes and switching to streamed aggregates.",
                 "id": "Diukur setelah menghapus index yang banyak memakai capacity dan beralih ke agregat yang di-stream."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "~21 s",
+                "after": "~1.1 s"
+              },
+              "headline": true
             },
             {
               "value": "61.0 s vs 9.5 s",
@@ -7616,7 +7961,8 @@
                 "en": "Capacity probe isolated the admission delay per request caused by throttling.",
                 "id": "Capacity probe mengisolasi jeda admission per request akibat throttling."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~5 weeks",
@@ -7628,7 +7974,8 @@
                 "en": "Based on repository and deployment history.",
                 "id": "Berdasarkan riwayat repositori dan deployment."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "11.7 MB → 156 KB",
@@ -7640,7 +7987,12 @@
                 "en": "Measured in pull-request records after moving aggregation into gold summary tables on the F2 capacity, Oct 2026. One row per store and SKU also cut the forecast table's load from 14.1 MB to 2.5 MB on a scale fixture.",
                 "id": "Diukur dalam catatan pull request setelah agregasi dipindahkan ke tabel ringkasan gold pada kapasitas F2, Okt 2026. Satu baris per toko dan SKU juga memangkas pemuatan tabel forecast dari 14,1 MB menjadi 2,5 MB pada fixture skala besar."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "11.7 MB",
+                "after": "156 KB"
+              },
+              "headline": true
             }
           ],
           "story": {
@@ -7767,7 +8119,7 @@
           "slug": "ai-solutions-assistant",
           "order": 7,
           "selected": 3,
-          "tier": "featured",
+          "tier": "hero",
           "accent": "violet",
           "wing": "ai",
           "timelineRef": "metrodata-2026",
@@ -7805,8 +8157,8 @@
               "id": "Saya menggabungkan vector search Cosmos DB dan hybrid retrieval Azure AI Search dengan citation gating, Prompt Shields, serta pemeriksaan output per kalimat."
             },
             {
-              "en": "I built the /dashboard Studio behind Microsoft Entra ID: a project catalogue editor, document indexing, consultation reservations, cookieless analytics and reviews of assistant conversations.",
-              "id": "Saya membangun Studio /dashboard di balik Microsoft Entra ID: editor katalog proyek, pengindeksan dokumen, reservasi konsultasi, analitik tanpa cookie, dan peninjauan percakapan asisten."
+              "en": "I built the /dashboard Studio behind Microsoft Entra ID: a project catalogue editor, cookieless analytics and assistant conversation transcripts. A teammate added the indexing of uploaded files and consultation reservations.",
+              "id": "Saya membangun Studio /dashboard di balik Microsoft Entra ID: editor katalog proyek, analitik tanpa cookie, dan transkrip percakapan asisten. Rekan tim menambahkan pengindeksan file unggahan dan reservasi konsultasi."
             },
             {
               "en": "I fixed production failures that were not being surfaced: broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens.",
@@ -7931,7 +8283,8 @@
                 "en": "Measured in pull-request benchmarks on a low-traffic site, about 33 turns per day.",
                 "id": "Diukur dalam benchmark pull request pada situs dengan trafik rendah, sekitar 33 giliran per hari."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~4.2x",
@@ -7943,7 +8296,25 @@
                 "en": "Identified during a production review.",
                 "id": "Teridentifikasi dalam review produksi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
+            },
+            {
+              "value": "Not run → 355 ms",
+              "label": {
+                "en": "Prompt-injection screening of 15 to 20 retrieved chunks, which a silent API limit had been skipping",
+                "id": "Screening prompt injection untuk 15 sampai 20 potongan dokumen, sebelumnya terlewat karena batas API tersembunyi"
+              },
+              "context": {
+                "en": "Calls over 5 documents had returned 400 and failed open.",
+                "id": "Panggilan berisi lebih dari 5 dokumen sebelumnya mengembalikan 400 dan lolos tanpa screening."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "Not run",
+                "after": "355 ms"
+              }
             }
           ],
           "story": {
@@ -8093,7 +8464,149 @@
             }
           ],
           "liveUrl": "https://mii-microsoft-ai.azurewebsites.net",
-          "sculpture": "chat-bubble"
+          "sculpture": "chat-bubble",
+          "engineering": [
+            {
+              "title": {
+                "en": "Routing and Fallback Tiers",
+                "id": "Routing dan Tier Fallback"
+              },
+              "summary": {
+                "en": "Routing, intent detection and the output guard use no model, so they are deterministic and unit-testable, and every failure has a tier that still answers.",
+                "id": "Routing, deteksi intent, dan output guard tidak memakai model sehingga deterministik dan dapat diuji unit; setiap kegagalan punya tier yang tetap menjawab."
+              },
+              "points": [
+                {
+                  "en": "Regex intent rules route each turn to one of three YAML agents on Microsoft Agent Framework. The site concierge has no project retrieval tools, so a greeting cannot produce project cards.",
+                  "id": "Aturan intent berbasis regex mengarahkan tiap giliran ke salah satu dari tiga YAML agent di Microsoft Agent Framework. Site concierge tidak punya tool retrieval proyek, sehingga sapaan tidak mungkin memunculkan kartu proyek."
+                },
+                {
+                  "en": "If embeddings fail, search drops to lexical BM25. The rate limit (10 requests per minute per visitor), the daily cap or a missing agent config moves the turn to the deterministic tier with a visible notice. A throttled model gets one retry, only before any text is sent.",
+                  "id": "Jika embeddings gagal, pencarian beralih ke BM25 leksikal. Rate limit (10 request per menit per pengunjung), batas harian, atau konfigurasi agent yang tidak tersedia memindahkan giliran ke tier deterministik dengan pemberitahuan. Model yang di-throttle mendapat satu retry, hanya sebelum teks pertama terkirim."
+                },
+                {
+                  "en": "Visitors never get a 5xx: if the backend is unreachable, the BFF streams a degraded notice with a 200, and a remote turn that produces no text falls back to a scripted engine in the browser.",
+                  "id": "Pengunjung tidak pernah menerima 5xx: jika backend tidak terjangkau, BFF mengirim stream berisi pemberitahuan degraded dengan status 200, dan giliran remote yang tidak menghasilkan teks beralih ke engine skrip di browser."
+                },
+                {
+                  "en": "Follow-up chips ride at the end of the same completion instead of a separate tool call, verified live at two model requests per turn in both languages.",
+                  "id": "Chip lanjutan ikut di akhir completion yang sama, bukan lewat tool call terpisah; terverifikasi live dengan dua request model per giliran dalam kedua bahasa."
+                }
+              ],
+              "limits": {
+                "en": "The rate limiter and the daily counter live in process: correct on the single instance the site runs on, not under scale-out.",
+                "id": "Rate limiter dan penghitung harian berjalan di dalam proses: benar untuk satu instance yang dipakai situs ini, tetapi tidak saat scale-out."
+              }
+            },
+            {
+              "title": {
+                "en": "Grounding and Output Guard",
+                "id": "Grounding dan Output Guard"
+              },
+              "summary": {
+                "en": "Answers draw only on published content, and every sentence passes a guard before a visitor sees it.",
+                "id": "Jawaban hanya bersumber dari konten yang sudah terbit, dan setiap kalimat melewati guard sebelum terlihat oleh pengunjung."
+              },
+              "points": [
+                {
+                  "en": "Cosmos DB vector search on 3,072-dimension embeddings is fused with an in-memory BM25 index by reciprocal rank fusion (k=60, vector weighted 2 to 1). A source card must clear relative and absolute score floors, and at most 3 appear. The corpus is built from the public project serializer, so confidentiality is inherited.",
+                  "id": "Vector search Cosmos DB dengan embedding 3.072 dimensi digabung dengan indeks BM25 in-memory melalui reciprocal rank fusion (k=60, bobot vector 2 banding 1). Kartu sumber harus melewati ambang skor relatif dan absolut, maksimal 3 kartu. Korpus dibangun dari serializer proyek publik, sehingga aturan kerahasiaan ikut terwariskan."
+                },
+                {
+                  "en": "The endpoint, not the model, emits the sources, documents and context frames, so no prompt can fabricate or suppress a citation.",
+                  "id": "Frame sources, documents, dan context dikirim oleh endpoint, bukan oleh model, sehingga tidak ada prompt yang bisa memalsukan atau menyembunyikan sitasi."
+                },
+                {
+                  "en": "Every tier streams through a sentence-level guard that blocks restricted client names, price, timeline, effort or headcount commitments, and Azure services outside the curated list. Token-level checks were rejected: a term can span tokens and streamed text cannot be retracted. One post-guard buffer feeds transcripts, cards and exports.",
+                  "id": "Semua tier melewati guard per kalimat yang memblokir nama klien terlarang, komitmen harga, timeline, effort, atau jumlah personel, serta layanan Azure di luar daftar kurasi. Pemeriksaan per token ditolak karena satu istilah bisa terpecah di beberapa token dan teks yang sudah di-stream tidak bisa ditarik. Satu buffer pasca-guard menjadi sumber transkrip, kartu, dan ekspor."
+                },
+                {
+                  "en": "Prompt Shields screens the message before the model runs. A detected attack gets a deterministic bilingual refusal with zero model calls; the screen fails open because the output guard stays authoritative.",
+                  "id": "Prompt Shields memeriksa pesan sebelum model berjalan. Serangan yang terdeteksi mendapat penolakan dwibahasa deterministik tanpa panggilan model; screening ini fail-open karena output guard tetap menjadi kontrol utama."
+                },
+                {
+                  "en": "Measuring showed the shield API rejects more than 5 documents or 10,000 characters per call, so passages from larger document results had never been screened. Batched concurrent calls now screen 20 documents in 355 ms.",
+                  "id": "Pengukuran menunjukkan API shield menolak lebih dari 5 dokumen atau 10.000 karakter per panggilan, sehingga passage dari hasil dokumen yang lebih besar tidak pernah diperiksa. Kini panggilan dibagi menjadi batch paralel dan 20 dokumen diperiksa dalam 355 ms."
+                }
+              ],
+              "limits": {
+                "en": "Adversarial cases run offline against the guard, not end to end through the live model. Uploaded-document answers stay switched off in production pending a content review.",
+                "id": "Kasus adversarial diuji offline terhadap guard, belum end-to-end melalui model live. Jawaban dari dokumen unggahan tetap dinonaktifkan di production sampai review konten selesai."
+              }
+            },
+            {
+              "title": {
+                "en": "Spend Cap and Silent Failures",
+                "id": "Spend Cap dan Kegagalan Senyap"
+              },
+              "summary": {
+                "en": "The daily cap charges what the provider reports, and each production fix started from what visitors and operators actually received.",
+                "id": "Batas harian membebankan token sesuai laporan provider, dan setiap perbaikan produksi berangkat dari apa yang benar-benar diterima pengunjung dan operator."
+              },
+              "points": [
+                {
+                  "en": "The original cap booked the message plus a flat 600 tokens, missing history and retrieved context (about a 4.2x undercount), and its in-process counter reset whenever the idle app unloaded. Always On came first, then real accounting.",
+                  "id": "Batas awal hanya mencatat pesan ditambah 600 token tetap, tanpa riwayat percakapan dan konteks retrieval (kurang hitung sekitar 4,2x), dan penghitungnya ter-reset setiap kali aplikasi idle di-unload. Always On diaktifkan lebih dulu, lalu perhitungannya diperbaiki."
+                },
+                {
+                  "en": "Each turn is now charged the model-reported input and output tokens. If the provider reports nothing, the estimator is used rather than zero, and output the guard blocked is still charged because the model produced it.",
+                  "id": "Setiap giliran kini dibebankan sesuai token input dan output yang dilaporkan model. Jika provider tidak melapor, estimator dipakai alih-alih nol, dan output yang diblokir guard tetap dihitung karena model sudah menghasilkannya."
+                },
+                {
+                  "en": "Measured over n=57 warm turns, a turn costs 9,200 tokens at p50, so the previous cap covered about 33 model-answered turns a day against about 33 expected. It was re-sized on p90 (11,610) to 1,200,000 for a 100-turn day, with warnings at 80% and at the cap.",
+                  "id": "Dari n=57 giliran warm, satu giliran memakai 9.200 token pada p50, sehingga batas sebelumnya hanya cukup untuk sekitar 33 giliran model per hari terhadap perkiraan sekitar 33. Batas dihitung ulang dari p90 (11.610) menjadi 1.200.000 untuk 100 giliran per hari, dengan peringatan pada 80% dan saat batas tercapai."
+                },
+                {
+                  "en": "The server ended SSE frames with CRLF while the client split on LF only, so no frame parsed and every visitor got the keyword fallback behind a working 200. Reading raw bytes in a browser found it; tests now cover all three terminator styles.",
+                  "id": "Server mengakhiri frame SSE dengan CRLF, sedangkan client hanya memisahkan dengan LF, sehingga tidak ada frame yang terbaca dan setiap pengunjung menerima fallback keyword di balik respons 200. Masalah ini ditemukan dengan membaca byte mentah di browser; test kini mencakup ketiga gaya terminator."
+                },
+                {
+                  "en": "Thirty days of production telemetry held 10,140 traces, 0 requests and 0 dependencies: the app bound the un-instrumented FastAPI class, and every trace was the exporter logging its own traffic. Explicit instrumentation and a wiring test fixed it.",
+                  "id": "Telemetry produksi selama 30 hari berisi 10.140 trace, 0 request, dan 0 dependency: aplikasi memakai kelas FastAPI yang belum diinstrumentasi, dan semua trace berasal dari exporter yang mencatat trafiknya sendiri. Instrumentasi eksplisit dan test wiring memperbaikinya."
+                }
+              ],
+              "limits": {
+                "en": "Embedding requests inside a chat turn are not yet charged to the cap, nothing outside the app alerts as the cap nears, and delivery of app-level logs to production telemetry was still to be confirmed.",
+                "id": "Request embedding di dalam giliran chat belum dibebankan ke batas, belum ada alert di luar aplikasi saat batas hampir tercapai, dan pengiriman log level aplikasi ke telemetry produksi masih perlu dikonfirmasi."
+              }
+            },
+            {
+              "title": {
+                "en": "Latency Budget",
+                "id": "Latency Budget"
+              },
+              "summary": {
+                "en": "Per-turn diagnostics showed the model, not the pipeline, dominates the wait, so only measured levers changed defaults.",
+                "id": "Diagnostik per giliran menunjukkan bahwa waktu tunggu didominasi model, bukan pipeline, sehingga default hanya berubah berdasarkan hasil pengukuran."
+              },
+              "points": [
+                {
+                  "en": "Warm turns against live services (n=32): p50 6,438 ms in total. Everything before the model call, Content Safety included, takes 458 ms; the first visible model token takes another 5,010 ms. Production through the BFF (n=16) was within noise of local.",
+                  "id": "Giliran warm terhadap layanan live (n=32): total p50 6.438 ms. Semua tahap sebelum panggilan model, termasuk Content Safety, memakan 458 ms; token model pertama yang terlihat butuh 5.010 ms berikutnya. Produksi melalui BFF (n=16) berada dalam batas noise hasil lokal."
+                },
+                {
+                  "en": "The framework sends one model request per tool-call iteration, so the median turn makes two. Tool execution itself is cheap: project search p50 927 ms.",
+                  "id": "Framework mengirim satu request model untuk setiap iterasi tool call, sehingga giliran median membuat dua request. Eksekusi tool sendiri ringan: pencarian proyek p50 927 ms."
+                },
+                {
+                  "en": "Prompt caching already hit 98% at p50, leaving 198 uncached input tokens, so prompt restructuring was dropped as a latency lever.",
+                  "id": "Prompt caching sudah mencapai 98% pada p50, menyisakan 198 token input tanpa cache, sehingga restrukturisasi prompt tidak dipakai untuk menurunkan latensi."
+                },
+                {
+                  "en": "Low reasoning effort cut time to first token by 1,402 ms (n=16 per arm) with refusals unchanged, but softened grounding on one of eight probe questions, so agents stay at medium. Query rewrite returned 0 usable variants in 12 calls within its 0.8 s budget and stays off.",
+                  "id": "Reasoning effort low memangkas waktu ke token pertama sebesar 1.402 ms (n=16 per kelompok) tanpa mengubah penolakan, tetapi melemahkan grounding pada satu dari delapan pertanyaan uji, sehingga agent tetap di medium. Query rewrite menghasilkan 0 varian yang bisa dipakai dari 12 panggilan dalam batas 0,8 detik dan tetap nonaktif."
+                },
+                {
+                  "en": "Two measured production boots took 125 s and 228 s because warm-ups ran before serving; they now run beside traffic.",
+                  "id": "Dua boot produksi yang terukur memakan 125 dan 228 detik karena warm-up berjalan sebelum melayani request; kini warm-up berjalan bersamaan dengan trafik."
+                }
+              ],
+              "limits": {
+                "en": "Small fixed probe sets (8 questions), not production traffic. No committed retrieval-accuracy baseline yet.",
+                "id": "Set pertanyaan uji kecil dan tetap (8 pertanyaan), bukan trafik produksi. Baseline akurasi retrieval belum di-commit."
+              }
+            }
+          ]
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -8234,16 +8747,21 @@
           },
           "results": [
             {
-              "value": "9+ repos",
+              "value": "42% → 4%",
               "label": {
-                "en": "Repositories developed through the spec-first workflow",
-                "id": "Repositori yang dikembangkan melalui alur kerja spec-first"
+                "en": "Failed CI runs on main, 9+ spec-first repositories (Jun to Aug vs Oct to Nov 2026)",
+                "id": "Run CI gagal di main, 9+ repositori spec-first (Jun sampai Agu vs Okt sampai Nov 2026)"
               },
               "context": {
-                "en": "Based on repository analysis; other engineers have not yet adopted this workflow.",
-                "id": "Berdasarkan analisis repositori; alur kerja ini belum diadopsi oleh engineer lain."
+                "en": "CI setups changed between windows; not yet adopted by other engineers.",
+                "id": "Setup CI berubah; belum diadopsi engineer lain."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "42%",
+                "after": "4%"
+              }
             },
             {
               "value": "1,190+ PRs",
@@ -8255,7 +8773,8 @@
                 "en": "A throughput measure only. AI agents wrote much of the code under my specs and review.",
                 "id": "Angka ini hanya mengukur throughput. AI agent menulis sebagian besar kode berdasarkan spec dan review saya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -8326,7 +8845,8 @@
                 "en": "Across four products (14, 12, 5 and 5). Public and private plans were installed in a test subscription and torn down afterwards.",
                 "id": "Di empat produk (14, 12, 5, dan 5). Plan publik dan privat diinstal di subscription uji, lalu dihapus setelahnya."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "4 products",
@@ -8338,7 +8858,8 @@
                 "en": "Readiness only: Partner Center offers are not yet created, and metering has never called the live Metering API.",
                 "id": "Baru tahap kesiapan: offer di Partner Center belum dibuat, dan metering belum pernah memanggil Metering API live."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "1 day",
@@ -8350,7 +8871,8 @@
                 "en": "12 stacked pull requests merged on 7 Oct 2026, the day the decision was made.",
                 "id": "12 stacked pull request di-merge pada 7 Okt 2026, di hari keputusan diambil."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -8426,7 +8948,8 @@
                 "en": "Recorded in the Azure activity log.",
                 "id": "Tercatat dalam Azure activity log."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "24 rotations",
@@ -8438,7 +8961,8 @@
                 "en": "Recorded in the Azure activity log.",
                 "id": "Tercatat dalam Azure activity log."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "22 rules",
@@ -8450,19 +8974,25 @@
                 "en": "Counted from resource metadata, excluding personal R&D.",
                 "id": "Dihitung dari metadata resource, tidak termasuk R&D pribadi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
-              "value": "9 repos",
+              "value": "7 → 0",
               "label": {
-                "en": "Repositories patched for the October 2026 Node.js security release within two days",
-                "id": "Repositori yang di-patch untuk rilis keamanan Node.js Oktober 2026 dalam dua hari"
+                "en": "Critical dependency advisories across the AI apps patched in the October 2026 Node.js security sweep, within two days",
+                "id": "Advisory dependency kritis di aplikasi AI yang di-patch dalam sapuan keamanan Node.js Oktober 2026, dalam dua hari"
               },
               "context": {
-                "en": "Dependency fixes merged; bundled-runtime PRs mostly open, one deployed to production with smoke checks.",
-                "id": "Perbaikan dependency sudah di-merge; sebagian besar PR untuk runtime yang disertakan dalam paket masih terbuka, satu sudah di-deploy ke production dengan smoke check."
+                "en": "From the audit tables in the sweep's merged pull requests.",
+                "id": "Dari tabel audit di pull request sapuan yang sudah di-merge."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "7",
+                "after": "0"
+              }
             }
           ],
           "stack": [
@@ -8532,7 +9062,8 @@
                 "en": "Based on repository history; development started from a team prototype.",
                 "id": "Berdasarkan riwayat repositori; pengembangan dimulai dari prototipe tim."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "~38 findings",
@@ -8544,7 +9075,8 @@
                 "en": "About half were closed at the last recorded update. The re-assessment result is not public; no passing result is claimed.",
                 "id": "Sekitar setengahnya ditutup pada pembaruan terakhir yang tercatat. Hasil re-assessment tidak dipublikasikan; tidak ada klaim kelulusan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "A+",
@@ -8556,7 +9088,8 @@
                 "en": "Measured after CSP and security-header hardening.",
                 "id": "Diukur setelah hardening CSP dan security header."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -8626,7 +9159,25 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "1.35 s → 0.65 s",
+              "label": {
+                "en": "p95 server time to load the ticket dashboard in production, before and after removing per-ticket queries",
+                "id": "Waktu server p95 untuk memuat dashboard tiket di produksi, sebelum dan sesudah query per tiket dihapus"
+              },
+              "context": {
+                "en": "Low traffic; an AI coding agent wrote the fix under Kurniadi's review, and other deploys landed in the later window.",
+                "id": "Trafik rendah; AI coding agent menulis perbaikannya dengan review Kurniadi, dan deploy lain juga masuk di periode sesudahnya."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "1.35 s",
+                "after": "0.65 s"
+              }
             }
           ],
           "stack": [
@@ -8756,7 +9307,8 @@
                 "en": "Durable Functions orchestrations are merged to the main branch. No latency metric is claimed.",
                 "id": "Orkestrasi Durable Functions sudah di-merge ke main branch. Tidak ada klaim metrik latensi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -8823,7 +9375,8 @@
                 "en": "PoC models were trained on synthetic data. No accuracy metric is claimed.",
                 "id": "Model PoC dilatih dengan data sintetis. Tidak ada klaim metrik akurasi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -8940,7 +9493,8 @@
                 "en": "Counted from merged pull requests in the team repositories.",
                 "id": "Dihitung dari pull request yang di-merge di repositori tim."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -9010,7 +9564,8 @@
                 "en": "Repository history.",
                 "id": "Riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "20 releases",
@@ -9022,7 +9577,8 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "32 blueprints",
@@ -9034,7 +9590,21 @@
                 "en": "Counted in the kit, Oct 2026.",
                 "id": "Dihitung dari kit, Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "133 → 0",
+              "label": {
+                "en": "Text overflows in the editable PowerPoint export of a 23-slide workshop deck, old and new exporter",
+                "id": "Teks meluap pada ekspor PowerPoint yang bisa diedit untuk deck workshop 23 slide, exporter lama dan baru"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "133",
+                "after": "0"
+              }
             }
           ],
           "stack": [
@@ -9228,7 +9798,8 @@
                 "en": "Repository history, 23 Sep to 6 Oct 2026.",
                 "id": "Riwayat repositori, 23 Sep hingga 6 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "133 files",
@@ -9240,7 +9811,8 @@
                 "en": "Pull request record.",
                 "id": "Catatan pull request."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "57%",
@@ -9252,7 +9824,25 @@
                 "en": "Line authorship (git blame) on the main branch, 15 Oct 2026.",
                 "id": "Atribusi penulis per baris (git blame) di branch main, 15 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "300 s → 10 s",
+              "label": {
+                "en": "p95 sandbox lookup in production after a separate backend timeout and caching fix by Kurniadi (backend led by a colleague)",
+                "id": "p95 lookup sandbox di produksi setelah perbaikan timeout dan caching backend terpisah oleh Kurniadi (backend dipimpin rekan)"
+              },
+              "context": {
+                "en": "Over 9,273 and 1,284 calls; fewer later calls because the sandbox id is now cached.",
+                "id": "Dari 9.273 dan 1.284 panggilan; panggilan sesudahnya lebih sedikit karena id sandbox kini di-cache."
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "300 s",
+                "after": "10 s"
+              }
             }
           ],
           "stack": [
@@ -9408,7 +9998,8 @@
                 "en": "Vitest suites for the core, Worker, web app and evaluation harness plus the script tests, run on a fresh clone, 16 Oct 2026.",
                 "id": "Suite Vitest untuk core, Worker, aplikasi web, dan harness evaluasi ditambah pengujian skrip, dijalankan pada clone baru, 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "179",
@@ -9420,7 +10011,8 @@
                 "en": "Repository history, 15 to 16 Oct 2026.",
                 "id": "Riwayat repositori, 15 hingga 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "40",
@@ -9432,7 +10024,21 @@
                 "en": "The evaluation reports delete precision and recall, calibration and latency against the real model deployment, not production inbox precision or proof of the 98% agreement target.",
                 "id": "Evaluasi melaporkan precision dan recall penghapusan, kalibrasi, dan latensi pada deployment model yang sebenarnya, bukan precision inbox produksi atau bukti tercapainya target kesesuaian 98%."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "93.9% → 99.1%",
+              "label": {
+                "en": "Trash suggestion precision on 861 labeled emails, offline replay; recall fell from 56.6% to 16.2%",
+                "id": "Presisi saran Trash pada 861 email berlabel, replay offline; recall turun dari 56,6% menjadi 16,2%"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "93.9%",
+                "after": "99.1%"
+              }
             }
           ],
           "stack": [
@@ -9772,7 +10378,12 @@
                 "en": "After the follow-up changes, Azure met every performance target except two first calls after a restart, which the next change fixed (verified locally).",
                 "id": "Setelah perubahan lanjutan, Azure memenuhi semua target performa kecuali dua panggilan pertama setelah restart, yang diperbaiki di perubahan berikutnya (diverifikasi secara lokal)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "60 s",
+                "after": "<2 s"
+              },
+              "headline": true
             },
             {
               "value": "~45 hours",
@@ -9784,7 +10395,8 @@
                 "en": "Parallel AI coding agents implemented much of the code under written specs; I reviewed, tested on Azure and merged every pull request.",
                 "id": "Beberapa AI coding agent mengerjakan sebagian besar kode secara paralel berdasarkan spec tertulis; saya me-review, menguji di Azure, dan me-merge setiap pull request."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "61 of 61",
@@ -9796,7 +10408,8 @@
                 "en": "Compared against a read-only copy of production data; 6 bot conversation pages also matched.",
                 "id": "Dibandingkan dengan salinan read-only data production; 6 halaman percakapan bot juga identik."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "~2,900 tests",
@@ -9808,7 +10421,8 @@
                 "en": "Up from 31 backend and 12 browser tests at the start of the rebuild.",
                 "id": "Naik dari 31 test backend dan 12 browser test di awal pembaruan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -9942,7 +10556,34 @@
                 "en": "Based on repository history.",
                 "id": "Berdasarkan riwayat repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "218.4 KB → 184.3 KB",
+              "label": {
+                "en": "Shared first-load JavaScript per page after removing a client animation library (compressed, production build)",
+                "id": "JavaScript first-load bersama per halaman setelah library animasi klien dihapus (terkompresi, build produksi)"
+              },
+              "confidence": "verified",
+              "headline": true,
+              "delta": {
+                "before": "218.4 KB",
+                "after": "184.3 KB"
+              }
+            },
+            {
+              "value": "99 / 100",
+              "label": {
+                "en": "Lighthouse Performance and Accessibility on the home page (mobile profile, production build)",
+                "id": "Skor Lighthouse Performance dan Accessibility di halaman utama (profil mobile, build produksi)"
+              },
+              "context": {
+                "en": "Lab run with throttling: LCP 1,544 ms, CLS 0.",
+                "id": "Uji lab dengan throttling: LCP 1.544 ms, CLS 0."
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10089,7 +10730,8 @@
                 "en": "pytest without the live-model tests, run on a fresh clone, 16 Oct 2026.",
                 "id": "pytest tanpa pengujian model live, dijalankan pada clone baru, 16 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "118",
@@ -10101,7 +10743,8 @@
                 "en": "Repository history, 9 to 10 Oct 2026.",
                 "id": "Riwayat repositori, 9 hingga 10 Okt 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "9",
@@ -10113,7 +10756,17 @@
                 "en": "GitHub Spec Kit overview in the repository.",
                 "id": "Ringkasan GitHub Spec Kit di repositori."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
+            },
+            {
+              "value": "0 of 60",
+              "label": {
+                "en": "Live AI fabric headlines favouring a roll width other than the calculated one, after a claim guard (60 live runs)",
+                "id": "Headline kain dari AI yang menyarankan lebar kain selain hasil perhitungan, setelah claim guard (60 run live)"
+              },
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10259,16 +10912,13 @@
           ],
           "results": [
             {
-              "value": "13 diagrams",
+              "value": "Warm transfer",
               "label": {
-                "en": "Architecture diagrams covering network, security, reliability and DR",
-                "id": "Diagram arsitektur untuk jaringan, keamanan, reliability, dan DR"
+                "en": "Architecture hands a live conversation to a human agent with its context (presales, outcome not public)",
+                "id": "Arsitektur mengalihkan percakapan ke agen manusia beserta konteksnya (presales, hasil tidak dipublikasikan)"
               },
-              "context": {
-                "en": "From a team-authored solution architecture document. Presales work; the outcome is not public.",
-                "id": "Dari dokumen solution architecture yang disusun bersama tim. Pekerjaan presales; hasilnya tidak dipublikasikan."
-              },
-              "confidence": "strongly-inferred"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10342,7 +10992,8 @@
                 "en": "On 1,350 held-out tweets after three epochs, weighted F1 0.89 (training notebook output); the Hugging Face model card also reports 89%.",
                 "id": "Pada 1.350 tweet validasi yang tidak dipakai saat training, setelah tiga epoch, weighted F1 0,89 (output notebook training); model card Hugging Face juga mencatat 89%."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "88%",
@@ -10354,7 +11005,8 @@
                 "en": "On 150 test tweets the model never saw in training (classification report in the training notebook).",
                 "id": "Pada 150 tweet uji yang tidak dipakai saat training (classification report di notebook training)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "7,500",
@@ -10366,7 +11018,8 @@
                 "en": "2,500 positive, 2,500 neutral and 2,500 negative (the cleaned dataset file in the model repository).",
                 "id": "2.500 positif, 2.500 netral, dan 2.500 negatif (file dataset bersih di repository model)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -10451,7 +11104,8 @@
                 "en": "Organized by Universitas Padjadjaran; the judges reported the team's 0.79 test accuracy as the highest of all teams (repository README).",
                 "id": "Diselenggarakan oleh Universitas Padjadjaran; juri menyatakan akurasi uji tim sebesar 0,79 sebagai yang tertinggi dari semua tim (README repositori)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "84.8%",
@@ -10463,7 +11117,8 @@
                 "en": "On 1,962 validation tweets after three epochs (fine-tuning notebook output).",
                 "id": "Pada 1.962 tweet validasi setelah tiga epoch (output notebook fine-tuning)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "9,810",
@@ -10475,7 +11130,8 @@
                 "en": "The competition's training data after cleaning (the unbalanced training file in the repository).",
                 "id": "Data latih kompetisi setelah dibersihkan (file training tidak seimbang di repository)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "82.8%",
@@ -10487,7 +11143,8 @@
                 "en": "On 1,108 validation texts, F1 0.83 (training log in the CNN-LSTM notebook).",
                 "id": "Pada 1.108 teks validasi, F1 0,83 (log training di notebook CNN-LSTM)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10583,7 +11240,8 @@
                 "en": "Historical forecast from 20 March to 22 August 2021 on the training series: an in-sample check, not a held-out test (Darts r2_score, notebook output).",
                 "id": "Historical forecast 20 Maret hingga 22 Agustus 2021 pada deret training: pengecekan in-sample, bukan pengujian pada data terpisah (r2_score Darts, output notebook)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "0.9995",
@@ -10595,7 +11253,8 @@
                 "en": "Same in-sample historical forecast method on cumulative full-dose vaccinations (notebook output).",
                 "id": "Metode historical forecast in-sample yang sama pada vaksinasi dosis lengkap kumulatif (output notebook)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "208 days",
@@ -10607,7 +11266,8 @@
                 "en": "Notebook output of the main case model.",
                 "id": "Output notebook model kasus utama."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "About 10 months",
@@ -10619,7 +11279,8 @@
                 "en": "At an average of 273,318 second doses a day (the paper in the repository).",
                 "id": "Dengan rata-rata 273.318 dosis kedua per hari (paper di repository)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             }
           ],
           "stack": [
@@ -10725,7 +11386,8 @@
                 "en": "PuLP and SciPy SLSQP with the same constraints (the optimization module in the repository). This uses historical returns, not a guarantee of future returns.",
                 "id": "PuLP dan SciPy SLSQP dengan batasan yang sama (modul optimasi di repository). Perhitungan memakai imbal hasil historis, bukan jaminan imbal hasil di masa depan."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "503",
@@ -10737,7 +11399,8 @@
                 "en": "The ticker list in the repository; prices load live from Yahoo Finance.",
                 "id": "Daftar ticker di repository; harga dimuat langsung dari Yahoo Finance."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             },
             {
               "value": "8 of 9",
@@ -10749,7 +11412,8 @@
                 "en": "Repository commit history (one commit by a teammate adds the SLSQP solver).",
                 "id": "Riwayat commit repository (satu commit dari rekan tim menambahkan solver SLSQP)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [
@@ -10820,7 +11484,8 @@
                 "en": "GitHub star count as of October 2026.",
                 "id": "Jumlah bintang GitHub per Oktober 2026."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "headline": true
             },
             {
               "value": "2 report types",
@@ -10832,7 +11497,8 @@
                 "en": "One notebook per program in the repository.",
                 "id": "Satu notebook per program di repository."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "kind": "scale"
             }
           ],
           "stack": [

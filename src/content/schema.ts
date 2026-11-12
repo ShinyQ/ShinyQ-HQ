@@ -71,6 +71,9 @@ export const PrincipleSchema = z.strictObject({
 /** Longest `Stat.short` in either locale (one cell of the landing proof strip). */
 export const STAT_SHORT_MAX = 28;
 
+/** Scale stats (PRs, contributions) live in one muted footnote under the stats (owner decision 2026-11-13). */
+export const SCALE_STATS_MAX = 2;
+
 export const ProfileSchema = z.strictObject({
   name: nonEmpty,
   handle: nonEmpty,
@@ -92,15 +95,41 @@ export const ProfileSchema = z.strictObject({
   heroProof: z.array(SlugSchema).length(3),
 });
 
-export const StatSchema = z.strictObject({
-  id: SlugSchema,
-  value: nonEmpty,
-  label: LocalizedTextSchema,
-  /** Short label for the landing proof strip (`profile.heroProof`, owner decision 2026-10-25); `label` stays the full sentence. */
-  short: LocalizedTextSchema.optional(),
-  source: nonEmpty,
-  confidence: ConfidenceSchema,
-});
+/**
+ * Impact-first results (owner decision 2026-11-13): `impact` is what the work changed or achieved (a before and after,
+ * quality, latency, reliability, a placing, adoption by others, a sourced capability); `scale` is how much was produced
+ * or how fast (PRs, commits, tests, specs, "N weeks to production"). Absent means impact. Read through the selectors.
+ */
+export const ResultKindSchema = z.enum(["impact", "scale"]);
+
+/** A before and after drawn as "before → after"; `value` stays the plain-text form (Ask, OG, SEO) and must read the same. */
+export const DeltaSchema = z.strictObject({ before: nonEmpty, after: nonEmpty });
+
+/** Result and stat checks shared by both: a delta only on an impact item, and `value` reading before then after. */
+function checkKindAndDelta(item: { value: string; kind?: "impact" | "scale"; delta?: { before: string; after: string } }, ctx: z.RefinementCtx) {
+  if (!item.delta) return;
+  if (item.kind === "scale") ctx.addIssue({ code: "custom", path: ["delta"], message: "A delta is only allowed on an impact result" });
+  const before = item.value.indexOf(item.delta.before);
+  const after = before < 0 ? -1 : item.value.indexOf(item.delta.after, before + item.delta.before.length);
+  if (before < 0 || after < 0) {
+    ctx.addIssue({ code: "custom", path: ["value"], message: `value "${item.value}" must read before to after ("${item.delta.before}" then "${item.delta.after}")` });
+  }
+}
+
+export const StatSchema = z
+  .strictObject({
+    id: SlugSchema,
+    value: nonEmpty,
+    label: LocalizedTextSchema,
+    /** Short label for the landing proof strip (`profile.heroProof`, owner decision 2026-10-25) and the scale footnote; `label` stays the full sentence. */
+    short: LocalizedTextSchema.optional(),
+    source: nonEmpty,
+    confidence: ConfidenceSchema,
+    /** `scale` stats leave the stats row for the muted footnote (owner decision 2026-11-13); absent means impact. */
+    kind: ResultKindSchema.optional(),
+    delta: DeltaSchema.optional(),
+  })
+  .superRefine(checkKindAndDelta);
 
 /**
  * Skill groups follow the CV's taxonomy, in CV order (round 5 CV refresh, 2026-10-13), plus the site-only
@@ -153,16 +182,25 @@ export const TimelineEntrySchema = z.strictObject({
 /** Results a case study opens with (the metric strip): flagged ones, else the first ones. Defined client-safe in `selectors.ts`. */
 export { HEADLINE_MAX };
 
-export const ResultSchema = z.strictObject({
-  value: nonEmpty,
-  label: LocalizedTextSchema,
-  /** How the number was measured; omitted when there is nothing to add. */
-  context: LocalizedTextSchema.optional(),
-  /** Internal provenance for content review; never rendered on the site or sent to Ask. */
-  confidence: ConfidenceSchema,
-  /** Opens the case study in the metric strip (at most `HEADLINE_MAX` per pod); unflagged pods show their first results. */
-  headline: z.boolean().optional(),
-});
+export const ResultSchema = z
+  .strictObject({
+    value: nonEmpty,
+    label: LocalizedTextSchema,
+    /** How the number was measured; omitted when there is nothing to add. */
+    context: LocalizedTextSchema.optional(),
+    /** Internal provenance for content review; never rendered on the site or sent to Ask. */
+    confidence: ConfidenceSchema,
+    /** Opens the case study in the metric strip (at most `HEADLINE_MAX` per pod, impact only); unflagged pods show their first impact results. */
+    headline: z.boolean().optional(),
+    /** `impact` (absent) or `scale` (`ResultKindSchema`). */
+    kind: ResultKindSchema.optional(),
+    /** Before and after of an impact result, drawn as "before → after" (`DeltaValue`). */
+    delta: DeltaSchema.optional(),
+  })
+  .superRefine((result, ctx) => {
+    checkKindAndDelta(result, ctx);
+    if (result.headline && result.kind === "scale") ctx.addIssue({ code: "custom", path: ["headline"], message: "A headline result must be an impact result" });
+  });
 
 const ArchitectureLabelSchema = z.union([nonEmpty, LocalizedTextSchema]);
 
@@ -232,8 +270,8 @@ export const EngineeringTopicSchema = z.strictObject({
   post: SlugSchema.optional(),
 });
 
-/** The featured case studies that must read as stories (owner decision 2026-10-25). */
-export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard"] as const;
+/** The featured case studies that must read as stories (owner decision 2026-10-25), plus the AI app template key project (2026-11-13). */
+export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard", "ai-app-accelerator"] as const;
 
 /** Longest `Pod.shortTitle` in either locale (one line on an L3 directory board). */
 export const SHORT_TITLE_MAX = 32;
@@ -302,6 +340,9 @@ export const PodSchema = z
     if (pod.results.filter((r) => r.headline).length > HEADLINE_MAX) {
       ctx.addIssue({ code: "custom", path: ["results"], message: `At most ${HEADLINE_MAX} headline results per pod` });
     }
+    if (!pod.results.some((r) => r.kind !== "scale")) {
+      ctx.addIssue({ code: "custom", path: ["results"], message: `Pod "${pod.slug}" needs at least one impact result (kind "impact" or no kind)` });
+    }
     if (pod.selected !== undefined && pod.assets.length === 0) {
       ctx.addIssue({ code: "custom", path: ["selected"], message: "Selected work needs at least one gallery image" });
     }
@@ -311,6 +352,16 @@ export const PodSchema = z
         path: ["architecture"],
         message: "Hero pods need an architecture with at least 3 nodes",
       });
+    }
+    // A key project (hero with a gallery, `isKeyProject`) shows the 8 standard chapters (owner decision 2026-11-13, `caseChapters`).
+    if (pod.tier === "hero" && pod.assets.length > 0) {
+      const missing = [
+        ...(pod.story ? [] : ["Situation", "Role and key decisions"]),
+        ...(pod.story?.lesson ? [] : ["Lesson"]),
+        ...(pod.architecture ? [] : ["Architecture"]),
+        ...(pod.engineering ? [] : ["Engineering details"]),
+      ];
+      if (missing.length > 0) ctx.addIssue({ code: "custom", path: ["tier"], message: `Key project "${pod.slug}" is missing chapters: ${missing.join(", ")}` });
     }
   });
 
@@ -632,7 +683,8 @@ export const ProductionSchema = z.strictObject({
 export const SiteContentObjectSchema = z.strictObject({
   profile: ProfileSchema,
   production: ProductionSchema,
-  stats: z.array(StatSchema).min(4).max(6),
+  /** 4 to 6 lead stats (the site's dataset has exactly 6: the 3D stats ring) plus at most `SCALE_STATS_MAX` scale stats. */
+  stats: z.array(StatSchema).min(4).max(6 + SCALE_STATS_MAX),
   skills: z.array(SkillGroupSchema).min(1),
   certifications: z.array(CertificationSchema),
   awards: z.array(AwardSchema),
@@ -665,6 +717,13 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     ranks.add(pod.selected);
   });
   const statIndex = new Map(content.stats.map((s, i) => [s.id, i]));
+  const scaleStats = content.stats.filter((s) => s.kind === "scale");
+  const leadCount = content.stats.length - scaleStats.length;
+  if (leadCount < 4 || leadCount > 6) ctx.addIssue({ code: "custom", path: ["stats"], message: `Expected 4 to 6 lead (non-scale) stats, found ${leadCount}` });
+  if (scaleStats.length > SCALE_STATS_MAX) ctx.addIssue({ code: "custom", path: ["stats"], message: `At most ${SCALE_STATS_MAX} scale stats (the footnote)` });
+  content.stats.forEach((s, i) => {
+    if (s.kind === "scale" && !s.short) ctx.addIssue({ code: "custom", path: ["stats", i, "short"], message: `Scale stat "${s.id}" needs a short label (the footnote reads it)` });
+  });
   if (new Set(content.profile.heroProof).size !== content.profile.heroProof.length) {
     ctx.addIssue({ code: "custom", path: ["profile", "heroProof"], message: "heroProof lists a stat twice" });
   }
@@ -674,6 +733,7 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
       ctx.addIssue({ code: "custom", path: ["profile", "heroProof", i], message: `Unknown stat "${id}"` });
       return;
     }
+    if (content.stats[at].kind === "scale") ctx.addIssue({ code: "custom", path: ["profile", "heroProof", i], message: `A hero proof stat cannot be a scale stat ("${id}")` });
     const short = content.stats[at].short;
     if (!short) ctx.addIssue({ code: "custom", path: ["stats", at, "short"], message: `Stat "${id}" is in profile.heroProof and needs a short label` });
     else for (const locale of LOCALES) {
@@ -764,6 +824,8 @@ export type SkillGroup = z.infer<typeof SkillGroupSchema>;
 export type Certification = z.infer<typeof CertificationSchema>;
 export type TimelineEntry = z.infer<typeof TimelineEntrySchema>;
 export type Result = z.infer<typeof ResultSchema>;
+export type Delta = z.infer<typeof DeltaSchema>;
+export type ResultKind = z.infer<typeof ResultKindSchema>;
 export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type PostDiagrams = z.infer<typeof PostDiagramsSchema>;
 export type Pod = z.infer<typeof PodSchema>;

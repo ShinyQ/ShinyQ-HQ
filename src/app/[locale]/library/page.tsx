@@ -5,6 +5,7 @@ import { GuideShelf } from "@/components/guides/GuideShelf";
 import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TopicFilter } from "@/components/page/TopicFilter";
+import { Paginated } from "@/components/page/Paginated";
 import { guideViews } from "@/content/guide-views";
 import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "@/content/load";
 import { isResearch } from "@/content/selectors";
@@ -14,6 +15,8 @@ import { assertLocale } from "@/i18n/locale";
 import { seoMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { pageJsonLd } from "@/lib/jsonld";
+
+const POSTS_PAGE = 6;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/library">): Promise<Metadata> {
   return seoMetadata(assertLocale((await params).locale), "/library");
@@ -25,6 +28,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   const t = await getTranslations({ locale, namespace: "library" });
   const tw = await getTranslations({ locale, namespace: "writing" });
   const tt = await getTranslations({ locale, namespace: "library.topics" });
+  const tc = await getTranslations({ locale, namespace: "common" });
   const library = getLibrary();
   const posts = getPosts();
   const research = library.publications.filter((p) => isResearch(p.kind));
@@ -63,7 +67,10 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
       />
       <TopicFilter topics={topics} total={posts.length + library.publications.length + library.talks.length}>
         <SectionSplit id="posts" title={t("posts")} className="pv-sec lg:!pt-24">
-          <PostList posts={posts} locale={locale} lead />
+          {/* The Blog pages 6 at a time, newest first, the lead card on page 1 (owner decision 2026-11-13). */}
+          <Paginated param="posts" size={POSTS_PAGE} total={posts.length} label={tc("pager.posts")} headingId="posts-title">
+            <PostList posts={posts} locale={locale} lead pageSize={POSTS_PAGE} />
+          </Paginated>
         </SectionSplit>
         <SectionSplit id="research" title={t("research")} intro={t("researchIntro")}>
           <ResearchList publications={library.publications} self={getProfile().name} contact={getContact()} metrics={library.researchMetrics} locale={locale} />

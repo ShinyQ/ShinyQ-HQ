@@ -4,7 +4,7 @@ import { getAwards, getPods, getTimeline } from "./load";
 import { coverImage } from "./media";
 import { pickFeaturedPods } from "./pageview";
 import type { Award, Locale, Pod, TimelineEntry } from "./schema";
-import { sortTimeline } from "./selectors";
+import { isImpact, sortTimeline } from "./selectors";
 
 /** Placement tiers on the wins station, in order: 1st, 2nd and 3rd place, then every other placing (finalists and honors). */
 export const WIN_TIERS = ["gold", "silver", "bronze", "honor"] as const;
@@ -31,17 +31,11 @@ export function winCounts(awards: readonly Pick<Award, "placement">[]): { placin
 }
 
 /**
- * A result that reads as a before and after: "90.9% to 36.4%", "11.7 MB → 156 KB". Side-by-side comparisons ("6 vs 18")
- * and single numbers are not.
- */
-const BEFORE_AFTER = /→|\sto\s/;
-
-/**
  * The results station (owner decision 2026-11-02): only verified results (`confidence: "verified"`, never shown itself)
- * whose value is a before and after, from the case studies in site order (`getPods`), each with its case study.
+ * impact results with a `delta` (a before and after), from the case studies in site order (`getPods`), each with its case study.
  */
 export function beforeAfterResults(pods: readonly Pod[] = getPods()): { pod: Pod; result: Pod["results"][number] }[] {
-  return pods.flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && BEFORE_AFTER.test(r.value)).map((result) => ({ pod, result })));
+  return pods.flatMap((pod) => pod.results.filter((r) => r.confidence === "verified" && isImpact(r) && r.delta && /\d/.test(r.delta.before) && /\d/.test(r.delta.after)).map((result) => ({ pod, result })));
 }
 
 /** The now station: the roles still running (no end date), employment first, then freelance, newest first. */

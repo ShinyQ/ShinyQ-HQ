@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { Accent, Locale, Stat } from "@/content/schema";
 import { QuietLink } from "../QuietLink";
+import { DeltaValue, type DeltaLabels } from "../DeltaValue";
+import { ScaleNote } from "./ScaleNote";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import type { CareerType } from "@/experience/types";
@@ -146,15 +148,20 @@ export function SectionWide({
 }
 
 /** Facts as a spec sheet: the value column, then the sentence that gives it context. */
-export function StatLedger({ stats, locale }: { stats: readonly Stat[]; locale: Locale }) {
+export function StatLedger({ stats, locale, deltaLabels, scale, scaleNote }: { stats: readonly Stat[]; locale: Locale; deltaLabels: DeltaLabels; scale: readonly Stat[]; scaleNote: string }) {
   return (
+    <>
     <ul className="pv-rows pv-rows-closed">
       {stats.map((stat) => (
         <li key={stat.id} className="grid gap-x-6 gap-y-1.5 py-4 sm:grid-cols-[minmax(120px,180px)_1fr] sm:items-baseline sm:py-5">
-          <p className="pv-num text-[34px] leading-none sm:text-[44px]">{stat.value}</p>
+          <p className="pv-num text-[34px] leading-none sm:text-[44px]">
+            <DeltaValue value={stat.value} delta={stat.delta} labels={deltaLabels} />
+          </p>
           <p className="max-w-[52ch] text-ink-2">{stat.label[locale]}</p>
         </li>
       ))}
     </ul>
+    <ScaleNote stats={scale} locale={locale} lead={scaleNote} />
+    </>
   );
 }

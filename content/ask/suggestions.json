@@ -11,20 +11,20 @@
       "expect": ["projects-summary"]
     },
     {
-      "id": "work-vendor",
-      "topic": "work",
-      "q": { "en": "Tell me about the vendor management portal", "id": "Ceritakan tentang portal manajemen vendor" },
-      "tags": ["work", "software"],
-      "followUps": ["work-stack", "work-best", "ai-agents"],
-      "expect": ["project-vendor-management-portal"]
-    },
-    {
       "id": "work-template",
       "topic": "work",
       "q": { "en": "What is his full-stack AI app template?", "id": "Apa itu template aplikasi AI full-stack miliknya?" },
       "tags": ["work", "ai", "agents"],
       "followUps": ["work-cowork", "ai-agents", "work-stack"],
       "expect": ["project-ai-app-accelerator"]
+    },
+    {
+      "id": "work-vendor",
+      "topic": "work",
+      "q": { "en": "Tell me about the vendor management portal", "id": "Ceritakan tentang portal manajemen vendor" },
+      "tags": ["work", "software"],
+      "followUps": ["work-stack", "work-best", "ai-agents"],
+      "expect": ["project-vendor-management-portal"]
     },
     {
       "id": "work-security",
@@ -140,6 +140,14 @@
       "expect": ["project-fraud-review-platform"]
     },
     {
+      "id": "ai-solutions-assistant",
+      "topic": "ai",
+      "q": { "en": "How does his MII AI portfolio assistant work?", "id": "Bagaimana cara kerja asisten portofolio MII AI miliknya?" },
+      "tags": ["ai", "agents", "rag"],
+      "followUps": ["ai-agents", "ai-voice", "career-certs"],
+      "expect": ["project-ai-solutions-assistant"]
+    },
+    {
       "id": "ai-documents",
       "topic": "ai",
       "q": { "en": "How does the AI CV screening platform work?", "id": "Bagaimana cara kerja platform AI CV screening?" },
@@ -186,14 +194,6 @@
       "tags": ["ai", "data"],
       "followUps": ["ai-research", "ai-documents", "work-best"],
       "expect": ["project-fabric-forecasting-dashboard"]
-    },
-    {
-      "id": "ai-solutions-assistant",
-      "topic": "ai",
-      "q": { "en": "How does his MII AI portfolio assistant work?", "id": "Bagaimana cara kerja asisten portofolio MII AI miliknya?" },
-      "tags": ["ai", "agents", "rag"],
-      "followUps": ["ai-agents", "ai-voice", "career-certs"],
-      "expect": ["project-ai-solutions-assistant"]
     },
     {
       "id": "ai-deck",
