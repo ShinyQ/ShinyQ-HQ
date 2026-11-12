@@ -144,9 +144,11 @@ describe("content/site-content.json", () => {
     expect(pods.find((p) => p.slug === "event-tech-search-backend")?.tier).toBe("listed");
   });
 
-  it("has 4 to 6 lobby stats", () => {
-    expect(content.stats.length).toBeGreaterThanOrEqual(4);
-    expect(content.stats.length).toBeLessThanOrEqual(6);
+  it("has 4 to 6 lobby (lead) stats and at most 2 scale stats", () => {
+    const scale = content.stats.filter((s) => s.kind === "scale").length;
+    expect(content.stats.length - scale).toBeGreaterThanOrEqual(4);
+    expect(content.stats.length - scale).toBeLessThanOrEqual(6);
+    expect(scale).toBeLessThanOrEqual(2);
   });
 
   it("follows owner decisions C2, C5 and C6", () => {

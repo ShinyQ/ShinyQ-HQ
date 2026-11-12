@@ -26,7 +26,7 @@ import {
 import type { FloorId, Locale } from "./schema";
 import { roomDataVersions } from "./room-views";
 import { shapeUrl } from "./shapes";
-import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, sideProjectTitle, wallSkillGroups } from "./selectors";
+import { FIRST_CORRIDOR_YEAR, leadStats, podHasGallery, podLiveLink, roleLine, sideProjectTitle, wallSkillGroups } from "./selectors";
 import { getTechLogo, sortLogosFirst } from "./tech";
 import { repoSlug } from "./workshop";
 
@@ -111,7 +111,8 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
       motto: profile.subheadline[locale],
       location: profile.location[locale],
     },
-    stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),
+    // The ring shows the lead stats only, a before and after as its after (the label keeps the before), owner decision 2026-11-13.
+    stats: leadStats(getStats()).map((s) => ({ id: s.id, value: s.delta?.after ?? s.value, label: s.label[locale] })),
     skills: wallSkillGroups(getSkills()).map((g) => {
       const items = sortLogosFirst(g.items);
       return { id: g.id, label: g.label[locale], items, logos: items.map((name) => getTechLogo(name)?.src ?? null) };

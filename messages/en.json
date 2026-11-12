@@ -34,6 +34,8 @@
     "RF": "Roof · Comms"
   },
   "common": {
+    "delta": { "from": "from", "to": "to" },
+    "pager": { "projects": "More projects pages", "posts": "Blog pages", "prev": "Previous", "next": "Next", "page": "Page {page}", "range": "Showing {from} to {to} of {total}" },
     "share": "Share",
     "copyClassicLink": "Copy Classic site link",
     "copy3dLink": "Copy 3D link",
@@ -76,6 +78,7 @@
     "inProgress": "in progress"
   },
   "home": {
+    "scaleNote": "Volume, agent-assisted and human-reviewed:",
     "proofLabel": "Key numbers",
     "currentRole": "Current role",
     "statsTitle": "At a glance",
@@ -249,6 +252,7 @@
     "kinds": { "roles": "Roles", "study": "Study and milestones", "projects": "Projects", "awards": "Awards", "writing": "Writing and research", "certs": "Certifications" }
   },
   "labs": {
+    "scaleLine": "Scale:",
     "title": "Labs",
     "intro": "Software, AI and data case studies showing my contributions and results: software since 2019, data and ML since 2021, enterprise AI since 2026.",
     "softwareIntro": "Backend, full-stack, fintech and SaaS systems.",

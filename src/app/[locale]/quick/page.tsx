@@ -8,6 +8,7 @@ import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { AwardList, SkillsWall } from "@/components/ProfileBlocks";
 import { SideProjectGrid } from "@/components/WorkshopAnnex";
+import { leadStats, scaleStats } from "@/content/selectors";
 import { getAwards, getPods, getPosts, getProfile, getRoof, getSideProjects, getSkills, getStats, getTimeline } from "@/content/load";
 import { assertLocale } from "@/i18n/locale";
 import { formatYearMonth } from "@/lib/format";
@@ -91,7 +92,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
       </SectionSplit>
 
       <SectionSplit {...section("stats")}>
-        <StatLedger stats={getStats()} locale={locale} />
+        <StatLedger stats={leadStats(getStats())} locale={locale} deltaLabels={{ from: tc("delta.from"), to: tc("delta.to") }} scale={scaleStats(getStats())} scaleNote={th("scaleNote")} />
       </SectionSplit>
 
       {(["software", "ai", "data"] as const).map((wing) => {

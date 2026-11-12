@@ -4,7 +4,7 @@ import { beforeAfterResults, currentRoles, highlightEntries, highlightProjects, 
 import { getAwards, getProfile, getRoof, getStats, getTimeline } from "../load";
 import { coverImage } from "../media";
 import type { Locale, TimelineEntry } from "../schema";
-import { podLiveLink } from "../selectors";
+import { leadStats, podLiveLink } from "../selectors";
 import { contactItems, cvItems } from "./roof";
 import { chain, fill, messages, roomId, single } from "./shared";
 import type { RoomCard, RoomView } from "./types";
@@ -43,7 +43,7 @@ export function buildHighlightsViews(locale: Locale): RoomView[] {
       subtitle: profile.headline[locale],
       meta: [`${profile.currentRole.title[locale]} · ${profile.currentRole.org}`, profile.location[locale]],
       accent: "green",
-      metrics: getStats()
+      metrics: leadStats(getStats())
         .slice(0, HIGHLIGHT_STAT_COUNT)
         .map((s) => ({ value: s.value, label: s.label[locale] })),
       sections: [{ body: profile.subheadline[locale] }],

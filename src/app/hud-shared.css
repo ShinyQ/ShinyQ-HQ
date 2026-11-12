@@ -71,10 +71,15 @@
     border-color: rgb(165 180 252 / 0.5);
   }
 
-  .chip[aria-pressed="true"] {
+  .chip:is([aria-pressed="true"], [aria-current="page"]) {
     background: var(--color-ink);
     border-color: var(--color-ink);
     color: var(--color-void);
+  }
+
+  .chip[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: default;
   }
 
   .chip-count {

@@ -58,6 +58,8 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const live = podLiveLink(pod);
   const codeResearch = Boolean(pod.repos?.length || pod.publications?.length);
   const headline = headlineResults(pod.results);
+  const deltaLabels = { from: tc("delta.from"), to: tc("delta.to") };
+  const ledgerLabels = { delta: deltaLabels, scale: t("scaleLine") };
   // The full results chapter only when it adds something to the strip: more results, or how they were measured.
   const detail = pod.results.length > headline.length || pod.results.some((r) => r.context);
   const story = pod.story;
@@ -111,7 +113,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <h2 id="key-results-title" className="sr-only">
                 {t("keyResults")}
               </h2>
-              <MetricStrip items={headline.map((r) => ({ value: r.value, label: r.label[locale] }))} label={t("keyResults")} />
+              <MetricStrip items={headline.map((r) => ({ value: r.value, label: r.label[locale], delta: r.delta }))} label={t("keyResults")} deltaLabels={deltaLabels} />
             </section>
             {live && (
               <p className="mt-8">
@@ -152,7 +154,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
                   <DecisionList decisions={story.decisions} locale={locale} whyLabel={t("why")} />
                 </Chapter>
                 <Chapter id="results" title={t("results")}>
-                  <MetricLedger results={pod.results} locale={locale} />
+                  <MetricLedger results={pod.results} locale={locale} labels={ledgerLabels} />
                 </Chapter>
                 {story.lesson && (
                   <Chapter id="lesson" title={t("lesson")}>
@@ -164,7 +166,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               <>
                 {detail && (
                   <Chapter id="results" title={t("results")}>
-                    <MetricLedger results={pod.results} locale={locale} />
+                    <MetricLedger results={pod.results} locale={locale} labels={ledgerLabels} />
                   </Chapter>
                 )}
                 <Chapter id="problem" title={t("problem")}>

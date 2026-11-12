@@ -94,7 +94,7 @@
     ],
     "heroProof": [
       "enterprise-clients",
-      "prs-merged-2026",
+      "voice-interruption-speedup",
       "microsoft-certifications"
     ]
   },
@@ -306,28 +306,50 @@
       "confidence": "self-reported"
     },
     {
-      "id": "prs-merged-2026",
-      "value": "1,190+",
+      "id": "voice-interruption-speedup",
+      "value": "~2 s to ~0.2 s",
       "label": {
-        "en": "Merged pull requests in 2026",
-        "id": "Pull request yang di-merge selama 2026"
+        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
+        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
       },
+      "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
+      "confidence": "verified",
       "short": {
-        "en": "PRs merged in 2026",
-        "id": "PR di-merge selama 2026"
+        "en": "voice interruption latency",
+        "id": "latensi interupsi suara"
       },
-      "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
-      "confidence": "verified"
+      "delta": {
+        "before": "~2 s",
+        "after": "~0.2 s"
+      }
     },
     {
-      "id": "github-contributions-365",
-      "value": "7,350",
+      "id": "fraud-false-positives",
+      "value": "90.9% to 36.4%",
       "label": {
-        "en": "GitHub contributions over the last 365 days (agent-assisted, human-reviewed)",
-        "id": "Kontribusi GitHub selama 365 hari terakhir (dibantu AI agent, tetap ditinjau manusia)"
+        "en": "Fraud screening false positives: 90.9% to 36.4% on noisy clean packets (offline development set)",
+        "id": "False positive screening fraud: 90,9% menjadi 36,4% pada paket bersih dengan gangguan (set development offline)"
       },
-      "source": "GitHub contribution calendar, Oct 2025 to Oct 2026",
-      "confidence": "verified"
+      "source": "Fraud document review case study result (offline development gold set)",
+      "confidence": "verified",
+      "delta": {
+        "before": "90.9%",
+        "after": "36.4%"
+      }
+    },
+    {
+      "id": "dashboard-payload",
+      "value": "11.7 MB → 156 KB",
+      "label": {
+        "en": "Lighter national summary dashboard: 11.7 MB to 156 KB per load on real data, 39 requests to 5",
+        "id": "Dasbor ringkasan nasional lebih ringan: 11,7 MB menjadi 156 KB per pemuatan dengan data riil, 39 request menjadi 5"
+      },
+      "source": "Fabric forecasting dashboard case study result (pull-request measurements on real data)",
+      "confidence": "verified",
+      "delta": {
+        "before": "11.7 MB",
+        "after": "156 KB"
+      }
     },
     {
       "id": "microsoft-certifications",
@@ -354,14 +376,34 @@
       "confidence": "verified"
     },
     {
-      "id": "voice-interruption-speedup",
-      "value": "10x",
+      "id": "prs-merged-2026",
+      "value": "1,190+",
       "label": {
-        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
-        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
+        "en": "Merged pull requests in 2026",
+        "id": "Pull request yang di-merge selama 2026"
       },
-      "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
-      "confidence": "verified"
+      "short": {
+        "en": "PRs merged in 2026",
+        "id": "PR di-merge selama 2026"
+      },
+      "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
+      "confidence": "verified",
+      "kind": "scale"
+    },
+    {
+      "id": "github-contributions-365",
+      "value": "7,350",
+      "label": {
+        "en": "GitHub contributions over the last 365 days (agent-assisted, human-reviewed)",
+        "id": "Kontribusi GitHub selama 365 hari terakhir (dibantu AI agent, tetap ditinjau manusia)"
+      },
+      "source": "GitHub contribution calendar, Oct 2025 to Oct 2026",
+      "confidence": "verified",
+      "kind": "scale",
+      "short": {
+        "en": "GitHub contributions in the last 365 days",
+        "id": "kontribusi GitHub dalam 365 hari terakhir"
+      }
     }
   ],
   "skills": [
@@ -3034,7 +3076,11 @@
                 "en": "From the commit history and data models.",
                 "id": "Dari riwayat commit dan model data."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "2",
+                "after": "1"
+              }
             },
             {
               "value": "3 roles",
@@ -3306,7 +3352,11 @@
                 "en": "Measured against a live backend: 4,491 bytes, over the 4,096-byte browser limit, down to 2,083.",
                 "id": "Diukur menggunakan backend live: ukuran awal 4.491 byte melampaui batas browser 4.096 byte, lalu turun menjadi 2.083."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "4.5 KB",
+                "after": "2.1 KB"
+              }
             }
           ],
           "stack": [
@@ -5550,7 +5600,11 @@
                 "en": "Controlled A/B on the same deployment, index and audio, n=4 calls per arm: 1,875 to 2,140 ms vs 93 to 220 ms.",
                 "id": "A/B test terkontrol pada deployment, index, dan audio yang sama, n=4 panggilan untuk masing-masing jalur: 1.875 hingga 2.140 ms vs 93 hingga 220 ms."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "~2 s",
+                "after": "~0.2 s"
+              }
             },
             {
               "value": "2 of 2",
@@ -6586,7 +6640,11 @@
                 "en": "Development gold set.",
                 "id": "Gold set development."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "90.9%",
+                "after": "36.4%"
+              }
             },
             {
               "value": "76.2% to 0%",
@@ -6598,7 +6656,11 @@
                 "en": "Same development gold set.",
                 "id": "Gold set development yang sama."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "76.2%",
+                "after": "0%"
+              }
             },
             {
               "value": "0 of 3,780",
@@ -6622,7 +6684,11 @@
                 "en": "Live evaluation after a model change; false positives also fell from 26.1% to 21.7%. These are evaluation results, not production outcomes.",
                 "id": "Evaluasi live setelah pergantian model; false positive juga turun dari 26,1% menjadi 21,7%. Ini hasil evaluasi, bukan hasil produksi."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "11.1%",
+                "after": "3.7%"
+              }
             }
           ],
           "story": {
@@ -6988,7 +7054,11 @@
                 "en": "Controlled offline synthetic rounds, not production latency. Medium passed the recorded fairness and injection gates; limited samples do not establish fairness across all groups.",
                 "id": "Putaran sintetis offline terkontrol, bukan latensi produksi. Medium lolos gate fairness dan injection tercatat; sampel terbatas belum membuktikan fairness untuk semua kelompok."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "21.1 s",
+                "after": "12.1 s"
+              }
             }
           ],
           "engineering": [
@@ -7712,7 +7782,11 @@
                 "en": "Measured after removing capacity-heavy indexes and switching to streamed aggregates.",
                 "id": "Diukur setelah menghapus index yang banyak memakai capacity dan beralih ke agregat yang di-stream."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "~21 s",
+                "after": "~1.1 s"
+              }
             },
             {
               "value": "61.0 s vs 9.5 s",
@@ -7748,7 +7822,11 @@
                 "en": "Measured in pull-request records after moving aggregation into gold summary tables on the F2 capacity, Oct 2026. One row per store and SKU also cut the forecast table's load from 14.1 MB to 2.5 MB on a scale fixture.",
                 "id": "Diukur dalam catatan pull request setelah agregasi dipindahkan ke tabel ringkasan gold pada kapasitas F2, Okt 2026. Satu baris per toko dan SKU juga memangkas pemuatan tabel forecast dari 14,1 MB menjadi 2,5 MB pada fixture skala besar."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "11.7 MB",
+                "after": "156 KB"
+              }
             }
           ],
           "story": {
@@ -9880,7 +9958,11 @@
                 "en": "After the follow-up changes, Azure met every performance target except two first calls after a restart, which the next change fixed (verified locally).",
                 "id": "Setelah perubahan lanjutan, Azure memenuhi semua target performa kecuali dua panggilan pertama setelah restart, yang diperbaiki di perubahan berikutnya (diverifikasi secara lokal)."
               },
-              "confidence": "verified"
+              "confidence": "verified",
+              "delta": {
+                "before": "60 s",
+                "after": "<2 s"
+              }
             },
             {
               "value": "~45 hours",

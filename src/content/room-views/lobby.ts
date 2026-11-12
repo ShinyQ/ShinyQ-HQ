@@ -1,5 +1,6 @@
 import { sortCertifications } from "../certs";
 import { getCertifications, getProfile, getSkills, getStats } from "../load";
+import { leadStats } from "../selectors";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
 import { visitsLabels } from "@/lib/visits/labels";
@@ -31,7 +32,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       kind: "lobby",
       title: m.hud.rooms.stats,
       accent: "green",
-      metrics: getStats().map((s) => ({ value: s.value, label: s.label[locale] })),
+      metrics: leadStats(getStats()).map((s) => ({ value: s.value, label: s.label[locale] })),
       page: "/#stats",
       // The ring's live visits tile comes from the public stats: the observatory in the Lobby's south-west corner shows them in full.
       link: { room: roomId("L1", "visits"), label: m.stats.openObservatory },

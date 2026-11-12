@@ -86,6 +86,7 @@ describe("stats overlay", () => {
   it("feeds the stats ring and the page from the same numbers", () => {
     const live = getDynamicFacts().github!.contributionsLastYear.toLocaleString("en-US");
     expect(getStats().find((s) => s.id === "github-contributions-365")?.value).toBe(live);
-    expect(buildExperienceData("en", names).stats.find((s) => s.id === "github-contributions-365")?.value).toBe(live);
+    // A scale stat (owner decision 2026-11-13): the page footnote shows it, the stats ring does not.
+    expect(buildExperienceData("en", names).stats.find((s) => s.id === "github-contributions-365")).toBeUndefined();
   });
 });

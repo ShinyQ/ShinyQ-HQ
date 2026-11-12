@@ -33,7 +33,8 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
     }
   }, [wing, stack]);
 
-  const clear = () => setSearchParams({ wing: null, stack: null });
+  // Every filter write resets "More projects" to page 1 (`Paginated`, `?page=`).
+  const clear = () => setSearchParams({ wing: null, stack: null, page: null });
 
   return (
     <>
@@ -49,7 +50,7 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
                 type="button"
                 className="chip min-h-11"
                 aria-pressed={wing === w}
-                onClick={() => setSearchParams({ wing: w === "all" ? null : w })}
+                onClick={() => setSearchParams({ wing: w === "all" ? null : w, page: null })}
               >
                 {w === "all" ? t("all") : t(`wingShort.${w}`)}
                 <span className="chip-count">{counts[w]}</span>
@@ -59,7 +60,7 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
           <span aria-hidden="true" className="hidden h-6 w-px bg-line md:block" />
           <label className="flex min-h-11 items-center gap-2">
             <span className="pv-meta">{t("stack")}</span>
-            <select className="pv-select" value={stack ?? ""} onChange={(e) => setSearchParams({ stack: e.target.value || null })}>
+            <select className="pv-select" value={stack ?? ""} onChange={(e) => setSearchParams({ stack: e.target.value || null, page: null })}>
               <option value="">{t("anyStack")}</option>
               {stacks.map((s) => (
                 <option key={s.name} value={s.name}>

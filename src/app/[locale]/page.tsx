@@ -15,6 +15,7 @@ import { TimelineRow } from "@/components/page/Timeline";
 import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
+import { leadStats, scaleStats } from "@/content/selectors";
 import { DYNAMIC_STATS, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
 import { heroProofStats, moreKeyProjects, pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
@@ -41,8 +42,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const profile = getProfile();
   const roof = getRoof();
   const pods = getPods();
-  const proof = heroProofStats(getStats(), profile.heroProof);
-  const tickerStats = getStats().filter((s) => !profile.heroProof.includes(s.id));
+  const stats = getStats();
+  const proof = heroProofStats(stats, profile.heroProof);
+  // The stats row is impact and credentials only; PR and contribution counts become the muted footnote (owner decision 2026-11-13).
+  const tickerStats = leadStats(stats).filter((s) => !profile.heroProof.includes(s.id));
+  const deltaLabels = { from: tc("delta.from"), to: tc("delta.to") };
   const featured = pickFeaturedPods(pods);
   const more = moreKeyProjects(pods, featured);
   const latest = getTimeline()
@@ -62,7 +66,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   return (
     <ClientMessages>
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} />
-      <HomeHero locale={locale} proof={<ProofStrip stats={proof} locale={locale} label={t("proofLabel")} />} />
+      <HomeHero locale={locale} proof={<ProofStrip stats={proof} locale={locale} label={t("proofLabel")} deltaLabels={deltaLabels} />} />
 
       <SectionWide id="work" title={t("selectedWork")} more={{ href: "/labs", label: t("allProjects", { count: pods.length }) }}>
         <ul className="hx-stack" data-testid="featured-grid">
@@ -118,6 +122,9 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           title={t("statsTitle")}
           live={t("ticker.live")}
           extra={<TickerVisits locale={locale} label={ts("tile")} live={t("ticker.live")} scope={visitsScope} />}
+          deltaLabels={deltaLabels}
+          scale={scaleStats(stats)}
+          scaleNote={t("scaleNote")}
         />
       </section>
 

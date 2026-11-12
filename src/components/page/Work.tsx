@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
 import { coverImage } from "@/content/media";
 import { podAttrs } from "@/content/pageview";
-import { clientLabel, podLiveLink } from "@/content/selectors";
+import { clientLabel, leadResult, podLiveLink } from "@/content/selectors";
+import { DeltaValue } from "../DeltaValue";
 import { Link } from "@/i18n/navigation";
 import { formatYearMonth } from "@/lib/format";
 import { TechLogoRow } from "../Chip";
@@ -32,14 +33,16 @@ export async function PodLiveCta({ pod, locale, className = "" }: { pod: Pod; lo
  * placeholder keeps the column aligned otherwise), title and stack, client, start date and the headline result.
  * The thumbnail is the 480 px file, lazy, below the stretched title link, so a click opens the case study.
  */
-export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
+export async function WorkRow({ pod, locale, attrs }: { pod: Pod; locale: Locale; attrs?: Record<string, string> }) {
   const t = await getTranslations({ locale, namespace: "work" });
-  const result = pod.results[0];
+  const tc = await getTranslations({ locale, namespace: "common" });
+  const result = leadResult(pod.results);
   const start = formatYearMonth(pod.period.start, locale);
   const cover = coverImage(pod.assets, locale);
   return (
     <li
       {...podAttrs(pod)}
+      {...attrs}
       className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-4 gap-y-3 py-5 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-x-6 md:grid-cols-[136px_minmax(0,5fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,3fr)] md:py-6"
     >
       <div className="row-span-2 self-start md:row-span-1 md:pt-1" data-row-thumb={cover ? "" : undefined} data-row-placeholder={cover ? undefined : ""}>
@@ -78,7 +81,9 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
       <p className="pv-date hidden md:block md:pt-7">{start}</p>
       {result && (
         <div className="col-start-2 md:col-start-auto md:pt-6">
-          <p className="pv-num text-[22px]">{result.value}</p>
+          <p className="pv-num text-[22px]">
+            <DeltaValue value={result.value} delta={result.delta} labels={{ from: tc("delta.from"), to: tc("delta.to") }} compact />
+          </p>
           <p className="pv-result-label">{result.label[locale]}</p>
         </div>
       )}

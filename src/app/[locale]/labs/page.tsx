@@ -7,12 +7,16 @@ import { FeaturedProject } from "@/components/page/Featured";
 import { PageIntro, SectionWide } from "@/components/page/Layout";
 import { WorkRow } from "@/components/page/Work";
 import { WorkIndex } from "@/components/page/WorkIndex";
+import { Paginated } from "@/components/page/Paginated";
+import { pageItemAttrs } from "@/content/pagination";
 import { getPods } from "@/content/load";
 import { isKeyProject, podAttrs } from "@/content/pageview";
 import { assertLocale } from "@/i18n/locale";
 import { seoMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { pageJsonLd } from "@/lib/jsonld";
+
+const PROJECTS_PAGE = 10;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/labs">): Promise<Metadata> {
   return seoMetadata(assertLocale((await params).locale), "/labs");
@@ -23,6 +27,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "labs" });
   const tw = await getTranslations({ locale, namespace: "work" });
+  const tc = await getTranslations({ locale, namespace: "common" });
   const all = getPods();
   // Key projects are the hero pods with screenshots (owner request 2026-10-15); the rest stay in the index.
   const heroes = [...getPods("ai"), ...getPods("software")].filter(isKeyProject);
@@ -65,11 +70,14 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
         </div>
         <div data-pod-block>
           <SectionWide id="all-projects" title={tw("allProjects")}>
-            <ul className="pv-rows pv-rows-closed">
-              {rest.map((pod) => (
-                <WorkRow key={pod.id} pod={pod} locale={locale} />
-              ))}
-            </ul>
+            {/* "More projects" pages 10 at a time (owner decision 2026-11-13); Key projects above never page. */}
+            <Paginated param="page" size={PROJECTS_PAGE} total={rest.length} label={tc("pager.projects")} headingId="all-projects-title">
+              <ul className="pv-rows pv-rows-closed">
+                {rest.map((pod, i) => (
+                  <WorkRow key={pod.id} pod={pod} locale={locale} attrs={pageItemAttrs(i, PROJECTS_PAGE)} />
+                ))}
+              </ul>
+            </Paginated>
           </SectionWide>
         </div>
       </WorkIndex>

@@ -5,10 +5,53 @@ import type { Locale, LocalizedText, Pod, Publication, SideProject, SkillGroup, 
 /** Results a case study opens with (the metric strip). Lives here, import-free, so client modules can read it. */
 export const HEADLINE_MAX = 3;
 
-/** The results a case study opens with: the ones flagged `headline`, else the first `HEADLINE_MAX`. */
-export function headlineResults<T extends { headline?: boolean }>(results: readonly T[]): T[] {
-  const flagged = results.filter((r) => r.headline);
-  return (flagged.length > 0 ? flagged : results).slice(0, HEADLINE_MAX);
+/** The kind-bearing part of a result or stat (owner decision 2026-11-13: impact leads, scale is context). */
+export interface Kinded {
+  kind?: "impact" | "scale";
+}
+
+/** Impact unless marked `scale` (absent means impact). */
+export function isImpact(item: Kinded): boolean {
+  return item.kind !== "scale";
+}
+
+export function impactResults<T extends Kinded>(results: readonly T[]): T[] {
+  return results.filter(isImpact);
+}
+
+export function scaleResults<T extends Kinded>(results: readonly T[]): T[] {
+  return results.filter((r) => !isImpact(r));
+}
+
+/** The results a case study opens with: the impact ones flagged `headline`, else the first `HEADLINE_MAX` impact results. Never scale. */
+export function headlineResults<T extends Kinded & { headline?: boolean }>(results: readonly T[]): T[] {
+  const impact = impactResults(results);
+  const flagged = impact.filter((r) => r.headline);
+  return (flagged.length > 0 ? flagged : impact).slice(0, HEADLINE_MAX);
+}
+
+/** Impact results first, then scale, each in dataset order (the 3D drawer and Ask-free lists). */
+export function impactFirst<T extends Kinded>(results: readonly T[]): T[] {
+  return [...impactResults(results), ...scaleResults(results)];
+}
+
+/**
+ * The one result a row, card, share card or description leads with: a headline result with a before and after first,
+ * then the other headline results, then any impact result.
+ */
+export function leadResult<T extends Kinded & { headline?: boolean; delta?: unknown }>(results: readonly T[]): T | undefined {
+  const head = headlineResults(results);
+  return head.find((r) => r.delta) ?? head[0] ?? results[0];
+}
+
+/** The stats row (the 3D stats ring, the home and /quick ledgers): every stat that is not `scale`. */
+export function leadStats<T extends Kinded>(stats: readonly T[]): T[] {
+  return stats.filter(isImpact);
+}
+
+/** The footnote under the stats: PR and contribution counts (`kind: "scale"`). */
+export function scaleStats<T extends Kinded>(stats: readonly T[]): T[] {
+  return stats.filter((s) => !isImpact(s));
 }
 
 /** A pod's client as shown: the proper name, or its sector label in `locale` (C3). */

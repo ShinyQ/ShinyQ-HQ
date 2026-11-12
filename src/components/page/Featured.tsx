@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import type { Locale, Pod } from "@/content/schema";
 import { imageSrcSet, toGalleryImages } from "@/content/media";
-import { clientLabel } from "@/content/selectors";
+import { clientLabel, leadResult } from "@/content/selectors";
+import { DeltaValue } from "../DeltaValue";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
 import { TechLogoRow } from "../Chip";
@@ -30,7 +31,8 @@ export async function FeaturedProject({ pod, locale, stack = false }: { pod: Pod
   const th = await getTranslations({ locale, namespace: "home" });
   const [cover, ...rest] = toGalleryImages(pod.assets, locale);
   if (!cover) return null;
-  const result = pod.results[0];
+  const tc = await getTranslations({ locale, namespace: "common" });
+  const result = leadResult(pod.results);
   const film = Array.from({ length: FILM }, (_, i) => rest[i]);
   const client = clientLabel(pod.client, locale);
   return (
@@ -43,7 +45,9 @@ export async function FeaturedProject({ pod, locale, stack = false }: { pod: Pod
         </h3>
         {result && (
           <div className="pv-result" data-testid="feature-result">
-            <p className="pv-num hx-feature-result">{result.value}</p>
+            <p className="pv-num hx-feature-result">
+              <DeltaValue value={result.value} delta={result.delta} labels={{ from: tc("delta.from"), to: tc("delta.to") }} compact />
+            </p>
             <p className="pv-result-label">{result.label[locale]}</p>
           </div>
         )}

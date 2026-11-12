@@ -1,6 +1,11 @@
+import type { Delta } from "@/content/schema";
+import { DeltaValue, type DeltaLabels } from "./DeltaValue";
+
 export interface MetricStripItem {
   value: string;
   label: string;
+  /** Drawn as before and after (`DeltaValue`) when `deltaLabels` is passed. */
+  delta?: Delta;
 }
 
 const LAYOUT = {
@@ -30,18 +35,22 @@ export function MetricStrip({
   label,
   variant = "page",
   className = "",
+  deltaLabels,
 }: {
   items: readonly MetricStripItem[];
   label: string;
   variant?: keyof typeof LAYOUT;
   className?: string;
+  deltaLabels?: DeltaLabels;
 }) {
   const l = LAYOUT[variant];
   return (
     <ul aria-label={label} className={`${l.list} ${className}`} data-testid="metric-strip">
       {items.map((item, i) => (
         <li key={i} className={`${l.item} ${i > 0 ? l.rule : ""}`} data-testid="metric-strip-item">
-          <p className={`${l.value} [overflow-wrap:anywhere]`}>{item.value}</p>
+          <p className={`${l.value} [overflow-wrap:anywhere]`}>
+            <DeltaValue value={item.value} delta={item.delta} labels={deltaLabels} />
+          </p>
           <p className={l.label}>{item.label}</p>
         </li>
       ))}

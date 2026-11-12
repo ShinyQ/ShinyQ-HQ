@@ -8,6 +8,7 @@ import { createTranslator } from "next-intl";
 import { postUpdated } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile, getTimeline, getTimelineEntry } from "@/content/load";
 import type { Locale, Pod, PostRef, Result, TimelineEntry } from "@/content/schema";
+import { impactFirst, isImpact, leadResult } from "@/content/selectors";
 import { hasFirstPerson } from "@/lib/first-person";
 import type { Metadata } from "next";
 import { pathLocales } from "@/lib/routes";
@@ -28,11 +29,17 @@ const ENTRY_TITLE_WITH_ORG_MAX = 70;
 const MESSAGES = { en, id } as const;
 const seoT = (locale: Locale) => createTranslator({ locale, messages: MESSAGES[locale], namespace: "seo" });
 
-/** The result a card or description leads with: the first numeric result whose label is not first person. */
+/**
+ * The result a share card or description leads with: the pod's lead result (`leadResult`: a headline before and after
+ * first), else the first numeric impact result whose label is not first person. Scale results only as a last resort.
+ */
 export function keyResult(pod: Pick<Pod, "results">): Result {
-  const clean = pod.results.filter((r) => !hasFirstPerson(r.label.en, "en") && !hasFirstPerson(r.label.id, "id"));
-  const pool = clean.length > 0 ? clean : pod.results;
-  return pool.find((r) => /\d/.test(r.value)) ?? pool[0];
+  const clean = (r: Result) => !hasFirstPerson(r.label.en, "en") && !hasFirstPerson(r.label.id, "id");
+  const lead = leadResult(pod.results);
+  if (lead && clean(lead) && /\d/.test(lead.value)) return lead;
+  const ordered = impactFirst(pod.results);
+  const pool = ordered.filter(clean).length > 0 ? ordered.filter(clean) : ordered;
+  return pool.find((r) => isImpact(r) && /\d/.test(r.value)) ?? pool.find(isImpact) ?? pool[0];
 }
 
 /** First and last year on the career timeline, e.g. { from: "2016", to: "2026" }. */

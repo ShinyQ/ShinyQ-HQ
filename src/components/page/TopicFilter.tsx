@@ -42,12 +42,12 @@ export function TopicFilter({ topics, total, children }: { topics: readonly Topi
       <div className="pv-wrap mt-10 lg:mt-14" id="topics">
         <div role="group" aria-label={t("filters")} className="pv-filters flex flex-wrap items-center gap-1.5 px-3 py-2" data-testid="topic-filter">
           <span className="pv-meta mr-2">{t("listLabel")}</span>
-          <button type="button" className="chip min-h-11" aria-pressed={topic === null} onClick={() => setSearchParams({ topic: null })}>
+          <button type="button" className="chip min-h-11" aria-pressed={topic === null} onClick={() => setSearchParams({ topic: null, posts: null })}>
             {t("all")}
             <span className="chip-count">{total}</span>
           </button>
           {topics.map((x) => (
-            <button key={x.slug} type="button" className="chip min-h-11" aria-pressed={topic === x.slug} onClick={() => setSearchParams({ topic: x.slug })} data-topic={x.slug}>
+            <button key={x.slug} type="button" className="chip min-h-11" aria-pressed={topic === x.slug} onClick={() => setSearchParams({ topic: x.slug, posts: null })} data-topic={x.slug}>
               {x.label}
               <span className="chip-count">{x.count}</span>
             </button>
