@@ -217,6 +217,8 @@ export const BEACON = {
   ],
   /** `inset`: the card's center, 2.65 u in from the slab edge behind the station. */
   card: { u: -1.5, w: 6.4, y: 1.4, h: 4.4, d: 0.15, inset: 2.65 },
+  /** Kept clear between the signal's reach and the station's edge: more than the glass case's inset (`CASE.inset` 0.15). */
+  signalMargin: 0.25,
 } as const;
 
 export interface ContactBeacon {
@@ -224,6 +226,12 @@ export interface ContactBeacon {
   card: { face: Face; box: Box };
   /** Pulse ring sources: the beacon head (transmitting) and the mast foot. */
   pulses: { x: number; y: number; z: number; phase: number }[];
+  /**
+   * How far the signal (the pulse rings, the floor ripples, the glow under the mast) may spread from the mast: to the
+   * nearest edge of the station, less `BEACON.signalMargin`, so it stays inside the station's glass case, and so inside the
+   * hall's glass west side and south wall (owner bug, 2026-11-13: the rings reached 2.3 u past both, the ripples 4.6 u).
+   */
+  reach: number;
   top: number;
 }
 
@@ -238,6 +246,8 @@ export function contactBeacon(): ContactBeacon {
   const cz = fromEdge(s, C.inset).z;
   const cardFace = faceOf({ x: cx, z: cz + (out.z * C.d) / 2 }, out);
   const top = BEACON.mast.top + BEACON.head.h / 2;
+  const r = s.rect;
+  const reach = Math.min(mx - r.minX, r.maxX - mx, z - r.minZ, r.maxZ - z) - BEACON.signalMargin;
   return {
     mast: { x: mx, z },
     card: { face: cardFace, box: { x: cx, z: cz, y: C.y, w: C.w, d: C.d, h: C.h } },
@@ -248,6 +258,7 @@ export function contactBeacon(): ContactBeacon {
       { x: mx, y: 0.05, z, phase: 0.15 },
       { x: mx, y: 0.05, z, phase: 0.65 },
     ],
+    reach,
     top,
   };
 }
@@ -320,10 +331,10 @@ export function hallLights(projectCount: number = 3, resultCount: number = 3): L
     const [bx, , bz] = onFace(arch.face, c.u, 0, 0.3);
     out.push(beam(bx, bz, 3, 0.3, 2.2, T.experience, 0.14));
   }
-  // Contact: a spotlight on the card, pools under the card and the mast.
+  // Contact: a spotlight on the card, pools under the card and the mast (the mast's within the signal's reach).
   const b = contactBeacon();
   const [cx, , cz] = onFace(b.card.face, 0, 0, 0.4);
-  out.push(cone(cx, cz, 11, 3.4, T.contact, 0.09), pool(cx, cz, 3.6, T.contact, 0.3), pool(b.mast.x, b.mast.z, 1.6, T.contact, 0.4));
+  out.push(cone(cx, cz, 11, 3.4, T.contact, 0.09), pool(cx, cz, 3.6, T.contact, 0.3), pool(b.mast.x, b.mast.z, Math.min(1.6, b.reach), T.contact, 0.4));
   // Wins: the About me lighting on its pedestal (a spotlight, a pool and the projector beam up to the ring).
   const w = winsFace().origin;
   out.push(cone(w.x, w.z, 12, 3, T.wins, 0.1), pool(w.x - 0.2, w.z, 3.4, T.wins, 0.35));

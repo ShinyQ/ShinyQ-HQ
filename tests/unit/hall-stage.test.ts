@@ -63,7 +63,7 @@ describe("Highlights Hall stage effects on the shared holo program", () => {
     expect(c.stage[1]).toBeCloseTo(o.maxZ - o.minZ);
     expect(c.stage[2]).toBeCloseTo(o.top);
     expect(portalInstance("full").stage[0]).toBe(STAGE_KIND.portal);
-    const rings = ringInstances(contactBeacon().pulses, "#60a5fa", "full");
+    const rings = ringInstances(contactBeacon().pulses, "#60a5fa", "full", contactBeacon().reach);
     expect(rings.map((r) => r.stage[0])).toEqual(rings.map(() => STAGE_KIND.ring));
   });
 });

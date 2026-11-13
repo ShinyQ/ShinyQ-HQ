@@ -115,10 +115,18 @@ export function panelInstances(tiles: readonly StatTile[], shots: readonly ShotQ
   ];
 }
 
-/** Pulse rings on the flat unit ring (growth 5, speed 0.45 cycles per second). */
-export function ringInstances(sources: readonly { x: number; y: number; z: number; phase: number }[], color: string, tier: GpuTier): StageInstance[] {
+/** The pulse ring geometry's radii (`HallFx`'s lying ring); the shader scales it by 1 to 1 + growth. */
+export const RING_INNER = 0.5;
+export const RING_OUTER = 0.62;
+
+/**
+ * Pulse rings on the flat ring (0.45 cycles per second), each growing from `RING_OUTER` to `reach` (the shader scales the
+ * ring by 1 to 1 + growth), so a ring never spreads past its station (`ContactBeacon.reach`).
+ */
+export function ringInstances(sources: readonly { x: number; y: number; z: number; phase: number }[], color: string, tier: GpuTier, reach: number): StageInstance[] {
   const c = rgb(neonColor(color, 1, tier));
-  return sources.map((p) => ({ at: [p.x, p.y, p.z], yaw: 0, color: c, stage: [STAGE_KIND.ring, 5, 0.45, 0], stage2: [0, 0, p.phase, 1], uv: FULL_UV }));
+  const growth = Math.max(0, reach / RING_OUTER - 1);
+  return sources.map((p) => ({ at: [p.x, p.y, p.z], yaw: 0, color: c, stage: [STAGE_KIND.ring, growth, 0.45, 0], stage2: [0, 0, p.phase, 1], uv: FULL_UV }));
 }
 
 /** Per-instance attributes (`aStage`, `aStage2`, `aStageUv`) and instance colors. */
