@@ -82,12 +82,13 @@ Code: `floors/lobby/hallLayout.ts`; the interiors in `floors/lobby/hallPremium/`
 - Wins: the About me pedestal shape (`winsFace`), the number of awards and honors in the ring, the first places and the total over it, and one tile per placement tier (1st, 2nd, 3rd place, finalists and honors) in its tier's tone, drifting with About me's (`winsTiles`).
 - Now: the work experience arch, smaller (`NOW_ARCH`): the employment role on the left pillar, the freelance one on the right (kicker, org, role, period), each inside its card (`nowCard`: 0.3 u inside the column, the text 0.25 u inside the card), a glow in the opening. Work experience columns keep 0.6 u inside each pillar.
 - Results: the top projects' monoliths on the south edge (`monoliths(n, "results")`), three results per stone (value, what it measures, the case study), "+N more" when there are more than nine.
-- Contact: beside a signal beacon with pulsing rings and a floating card, on the south edge.
+- Contact: beside a signal beacon with pulsing rings and a floating card, on the south edge. The signal (the pulse rings at the beacon head and the mast foot, the interiors' floor ripples, the glow pool under the mast) spreads only to `ContactBeacon.reach`: the nearest station edge less `BEACON.signalMargin`, inside the glass case and so inside the hall's glass west side and south wall (`ringInstances(..., reach)`).
 - Gateway arch over the lead road at x = 36 (2 u west of its first place since 2026-11-02):
   - pillars are obstacles; the rover drives under the lintel;
   - the floating "Highlights Hall" sign (`FloatingSigns`, `gateSign`); nothing is written on the floor;
   - a light curtain sweeps once per browser session on the first eastward pass (`gateCrossed`, `sessionStorage["hq:hall-gate"]`, probe `__hq.probes.hallGate`), never under reduced motion.
 - Fake spotlight cones, uplights and glow pools are one instanced mesh per part; no real lights on any tier. The light fountains are gone (2026-11-04).
+- Containment (owner bug, 2026-11-13): every animated hall effect (the interiors, the beacon's pulse rings, the door-pad halos) sweeps only inside the hall's walls and under its ceiling, whatever its growth, spin, orbit or wake; the beacon's stays inside the contact station's glass case. The still floor lights may reach under an opaque wall, never past the glass west side. Orbits set forward of their face to clear the wall behind (`ORBIT_OUT` in `hallPremium/build.ts`: About me's gyroscope, the wins stars). `tests/unit/hall-bounds.test.ts` sweeps each footprint as the shaders draw it; a new effect needs its reach there.
 
 ### B4 look (owner decision 2026-11-04)
 

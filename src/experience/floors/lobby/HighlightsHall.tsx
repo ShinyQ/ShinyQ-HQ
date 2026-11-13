@@ -282,7 +282,10 @@ export function HighlightsHall({ data, labels, tier }: { data: ExperienceData; l
   );
   const lights = useMemo(() => byPart(lightInstances(hallLights(projectCount, resultCount), tier), (l) => [l.at[0], l.at[2]]), [tier, projectCount, resultCount]);
   const portals = useMemo(() => byPart(portalInstances(tier), (p) => [p.at[0], p.at[2]]), [tier]);
-  const rings = useMemo(() => ringInstances(contactBeacon().pulses, HALL.tone.contact, tier), [tier]);
+  const rings = useMemo(() => {
+    const b = contactBeacon();
+    return ringInstances(b.pulses, HALL.tone.contact, tier, b.reach);
+  }, [tier]);
   const shell = useMemo(() => {
     const all = hallShellInstances(tier);
     const at = (i: StageInstance) => [i.at[0], i.at[2]] as const;

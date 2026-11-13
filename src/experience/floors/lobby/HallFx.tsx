@@ -12,7 +12,7 @@ import { roverRuntime } from "../../rover/runtime";
 import type { GpuTier, Vec2 } from "../../types";
 import { gateSwept, markGateSwept, sweepProgress } from "./gateSweep";
 import { gateCrossed } from "./hallGallery";
-import { curtainInstance, stageAttributes, type StageInstance } from "./hallStage";
+import { curtainInstance, RING_INNER, RING_OUTER, stageAttributes, type StageInstance } from "./hallStage";
 
 const NO_RAYCAST = () => null;
 
@@ -26,7 +26,7 @@ export function createStageMaterial(o: { additive: boolean; depthWrite?: boolean
 
 const cylinder = () => new CylinderGeometry(1, 1, 1, 20, 1, true);
 const square = () => new PlaneGeometry(1, 1);
-const ring = () => new RingGeometry(0.5, 0.62, 40).rotateX(-Math.PI / 2);
+const ring = () => new RingGeometry(RING_INNER, RING_OUTER, 40).rotateX(-Math.PI / 2);
 /** A unit strip with 32 segments along x (64 triangles an instance): the arcs bend it (ribs, halos). */
 const strip = () => new PlaneGeometry(1, 1, 32, 1);
 

@@ -26,6 +26,11 @@ const ORBIT = [
 const TOKEN = 0.34;
 /** The trophy drawn in light on the wins pedestal: its quad (the cup's lip 0.6 u over its centre, the foot at the bottom). */
 const TROPHY = { y: 3.3, w: 3.6, h: 3.4 } as const;
+/**
+ * How far in front of its face each orbit's centre sits, so the widest ring and the orbiting chips clear the hall wall
+ * behind the station (owner bug, 2026-11-13): About me's gyroscope (north wall) and the wins stars (east wall).
+ */
+const ORBIT_OUT = { about: 0.35, wins: 0.6 } as const;
 /** Width kept for the now terminals' live badge (its text and dot). */
 const LIVE_W = 0.62;
 /** Result bars: the longest bar's length, the before and after lines under a result's label, their thickness. */
@@ -79,7 +84,7 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
     case "about": {
       // The portrait as a particle hologram sampled from its photo, assembling on wake, inside a slow gyroscope; light chips orbit it.
       const f = aboutFace();
-      const at = onFace(f, 0, ABOUT.disc.y, 0.02);
+      const gyro = onFace(f, 0, ABOUT.disc.y, ORBIT_OUT.about);
       const [u0, u1] = atlasCells(input.highlights.projects.length, tier).portrait;
       // 22 a side on full (372 particles): the L2 to L1 ride's triangle peak stays at main's.
       for (const p of discGrid(full ? 22 : 16)) {
@@ -87,9 +92,9 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
         const scatter: [number, number, number] = [(rand() - 0.5) * 3.2, (rand() - 0.5) * 2.4, (rand() - 0.2) * 1.6];
         add(M.particle, pos, 0, full ? 0.12 : 0.15, 0, 0.95, [u0 + ((p.x + 1) / 2) * (u1 - u0), (p.y + 1) / 2, 0, 0], [0, 0, 0], [1, 1, 1], [...scatter, 0]);
       }
-      add(M.ring, at, f.yaw, 2.7, 2.7, 0.95, [0, 0, ORIENT.upright, 0], [0.35, full ? 0.15 : 0, 0]);
-      add(M.ring, at, f.yaw, 3.15, 3.15, 0.75, [0, 0, ORIENT.upright, 0], [-0.5, full ? -0.12 : 0, 1.6], tint(ACCENT.violet, 1.3, tier));
-      for (let k = 0; k < 4; k++) add(M.token, at, f.yaw, 0.2, 0.2, 0.95, [0, 0, 1.75, 3], [0.3, full ? 0.3 : 0, (k / 4) * Math.PI * 2]);
+      add(M.ring, gyro, f.yaw, 2.7, 2.7, 0.95, [0, 0, ORIENT.upright, 0], [0.35, full ? 0.15 : 0, 0]);
+      add(M.ring, gyro, f.yaw, 3.15, 3.15, 0.75, [0, 0, ORIENT.upright, 0], [-0.5, full ? -0.12 : 0, 1.6], tint(ACCENT.violet, 1.3, tier));
+      for (let k = 0; k < 4; k++) add(M.token, gyro, f.yaw, 0.2, 0.2, 0.95, [0, 0, 1.75, 3], [0.3, full ? 0.3 : 0, (k / 4) * Math.PI * 2]);
       break;
     }
     case "projects": {
@@ -126,7 +131,7 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
       // A trophy drawn in light, the awards and honors as stars orbiting it by tier; first places flare.
       const f = winsFace();
       add(M.trophy, onFace(f, 0, TROPHY.y, 0.05), f.yaw, TROPHY.w, TROPHY.h, 0.9, [0, 0, ORIENT.upright, 0], [0, 0, 0], tint(TIER_TINT.gold, 1.3, tier));
-      const at = onFace(f, 0, ABOUT.disc.y, 0);
+      const at = onFace(f, 0, ABOUT.disc.y, ORBIT_OUT.wins);
       for (const t of winTokens(input.highlights.wins.tiers)) {
         const o = ORBIT[t.ring];
         add(M.token, at, f.yaw, TOKEN * t.size, TOKEN * t.size, 0.95, [0, 0, o.r, t.tier === "gold" ? 1 : 3], [o.tilt, full ? o.spin : 0, t.angle], tint(TIER_TINT[t.tier], 1.5, tier));
@@ -162,14 +167,15 @@ function interior(s: HallStation, input: Input, tier: GpuTier): PremiumInstance[
       break;
     }
     case "contact": {
-      // A portal ring that opens on arrival around the email card, its glow behind it; signal rings ripple across the floor.
+      // A portal ring that opens on arrival around the email card, its glow behind it; signal rings ripple across the floor
+      // around the mast, out to the signal's reach (inside the station's glass case).
       const b = contactBeacon();
       const C = BEACON.card;
       const mid = onFace(b.card.face, 0, C.y + C.h / 2, -0.12);
       add(M.pool, mid, b.card.face.yaw, C.w, C.h + 0.8, 0.28, [0, 0, ORIENT.upright, 0], [0, 0, 0], glow, [0, 0, 0, 1]);
       add(M.ring, mid, b.card.face.yaw, C.w + 1.2, C.h + 1.6, 0.95, [0.025, 0, ORIENT.upright, 0], [0, 0, 0], glow, [0, 0, 0, 1]);
       add(M.ring, mid, b.card.face.yaw, C.w + 1.8, C.h + 2.2, 0.55, [0.02, 0, ORIENT.upright, -1], [0, 0, 0], tint(ACCENT.violet, 1.2, tier), [0, 0, 0, 1]);
-      for (const phase of [0, 1 / 3, 2 / 3]) add(M.ring, [b.mast.x, 0.05, b.mast.z], 0, 12, 12, 0.5, [0, 0.22, ORIENT.lying, 0], [0, 0, phase]);
+      for (const phase of [0, 1 / 3, 2 / 3]) add(M.ring, [b.mast.x, 0.05, b.mast.z], 0, 2 * b.reach, 2 * b.reach, 0.5, [0, 0.22, ORIENT.lying, 0], [0, 0, phase]);
       break;
     }
   }
