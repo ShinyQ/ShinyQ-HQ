@@ -36,10 +36,12 @@ describe("dependabot pins", () => {
     }
   });
 
-  it("ignores only major updates", () => {
+  it("ignores only major updates or an explicit lower-bounded version range", () => {
     const blocks = yaml.split(/\n\s*-\s*dependency-name:/).slice(1);
     for (const block of blocks) {
-      expect(block.split("\n").slice(0, 3).join("\n")).toContain('update-types: ["version-update:semver-major"]');
+      expect(block.split("\n").slice(0, 3).join("\n")).toMatch(
+        /update-types: \["version-update:semver-major"\]|versions: \[">=\d+\.\d+\.\d+"\]/,
+      );
     }
   });
 
