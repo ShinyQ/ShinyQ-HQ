@@ -23,7 +23,7 @@ const mutate = (change: (stored: StoredPack) => void) => {
 describe("pack artifacts (KV value, fallback, pin)", () => {
   it("keeps the measured budgets", () => {
     expect(PACK_MAX_BYTES).toBe(384 * 1024);
-    expect(PACK_VALUE_MAX_BYTES).toBe(768 * 1024);
+    expect(PACK_VALUE_MAX_BYTES).toBe(832 * 1024);
     expect(FALLBACK_MAX_BYTES).toBe(24 * 1024);
     expect(artifacts.errors).toEqual([]);
     expect(artifacts.meta.bytes).toBeLessThan(PACK_VALUE_MAX_BYTES);

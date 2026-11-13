@@ -74,17 +74,17 @@ export function cleanTags(value: unknown): AskTag[] {
 /**
  * Page View paths an answer may cite (the `done` frame `cite`, spec section 13): How I work on
  * About, a hosted post, a project case study (the backing source of a perspective), the Library or
- * the How this site was built page (`/build`).
+ * the How this site was built page (`/build`) or the security page (`/security`).
  * Perspectives themselves have no page (owner decision 2026-10-14: chatbot knowledge only).
  * The site's own public repository (`ASK_REPO_CITE`, owner request 2026-10-15) stays accepted as the
  * one external cite, so an older cached answer still renders; answers about how this site was built
  * now cite `/build` (the page links the repository). Anything else is dropped by both ends.
  */
-export const ASK_CITE_PATTERN = /^\/(?:contact#how|(?:blog|labs)\/[a-z0-9]+(?:-[a-z0-9]+)*|library|build)$/;
+export const ASK_CITE_PATTERN = /^\/(?:contact#how|(?:blog|labs)\/[a-z0-9]+(?:-[a-z0-9]+)*|library|build|security)$/;
 /** The public ShinyQ HQ repository (`REPO_URL` in src/lib/site.ts). */
 export const ASK_REPO_CITE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
-export type AskCiteKind = "how" | "blog" | "project" | "library" | "build" | "repo";
+export type AskCiteKind = "how" | "blog" | "project" | "library" | "build" | "security" | "repo";
 
 /** Most "Read on this site" links one answer carries (owner decision 2026-10-24); the first is also `cite`. */
 export const ASK_MAX_CITES = 2;
@@ -104,6 +104,7 @@ export function citeKind(path: string): AskCiteKind {
   if (path.startsWith("/blog/")) return "blog";
   if (path.startsWith("/labs/")) return "project";
   if (path === "/build") return "build";
+  if (path === "/security") return "security";
   return "library";
 }
 

@@ -65,6 +65,22 @@ export function isSiteQuestion(question: string): boolean {
   return SITE.some((re) => re.test(question));
 }
 
+/**
+ * Questions about how Kurniadi secures applications (owner decision 2026-11-13): his security practice, keyless Azure,
+ * LLM and prompt-injection defenses, incidents, supply chain and CI gates, and how this site is secured (EN/ID). They
+ * always retrieve the `security` chunk, and an answer cites the /security page. A question that names a project keeps
+ * that project's answer (no cite; `namesProject` in functions/_lib/pipeline.ts).
+ */
+const SECURITY: RegExp[] = [
+  /\b(?:cyber ?security|security|secure[sd]?|securing|hardening|hardened|keyless|least privilege|managed identit(?:y|ies)|prompt[ -]injections?|vulnerabilit(?:y|ies)|cves?|ctf|capture the flag|software supply[ -]chain|secret scanning|gitleaks|oidc)\b/i,
+  /\b(?:keamanan|keamanannya|mengamankan|diamankan|aman|kerentanan|siber|tanpa key|injeksi prompt)\b/i,
+];
+
+/** A question about his security practice or how this site is secured (EN/ID). */
+export function isSecurityQuestion(question: string): boolean {
+  return SECURITY.some((re) => re.test(question));
+}
+
 export type PrivateTopic = "family" | "health" | "religion" | "politics" | "pay" | "life";
 
 /**

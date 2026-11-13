@@ -91,6 +91,14 @@
       "expect": ["skills-ds"]
     },
     {
+      "id": "work-secure-apps",
+      "topic": "work",
+      "q": { "en": "How does he secure his applications?", "id": "Bagaimana dia mengamankan aplikasinya?" },
+      "tags": ["work", "security"],
+      "followUps": ["work-security", "ai-security", "site-stack"],
+      "expect": ["security"]
+    },
+    {
       "id": "work-github",
       "topic": "work",
       "q": {             "en": "What are his public GitHub repos?", "id": "Apa saja repo GitHub publiknya?" },

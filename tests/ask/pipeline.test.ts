@@ -224,10 +224,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("Dalam sepuluh hari pertama, Kurniadi membuka sepuluh task; separuhnya sudah di-merge saat artikel terbit, dan akhirnya merged semua, lima setelah didesain ulang.", id).pass).toBe(true);
   });
 
-  it("has 116 unique items with a 113 pass threshold", () => {
-    expect(golden.items).toHaveLength(116);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(116);
-    expect(golden.passThreshold).toBe(113);
+  it("has 118 unique items with a 115 pass threshold", () => {
+    expect(golden.items).toHaveLength(118);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(118);
+    expect(golden.passThreshold).toBe(115);
   });
 
   it("scores the in-progress AB-100 as not earned", () => {
@@ -521,7 +521,8 @@ describe("answer cache (owner decision 2026-10-31: keyed on what the model sees)
 
   it("hits after a content deploy (new pack version and date) when the retrieved context is the same", async () => {
     const { store, cache } = memoryCache();
-    const first = await run(cache, "Where does he work?", WORK);
+    // "now": with the security chunk two perspectives tie on "Where does he work?" (about 5.22 each), so the unrelated chunk below could reorder them.
+    const first = await run(cache, "Where does he work now?", WORK);
     expect(first).toMatchObject({ source: "primary", outcome: "answer", text: WORK, calledModel: true });
     const [key] = [...store.keys()];
     expect(store.size).toBe(1);
@@ -535,14 +536,14 @@ describe("answer cache (owner decision 2026-10-31: keyed on what the model sees)
     expect(deployed.packDate).not.toBe(pack.packDate);
     const unrelated: KnowledgeChunk = { id: "zz-unrelated", type: "post", title: "Sourdough Starter Notes", text_en: "Feeding a sourdough starter twice a day with rye flour keeps it lively.", text_id: "Memberi makan ragi sourdough dua kali sehari dengan tepung gandum hitam.", keywords: ["sourdough", "rye"] };
     for (const next of [deployed, { ...deployed, chunks: [...deployed.chunks, unrelated] }]) {
-      const hit = await run(cache, "Where does he work?", "unused", { pack: next });
+      const hit = await run(cache, "Where does he work now?", "unused", { pack: next });
       expect(hit.chunkIds).toEqual(first.chunkIds);
       expect(hit).toMatchObject({ source: "cache", outcome: "answer", text: WORK, calledModel: false, failures: [], route: "default", retrieval: "bm25", historyUsed: 0, tags: first.tags });
       expect(hit.calls).toEqual([]);
       expect(hit).not.toHaveProperty("model");
     }
     // Case, punctuation and spacing of the question are not part of the key (its cache form, `normalizeQuestion`).
-    expect((await run(cache, "  where does he WORK ", "unused")).source).toBe("cache");
+    expect((await run(cache, "  where does he WORK now ", "unused")).source).toBe("cache");
     expect(store.size).toBe(1);
   });
 
