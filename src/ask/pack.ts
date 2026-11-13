@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, Perspective, Pod, SiteBuild, SiteContent } from "@/content/schema";
+import type { SecurityPage } from "@/content/security";
 import { perspectiveSourcePath } from "@/content/perspectives";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink, sideProjectTitle } from "@/content/selectors";
@@ -23,8 +24,11 @@ import id from "../../messages/id.json";
  * Function bundle into Workers KV (docs/decisions/2026-10-19-ask-kv-pack.md, runbook section 15, "Pack budget").
  */
 export const PACK_MAX_BYTES = 384 * 1024;
-/** Cap of the stored value (`StoredPack`: the text pack plus its BM25 index), as uploaded to KV (`pack:v1:<version>`). */
-export const PACK_VALUE_MAX_BYTES = 768 * 1024;
+/**
+ * Cap of the stored value (`StoredPack`: the text pack, its BM25 index and the vectors), as uploaded to KV
+ * (`pack:v1:<version>`). 768 KiB until 2026-11-13, then 832 KiB for the security chunk (owner decision 2026-11-13).
+ */
+export const PACK_VALUE_MAX_BYTES = 832 * 1024;
 /** Cap of the bundled fallback pack (`functions/_generated/fallback.json`, a text pack indexed only when first served). */
 export const FALLBACK_MAX_BYTES = 24 * 1024;
 /** Chunks of the bundled fallback pack: who he is, what he does now, how to reach him and how the site was built. */
@@ -50,6 +54,9 @@ export const REQUIRED_CHUNKS = ["profile", "now", "contact"] as const;
 export const SITE_CHUNK = "site-build";
 /** The page the site chunk is cited to (the How this site was built page; it links the public repository). */
 export const SITE_BUILD_PAGE = "/build";
+/** Id of the chunk built from content/security.json (`SECURITY_INCLUDE` in functions/_lib/retrieve.ts), cited to its page. */
+export const SECURITY_CHUNK = "security";
+export const SECURITY_PAGE = "/security";
 
 export interface PackSources {
   content: SiteContent;
@@ -64,6 +71,8 @@ export interface PackSources {
   perspectives?: readonly Perspective[];
   /** How this site was built (`getSiteBuild()`, content/ask/site-build.json). */
   siteBuild?: SiteBuild;
+  /** How he secures applications (`getSecurity()`, content/security.json, the /security page). */
+  security?: SecurityPage;
 }
 
 type Bi = { en: string; id: string };
@@ -135,7 +144,7 @@ export function stackKeywords(stack: readonly string[]): string[] {
   return stack.map((s) => s.toLowerCase()).filter((s) => topicTagsOf(s).length > 0);
 }
 
-function drafts({ content, facts, posts = {}, products, perspectives = [], siteBuild }: PackSources): Draft[] {
+function drafts({ content, facts, posts = {}, products, perspectives = [], siteBuild, security }: PackSources): Draft[] {
   const out: Draft[] = [];
   const { profile } = content;
   const roof = content.floors.roof;
@@ -190,6 +199,39 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
       updatedAt: siteBuild.asOf,
       keywords: siteBuild.keywords,
       text: loc(siteBuild.text),
+    });
+  }
+
+  // How he secures applications (owner decision 2026-11-13): the /security page, told in the third person. Section
+  // texts stay on the page; the chunk keeps the principles, the measured results and the titles.
+  if (security) {
+    const awards = content.awards.filter((a) => security.background.awards.includes(a.id));
+    const value = (v: string | LocalizedText): Bi => (typeof v === "string" ? both(v) : loc(v));
+    const metric = (m: { value: string | LocalizedText; label: LocalizedText }) => ({ en: `${value(m.value).en}: ${m.label.en}.`, id: `${value(m.value).id}: ${m.label.id}.` });
+    const titles = (items: readonly { title: LocalizedText }[]) => ({ en: items.map((i) => i.title.en).join(", "), id: items.map((i) => i.title.id).join(", ") });
+    out.push({
+      id: SECURITY_CHUNK,
+      type: "security",
+      title: "How Kurniadi secures applications",
+      url: SECURITY_PAGE,
+      updatedAt: security.published,
+      keywords: ["security", "cybersecurity", "secure", "keyless", "managed identity", "least privilege", "prompt injection", "vulnerability", "cve", "oidc", "gitleaks", "dependabot", "csp", "hardening", "ctf", "keamanan", "siber"],
+      text: join([
+        { en: "How Kurniadi secures applications (the Security page). His principles:", id: "Cara Kurniadi mengamankan aplikasi (halaman Keamanan). Prinsipnya:" },
+        { en: security.principles.items.map((p) => `${p.title.en}.`).join(" "), id: security.principles.items.map((p) => `${p.title.id}.`).join(" ") },
+        { en: "Results:", id: "Hasil:" },
+        ...security.proof.map(metric),
+        { en: "Keyless Azure:", id: "Azure tanpa key:" },
+        ...security.keyless.facts.map(metric),
+        { en: "AI and LLM security:", id: "Keamanan AI dan LLM:" },
+        ...security.ai.results.map(metric),
+        { en: "Incidents handled, anonymized:", id: "Insiden yang ditangani, dianonimkan:" },
+        ...security.incidents.items.map((i) => ({ en: `${i.title.en} (${value(i.value).en}).`, id: `${i.title.id} (${value(i.value).id}).` })),
+        label("Security products", "Produk keamanan", titles(security.products.items.map((i) => ({ title: content.floors.labs.pods.find((p) => p.slug === i.pod)?.title ?? both(i.pod) })))),
+        label("Supply chain and CI", "Supply chain dan CI", titles(security.supplyChain.items)),
+        label("How this site is secured", "Cara situs ini diamankan", titles(security.site.items)),
+        label("Background", "Latar belakang", { en: awards.map((a) => `${a.title}, ${a.placement.en}`).join("; "), id: awards.map((a) => `${a.title}, ${a.placement.id}`).join("; ") }),
+      ]),
     });
   }
 

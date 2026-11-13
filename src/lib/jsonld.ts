@@ -7,6 +7,7 @@ import { getBuildFacts, getBuildStory } from "@/content/build-story";
 import { getContact, getPod, getPost, getProfile, getSkills, getTimeline, getTimelineEntry } from "@/content/load";
 import { LOCALES } from "@/content/locales";
 import type { Locale, Pod, PostRef } from "@/content/schema";
+import { getSecurity } from "@/content/security";
 import { podLiveLink } from "@/content/selectors";
 import { OG_PHOTO_PATH } from "@/lib/og-layout";
 import { seoFor } from "@/lib/seo";
@@ -193,6 +194,31 @@ export function techArticleJsonLd(locale: Locale): JsonLdObject {
   };
 }
 
+/** Topics of the security page (/security), as schema.org Things. */
+const SECURITY_ABOUT = ["Application security", "Managed identities", "Prompt injection", "Software supply chain security"];
+
+/** The security page (/security): an Article by the owner, published on its content date. */
+export function securityArticleJsonLd(locale: Locale): JsonLdObject {
+  const url = absoluteUrl(localePath(locale, "/security"));
+  const page = getSecurity();
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: page.title[locale],
+    description: seoFor(locale, "/security").description,
+    image: [absoluteUrl(ogImagePath({ kind: "page", locale, page: "security" }))],
+    url,
+    mainEntityOfPage: url,
+    inLanguage: LANGUAGE_TAG[locale],
+    datePublished: page.published,
+    about: SECURITY_ABOUT.map((name) => ({ "@type": "Thing", name })),
+    author: personRef(locale),
+    publisher: { "@id": PERSON_ID },
+    isPartOf: { "@id": WEBSITE_ID },
+  };
+}
+
 /** JSON for a <script type="application/ld+json">, with `<` escaped against injection. */
 export function serializeJsonLd(data: JsonLdObject | JsonLdObject[]): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -206,7 +232,7 @@ export function breadcrumbJsonLd(crumbs: { name: string; path: string }[], local
   };
 }
 
-type Section = "quick" | "journey" | "labs" | "library" | "contact" | "cv" | "build";
+type Section = "quick" | "journey" | "labs" | "library" | "contact" | "cv" | "build" | "security";
 
 /** Structured data a page adds to the layout's Person and WebSite: its breadcrumb, plus the pod or post itself. */
 export function pageJsonLd(locale: Locale, path: string): JsonLdObject[] {
@@ -238,6 +264,8 @@ export function pageJsonLd(locale: Locale, path: string): JsonLdObject[] {
     extra.push(profilePageJsonLd(locale));
   } else if (!slug && section === "build") {
     extra.push(techArticleJsonLd(locale));
+  } else if (!slug && section === "security") {
+    extra.push(securityArticleJsonLd(locale));
   }
   return [breadcrumbJsonLd(crumbs, locale), ...extra];
 }

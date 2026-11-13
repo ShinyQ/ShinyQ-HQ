@@ -99,6 +99,7 @@ const WHERE: Record<AskCiteKind, Record<AskLocale, string>> = {
   project: { en: "in a project case study", id: "di studi kasus proyek" },
   library: { en: "on the Writing page", id: "di halaman Tulisan" },
   build: { en: "on the How this site was built page", id: "di halaman Cara Situs Ini Dibuat" },
+  security: { en: "on the Security page", id: "di halaman Keamanan" },
   repo: { en: "in the site's public repository", id: "di repositori publik situs ini" },
 };
 const CLOSEST: Record<AskLocale, string> = { en: "The closest written source is", id: "Sumber tertulis yang paling terkait adalah" };

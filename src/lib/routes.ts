@@ -9,7 +9,7 @@ import { getContent, getDynamicFacts, getTimeline } from "@/content/load";
 import { LOCALES } from "@/content/locales";
 import type { Locale } from "@/content/schema";
 
-export const STATIC_PATHS = ["/", "/quick", "/journey", "/labs", "/library", "/contact", "/cv", "/build"] as const;
+export const STATIC_PATHS = ["/", "/quick", "/journey", "/labs", "/library", "/contact", "/cv", "/build", "/security"] as const;
 
 export function allPagePaths(): string[] {
   const { floors } = getContent();

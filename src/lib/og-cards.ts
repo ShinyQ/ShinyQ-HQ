@@ -22,7 +22,7 @@ export type { OgTarget };
 const MESSAGES = { en, id } as const;
 
 /** The floor each section page lives on in 3D: its eyebrow and accent. */
-export const PAGE_FLOOR: Record<OgPage, PublicFloor> = { quick: "L1", journey: "L2", labs: "L3", library: "L4", contact: "RF", cv: "RF", build: "L1" };
+export const PAGE_FLOOR: Record<OgPage, PublicFloor> = { quick: "L1", journey: "L2", labs: "L3", library: "L4", contact: "RF", cv: "RF", build: "L1", security: "L3" };
 
 export function allOgTargets(): OgTarget[] {
   const { floors } = getContent();
@@ -88,7 +88,7 @@ export function ogCard(target: OgTarget): OgCard {
     return {
       ...base,
       layout: "page",
-      // The build story has no public floor of its own: its card names the Engine Room instead of the floor it borrows.
+      // The build story and the security page have no public floor of their own: their cards name the page instead of the floor they borrow.
       eyebrow: "eyebrow" in copy ? copy.eyebrow : `${floor} · ${messages.floors[floor]}`,
       title: copy.title,
       subtitle: pageSubtitle(target.page, locale),

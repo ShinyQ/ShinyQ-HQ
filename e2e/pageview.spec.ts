@@ -27,6 +27,7 @@ const TEMPLATES = [
   "/en/quick",
   "/en/cv",
   "/en/build",
+  "/en/security",
   "/id",
   "/id/labs",
 ];
@@ -166,6 +167,29 @@ test("Home keeps the deep-link anchors used by the room catalog", async ({ page 
   for (const id of ["stats", "office", "skills", "certifications"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await openPage(page, staticTier("/en/contact"));
   for (const id of ["cv", "channels"]) await expect(page.locator(`#${id}`)).toBeAttached();
+});
+
+test("the security page: impact first, sections by id, a working table of contents, the diagram and case study links", async ({ page }) => {
+  for (const locale of ["en", "id"] as const) {
+    await openPage(page, staticTier(`/${locale}/security`));
+    await expect(page.locator("h1")).toHaveCount(1);
+    // The hero's proof results come before the contents and lead with a before and after.
+    const proof = page.getByTestId("security-proof");
+    await expect(proof.locator("li")).toHaveCount(3);
+    await expect(proof.locator("[data-delta]").first()).toBeVisible();
+    const toc = page.getByRole("navigation", { name: locale === "en" ? "On this page" : "Isi halaman" });
+    const sections = ["principles", "keyless", "ai", "products", "incidents", "supply-chain", "site", "background"];
+    for (const id of sections) {
+      await expect(page.locator(`section#${id}`), `${locale} #${id}`).toBeAttached();
+      await expect(toc.locator(`a[href="#${id}"]`), `${locale} ToC #${id}`).toHaveCount(1);
+    }
+    await expect(toc.locator("a")).toHaveCount(sections.length);
+    await expect(page.locator("#keyless [role=img]")).toHaveCount(1);
+    await expect(page.locator("#ai a[href*='/labs/']").first()).toBeVisible();
+    await expect(page.locator("#products a[href*='/labs/ai-code-security-platform']")).toHaveCount(1);
+    await expect(page.locator("#background li")).toHaveCount(2);
+    await expect(page.locator(`footer a[href^="/${locale}/security"]`)).toHaveCount(1);
+  }
 });
 
 test("the build story page: stations by id, a working table of contents, the diagram and lazy before and after captures", async ({ page }) => {

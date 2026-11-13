@@ -10,7 +10,7 @@ import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { approachMatches, INTENT_TERMS, leadMatches, retrieve, scoreChunks } from "./retrieve";
-import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isApproachAsk, isLeadQuestion, isMentoringQuestion, isOffTopic, isOwnProblem, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
+import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isApproachAsk, isLeadQuestion, isMentoringQuestion, isOffTopic, isOwnProblem, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSecurityQuestion, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack } from "./types";
 
@@ -343,6 +343,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     chunks,
     perspective: !lead && isPerspectiveQuestion(routed),
     site: !lead && isSiteQuestion(routed),
+    security: !lead && !plan.named && isSecurityQuestion(routed),
     ...(topic ? { topic } : {}),
     ...(lead ? { lead: { fit: matches.length > 0 } } : {}),
     ...(approach ? { approach: { matches: outlined } } : {}),

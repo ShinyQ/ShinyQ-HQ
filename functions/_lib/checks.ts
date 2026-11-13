@@ -748,6 +748,8 @@ export interface CheckInput {
   perspective?: boolean;
   /** The question is about this site itself (`isSiteQuestion`): an answer cites the `site` chunk's page (`/build`). */
   site?: boolean;
+  /** The question is about his security practice (`isSecurityQuestion`): an answer cites the `security` chunk's page (`/security`). */
+  security?: boolean;
   /** Routed perspective topic (`routedTopic`): the answer must follow one of that topic's perspectives. */
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
@@ -765,7 +767,7 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, approach, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, security = false, topic, lead, approach, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
@@ -842,6 +844,10 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
     if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
     return withCites(cited);
   }
+  // His security practice (and how this site is secured): the answer comes from the retrieved `security` chunk, so it
+  // cites its page (`/security`), ahead of the build page.
+  const securitySource = security && outcome === "answer" ? chunks.find((c) => c.type === "security" && isAskCite(c.url)) : undefined;
+  if (securitySource?.url) return { ok: true, text: markdown, outcome, cite: securitySource.url };
   // How this site was built: the answer comes from the retrieved `site` chunk, so it cites its page (`/build`).
   const siteSource = site && outcome === "answer" ? chunks.find((c) => c.type === "site" && isAskCite(c.url)) : undefined;
   if (siteSource?.url) return { ok: true, text: markdown, outcome, cite: siteSource.url };

@@ -3,7 +3,7 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { OPINION_PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
-import { civicQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isOffTopic, isPerspectiveQuestion, isSiteQuestion, isTeamQuestion, maskPoliticians, namesPerson, opinionAboutOthers, nicknameForModel, orgAliases, partitionQuestion, privateTopic, resolveNickname, splitClauses } from "../../functions/_lib/scope";
+import { civicQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isOffTopic, isPerspectiveQuestion, isSecurityQuestion, isSiteQuestion, isTeamQuestion, maskPoliticians, namesPerson, opinionAboutOthers, nicknameForModel, orgAliases, partitionQuestion, privateTopic, resolveNickname, splitClauses } from "../../functions/_lib/scope";
 import { indexPack } from "../../functions/_lib/pack-index";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import golden from "./golden.json";
@@ -228,6 +228,20 @@ describe("perspective retrieval with every draft approved", () => {
       }
     }
   });
+});
+
+describe("isSecurityQuestion (the security page, owner decision 2026-11-13)", () => {
+  it.each([
+    "How does Kurniadi secure his applications?",
+    "Does he do cybersecurity?",
+    "Has he worked on prompt injection defenses?",
+    "Is his Azure work keyless?",
+    "How is this site secured?",
+    "Bagaimana Kurniadi mengamankan aplikasinya?",
+    "Apakah dia paham keamanan siber?",
+  ])("treats %s as a security question", (q) => expect(isSecurityQuestion(q)).toBe(true));
+
+  it.each(["What is his best project?", "Did he work on supply chain forecasting?", "Bagaimana situs ini dibuat?"])("leaves %s alone", (q) => expect(isSecurityQuestion(q)).toBe(false));
 });
 
 describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", () => {

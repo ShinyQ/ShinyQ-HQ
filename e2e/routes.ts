@@ -32,5 +32,6 @@ export function staticRoutes(locale: string): string[] {
     `/${locale}/contact`,
     `/${locale}/cv`,
     `/${locale}/build`,
+    `/${locale}/security`,
   ];
 }

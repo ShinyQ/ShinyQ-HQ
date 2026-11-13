@@ -138,7 +138,7 @@ All bindings and vars live in `wrangler.toml`.
 
 ## Curated pills
 
-- `content/ask/suggestions.json`: 107 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each. `recruiter: true` marks the hiring pills (`work-best`, `ai-voice`, `career-now`, `career-history`, `contact-open`, `contact-where`, `contact-reach`).
+- `content/ask/suggestions.json`: 108 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each. `recruiter: true` marks the hiring pills (`work-best`, `ai-voice`, `career-now`, `career-history`, `contact-open`, `contact-where`, `contact-reach`).
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
   - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
   - "About Kurniadi" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
@@ -254,6 +254,12 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Keep golden q45 to q47, q69, q70, q76, q92 and q93 true (runbook section 16).
 - To fit it, project chunks keep as keywords only the stack names that carry a topic tag (`stackKeywords` in `src/ask/pack.ts`; the text still lists the whole stack).
 
+### Security chunk
+
+- `security` (type `security`, tags `security` and `work`, url `SECURITY_PAGE`, the `/security` page; owner decision 2026-11-13) is built from `content/security.json` (`getSecurity()`): the principle titles, the measured results, the incident titles with their values and the section item titles, in the third person.
+- `isSecurityQuestion` (`functions/_lib/scope.ts`, EN/ID: security, cybersecurity, keyless, managed identity, least privilege, prompt injection, vulnerabilities, CVEs, CTF, software supply chain, keamanan, siber, ...) always retrieves it (`SECURITY_INCLUDE`), and such an answer cites `/security` (kind `security`, "Read on this site: Security practices on this site"), ahead of `/build`. A question that names a project (`namesProject`) keeps that project's answer and no cite.
+- Golden q117 and q118, the pill `work-secure-apps`.
+
 ### Production chunk
 
 - `production` (type `production`, tags `ai` and `work`, url `/contact#production`) carries "How I run AI in production" and its proof tiles.
@@ -267,7 +273,7 @@ Spec section 13.
 ### Retrieval and pack size
 
 - Questions about Kurniadi's written professional views are in scope: `isPerspectiveQuestion` in `functions/_lib/scope.ts` always retrieves the `principles` chunk.
-- The text pack must stay under `PACK_MAX_BYTES` (384 KiB) and the stored value under `PACK_VALUE_MAX_BYTES` (768 KiB) with every draft approved; the fallback text pack under `FALLBACK_MAX_BYTES` (24 KiB). Measured, owner-approved budgets (runbook section 15, decision 2026-10-19).
+- The text pack must stay under `PACK_MAX_BYTES` (384 KiB) and the stored value under `PACK_VALUE_MAX_BYTES` (832 KiB since 2026-11-13, was 768 KiB) with every draft approved; the fallback text pack under `FALLBACK_MAX_BYTES` (24 KiB). Measured, owner-approved budgets (runbook section 15, decision 2026-10-19).
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
   - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
 - The bge-m3 vectors take about 230 KB of the stored value (one int8 row of 1024 bytes per chunk, base64): the stored value was 730.6 KB on 2026-10-24, so trim text before the cap, never drop the vectors.
@@ -282,9 +288,9 @@ Spec section 13.
   - Otherwise the answer becomes the no-view message with the closest source (`noViewMessage`; `relevantClosest` never names a perspective, which has no page).
 - The pack's "Kurniadi's written view" label counts as an opinion claim (`claimsOpinion`).
 - `privateTopic` and `opinionAboutOthers` decline before the model; `firstPersonVoice` replaces first-person answers.
-- The `done` frame may carry `cite`: an allowlisted path (`isAskCite` in `src/ask/protocol.ts`: `/contact#how`, `/blog/<slug>`, `/labs/<slug>`, `/library`, `/build`; never a `#perspectives-*` anchor).
+- The `done` frame may carry `cite`: an allowlisted path (`isAskCite` in `src/ask/protocol.ts`: `/contact#how`, `/blog/<slug>`, `/labs/<slug>`, `/library`, `/build`, `/security`; never a `#perspectives-*` anchor).
   - Rendered by `AskCiteLink` as "Read on this site".
-  - `citeKind` maps a cite to its label (`ask.cite.<kind>`: how, blog, project, library, build, repo) and to the "where" phrase of the no-view answer (`WHERE` in `functions/_lib/messages.ts`).
+  - `citeKind` maps a cite to its label (`ask.cite.<kind>`: how, blog, project, library, build, security, repo) and to the "where" phrase of the no-view answer (`WHERE` in `functions/_lib/messages.ts`).
   - The legacy repository cite reads "Source: ..." and opens in a new tab.
 - A perspective answer cites the entry's backing post or project through its chunk `url` (`perspectiveSourcePath`), or nothing when the entry has none.
 - Personal essays (post tag `personal`) never count as a source.

@@ -2,7 +2,7 @@ import { askLinkTarget } from "../../src/ask/links";
 import { ASK_REPO_CITE } from "../../src/ask/protocol";
 import { ADJACENT_SOURCE_TYPES, LEAD_ENGAGEMENTS } from "./checks";
 import { indexPack } from "./pack-index";
-import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
+import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSecurityQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 import { cosines, packVectors } from "./vectors";
@@ -16,6 +16,8 @@ export const ALWAYS_INCLUDE = ["profile", "now"] as const;
 export const PERSPECTIVE_INCLUDE = "principles";
 /** Added for questions about this site itself (`isSiteQuestion`): how ShinyQ HQ was built (content/ask/site-build.json). */
 export const SITE_INCLUDE = "site-build";
+/** Added for questions about his security practice (`isSecurityQuestion`): the security page (content/security.json). */
+export const SECURITY_INCLUDE = "security";
 /** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
 export const PERSPECTIVE_CAP = 3;
 /** Perspective cap of an opinion question (owner decision 2026-10-24): more of his written views reach the context. */
@@ -338,7 +340,7 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
       });
   } else {
     const opinion = isPerspectiveQuestion(question);
-    const always: string[] = [...ALWAYS_INCLUDE, ...(opinion ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
+    const always: string[] = [...ALWAYS_INCLUDE, ...(opinion ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : []), ...(isSecurityQuestion(question) ? [SECURITY_INCLUDE] : [])];
     always.forEach((id) => add(byId(id)));
     if (anchor) {
       scoreChunks(pack, anchor)

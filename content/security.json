@@ -1,0 +1,399 @@
+{
+  "$comment": "The /security page (src/content/security.ts, SecurityPageSchema). Evidence: the owner's security hardening catalog, mined read-only from his git history and IaC (2026-11-13); headline numbers re-checked against the cited commits. Public-safe facts only: never a client, service, host, resource or repository name, never code or a secret, incidents dated by month only. Impact first: before and after deltas lead, counts are small supporting context.",
+  "title": { "en": "Security in Practice", "id": "Keamanan dalam Praktik" },
+  "published": "2026-11-13",
+  "lead": {
+    "en": "I treat security as part of the design, not a checklist at the end: no keys to leak, the least access that works, and gates that run on every change. Here is what that closed, measured.",
+    "id": "Saya memperlakukan keamanan sebagai bagian dari desain, bukan checklist di akhir: tidak ada key yang bisa bocor, akses sekecil mungkin yang tetap berfungsi, dan gate yang berjalan di setiap perubahan. Berikut hasil terukurnya."
+  },
+  "proof": [
+    {
+      "id": "findings",
+      "value": "37 to 15",
+      "delta": { "before": "37", "after": "15" },
+      "label": {
+        "en": "Open security findings on a production AI app in about two days, from 4 Critical and 8 High at the start",
+        "id": "Temuan keamanan terbuka di aplikasi AI produksi dalam sekitar dua hari, dari 4 Critical dan 8 High di awal"
+      }
+    },
+    {
+      "id": "leaked-key",
+      "value": { "en": "Same day", "id": "Hari yang sama" },
+      "label": {
+        "en": "Leaked database key contained: every key rotated and the old one returns 401; the service went keyless within 24 hours",
+        "id": "Key database yang bocor ditangani: semua key dirotasi dan key lama mengembalikan 401; layanan menjadi keyless dalam 24 jam"
+      }
+    },
+    {
+      "id": "node-patch",
+      "value": { "en": "1 day", "id": "1 hari" },
+      "label": {
+        "en": "To patch the October 2026 Node.js security release across 12 repositories",
+        "id": "Untuk menerapkan rilis keamanan Node.js Oktober 2026 di 12 repositori"
+      }
+    }
+  ],
+  "principles": {
+    "title": { "en": "How I secure applications", "id": "Cara saya mengamankan aplikasi" },
+    "intro": {
+      "en": "Five habits that show up in every project, from a public portfolio to enterprise AI products.",
+      "id": "Lima kebiasaan yang muncul di setiap proyek, dari portofolio publik hingga produk AI enterprise."
+    },
+    "items": [
+      {
+        "id": "keyless",
+        "title": { "en": "Keyless by default", "id": "Keyless sebagai default" },
+        "text": {
+          "en": "Apps sign in to cloud services with a managed identity instead of an API key. A leaked config file then grants nothing, and there is no key to rotate.",
+          "id": "Aplikasi masuk ke layanan cloud dengan managed identity, bukan API key. Jika file konfigurasi bocor, tidak ada akses yang ikut bocor, dan tidak ada key yang perlu dirotasi."
+        }
+      },
+      {
+        "id": "least-privilege",
+        "title": { "en": "Least privilege", "id": "Least privilege" },
+        "text": {
+          "en": "Each identity gets only the data-plane roles it needs. Admin rights come from an allow-list keyed on the directory object ID, never from an email address or a sign-in alone.",
+          "id": "Setiap identitas hanya mendapat role data-plane yang dibutuhkan. Hak admin berasal dari allow-list berdasarkan object ID di direktori, bukan dari alamat email atau sekadar login."
+        }
+      },
+      {
+        "id": "llm-layers",
+        "title": { "en": "Layered defenses for LLM features", "id": "Pertahanan berlapis untuk fitur LLM" },
+        "text": {
+          "en": "Untrusted documents travel inside delimiters, get screened by Prompt Shields and must match a strict output schema. If a safety check did not run, the pipeline fails closed.",
+          "id": "Dokumen yang tidak tepercaya dibungkus delimiter, disaring Prompt Shields, dan harus cocok dengan output schema yang ketat. Jika pemeriksaan keamanan tidak berjalan, pipeline gagal secara tertutup (fail closed)."
+        }
+      },
+      {
+        "id": "ci-gates",
+        "title": { "en": "Security gates in CI", "id": "Security gate di CI" },
+        "text": {
+          "en": "Secret scanning, dependency audits, static analysis and pinned actions run on every pull request, so a problem is caught before merge, not after release.",
+          "id": "Secret scanning, audit dependensi, analisis statis, dan action yang di-pin berjalan di setiap pull request, sehingga masalah tertangkap sebelum merge, bukan setelah rilis."
+        }
+      },
+      {
+        "id": "recover-fast",
+        "title": { "en": "Recover fast", "id": "Pulih dengan cepat" },
+        "text": {
+          "en": "Secrets live in a vault with written rotation runbooks, so a leak is contained the same day and the fix is verified, not just assumed.",
+          "id": "Secret disimpan di vault dengan runbook rotasi tertulis, sehingga kebocoran ditangani di hari yang sama dan perbaikannya diverifikasi, bukan sekadar diasumsikan."
+        }
+      }
+    ]
+  },
+  "keyless": {
+    "title": { "en": "Keyless Azure", "id": "Azure tanpa key" },
+    "intro": {
+      "en": "The AI, database, messaging and storage data planes of enterprise AI products, moved from API keys to managed identities.",
+      "id": "Data plane AI, database, messaging, dan storage pada produk AI enterprise, dipindahkan dari API key ke managed identity."
+    },
+    "facts": [
+      {
+        "id": "migrated",
+        "value": { "en": "7 repositories", "id": "7 repositori" },
+        "label": {
+          "en": "Migrated from API keys to managed identity, each move recorded in its commits",
+          "id": "Dimigrasikan dari API key ke managed identity, setiap perpindahan tercatat di commit-nya"
+        }
+      },
+      {
+        "id": "keyless-iac",
+        "value": { "en": "6 repositories", "id": "6 repositori" },
+        "label": {
+          "en": "Fully keyless in shipped infrastructure as code: local key auth turned off for AI services, databases, messaging and storage",
+          "id": "Sepenuhnya keyless di infrastructure as code yang dirilis: autentikasi key lokal dimatikan untuk layanan AI, database, messaging, dan storage"
+        }
+      },
+      {
+        "id": "oidc",
+        "value": { "en": "3 repositories", "id": "3 repositori" },
+        "label": {
+          "en": "Deploy from CI through GitHub OIDC federation only, with no stored cloud secret in the pipeline",
+          "id": "Deploy dari CI hanya melalui federasi GitHub OIDC, tanpa secret cloud yang disimpan di pipeline"
+        }
+      },
+      {
+        "id": "startup-check",
+        "value": { "en": "Refuses to start", "id": "Menolak berjalan" },
+        "label": {
+          "en": "In production, an app refuses to start when a leftover key setting is present",
+          "id": "Di produksi, aplikasi menolak berjalan jika masih ada pengaturan key yang tersisa"
+        }
+      }
+    ],
+    "diagramTitle": { "en": "The keyless flow", "id": "Alur tanpa key" },
+    "architecture": {
+      "nodes": [
+        { "id": "app", "label": { "en": "Application", "id": "Aplikasi" }, "sublabel": { "en": "No key in its settings", "id": "Tanpa key di pengaturannya" }, "layer": 0, "row": 0, "kind": "client" },
+        { "id": "ci", "label": { "en": "GitHub Actions", "id": "GitHub Actions" }, "sublabel": { "en": "Deploy pipeline", "id": "Pipeline deploy" }, "layer": 0, "row": 1, "kind": "external" },
+        { "id": "mi", "label": { "en": "Managed identity", "id": "Managed identity" }, "sublabel": { "en": "One per app", "id": "Satu per aplikasi" }, "layer": 1, "row": 0, "kind": "service", "group": "Azure" },
+        { "id": "oidc", "label": { "en": "OIDC federation", "id": "Federasi OIDC" }, "sublabel": { "en": "Short-lived token", "id": "Token berumur pendek" }, "layer": 1, "row": 1, "kind": "service", "group": "Azure" },
+        { "id": "entra", "label": { "en": "Entra ID", "id": "Entra ID" }, "sublabel": { "en": "Issues the token", "id": "Menerbitkan token" }, "layer": 2, "row": 0, "kind": "service", "group": "Azure" },
+        { "id": "rbac", "label": { "en": "RBAC data-plane roles", "id": "Role data-plane RBAC" }, "sublabel": { "en": "Only what each app needs", "id": "Hanya yang dibutuhkan tiap aplikasi" }, "layer": 3, "row": 0, "kind": "service", "group": "Azure" },
+        { "id": "openai", "label": { "en": "Azure OpenAI", "id": "Azure OpenAI" }, "sublabel": { "en": "Local auth off", "id": "Auth lokal dimatikan" }, "layer": 4, "row": 0, "kind": "ai", "group": "Azure" },
+        { "id": "search", "label": { "en": "Azure AI Search", "id": "Azure AI Search" }, "layer": 4, "row": 1, "kind": "data", "group": "Azure" },
+        { "id": "storage", "label": { "en": "Azure Storage", "id": "Azure Storage" }, "sublabel": { "en": "Shared key off", "id": "Shared key dimatikan" }, "layer": 4, "row": 2, "kind": "data", "group": "Azure" },
+        { "id": "cosmos", "label": { "en": "Cosmos DB", "id": "Cosmos DB" }, "sublabel": { "en": "Local auth off", "id": "Auth lokal dimatikan" }, "layer": 4, "row": 3, "kind": "data", "group": "Azure" }
+      ],
+      "edges": [
+        { "from": "app", "to": "mi" },
+        { "from": "ci", "to": "oidc" },
+        { "from": "mi", "to": "entra", "label": { "en": "token request", "id": "minta token" } },
+        { "from": "oidc", "to": "entra", "label": { "en": "federated", "id": "terfederasi" } },
+        { "from": "entra", "to": "rbac" },
+        { "from": "rbac", "to": "openai" },
+        { "from": "rbac", "to": "search" },
+        { "from": "rbac", "to": "storage" },
+        { "from": "rbac", "to": "cosmos" }
+      ]
+    },
+    "points": [
+      {
+        "en": "Key Vault in RBAC mode with purge protection; every non-platform setting is a vault reference, and the app fails closed when one does not resolve.",
+        "id": "Key Vault dalam mode RBAC dengan purge protection; setiap pengaturan non-platform adalah referensi vault, dan aplikasi gagal secara tertutup jika referensi tidak terbaca."
+      },
+      {
+        "en": "Release pipelines publish without any Azure role: a scoped registry push token and a policy-bound write link, with releases signed through OIDC.",
+        "id": "Pipeline rilis memublikasikan tanpa role Azure apa pun: token push registry yang terbatas dan tautan tulis yang terikat policy, dengan rilis yang ditandatangani lewat OIDC."
+      },
+      {
+        "en": "Web apps keep a TLS 1.2 floor with FTP and basic-auth publishing off, asserted at build time and read back from the live app.",
+        "id": "Aplikasi web menjaga batas minimum TLS 1.2 dengan publikasi FTP dan basic auth dimatikan, dicek saat build dan dibaca ulang dari aplikasi yang berjalan."
+      }
+    ]
+  },
+  "ai": {
+    "title": { "en": "AI and LLM security", "id": "Keamanan AI dan LLM" },
+    "intro": {
+      "en": "LLM features read untrusted text, so they get their own tests, measured like any other result.",
+      "id": "Fitur LLM membaca teks yang tidak tepercaya, jadi fitur ini punya test sendiri dan diukur seperti hasil lainnya."
+    },
+    "results": [
+      {
+        "id": "injection-detection",
+        "value": "98.3% to 100%",
+        "delta": { "before": "98.3%", "after": "100%" },
+        "label": {
+          "en": "Prompt-injection detection on a 96-case English and Indonesian test suite, run on every pull request",
+          "id": "Deteksi prompt injection pada test suite 96 kasus berbahasa Inggris dan Indonesia, dijalankan di setiap pull request"
+        },
+        "context": {
+          "en": "58 of 59 to 59 of 59 injection cases caught, across PDF, Word, Excel, CSV, text and image files; a synthetic evaluation set, not production traffic.",
+          "id": "Dari 58 menjadi 59 dari 59 kasus injection yang tertangkap, pada file PDF, Word, Excel, CSV, teks, dan gambar; set evaluasi sintetis, bukan trafik produksi."
+        },
+        "pod": "automotive-fraud-dashboard"
+      },
+      {
+        "id": "unscreened",
+        "value": "29 to 5",
+        "delta": { "before": "29", "after": "5" },
+        "label": {
+          "en": "Uploaded-file analyses, of 98, that ran without safety screening, after the pipeline was made to fail closed",
+          "id": "Analisis file unggahan, dari 98, yang berjalan tanpa penyaringan keamanan, setelah pipeline dibuat gagal secara tertutup"
+        },
+        "context": {
+          "en": "When the content filter or Prompt Shields does not run, the verdict is raised and the AI shortcuts are turned off.",
+          "id": "Jika content filter atau Prompt Shields tidak berjalan, tingkat risiko dinaikkan dan jalan pintas AI dimatikan."
+        },
+        "pod": "automotive-fraud-dashboard"
+      },
+      {
+        "id": "injection-success",
+        "value": "11.1% to 3.7%",
+        "delta": { "before": "11.1%", "after": "3.7%" },
+        "label": {
+          "en": "Prompt-injection success rate in a live evaluation, not production",
+          "id": "Tingkat keberhasilan prompt injection pada evaluasi live, bukan produksi"
+        },
+        "context": {
+          "en": "Live evaluation after a model change on an AI fraud document review; these are evaluation results, not production outcomes.",
+          "id": "Evaluasi live setelah pergantian model pada review fraud dokumen berbasis AI; ini hasil evaluasi, bukan hasil produksi."
+        },
+        "pod": "fraud-review-platform"
+      }
+    ]
+  },
+  "products": {
+    "title": { "en": "Security products", "id": "Produk keamanan" },
+    "intro": {
+      "en": "Beyond securing my own work, I build tools that find and fix vulnerabilities for other teams.",
+      "id": "Selain mengamankan pekerjaan saya sendiri, saya membangun tool yang menemukan dan memperbaiki kerentanan untuk tim lain."
+    },
+    "items": [
+      {
+        "pod": "ai-code-security-platform",
+        "text": {
+          "en": "Seven scanners on every pull request, AI triage, and fix pull requests that are rejected if they try to mute a scanner. Untrusted repositories are scanned in a sandbox.",
+          "id": "Tujuh scanner di setiap pull request, triage dengan AI, dan pull request perbaikan yang ditolak jika mencoba membungkam scanner. Repositori yang tidak tepercaya di-scan di dalam sandbox."
+        },
+        "note": { "en": "628 PRs security-scanned", "id": "628 PR di-scan keamanan" }
+      },
+      {
+        "pod": "vulnerability-scanning-automation",
+        "text": {
+          "en": "Scheduled vulnerability scans, asset ownership and remediation reports, so each finding reaches the team that owns the asset.",
+          "id": "Scan kerentanan terjadwal, kepemilikan aset, dan laporan remediasi, sehingga setiap temuan sampai ke tim pemilik aset."
+        },
+        "note": { "en": "Compared between scans every 15 minutes", "id": "Dibandingkan antar scan setiap 15 menit" }
+      }
+    ]
+  },
+  "incidents": {
+    "title": { "en": "Incidents handled", "id": "Insiden yang ditangani" },
+    "intro": {
+      "en": "Told without the client, the service or a date finer than the month.",
+      "id": "Diceritakan tanpa nama klien, nama layanan, atau tanggal yang lebih rinci dari bulan."
+    },
+    "items": [
+      {
+        "id": "leaked-key",
+        "month": "2026-10",
+        "title": { "en": "Leaked database key contained the same day", "id": "Key database yang bocor ditangani di hari yang sama" },
+        "text": {
+          "en": "All 4 keys rotated, all 9 credential settings moved to vault references and the backend locked to known callers. The database went keyless the next day.",
+          "id": "Keempat key dirotasi, kesembilan pengaturan kredensial dipindahkan ke referensi vault, dan backend dikunci hanya untuk pemanggil yang dikenal. Database menjadi keyless keesokan harinya."
+        },
+        "value": { "en": "Old key: 401", "id": "Key lama: 401" }
+      },
+      {
+        "id": "privilege-escalation",
+        "month": "2026-11",
+        "title": { "en": "Privilege escalation closed", "id": "Celah eskalasi hak akses ditutup" },
+        "text": {
+          "en": "An admin could grant super-admin rights. That request is now refused with an audit record, and revoking the role ends the user's live sessions.",
+          "id": "Seorang admin bisa memberikan hak super-admin. Permintaan itu kini ditolak dengan catatan audit, dan pencabutan role mengakhiri sesi aktif pengguna tersebut."
+        },
+        "value": "201 to 403",
+        "delta": { "before": "201", "after": "403" }
+      },
+      {
+        "id": "review-findings",
+        "month": "2026-11",
+        "title": { "en": "12 confirmed findings fixed in one day", "id": "12 temuan terkonfirmasi diperbaiki dalam satu hari" },
+        "text": {
+          "en": "From a security review of a procurement platform, including a CI script injection and spreadsheet formula injection in exports.",
+          "id": "Dari security review sebuah platform pengadaan, termasuk script injection di CI dan formula injection pada ekspor spreadsheet."
+        },
+        "value": { "en": "12 of 12", "id": "12 dari 12" }
+      },
+      {
+        "id": "scanner-cves",
+        "month": "2026-10",
+        "title": { "en": "Vulnerabilities in a scanner image cut", "id": "Kerentanan di image scanner dipangkas" },
+        "text": {
+          "en": "Every bundled scanner binary bumped and checksum-verified. The fixable High and Critical CVEs that remain wait on upstream fixes.",
+          "id": "Setiap binary scanner yang dibundel diperbarui dan diverifikasi checksum-nya. CVE High dan Critical yang masih bisa diperbaiki tinggal menunggu perbaikan dari upstream."
+        },
+        "value": "114 to 43",
+        "delta": { "before": "114", "after": "43" }
+      },
+      {
+        "id": "observatory",
+        "month": "2026-10",
+        "title": { "en": "Top security-header grade on a production web app", "id": "Nilai security header tertinggi di aplikasi web produksi" },
+        "text": {
+          "en": "Nonce-based CSP, anti-clickjacking, no-store on sensitive responses and a generic error envelope. Mozilla Observatory: score 110, 12 of 12 tests passed.",
+          "id": "CSP berbasis nonce, anti-clickjacking, no-store pada respons sensitif, dan format error yang generik. Mozilla Observatory: skor 110, 12 dari 12 tes lolos."
+        },
+        "value": "A+"
+      }
+    ]
+  },
+  "supplyChain": {
+    "title": { "en": "Supply chain and CI", "id": "Supply chain dan CI" },
+    "intro": {
+      "en": "What every change passes before it reaches production.",
+      "id": "Hal yang harus dilewati setiap perubahan sebelum sampai ke produksi."
+    },
+    "items": [
+      {
+        "title": { "en": "Actions pinned to commit SHAs", "id": "Action di-pin ke SHA commit" },
+        "text": {
+          "en": "Every GitHub Action pinned to a full commit SHA in 8 repositories, so a moved tag cannot change what runs.",
+          "id": "Setiap GitHub Action di-pin ke SHA commit lengkap di 8 repositori, sehingga tag yang dipindahkan tidak bisa mengubah apa yang dijalankan."
+        }
+      },
+      {
+        "title": { "en": "Secret scanning", "id": "Secret scanning" },
+        "text": {
+          "en": "gitleaks in CI on 8 repositories, plus a local pre-commit hook that uses the same pinned, checksum-verified binary.",
+          "id": "gitleaks di CI pada 8 repositori, ditambah pre-commit hook lokal yang memakai binary yang sama, di-pin dan diverifikasi checksum-nya."
+        }
+      },
+      {
+        "title": { "en": "Dependency gates", "id": "Gate dependensi" },
+        "text": {
+          "en": "Dependabot updates, audits that block on High or above with a dated allow-list, and Semgrep static analysis triaged to an empty baseline.",
+          "id": "Pembaruan Dependabot, audit yang memblokir temuan High ke atas dengan allow-list bertanggal, dan analisis statis Semgrep yang di-triage hingga baseline kosong."
+        }
+      },
+      {
+        "title": { "en": "Release gates", "id": "Gate rilis" },
+        "text": {
+          "en": "Digest-pinned base images, a Trivy gate, CycloneDX SBOMs and signed releases whose signature is checked at install.",
+          "id": "Base image yang di-pin dengan digest, gate Trivy, SBOM CycloneDX, dan rilis bertanda tangan yang tanda tangannya dicek saat instalasi."
+        }
+      }
+    ]
+  },
+  "site": {
+    "title": { "en": "How this site is secured", "id": "Cara situs ini diamankan" },
+    "intro": {
+      "en": "The same rules apply to this portfolio, and its source is public.",
+      "id": "Aturan yang sama berlaku untuk portofolio ini, dan source code-nya publik."
+    },
+    "items": [
+      {
+        "title": { "en": "Strict content security policy", "id": "Content security policy yang ketat" },
+        "text": {
+          "en": "Every page carries its own script policy with SHA-256 hashes and no unsafe-inline, framing is denied, and an end-to-end test fails on any policy violation.",
+          "id": "Setiap halaman membawa script policy sendiri dengan hash SHA-256 tanpa unsafe-inline, framing ditolak, dan test end-to-end gagal jika ada pelanggaran policy."
+        }
+      },
+      {
+        "title": { "en": "Transport and headers", "id": "Transport dan header" },
+        "text": {
+          "en": "HSTS for a year including subdomains, nosniff, a strict referrer policy and a Permissions-Policy that turns off the camera, microphone and location.",
+          "id": "HSTS selama setahun termasuk subdomain, nosniff, referrer policy yang ketat, dan Permissions-Policy yang mematikan kamera, mikrofon, dan lokasi."
+        }
+      },
+      {
+        "title": { "en": "Ask Rover Assistant", "id": "Asisten Rover" },
+        "text": {
+          "en": "Turnstile, rate limits of 8 a minute and 40 a day per salted visitor hash, a global daily cap, body size caps, PII scrubbing and signed conversation history.",
+          "id": "Turnstile, rate limit 8 per menit dan 40 per hari per hash pengunjung yang di-salt, batas harian global, batas ukuran body, pembersihan PII, dan riwayat percakapan yang ditandatangani."
+        }
+      },
+      {
+        "title": { "en": "Output checks on every answer", "id": "Pemeriksaan output di setiap jawaban" },
+        "text": {
+          "en": "Answers are scanned for secrets, prompt leaks, defamation and numbers the sources do not support; links are allow-listed, and a nightly red-team evaluation runs against the assistant.",
+          "id": "Jawaban dipindai untuk secret, kebocoran prompt, pencemaran nama baik, dan angka yang tidak didukung sumber; tautan dibatasi allow-list, dan evaluasi red team berjalan setiap malam terhadap asisten."
+        }
+      },
+      {
+        "title": { "en": "Agent Office privacy", "id": "Privasi Agent Office" },
+        "text": {
+          "en": "The live office shows only an agent's state and activity; repository details appear only for allow-listed public repositories, and prompts, commands, paths or client names are never sent.",
+          "id": "Kantor live hanya menampilkan status dan aktivitas agent; detail repositori hanya muncul untuk repositori publik dalam allow-list, dan prompt, perintah, path, atau nama klien tidak pernah dikirim."
+        }
+      },
+      {
+        "title": { "en": "Locked-down CI and deploys", "id": "CI dan deploy yang terkunci" },
+        "text": {
+          "en": "Actions pinned by SHA, gitleaks and Dependabot on every change; deploy secrets live only in a main-only environment and never reach pull request runs.",
+          "id": "Action di-pin dengan SHA, gitleaks dan Dependabot di setiap perubahan; secret deploy hanya ada di environment khusus main dan tidak pernah sampai ke run pull request."
+        }
+      }
+    ]
+  },
+  "background": {
+    "title": { "en": "Background", "id": "Latar belakang" },
+    "intro": {
+      "en": "Security started as a hobby: capture the flag competitions at university.",
+      "id": "Keamanan berawal dari hobi: kompetisi capture the flag semasa kuliah."
+    },
+    "awards": ["foresty-ctf-2021", "capture-the-flag-2020"]
+  }
+}

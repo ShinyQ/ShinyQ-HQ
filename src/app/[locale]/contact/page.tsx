@@ -53,9 +53,12 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
           </div>
           <p className="pv-lead mt-6">{lead}</p>
           {rest && <p className="pv-body mt-4">{rest}</p>}
-          <p className="mt-4">
+          <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
             <Link href="/build" className="pv-go">
               {tn("build")}
+            </Link>
+            <Link href="/security" className="pv-go">
+              {tn("security")}
             </Link>
           </p>
         </div>

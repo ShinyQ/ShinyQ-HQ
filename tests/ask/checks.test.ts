@@ -22,7 +22,7 @@ import {
 } from "../../functions/_lib/checks";
 import { MESSAGES, noViewMessage } from "../../functions/_lib/messages";
 import { PROMPT_VERSION, RULES, systemPrompt } from "../../functions/_lib/prompt";
-import { isPerspectiveQuestion, isSiteQuestion } from "../../functions/_lib/scope";
+import { isPerspectiveQuestion, isSecurityQuestion, isSiteQuestion } from "../../functions/_lib/scope";
 import { isHarmful } from "../../functions/_lib/harmful";
 import { packVocabulary } from "../../functions/_lib/pipeline";
 import { scrubPII } from "../../functions/_lib/pii";
@@ -344,6 +344,20 @@ describe("citation paths (done frame)", () => {
     expect(other).not.toHaveProperty("cite");
     expect(noViewMessage("en", { title: "How ShinyQ HQ Was Built", url: "/build" })).toContain("on the How this site was built page");
     expect(noViewMessage("en", { title: "How ShinyQ HQ Was Built", url: ASK_REPO_CITE })).toContain("in the site's public repository");
+  });
+
+  it("cites the security page for an answer about his security practice (owner decision 2026-11-13)", () => {
+    expect(isAskCite("/security")).toBe(true);
+    expect(citeKind("/security")).toBe("security");
+    const securityCheck = (answer: string, question: string, locale: "en" | "id" = "en") => {
+      const r = retrieve(pack, question, locale);
+      expect(r.chunks.map((c) => c.id)).toContain("security");
+      expect(answerLinkPaths(r.chunks).has("/security")).toBe(true);
+      return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks, security: isSecurityQuestion(question), locale });
+    };
+    expect(securityCheck("Kurniadi works keyless by default: apps sign in with a managed identity, with least privilege on every role.", "How does Kurniadi secure his applications?")).toMatchObject({ ok: true, cite: "/security" });
+    expect(securityCheck("Kurniadi memakai managed identity sehingga aplikasinya keyless, dengan least privilege.", "Bagaimana Kurniadi mengamankan aplikasinya?", "id")).toMatchObject({ ok: true, cite: "/security" });
+    expect(noViewMessage("en", { title: "How Kurniadi secures applications", url: "/security" })).toContain("on the Security page");
   });
 });
 

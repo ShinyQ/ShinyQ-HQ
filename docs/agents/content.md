@@ -19,6 +19,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - It pulls zod into the bundle, so it is server-side only: import it from server components and scripts, never from a client component (client pieces take plain props; `src/lib/build-page.ts` holds the pure joins).
   - Counts always come from the snapshot, never from the story text. See [../content.md](../content.md#build-story).
   - The story also feeds the B1 Engine Room: `buildEngineViews` (`content/room-views/engine.ts`) builds the station drawers and `buildEngineData` the floor's `ExperienceData.engine` (bay titles for the signs and the registry), see [floor-b1-engine-room.md](floor-b1-engine-room.md).
+- The security page has its own module too, `@/content/security` (`SecurityPageSchema`, `getSecurity()`, `securityToc`, `securityValue`): it reads `content/security.json`, checks its case study and award references against the dataset, and is server only like the build story. Workflow: [../content.md](../content.md#security-page).
 - Types come from `@/content/schema` (`Pod`, `TimelineEntry`, `Mission`, `MissionStep`, `RoomId`, `Locale`, ...). Do not redeclare them.
 - Client code imports the locale values from `@/content/locales`, never values from `@/content/schema` (type-only imports are fine); `bun run build` fails otherwise.
 

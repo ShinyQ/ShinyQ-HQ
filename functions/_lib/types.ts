@@ -22,7 +22,8 @@ export type ChunkType =
   | "principle"
   | "perspective"
   | "production"
-  | "site";
+  | "site"
+  | "security";
 
 export interface KnowledgeChunk {
   id: string;
@@ -32,7 +33,7 @@ export interface KnowledgeChunk {
   text_id: string;
   /** YYYY-MM or YYYY-MM-DD of the fact, when known. */
   updatedAt?: string;
-  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center"; the `site` chunk holds `/build`. */
+  /** Page View path without the locale prefix, e.g. "/labs/voice-ai-contact-center"; the `site` chunk holds `/build`, the `security` chunk `/security`. */
   url?: string;
   keywords: string[];
 }
