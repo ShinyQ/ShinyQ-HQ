@@ -7,7 +7,8 @@
     "library": "Perpustakaan",
     "contact": "Kontak",
     "cv": "CV",
-    "build": "Cara situs ini dibuat"
+    "build": "Cara situs ini dibuat",
+    "security": "Keamanan"
   },
   "nav": {
     "label": "Navigasi utama",
@@ -19,6 +20,7 @@
     "contact": "Kontak",
     "cv": "CV",
     "build": "Cara situs ini dibuat",
+    "security": "Keamanan",
     "language": "Bahasa",
     "skip": "Langsung ke konten",
     "work": "Karya",
@@ -215,6 +217,12 @@
       "asks": "Pertanyaan Ask sejak peluncuran",
       "offline": "Feed sedang offline. Inti reaktor menampilkan cahaya tenang."
     }
+  },
+  "security": {
+    "toc": "Isi halaman",
+    "keyResults": "Hasil utama",
+    "readCase": "Baca studi kasus",
+    "source": "Source code di GitHub"
   },
   "journey": {
     "title": "Perjalanan karier: 2019 hingga 2026",
@@ -939,6 +947,7 @@
       "project": "Studi kasus proyek",
       "library": "Halaman Tulisan",
       "build": "Cara situs ini dibuat",
+      "security": "Praktik keamanan di situs ini",
       "repo": "Kode sumber ShinyQ HQ di GitHub"
     },
     "contact": {
@@ -1118,6 +1127,8 @@
     "cvDescription": "CV {name}, {role}: aplikasi Azure AI, sistem backend, karier, pendidikan, dan sertifikasi.",
     "buildTitle": "Cara {name} membangun situs ini dengan AI",
     "buildDescription": "Cara {name} membangun ShinyQ HQ bersama AI coding agent: spec dan rencana tertulis, pull request kecil, dan gate otomatis di setiap merge.",
+    "securityTitle": "Keamanan aplikasi dan AI oleh {name}",
+    "securityDescription": "Cara {name} mengamankan aplikasi software dan AI: Azure tanpa key, least privilege, pertahanan LLM, dan gate keamanan CI.",
     "podTitle": "{title} oleh {name}",
     "postTitle": "{title} oleh {name}",
     "feedTitle": "Artikel oleh {name}",
@@ -1177,6 +1188,10 @@
         "1": "Lengkap dengan timeline, gate CI, dan angka yang diukur saat build.",
         "2": "Dengan timeline, gate, dan angka terukur.",
         "3": "Dengan timeline dan gate."
+      },
+      "security": {
+        "1": "Dengan hasil terukur.",
+        "2": "Terukur."
       }
     },
     "og": {
@@ -1211,6 +1226,11 @@
           "title": "Cara situs ini dibuat",
           "subtitle": "Spec, AI agent, pull request, dan gate di balik setiap merge",
           "eyebrow": "Ruang Mesin"
+        },
+        "security": {
+          "title": "Keamanan aplikasi dan AI",
+          "subtitle": "Azure tanpa key, pertahanan LLM, dan gate CI, dengan hasil terukur",
+          "eyebrow": "Keamanan"
         }
       }
     }

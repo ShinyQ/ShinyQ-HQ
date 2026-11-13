@@ -17,6 +17,7 @@ const STATIC_TITLE: Record<string, (locale: Locale) => string> = {
   "/contact": (l) => NAV[l].contact,
   "/cv": (l) => NAV[l].cv,
   "/build": (l) => NAV[l].build,
+  "/security": (l) => NAV[l].security,
 };
 
 function titleOf(path: string, locale: Locale): string {

@@ -79,7 +79,7 @@ export function feedPath(locale: Locale): string {
 export const FEED_TYPE = "application/atom+xml";
 
 /** Section pages with their own share card; journey entries share the journey card. */
-export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv", "build"] as const;
+export const OG_PAGES = ["quick", "journey", "labs", "library", "contact", "cv", "build", "security"] as const;
 export type OgPage = (typeof OG_PAGES)[number];
 
 export type OgTarget =

@@ -276,6 +276,7 @@ export const LIGHTHOUSE_PAGES: Readonly<Record<string, string>> = {
   "/en/contact": "src/app/[locale]/contact/page.tsx",
   "/en/cv": "src/app/[locale]/cv/page.tsx",
   "/en/build": "src/app/[locale]/build/page.tsx",
+  "/en/security": "src/app/[locale]/security/page.tsx",
 };
 
 const SPEC_FILE = /^e2e\/[^/]+\.spec\.ts$/;

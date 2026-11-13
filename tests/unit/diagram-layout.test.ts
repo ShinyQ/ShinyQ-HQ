@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignGrid, DIAGRAM_PRESETS, edgeCrossings, groupLabelBox, layoutArchitecture, monoWidth, PAD, segmentHits, textWidth, wrapText, type DiagramLayout } from "@/components/diagram/layout";
 import { arrowHead, edgePath } from "@/components/diagram/DiagramSvg";
 import { getBuildStory } from "@/content/build-story";
+import { getSecurity } from "@/content/security";
 import { getPods } from "@/content/load";
 import { getPostDiagrams } from "@/content/post-diagrams";
 import type { Architecture } from "@/content/schema";
@@ -17,6 +18,7 @@ const diagrams: [string, Architecture][] = [
   ),
   ["build-story:blueprint", getBuildStory().stations.blueprint.architecture],
   ["build-story:brain", getBuildStory().stations.brain.architecture],
+  ["security:keyless", getSecurity().keyless.architecture],
 ];
 const dictionaries = { en, id };
 const localizedDiagrams = diagrams.flatMap(([id, raw]) => (["en", "id"] as const).map((locale) => ({
