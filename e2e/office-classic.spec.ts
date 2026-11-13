@@ -66,7 +66,7 @@ async function open(page: Page, path = home()) {
 }
 
 const section = (page: Page) => page.getByTestId("office-section");
-/** The card's five desk rows: awake desks, then "+N more desks", "Every Rover is asleep." or quiet slots. */
+/** The card's desk rows: one per awake desk (at most five), the fifth "+N more desks" past five; none without an awake desk. */
 const deskRows = (page: Page) => page.getByTestId("office-desks").locator(":scope > li");
 
 /** The ten-seat busy office with every desk awake (the asleep slot 8 at work) and no session past ten. */
@@ -150,13 +150,13 @@ test.describe("Classic: Live Agent Office", () => {
     expect(await shifts()).toBe(0);
   });
 
-  test("shows Offline when the first request fails, over quiet desk rows, without promising activity", async ({ page }) => {
+  test("shows Offline when the first request fails, with no desk rows, without promising activity", async ({ page }) => {
     await mockOffice(page, 500);
     await open(page);
     await expect(section(page)).toHaveAttribute("data-status", "offline");
     await expect(page.getByTestId("office-live")).toHaveText(en.office.classic.offlineEmpty);
-    await expect(deskRows(page)).toHaveCount(5);
-    await expect(page.getByTestId("office-desk-empty")).toHaveCount(5);
+    await expect(page.getByTestId("office-desks")).toHaveCount(0);
+    await expect(page.getByTestId("office-none")).toHaveCount(0);
     await expect(page.getByTestId("office-github")).toHaveCount(0);
     await expect(page.getByTestId("office-github-empty")).toHaveCount(0);
     const axe = await new AxeBuilder({ page }).include("#office").analyze();
@@ -233,7 +233,8 @@ test.describe("Classic: Live Agent Office", () => {
         const shifts = await watchShifts(page);
         office.release();
         await expect(section(page), name).toHaveAttribute("data-status", status);
-        await expect(deskRows(page), name).toHaveCount(5);
+        // Only awake desks take a row; with none awake, the asleep state replaces the rows.
+        if (name === "off") await expect(page.getByTestId("office-none"), name).toContainText(locale === "en" ? en.office.classic.noAgents : id.office.classic.noAgents);
         if (name === "ten" || name === "tenAwake") {
           // Ten seats: four awake desks by seat, then "+N more desks" in the fifth row.
           await expect(page.getByTestId("office-desk"), name).toHaveCount(4);
@@ -264,8 +265,8 @@ test.describe("Classic: Live Agent Office", () => {
     await open(page, home("id"));
     await expect(page.locator("#office-title")).toHaveText(id.office.classic.title);
     await expect(page.getByTestId("office-count-asleep")).toContainText(id.office.classic.counts.asleep);
-    // Only the reviewing desk is awake: it takes the first row; the sleeping desks and empty seats count on the idle line.
-    await expect(deskRows(page)).toHaveCount(5);
+    // Only the reviewing desk is awake: it takes the only row; the sleeping desks and empty seats count on the idle line.
+    await expect(deskRows(page)).toHaveCount(1);
     await expect(page.getByTestId("office-desk")).toHaveCount(1);
     await expect(page.getByTestId("office-task")).toHaveText([id.office.clientProject]);
     await expect(page.getByTestId("office-extra")).toHaveText("9 meja menganggur");
