@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { SecurityPageSchema } from "../src/content/security";
 import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, StudyGuidesFileSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, leafForbiddenPatterns } from "../src/content/safety";
@@ -85,11 +86,35 @@ if (guidesData !== undefined) {
   }
 }
 
+// ... and the security page (content/security.json), whose case studies and awards must be in the dataset.
+const securityFile = path.join(path.dirname(file), "security.json");
+const securityData: unknown = kind === "full" && existsSync(securityFile) ? JSON.parse(readFileSync(securityFile, "utf8")) : undefined;
+if (securityData !== undefined) {
+  const security = SecurityPageSchema.safeParse(securityData);
+  if (!security.success) {
+    failed = true;
+    console.error(`${securityFile}:\n${z.prettifyError(security.error)}`);
+  } else if (parsed.success) {
+    const content = parsed.data as SiteContent;
+    const pods = new Set(content.floors.labs.pods.map((p) => p.slug));
+    const awards = new Set(content.awards.map((a) => a.id));
+    const missing = [
+      ...[...security.data.ai.results.map((r) => r.pod), ...security.data.products.items.map((i) => i.pod)].filter((slug) => !pods.has(slug)).map((slug) => `pod "${slug}"`),
+      ...security.data.background.awards.filter((id) => !awards.has(id)).map((id) => `award "${id}"`),
+    ];
+    for (const name of missing) {
+      failed = true;
+      console.error(`${securityFile}: unknown ${name}`);
+    }
+  }
+}
+
 for (const leaf of [
   ...collectStrings(data),
   ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives")),
   ...(siteBuildData === undefined ? [] : collectStrings(siteBuildData, "site-build")),
   ...(guidesData === undefined ? [] : collectStrings(guidesData, "study-guides")),
+  ...(securityData === undefined ? [] : collectStrings(securityData, "security")),
 ]) {
   const hits = leafForbiddenPatterns(leaf);
   if (hits.length > 0) {
