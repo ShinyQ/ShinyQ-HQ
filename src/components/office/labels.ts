@@ -23,8 +23,13 @@ export interface OfficeCardLabels {
   asOf: string;
   counts: Record<"active" | "thinking" | "waiting" | "asleep", string>;
   agents: string;
-  /** The first desk row when no desk is active (every Rover asleep or no session). */
+  /** The empty state's title when no desk is awake (every agent asleep or no session). */
   noAgents: string;
+  /** Under it: when the office was last active ("{time}" from `sinceLabel`), or `lastActiveNow` within the minute. */
+  lastActive: string;
+  lastActiveNow: string;
+  /** Under it, when the snapshot has GitHub events: a pointer to the GitHub list below. */
+  seeGithub: string;
   /** Sessions past the ten seats ("+{count, plural, ...}"), after the idle count on the summary line. */
   extra: string;
   /** The fifth desk row past five awake desks ("+{n, plural, ...}": every awake desk beyond the four shown), filled by `fill`. */
@@ -46,7 +51,7 @@ export interface OfficeCardLabels {
 }
 
 /**
- * The card's one height in every state (five desk rows, four GitHub rows, the counts, the idle summary and today lines;
+ * The card's min height: its busiest state (five desk rows, four GitHub rows, the counts, the idle summary and today lines;
  * measured from 320 to 1440 px wide per locale: 881 px from 768, 1004 below, 1020 for an Indonesian semi-live line at
  * 320) plus headroom, held from the loading line on, so neither the first answer nor a later change of state moves the
  * sections below (CLS). The Hallmark redesign (2026-10-27) set the labels in the body face (14 px on a 20 px line, was

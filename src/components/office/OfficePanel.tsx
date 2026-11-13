@@ -18,7 +18,7 @@ export interface OfficePanelProps {
 }
 
 const GITHUB_SHOWN = 4;
-/** Desk rows: the card keeps five whatever the seat count (ten in snapshot v3); past five active desks the fifth says "+N more". */
+/** At most five desk rows whatever the seat count (ten in snapshot v3); past five awake desks the fifth says "+N more". */
 const ROWS = 5;
 const COUNTS: readonly (keyof OfficeCounts)[] = ["active", "thinking", "waiting", "asleep"];
 /** Hairline rules of the counts strip: 2 by 2 below `md` (the Indonesian labels do not fit four across), one row from `md`. */
@@ -33,8 +33,8 @@ const ICON_TONE: Record<OfficeGithubStatus, string> = {
   pushed: "text-ink-2",
 };
 /**
- * Keeps an empty line's height (the card draws every slot in every state, so its height never changes). Below `md`
- * the status line and today's line may wrap, so they hold two lines there (`min-h-10` each).
+ * Keeps an empty line's height (the summary and today lines and the empty GitHub slots). Below `md` the status line and
+ * today's line may wrap, so they hold two lines there (`min-h-10` each).
  */
 const EMPTY = "\u00a0";
 /** Input that resets the poller's 10 min idle stop (and restarts it after one). */
@@ -79,21 +79,46 @@ function DeskRow({ desk, labels, locale }: { desk: OfficeDeskV2; labels: OfficeC
   );
 }
 
-/**
- * A desk row without a desk, with the same two lines (so every row has one height): "+N more desks", "Every
- * Rover is asleep." when no desk is awake, or an empty slot.
- */
-function QuietRow({ text, testId }: { text?: string; testId: string }) {
+/** "+N more desks" past five awake desks: a desk row's two lines, so the last row keeps the desk rows' height. */
+function MoreRow({ text }: { text: string }) {
   return (
-    <li data-testid={testId} aria-hidden={text ? undefined : true} className={ROW}>
+    <li data-testid="office-more" className={ROW}>
       <span aria-hidden="true" className="inline-block size-2" />
       <span className="min-w-0">
-        <span className="block truncate text-ink-2">{text ?? EMPTY}</span>
+        <span className="block truncate text-ink-2">{text}</span>
         <span aria-hidden="true" className="block text-sm">
           {EMPTY}
         </span>
       </span>
     </li>
+  );
+}
+
+/** When the office was last active: the newest state change or recent step of any desk (asleep desks fell asleep then). */
+export function lastActiveAt(desks: readonly OfficeDeskV2[]): number | null {
+  let at: number | null = null;
+  for (const d of desks) for (const ms of [d.since, ...d.recent.map((r) => r.at)]) if (at === null || ms > at) at = ms;
+  return at;
+}
+
+/** No awake desk: "All agents are asleep", when the office was last active, and a pointer to the GitHub list below. */
+function AsleepState({ desks, hasGithub, labels, locale, t }: { desks: readonly OfficeDeskV2[]; hasGithub: boolean; labels: OfficeCardLabels; locale: Locale; t: number }) {
+  const at = lastActiveAt(desks);
+  const ago = at === null ? null : sinceLabel(at, locale, t);
+  const last = at === null ? null : t - at < 60_000 ? labels.lastActiveNow : fill(labels.lastActive, { time: ago ?? "" });
+  const detail = [last, hasGithub ? labels.seeGithub : null].filter(Boolean).join(" ");
+  return (
+    <div data-testid="office-none" className="mt-3 flex items-start gap-3 border-y border-line py-5">
+      <Dot tone={STATE_TONE.asleep} className="mt-2" />
+      <div className="min-w-0">
+        <p className="text-ink">{labels.noAgents}</p>
+        {detail && (
+          <p data-testid="office-none-detail" className="mt-1 text-sm text-ink-2">
+            {detail}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -119,11 +144,11 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
 }
 
 /**
- * The Classic home card (lazy chunk): counts over the ten seats of snapshot v3, five desk rows (the awake desks, front
- * row first, with their helpers; past five the fifth row is "+N more desks"), the idle summary (asleep and empty
- * seats, plus sessions past ten), the latest public GitHub events and today (spec sections 4.2 and 5.10). Every state
- * draws the same rows (quiet rows fill the desk and GitHub slots, offline keeps the last known rows dimmed), so the
- * card keeps one height (`OFFICE_RESERVE`). Polls only
+ * The Classic home card (lazy chunk): counts over the ten seats of snapshot v3, a row per awake desk (front row first,
+ * with their helpers; past five the fifth row is "+N more desks"; no row for an idle seat), "All agents are asleep" with
+ * the last activity when none is awake, the idle summary (asleep and empty seats, plus sessions past ten), the latest
+ * public GitHub events and today (spec sections 4.2 and 5.10). The card's min height (`OFFICE_RESERVE`) holds the
+ * busiest state, so fewer desks leave the slack under today's line and no state moves the sections below. Polls only
  * while the card is within a screen of the viewport; the poller skips hidden tabs, stops after 10 min without input,
  * and keeps the last snapshot 60 s before reporting offline. A disabled office hides the section only once it is off
  * screen, so the switch never moves what the visitor is reading.
@@ -222,7 +247,6 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
   const active = activeDesks(desks);
   const shown = active.length > ROWS ? active.slice(0, ROWS - 1) : active;
   const more = active.length - shown.length;
-  const quiet = ROWS - shown.length - (more > 0 ? 1 : 0) - (snap && active.length === 0 ? 1 : 0);
   const idle = snap ? fill(labels.idle, { n: counts.asleep }, locale) : null;
   const extra = idle && snap && snap.extra > 0 ? `${idle} \u00b7 ${fill(labels.extra, { count: snap.extra }, locale)}` : idle;
   const today = snap ? fill(snap.today.ciRuns > 0 ? labels.today : labels.todayNoCi, { tasks: snap.today.tasksDone, prs: snap.today.prsMerged, green: snap.today.ciGreen, runs: snap.today.ciRuns }, locale) : null;
@@ -252,16 +276,15 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
           </dl>
 
           <h3 className="pv-meta mt-8 font-semibold text-ink">{labels.agents}</h3>
-          <ul data-testid="office-desks" className="pv-rows pv-rows-closed mt-3">
-            {shown.map((desk) => (
-              <DeskRow key={desk.slot} desk={desk} labels={labels} locale={locale} />
-            ))}
-            {more > 0 && <QuietRow testId="office-more" text={fill(labels.moreDesks, { n: more }, locale)} />}
-            {snap && active.length === 0 && <QuietRow testId="office-none" text={labels.noAgents} />}
-            {Array.from({ length: quiet }, (_, i) => (
-              <QuietRow key={i} testId="office-desk-empty" />
-            ))}
-          </ul>
+          {shown.length > 0 && (
+            <ul data-testid="office-desks" className="pv-rows pv-rows-closed mt-3">
+              {shown.map((desk) => (
+                <DeskRow key={desk.slot} desk={desk} labels={labels} locale={locale} />
+              ))}
+              {more > 0 && <MoreRow text={fill(labels.moreDesks, { n: more }, locale)} />}
+            </ul>
+          )}
+          {snap && active.length === 0 && <AsleepState desks={desks} hasGithub={github.length > 0} labels={labels} locale={locale} t={t} />}
           <p data-testid="office-extra" aria-hidden={extra ? undefined : true} className="pv-meta mt-2 truncate">
             {extra ?? EMPTY}
           </p>

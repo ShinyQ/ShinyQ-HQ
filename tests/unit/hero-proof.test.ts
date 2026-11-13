@@ -4,7 +4,7 @@ import { getProfile, getStats } from "@/content/load";
 
 describe("heroProofStats", () => {
   it("returns the proof stats in heroProof order", () => {
-    expect(heroProofStats(getStats(), getProfile().heroProof).map((s) => s.id)).toEqual(["enterprise-clients", "voice-interruption-speedup", "microsoft-certifications"]);
+    expect(heroProofStats(getStats(), getProfile().heroProof).map((s) => s.id)).toEqual(["enterprise-clients", "production-ai-industries", "microsoft-certifications"]);
   });
   it("skips an id with no stat instead of throwing", () => {
     expect(heroProofStats(getStats(), ["enterprise-clients", "missing"]).map((s) => s.id)).toEqual(["enterprise-clients"]);

@@ -8,7 +8,7 @@ const content = SiteContentSchema.parse(data);
 
 describe("landing proof strip data (owner decision 2026-10-25)", () => {
   it("names exactly three distinct stats, each with a short label in both locales", () => {
-    expect(content.profile.heroProof).toEqual(["enterprise-clients", "voice-interruption-speedup", "microsoft-certifications"]);
+    expect(content.profile.heroProof).toEqual(["enterprise-clients", "production-ai-industries", "microsoft-certifications"]);
     for (const id of content.profile.heroProof) {
       const stat = content.stats.find((s) => s.id === id);
       expect(stat, id).toBeDefined();
@@ -30,10 +30,10 @@ describe("landing proof strip data (owner decision 2026-10-25)", () => {
 
   it("rejects a proof id that is not a stat, and a proof stat without a short label", () => {
     const unknown = structuredClone(data);
-    unknown.profile.heroProof = ["enterprise-clients", "voice-interruption-speedup", "no-such-stat"];
+    unknown.profile.heroProof = ["enterprise-clients", "production-ai-industries", "no-such-stat"];
     expect(SiteContentSchema.safeParse(unknown).success).toBe(false);
     const bare = structuredClone(data) as typeof data & { stats: { id: string; short?: unknown }[] };
-    delete bare.stats.find((s) => s.id === "voice-interruption-speedup")!.short;
+    delete bare.stats.find((s) => s.id === "production-ai-industries")!.short;
     expect(SiteContentSchema.safeParse(bare).success).toBe(false);
   });
   it("rejects a scale stat in the proof strip (owner decision 2026-11-13)", () => {

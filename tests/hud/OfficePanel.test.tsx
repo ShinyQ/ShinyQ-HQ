@@ -31,8 +31,8 @@ const idLabels: OfficeCardLabels = {
   agentNames: ids.office.agent,
 } as OfficeCardLabels;
 
-/** The five desk rows (awake desks, then "+N more", "Every Rover is asleep." or quiet slots). */
-const rows = () => [...screen.getByTestId("office-desks").children] as HTMLElement[];
+/** The desk rows: one per awake desk, then "+N more" past five; none without an awake desk. */
+const rows = () => [...(screen.queryByTestId("office-desks")?.children ?? [])] as HTMLElement[];
 
 function fakePoller(feed: OfficeFeed) {
   let listener: ((f: OfficeFeed) => void) | null = null;
@@ -119,16 +119,14 @@ describe("OfficePanel", () => {
     expect(statuses).toEqual(["loading", "ready", "offline", "disabled"]);
   });
 
-  it("shows the offline line without the last-activity clause when the first request fails, over dimmed quiet rows", () => {
+  it("shows the offline line without the last-activity clause when the first request fails, with no desk rows", () => {
     const { poller } = fakePoller({ status: "offline", snapshot: null, fetchedAt: 0 });
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
     expect(screen.getByRole("status").textContent).toBe(labels.offlineEmpty);
     expect(screen.getByTestId("office-live").textContent).not.toContain(labels.offline);
     expect(screen.queryByTestId("office-time")).toBeNull();
     expect(screen.getByTestId("office-body").className).toContain("opacity-60");
-    expect(rows()).toHaveLength(5);
-    expect(screen.queryAllByTestId("office-desk")).toHaveLength(0);
-    expect(screen.getAllByTestId("office-desk-empty")).toHaveLength(5);
+    expect(screen.queryByTestId("office-desks")).toBeNull();
     expect(screen.queryByTestId("office-none")).toBeNull();
     expect(screen.getByTestId("office-extra")).toHaveAttribute("aria-hidden", "true");
     expect(screen.queryAllByTestId("office-github")).toHaveLength(0);
@@ -159,7 +157,7 @@ describe("OfficePanel", () => {
     expect(desks).toHaveLength(1);
     expect(desks[0]).toHaveAttribute("data-state", "reviewing");
     expect(desks[0].querySelector("[data-testid=office-task]")!.textContent).toBe(labels.clientProject);
-    expect(screen.getAllByTestId("office-desk-empty")).toHaveLength(4);
+    expect(rows()).toEqual(desks);
     expect(screen.getByTestId("office-extra").textContent).toBe("9 desks idle");
     expect(screen.getByTestId("office-count-asleep").textContent).toContain("9");
   });
@@ -239,14 +237,16 @@ describe("OfficePanel", () => {
     }
   });
 
-  it.each(["busy", "rough", "quiet", "semiLive", "off", "ten", "offline", "offline-kept"] as const)("draws every slot in the %s state: 5 desk rows, 4 GitHub rows, the counts, the idle and today lines", (name) => {
+  it.each(["busy", "rough", "quiet", "semiLive", "off", "ten", "offline", "offline-kept"] as const)("draws the %s state: a row per awake desk (at most 5), 4 GitHub rows, the counts, the idle and today lines", (name) => {
     const snapshot =
       name === "offline" ? null : ((name === "offline-kept" ? OFFICE_FIXTURES.busy : name === "ten" ? OFFICE_FIXTURES_V3.busy : OFFICE_FIXTURES[name]) as OfficeSnapshotV1);
     const status = name.startsWith("offline") ? "offline" : "ready";
     const { poller } = fakePoller({ status, snapshot, fetchedAt: OFFICE_FIXTURE_NOW });
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
-    expect(rows()).toHaveLength(5);
-    // Every row has the same two lines, so a desk, "+N more", "Every Rover is asleep." and a quiet slot share one height.
+    const awake = snapshot ? snapshot.desks.filter((d) => d.state !== "asleep").length : 0;
+    expect(rows()).toHaveLength(Math.min(5, awake));
+    expect(screen.queryAllByTestId("office-desk-empty")).toHaveLength(0);
+    // Every row has the same two lines, so a desk and "+N more" share one height.
     for (const row of rows()) {
       expect(row.className).toBe(rows()[0].className);
       expect(row.children[1].children).toHaveLength(2);
@@ -317,14 +317,15 @@ describe("OfficePanel", () => {
     expect(screen.getByRole("status").textContent).toBe(labels.live);
   });
 
-  it("shows the resting line, Every Rover is asleep over quiet rows, ten idle desks and the empty GitHub line when the office is off", () => {
+  it("shows the resting line, the asleep state instead of desk rows, ten idle desks and the empty GitHub line when the office is off", () => {
     const { poller } = fakePoller(ready(OFFICE_FIXTURES.off as OfficeSnapshotV1));
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
     expect(screen.getByTestId("office-live").textContent).toContain(labels.resting);
     expect(screen.queryAllByTestId("office-desk")).toHaveLength(0);
-    expect(rows()[0]).toBe(screen.getByTestId("office-none"));
-    expect(screen.getByTestId("office-none").textContent).toBe(`${labels.noAgents}\u00a0`);
-    expect(screen.getAllByTestId("office-desk-empty")).toHaveLength(4);
+    expect(screen.queryByTestId("office-desks")).toBeNull();
+    expect(screen.getByTestId("office-none").textContent).toContain(labels.noAgents);
+    // No GitHub events in this snapshot, so no pointer to them.
+    expect(screen.getByTestId("office-none").textContent).not.toContain(labels.seeGithub);
     expect(screen.getByTestId("office-extra").textContent).toBe("10 desks idle");
     expect(screen.getByTestId("office-github-empty").textContent).toBe(labels.noGithub);
     expect(screen.queryAllByTestId("office-github")).toHaveLength(0);
@@ -404,8 +405,8 @@ describe("OfficePanel with ten seats", () => {
     ] as const) {
       const { poller } = fakePoller({ status: "ready", snapshot: tenWith(awake), fetchedAt: OFFICE_FIXTURE_NOW });
       render(<OfficePanel locale={locale} labels={l} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
-      expect(rows()).toHaveLength(5);
       const desks = screen.queryAllByTestId("office-desk");
+      expect(rows()).toHaveLength(desks.length + (moreText ? 1 : 0));
       expect(desks.map((d) => d.querySelector("[data-testid=office-task]")!.textContent)).toEqual(
         shown.map((slot) => tenWith(awake).desks.find((d) => d.slot === slot)!.title ?? l.clientProject),
       );
@@ -415,13 +416,49 @@ describe("OfficePanel with ten seats", () => {
         expect(screen.getByTestId("office-more").firstElementChild!.nextElementSibling!.firstElementChild!.textContent).toBe(moreText);
       } else expect(screen.queryByTestId("office-more")).toBeNull();
       if (awake.length === 0) {
-        expect(rows()[0]).toBe(screen.getByTestId("office-none"));
+        expect(screen.queryByTestId("office-desks")).toBeNull();
         expect(screen.getByTestId("office-none").textContent).toContain(l.noAgents);
       } else expect(screen.queryByTestId("office-none")).toBeNull();
-      expect(screen.queryAllByTestId("office-desk-empty")).toHaveLength(5 - desks.length - (moreText ? 1 : 0) - (awake.length === 0 ? 1 : 0));
       expect(screen.getByTestId("office-extra").textContent).toBe(idleText);
       // The idle line is the Asleep count (empty seats count as asleep, as on the 3D wall).
       expect(screen.getByTestId("office-count-asleep").querySelector("dd")!.textContent).toBe(String(10 - awake.length));
+      cleanup();
+    }
+  });
+
+  it("with two agents awake, draws exactly two desk rows and no blank placeholder, then the eight idle desks in one line", () => {
+    const { poller } = fakePoller({ status: "ready", snapshot: tenWith([2, 7]), fetchedAt: OFFICE_FIXTURE_NOW });
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(rows()).toEqual(screen.getAllByTestId("office-desk"));
+    expect(rows()).toHaveLength(2);
+    expect(screen.queryByTestId("office-none")).toBeNull();
+    expect(screen.getByTestId("office-desks").nextElementSibling).toBe(screen.getByTestId("office-extra"));
+    expect(screen.getByTestId("office-extra").textContent).toBe("8 desks idle");
+  });
+
+  it("with no agent awake, shows All agents are asleep, when the office was last active and a pointer to GitHub (both locales)", () => {
+    const asleep = (minutesAgo: number): OfficeFeedSnapshot => {
+      const base = tenWith([]);
+      const at = OFFICE_FIXTURE_NOW - minutesAgo * 60_000;
+      return { ...base, desks: base.desks.map((d) => ({ ...d, since: at - d.slot * 60_000, recent: [] })) };
+    };
+    for (const [locale, l, ago, now] of [
+      ["en", labels, "Last active 12 min ago.", "Last active just now."],
+      ["id", idLabels, "Terakhir aktif 12 mnt lalu.", "Terakhir aktif baru saja."],
+    ] as const) {
+      const { poller, push } = fakePoller({ status: "ready", snapshot: asleep(12), fetchedAt: OFFICE_FIXTURE_NOW });
+      render(<OfficePanel locale={locale} labels={l} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+      expect(screen.queryByTestId("office-desks")).toBeNull();
+      expect(screen.queryAllByTestId("office-desk-empty")).toHaveLength(0);
+      const none = screen.getByTestId("office-none");
+      expect(none.firstElementChild!.nextElementSibling!.firstElementChild!.textContent).toBe(l.noAgents);
+      expect(screen.getByTestId("office-none-detail").textContent).toBe(`${ago} ${l.seeGithub}`);
+      expect(screen.getAllByTestId("office-github").length).toBeGreaterThan(0);
+      push({ status: "ready", snapshot: asleep(0), fetchedAt: OFFICE_FIXTURE_NOW });
+      expect(screen.getByTestId("office-none-detail").textContent).toBe(`${now} ${l.seeGithub}`);
+      // No desk at all (no session yet): the title and the pointer, no last-active clause.
+      push({ status: "ready", snapshot: { ...asleep(0), desks: [] }, fetchedAt: OFFICE_FIXTURE_NOW });
+      expect(screen.getByTestId("office-none-detail").textContent).toBe(l.seeGithub);
       cleanup();
     }
   });
