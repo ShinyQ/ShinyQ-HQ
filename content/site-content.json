@@ -8136,8 +8136,8 @@
             "end": "2026-09"
           },
           "role": {
-            "en": "Sole engineer",
-            "id": "Satu-satunya engineer"
+            "en": "Lead engineer",
+            "id": "Lead engineer"
           },
           "problem": {
             "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget. The team also needed a studio to publish projects and read analytics without an engineer.",
@@ -8319,8 +8319,8 @@
           ],
           "story": {
             "situation": {
-              "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work, with an assistant visitors could question. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget, while the team needed to publish projects and read analytics without an engineer. I was the sole engineer.",
-              "id": "Tim Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, dengan asisten yang dapat menjawab pertanyaan pengunjung. Asisten tersebut harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan mengikuti batas anggaran harian yang diberlakukan oleh sistem. Tim juga perlu menerbitkan proyek dan membaca analitik tanpa bantuan engineer. Saya adalah satu-satunya engineer."
+              "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work, with an assistant visitors could question. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget, while the team needed to publish projects and read analytics without an engineer. I was the lead engineer, with a teammate adding parts of the Studio.",
+              "id": "Tim Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, dengan asisten yang dapat menjawab pertanyaan pengunjung. Asisten tersebut harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan mengikuti batas anggaran harian yang diberlakukan oleh sistem. Tim juga perlu menerbitkan proyek dan membaca analitik tanpa bantuan engineer. Saya adalah lead engineer, dengan rekan tim yang menambahkan sebagian Studio."
             },
             "decisions": [
               {
