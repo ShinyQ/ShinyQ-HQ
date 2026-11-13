@@ -94,7 +94,7 @@
     ],
     "heroProof": [
       "enterprise-clients",
-      "voice-interruption-speedup",
+      "production-ai-industries",
       "microsoft-certifications"
     ]
   },
@@ -306,22 +306,18 @@
       "confidence": "self-reported"
     },
     {
-      "id": "voice-interruption-speedup",
-      "value": "~2 s to ~0.2 s",
+      "id": "production-ai-industries",
+      "value": "5+",
       "label": {
-        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
-        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
+        "en": "Industries with production AI delivered since February 2026, including banking, automotive, mining, food manufacturing and consumer health",
+        "id": "Industri dengan AI production yang dirilis sejak Februari 2026, antara lain perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health"
       },
-      "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
-      "confidence": "verified",
       "short": {
-        "en": "voice interruption latency",
-        "id": "latensi interupsi suara"
+        "en": "industries served with AI",
+        "id": "industri dilayani dengan AI"
       },
-      "delta": {
-        "before": "~2 s",
-        "after": "~0.2 s"
-      }
+      "source": "Owner-confirmed sectors of the enterprise client engagements at Metrodata since Feb 2026, as in profile.bio (owner decision 2026-11-13); sector labels only, never client names",
+      "confidence": "self-reported"
     },
     {
       "id": "fraud-false-positives",
@@ -6156,10 +6152,10 @@
               "kind": "scale"
             },
             {
-              "value": "628 PRs",
+              "value": "628 PRs security-scanned",
               "label": {
-                "en": "Pull requests reviewed using scan results in 24 repositories",
-                "id": "Pull request yang di-review menggunakan hasil scan di 24 repositori"
+                "en": "Pull requests scanned and triaged before merge, across 24 repositories",
+                "id": "Pull request yang di-scan keamanan dan di-triage sebelum merge, di 24 repositori"
               },
               "context": {
                 "en": "Recorded by 24 Oct 2026; about 4.9k scans and 645k findings were processed by late September 2026.",

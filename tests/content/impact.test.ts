@@ -73,7 +73,7 @@ describe("the dataset", () => {
 
   it("matches every homepage before and after with a verified case study result", () => {
     const deltas = content.stats.filter((s) => s.delta);
-    expect(deltas.length).toBeGreaterThanOrEqual(3);
+    expect(deltas.length).toBeGreaterThanOrEqual(2);
     for (const stat of deltas) {
       const match = pods.flatMap((p) => p.results).find((res) => res.delta?.before === stat.delta!.before && res.delta?.after === stat.delta!.after);
       expect(match, stat.id).toBeDefined();

@@ -1325,7 +1325,8 @@ test.describe("impact first and pagination (owner decision 2026-11-13)", () => {
   test("the landing shows impact and credentials, PR counts only in the footnote", async ({ page }) => {
     await openPage(page, staticTier("/en"));
     await expect(page.getByTestId("hero-proof")).not.toContainText("1,190+");
-    await expect(page.getByTestId("hero-proof").locator("[data-stat='voice-interruption-speedup']")).toBeVisible();
+    // The hero proof is general, not one project's number (owner request 2026-11-13).
+    await expect(page.getByTestId("hero-proof").locator("[data-stat='production-ai-industries']")).toContainText("5+");
     await expect(page.getByTestId("scale-note")).toContainText("1,190+");
     await expect(page.locator("#stats [data-stat='prs-merged-2026']")).toHaveCount(0);
   });

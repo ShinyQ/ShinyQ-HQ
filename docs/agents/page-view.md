@@ -212,7 +212,8 @@ never a contents target.
 - The proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25):
   - the three stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`, in that order), each with its `data-stat` id;
   - each value in the display face (`DeltaValue compact` for a before and after) over its `short` label, parted by vertical hairlines, no box;
-  - never a scale stat (schema check): the PR count left the strip for the voice interruption delta (owner decision 2026-11-13);
+  - never a scale stat (schema check), and general rather than one project's number: clients, industries, certifications
+    (owner decisions 2026-11-13);
   - a list named "Key numbers" (`home.proofLabel`), server-rendered, no motion;
   - the stats ledger skips these ids, so no number shows twice.
 - The actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button, solid cyan (full width on phones), then
