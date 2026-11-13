@@ -139,7 +139,8 @@ describe("content/site-content.json", () => {
       "Portofolio dan Asisten Solusi AI",
       "ai",
       "hero",
-      "Sole engineer",
+      // Lead, not sole: a teammate built parts of the Studio (owner decision 2026-11-13).
+      "Lead engineer",
     ]);
     expect(ai.tagline.en).toMatch(/multi-agent RAG assistant/);
     expect(ai.tagline.en).toMatch(/\/dashboard Studio/);
