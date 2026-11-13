@@ -9,6 +9,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `content/site-content.json`: public dataset (validated by `src/content/schema.ts`).
 - `content/ask/suggestions.json`: curated Ask the HQ question pills (EN/ID, topics, tags, follow-ups). See "Ask the HQ" in [ask.md](ask.md).
 - `content/build-story.json`: the build story (EN/ID) behind the `/build` page; read by `src/content/build-story.ts`. See "Build story" in [content.md](content.md).
+- `content/security.json`: the Security in Practice page (EN/ID) behind `/security` and the Ask `security` chunk; read by `src/content/security.ts`. See "Security page" in [../content.md](../content.md#security-page).
 - `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only; it points to the `/build` page. See "Ask the HQ" in [ask.md](ask.md).
 - `content/perspectives.json`: Kurniadi's professional Q&A (EN/ID), Ask knowledge only once approved (no page). See "Content access" in [content.md](content.md).
 - `content/study-guides.json`: the certification study guides (EN/ID; human fields by hand, `pages`, `bytes`, `version` and `cover` by `scripts/study-guides.ts`); the PDFs live in the private R2 bucket `hq-study-guides`. See "Study guides" in [content.md](content.md#study-guides).
@@ -184,6 +185,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/components/Modal.tsx`: shared modal dialog (portal, focus trap, Esc, full-screen sheet on phones); DialogHost.tsx mounts the site-wide modals.
 - `src/components/diagram/`: architecture diagrams as build-time SVG: layout.ts (pure grid layout, edge router and order search), DiagramSvg.tsx (boxes, arrows, labels), metrics.ts (shared drawing constants, so a client drawer can import the renderer alone), text.ts (node texts and the figure's text alternative).
 - `src/components/MetricStrip.tsx`: the results strip a case study opens with (value and label), hook-free for the server.
+- `src/components/security/`: the `/security` page sections (server markup only).
 - `src/components/build/`: the `/build` page: BuildSections (one section per story station), BuildDashboard (tiles from the build facts), BuildTimeline (the rounds and their PRs), BuildVisits (client island: visits since launch tile), tile.ts (shared tile classes).
 - `src/components/office/`: the Classic Live Agent Office card (home `#office`): OfficeSection (server, resolves the strings in labels.ts), OfficeLazy (loads the panel near the viewport, hides when the office is off), OfficePanel (client: desk rows, counts, status), fill.ts (placeholder and ICU plural fill).
 - `src/components/blog/`: blog post MDX components: `mdx.tsx` (`postMdxComponents`: the `Architecture` tag and a focusable `pre`), `PostArchitecture.tsx` (the figure: `ArchitectureDiagram` plus a figcaption, server only).
@@ -229,6 +231,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/content/cert-views.ts`: certViews(locale) / toCertViews: serializable CertView[] for the island, the preview card and the 3D wall.
 - `src/content/guides.ts`: GuideView type and pure study guide helpers (URLs, weight and size labels, page key), client-safe.
 - `src/content/guide-views.ts`: guideViews(locale) and guideForCert(certId), server only (reads `getStudyGuides()`).
+- `src/content/security.ts`: the security page loader and schema (`content/security.json`), server only; read by the `/security` page, its JSON-LD and the Ask pack.
 - `src/content/build-story.ts`: the build story loader (`content/build-story.json`), server only; read by the `/build` page and the B1 room view.
 - `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
 - `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.

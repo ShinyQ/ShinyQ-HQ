@@ -197,7 +197,7 @@ and counts, and refresh Ask embeddings through the existing authenticated tool.
 ### Forbidden patterns
 
 - `FORBIDDEN_PATTERNS` in `src/content/safety.ts`: em dash, money amounts, phone numbers, Azure resource hostnames, Master's degree.
-- `tests/content/safety.test.ts` scans every string of `site-content.json`, `perspectives.json` (drafts included), `ask/site-build.json`, `blog/diagrams.json`, `build-story.json`, `study-guides.json` and both message files for them; the MDX posts for em dashes only. It also checks that the dataset carries no photo.
+- `tests/content/safety.test.ts` scans every string of `site-content.json`, `perspectives.json` (drafts included), `ask/site-build.json`, `blog/diagrams.json`, `build-story.json`, `study-guides.json`, `security.json` and both message files for them; the MDX posts for em dashes only. It also checks that the dataset carries no photo.
 - `tests/content/production.test.ts` adds GUIDs, resource paths and URLs for the `production` block.
 - Validate content edits quickly with `bun run validate:content` (`scripts/validate-fragment.ts full`): the schemas of the dataset, perspectives, the Ask site-build note and the study guides (each `certId` a known certification), Title Case, and the forbidden patterns across all four.
 - The unit test `tests/unit/safety.test.ts` covers the patterns, the live-link exemption, the allowlist and the build scan helpers.

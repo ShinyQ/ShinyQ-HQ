@@ -6,6 +6,7 @@ How the site's content is stored, checked and published. The authoritative rules
 
 - [Dataset and posts](#dataset-and-posts)
 - [Build story](#build-story)
+- [Security page](#security-page)
 - [Perspectives](#perspectives)
 - [Titles and ordering](#titles-and-ordering)
 - [Project galleries and live sites](#project-galleries-and-live-sites)
@@ -113,6 +114,15 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - The Blueprint's `stack` lists the tools the site is built with (tech registry names, 4 to 14). The B1 Stack Halo orbits their logos with the agents' `tools`: after changing either list (or one of their logos in `public/tech/`), run `bun run engine:atlas` and commit `public/atlas/engine.*.webp`, `src/experience/floors/engine/engine-atlas.ts` and `scripts/engine-atlas.lock.json` (`bun run build` and `tests/unit/engine-holo.test.ts` fail until then). A name without a logo is drawn as a text cell. The B1 bay holograms read their numbers from the story and the snapshot (`RoomEngine.holo`), so they follow content changes by themselves.
 - Ask the HQ keeps its own short note about the site in `content/ask/site-build.json`; it points visitors to this page.
 - Ask post chunks derive the latest-post discovery label from registry publication dates. Keep frontmatter and registry excerpts aligned, including sample limits that must survive the single-lead-paragraph knowledge window.
+
+## Security page
+
+The Security in Practice page (`/{locale}/security`) renders `content/security.json` (`SecurityPageSchema`, `src/content/security.ts`).
+
+- Impact first (owner decision 2026-11-13): proof, AI and incident rows lead with a before and after (`delta`; `value` must read "<before> to <after>"); counts stay small supporting context. A value with words is `{ en, id }`.
+- Public-safe facts only: never a client, service, host, resource or repository name, never code or a secret, and incidents dated by month (`YYYY-MM`). Numbers come from the owner's git history and IaC and are re-checked against the commit that recorded them before they go in.
+- `ai.results[].pod` and `products.items[].pod` name case studies, `background.awards` names `awards` ids; `bun run validate:content` and the build fail on an unknown one. The keyless diagram has at most 12 nodes.
+- The Ask `security` chunk is built from it: after an edit run `bun scripts/ask-embed.ts --cli` and commit the cache.
 
 ## Perspectives
 

@@ -181,7 +181,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Memory gates | zero growth in geometries, textures and programs; under 256 KB retained JS growth (`memory.spec`, heap snapshot), under 2 MB heap in use (`memory-full`) |
 | Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 82 KB |
 | Study guide reader (on the Read click) | chunk 160 KB, worker 400 KB gzip |
-| Ask knowledge pack (Workers KV) | text `PACK_MAX_BYTES` 384 KiB, stored value 768 KiB, bundled fallback 24 KiB |
+| Ask knowledge pack (Workers KV) | text `PACK_MAX_BYTES` 384 KiB, stored value 832 KiB, bundled fallback 24 KiB |
 | README hero GIF | under 6 MB |
 
 ## Folder map
