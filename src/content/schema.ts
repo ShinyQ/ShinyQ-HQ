@@ -374,17 +374,22 @@ export const TrackSchema = z.strictObject({
 });
 
 /** Longest AI Summary paragraph: the block is a hook, not a second article (owner decision 2026-11-14). */
-export const POST_SUMMARY_MAX = 320;
+export const POST_SUMMARY_MAX = 1000;
 
-/** AI Summary paragraphs per post (owner decision 2026-11-14: exactly 5). */
-export const POST_SUMMARY_PARAGRAPHS = { min: 5, max: 5 } as const;
+/** AI Summary paragraphs per post (owner decision 2026-11-14: exactly 1). */
+export const POST_SUMMARY_PARAGRAPHS = { min: 1, max: 1 } as const;
 
 /**
  * One AI Summary paragraph in `PostRef.summary` (owner decision 2026-11-14): both languages where the post has both, one
- * where the post is single-language (the Sun/Moon essay). The block's label says the text is generated.
+ * where the post is single-language (the Sun/Moon essay). The block's label says the text is generated, and the paragraph
+ * reads as one continuous piece with no line breaks.
  */
+const PostSummaryTextSchema = nonEmpty
+  .max(POST_SUMMARY_MAX)
+  .refine((value) => !/[\r\n]/.test(value), { message: "A summary paragraph cannot contain line breaks" });
+
 export const PostSummaryParagraphSchema = z
-  .strictObject({ en: nonEmpty.max(POST_SUMMARY_MAX).optional(), id: nonEmpty.max(POST_SUMMARY_MAX).optional() })
+  .strictObject({ en: PostSummaryTextSchema.optional(), id: PostSummaryTextSchema.optional() })
   .refine((value) => Boolean(value.en ?? value.id), { message: "A summary paragraph needs at least one language" });
 
 export const PostRefSchema = z.strictObject({
@@ -396,7 +401,7 @@ export const PostRefSchema = z.strictObject({
   tags: z.array(nonEmpty),
   languages: z.array(LocaleSchema).min(1),
   excerpt: LocalizedTextSchema,
-  /** The AI Summary block above the body: exactly five short paragraphs, in the dataset, never the MDX frontmatter. */
+  /** The AI Summary block above the body: exactly one short paragraph, in the dataset, never the MDX frontmatter. */
   summary: z.array(PostSummaryParagraphSchema).min(POST_SUMMARY_PARAGRAPHS.min).max(POST_SUMMARY_PARAGRAPHS.max).optional(),
   url: httpsUrl.optional(),
   /** L4 station hologram (Lucide icon id), unique across posts, publications and talks. */
