@@ -799,6 +799,8 @@ test("a post opens with its AI Summary before the first body paragraph", async (
   await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveText(summaryIn(slug, "en"));
   await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveCSS("font-size", "15px");
   await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveCSS("text-align", "justify");
+  await expect(summary.locator(".pv-summary-tab")).toContainText(en.blog.summary);
+  await expect(summary.locator(".pv-summary-lead")).toHaveCSS("font-weight", "500");
   const box = await summary.boundingBox();
   const first = await page.locator(".prose-hq > p").first().boundingBox();
   expect(box && first && box.y + box.height < first.y).toBe(true);
@@ -1064,7 +1066,7 @@ test.describe("reading a post", () => {
     for (const box of columns) expect(box).toEqual(columns[0]);
     expect(Math.abs(columns[0][0] * 2 + columns[0][1] - 1440)).toBeLessThanOrEqual(2);
     await expect(page.locator(".prose-hq > p").first()).toHaveCSS("font-size", "15px");
-    await expect(page.locator(".prose-hq > p").first()).toHaveCSS("text-align", "justify");
+    await expect(page.locator(".prose-hq > p").first()).toHaveCSS("text-align", "start");
     await expect(page.locator(".prose-hq > p").first()).toHaveCSS("color", "rgb(244, 244, 245)");
     await expect(page.locator("article header .pv-meta")).toContainText(/\d+ min read/);
 

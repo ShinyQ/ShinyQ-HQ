@@ -589,43 +589,36 @@
     margin-inline: auto;
   }
 
-  /* The generated summary reads as a quiet editorial note: a ringed marker, a fading rule and a soft top wash. */
-  .pv-summary {
+  /* The generated summary reads as a field note: the label sits on the card's top edge like a tab. */
+  .pv-summary.card {
+    position: relative;
     border-color: var(--color-line-2);
-    background:
-      linear-gradient(180deg, var(--color-surface-2), transparent 55%),
-      var(--color-surface);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    background: var(--color-paper-2);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
   }
 
-  .pv-summary-head {
+  .pv-summary-tab {
+    position: absolute;
+    top: -12px;
+    left: 22px;
+    z-index: 1;
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-  }
-
-  .pv-summary-mark {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 24px;
+    gap: 8px;
     height: 24px;
-    border: 1px solid var(--color-cyan-soft);
-    border-radius: var(--radius-pill);
-    background: color-mix(in srgb, var(--color-cyan) 8%, transparent);
-  }
-
-  .pv-summary-rule {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--color-line-2), transparent);
+    padding: 0 10px;
+    background: var(--color-void);
   }
 
   .pv-summary-text {
-    margin-top: var(--space-sm);
-    color: var(--color-ink);
+    color: var(--color-ink-2);
     font-size: 15px;
-    line-height: 1.7;
+    line-height: 1.75;
+  }
+
+  .pv-summary-lead {
+    color: var(--color-ink);
+    font-weight: 500;
   }
 
   @media (min-width: 48rem) {
