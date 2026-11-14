@@ -11573,6 +11573,28 @@
             "en": "A memory from university, a friend who learned faster, and the slow years of practice that came before anyone called it talent.",
             "id": "Kenangan dari masa kuliah, teman yang lebih cepat paham, dan latihan bertahun-tahun sebelum semuanya terlihat seperti bakat."
           },
+          "summary": [
+            {
+              "en": "A university programming class opens the story: one student finished exercises in minutes, while another needed several attempts. That contrast complicates the later label of natural talent.",
+              "id": "Sebuah kelas pemrograman menjadi titik awal cerita: seorang mahasiswa menuntaskan latihan dalam hitungan menit, sementara mahasiswa lain memerlukan beberapa kali percobaan. Kontras itu memberi konteks pada sebutan bakat alami yang muncul kemudian."
+            },
+            {
+              "en": "The essay follows the work that came after: repeated reading, late nights, courses, teaching work and competitions beyond programming.",
+              "id": "Esai ini merunut latihan berulang, malam panjang, kursus, kegiatan asisten pengajar, dan lomba di luar pemrograman."
+            },
+            {
+              "en": "By the fourth semester, progress meant not only learning another technology, but becoming better at learning unfamiliar subjects.",
+              "id": "Memasuki semester empat, kemajuan terlihat bukan hanya pada penguasaan teknologi, tetapi juga pada kemampuan mempelajari bidang baru."
+            },
+            {
+              "en": "Those years were exhausting, and the routine was not worth repeating.",
+              "id": "Masa kuliah digambarkan melelahkan dan rutinitasnya tidak layak diulang."
+            },
+            {
+              "en": "They also built lasting curiosity and a steadier way to approach new material, much of the effort hidden behind a later compliment.",
+              "id": "Namun, rasa ingin tahu dan cara yang lebih tenang menghadapi materi baru tetap terbawa, meski proses panjang di balik pujian sering tidak terlihat."
+            }
+          ],
           "icon": "sprout"
         },
         {
@@ -11598,6 +11620,28 @@
             "en": "First AI benchmark job: ten Indonesian tasks in ten days, all ten merged in the end, five after a redesign. Over 300 ideas killed. The method I used.",
             "id": "Pekerjaan benchmark AI pertama: sepuluh task bahasa Indonesia dalam sepuluh hari, akhirnya merged semua, lima setelah didesain ulang. Metode yang saya pakai."
           },
+          "summary": [
+            {
+              "en": "The challenge was to design ten Indonesian-language benchmark tasks in ten days, making them difficult for frontier models without making them unfair to human solvers.",
+              "id": "Tantangannya adalah menyusun sepuluh task benchmark berbahasa Indonesia dalam sepuluh hari, yang sulit bagi model frontier tetapi tetap adil bagi manusia."
+            },
+            {
+              "en": "A native Indonesian engineer had to be able to pass without seeing the hidden tests, while models still needed to fail after the language rule was stated plainly. More than 300 ideas were screened before ten became pull requests.",
+              "id": "Engineer penutur asli bahasa Indonesia harus bisa menyelesaikan task tanpa melihat test tersembunyi, sementara model tetap diharapkan gagal setelah aturan bahasa dijelaskan gamblang. Lebih dari 300 ide disaring sebelum sepuluh menjadi pull request."
+            },
+            {
+              "en": "All ten tasks were eventually merged; five needed redesigns after submission rules changed.",
+              "id": "Kesepuluh task akhirnya di-merge; lima perlu didesain ulang setelah aturan submission berubah."
+            },
+            {
+              "en": "Their contents stay private to avoid revealing the answers, so the work centers on early probes and evidence-backed decisions about which ideas to reject.",
+              "id": "Isinya tidak ditampilkan agar jawaban tidak terbocorkan, sehingga prosesnya berfokus pada probe awal dan alasan berbasis bukti untuk menolak ide."
+            },
+            {
+              "en": "No comparison with a workflow without agents was recorded, so no speedup is established. The clearest result is a repeatable way to check fairness before a task reaches review.",
+              "id": "Tidak ada perbandingan dengan alur kerja tanpa agent, jadi speedup tidak terbukti. Hasil yang bisa dipakai ulang adalah metode untuk menguji keadilan sebelum task masuk review."
+            }
+          ],
           "icon": "flask-conical"
         },
         {
@@ -11622,6 +11666,28 @@
             "en": "The AI voice agent moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS speedup was measured.",
             "id": "Voice agent AI pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur setara."
           },
+          "summary": [
+            {
+              "en": "A support deadline prompted the move of a grounded voice agent from ACS to LiveKit.",
+              "id": "Batas dukungan mendorong migrasi voice agent berbasis grounding dari ACS ke LiveKit."
+            },
+            {
+              "en": "The media transport changed, while retrieval, escalation and conversation state stayed in place.",
+              "id": "Transport media berubah, sementara retrieval, eskalasi, dan state percakapan tetap dipertahankan."
+            },
+            {
+              "en": "Two interfaces separated call handling from agent behavior, letting the new transport be built and reviewed without rewriting orchestration. Joining, audio, recovery and hand-back could then be tested as separate parts.",
+              "id": "Dua interface memisahkan pengelolaan panggilan dari perilaku agent, sehingga transport baru bisa dibangun dan ditinjau tanpa menulis ulang orkestrasi. Koneksi, audio, pemulihan, dan hand-back kemudian dapat diuji secara terpisah."
+            },
+            {
+              "en": "Across 20 live proof-of-concept hand-back rounds, callers heard the agent resume after a median of 425 ms, with the resume line served from cache in 19 rounds. Setup passed 70 of 74 attempts, short of the 99% target.",
+              "id": "Pada 20 putaran hand-back dalam proof-of-concept langsung, penelepon kembali mendengar agent setelah median 425 ms; resume line berasal dari cache pada 19 putaran. Setup berhasil 70 dari 74 kali, masih di bawah target 99%."
+            },
+            {
+              "en": "The measurements describe the new path, not a speedup over ACS; no like-for-like comparison was run. Real-microphone checks and the broader setup target remained open.",
+              "id": "Hasil tersebut menggambarkan jalur baru, bukan speedup dibanding ACS karena tidak ada perbandingan setara. Pemeriksaan dengan mikrofon nyata dan target setup yang lebih luas masih terbuka."
+            }
+          ],
           "icon": "server"
         },
         {
@@ -11647,6 +11713,28 @@
             "en": "An audit showed a repository's code could run inside the API holding production secrets. Same-day stopgap, then isolated workers and a 9-minute outage.",
             "id": "Audit menemukan kode repositori dapat berjalan di API dengan secret production. Solusi sementara hari itu juga, lalu worker terisolasi dan outage 9 menit."
           },
+          "summary": [
+            {
+              "en": "An audit found that a repository being scanned could execute its setup code inside the internet-facing API, alongside production secrets.",
+              "id": "Audit menemukan kode dari repositori yang dipindai dapat menjalankan setup script di dalam API yang terbuka ke internet, berdampingan dengan secret production."
+            },
+            {
+              "en": "A dependency-lock step could trigger a build of the repository itself.",
+              "id": "Langkah penguncian dependency ternyata dapat memicu build proyek itu sendiri."
+            },
+            {
+              "en": "A same-day stopgap restricted subprocess environments; scans then moved into isolated queued jobs with scoped credentials, keeping repository code out of the API process.",
+              "id": "Stopgap hari itu membatasi environment subprocess; proses pemindaian kemudian dipindahkan ke job terisolasi di balik queue dengan kredensial terbatas, sehingga kode repositori tidak lagi berjalan di proses API."
+            },
+            {
+              "en": "The cut-over caused about nine minutes of downtime and exposed a scaler that could not start its worker. A later uv release also broke the stopgap's --no-build guarantee.",
+              "id": "Peralihan tersebut menyebabkan downtime sekitar sembilan menit dan mengungkap scaler yang gagal menyalakan worker. Rilis uv berikutnya juga merusak jaminan --no-build pada stopgap."
+            },
+            {
+              "en": "The lasting boundary was isolation rather than a single safety flag. Repository code runs in a separate job, while the API keeps its broader secrets.",
+              "id": "Batas keamanan jangka panjangnya adalah isolasi, bukan satu flag. Kode repositori berjalan di job terpisah, sementara API tetap menyimpan secret dengan cakupan lebih luas."
+            }
+          ],
           "icon": "container"
         },
         {
@@ -11672,6 +11760,28 @@
             "en": "A Fabric dashboard took ~21 s per request, static files included. A zero-row probe showed capacity throttling, not query cost. I had blamed indexes first.",
             "id": "Dashboard Fabric butuh ~21 s per request, termasuk file statis. Probe tanpa baris menunjukkan throttling kapasitas. Awalnya saya menyalahkan index."
           },
+          "summary": [
+            {
+              "en": "A Fabric dashboard took about 21 seconds to send its first byte, including static JavaScript that never touched the database. Initial read-path tuning did not move the delay.",
+              "id": "Dashboard di Fabric menunggu sekitar 21 detik sebelum mengirim byte pertama, termasuk file JavaScript statis yang tidak mengakses database. Optimasi awal pada jalur baca tidak mengubah jeda."
+            },
+            {
+              "en": "Dropping two indexes appeared to reduce the wait to 1.1 seconds, but the stall returned the same day. The apparent fix pointed to the wrong cause.",
+              "id": "Penghapusan dua index sempat menurunkan jeda menjadi 1,1 detik, tetapi masalah kembali pada hari yang sama. Perbaikan sementara itu mengarahkan diagnosis ke penyebab yang keliru."
+            },
+            {
+              "en": "A 49-byte GraphQL {__typename} probe that read no rows still took 21.4 to 25.6 seconds, pointing to admission delay on shared F2 capacity rather than query cost.",
+              "id": "Probe GraphQL {__typename} yang hanya berukuran 49 byte dan tidak membaca baris tetap memerlukan 21,4 sampai 25,6 detik. Hasil itu menunjuk ke delay admission pada kapasitas F2 bersama, bukan biaya query."
+            },
+            {
+              "en": "The same 140-request load took 61.02 seconds on F2 and 9.50 seconds on F8.",
+              "id": "Beban 140 request yang sama memerlukan 61,02 detik di F2 dan 9,50 detik di F8."
+            },
+            {
+              "en": "Since capacity choice was outside the engineer's control, later work focused on sending less data; fixture and estimate results are labeled.",
+              "id": "Karena pilihan kapasitas bukan kewenangan engineer, optimasi berikutnya mengurangi data yang dikirim; hasil fixture dan estimasi ditandai."
+            }
+          ],
           "icon": "hourglass"
         },
         {
@@ -11697,6 +11807,28 @@
             "en": "In the first managed application test installs, every AI call failed with correct roles. The lock blocked the app's own identities. 36 defects followed.",
             "id": "Pada test install managed application pertama, semua panggilan AI gagal meski role benar. Lock memblokir identity aplikasi sendiri. Ditemukan 36 defect."
           },
+          "summary": [
+            {
+              "en": "Managed-application test installs exposed a surprising block: every AI call failed despite correct roles.",
+              "id": "Test install managed application mengungkap hambatan tak terduga: semua panggilan AI gagal meski role sudah benar."
+            },
+            {
+              "en": "A read-only lock's deny assignment ran before RBAC and rejected required data actions from app identities.",
+              "id": "Deny assignment dari read-only lock bekerja sebelum RBAC dan menolak data action yang dibutuhkan identity aplikasi."
+            },
+            {
+              "en": "The lock protects a managed resource group from changes. Reads and publisher actions pass, but most writes and data actions are blocked unless they appear in the reviewed exception list.",
+              "id": "Lock tersebut melindungi managed resource group dari perubahan. Operasi baca dan tindakan publisher diizinkan, sementara sebagian besar operasi tulis dan data diblokir kecuali tercantum dalam daftar pengecualian yang ditinjau."
+            },
+            {
+              "en": "The repair used a short allowlist of data actions, each with a reason and checked against the roles that could use it. The exception did not grant permission by itself, but widened what those roles could do.",
+              "id": "Perbaikannya menggunakan allowlist data action yang pendek, masing-masing disertai alasan dan diperiksa terhadap role yang dapat menggunakannya. Pengecualian itu tidak memberi izin sendiri, tetapi memperluas tindakan yang dapat dilakukan role."
+            },
+            {
+              "en": "Test installs across four products uncovered 36 blocking defects. The packages passed real installs, but interactive checks and Marketplace certification remained open, so automated green checks were only one step.",
+              "id": "Test install pada empat produk menemukan 36 defect yang memblokir. Paketnya lolos install sungguhan, tetapi pengecekan interaktif dan sertifikasi Marketplace masih terbuka; tes otomatis yang hijau baru satu tahap."
+            }
+          ],
           "icon": "lock-keyhole"
         },
         {
@@ -11722,6 +11854,28 @@
             "en": "An AI inbox assistant pre-sorts Gmail and Outlook email for approval with Microsoft-Decision-1 and guardrails. Evaluation: 40 synthetic emails, not an inbox.",
             "id": "Asisten inbox AI memilah Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
           },
+          "summary": [
+            {
+              "en": "An AI inbox assistant sorts messages into suggested actions, but a confident prediction is not permission to move an email. Human approval remains part of every action.",
+              "id": "Asisten inbox AI mengelompokkan email sebagai saran tindakan, tetapi prediksi yang meyakinkan bukan izin untuk memindahkan pesan. Persetujuan manusia tetap diperlukan sebelum tindakan dijalankan."
+            },
+            {
+              "en": "The decision model returns scores, while code applies guardrails and builds reasons from mail headers and sender history.",
+              "id": "Decision model mengembalikan skor, sementara kode menerapkan guardrail dan menyusun alasan dari header email serta riwayat pengirim."
+            },
+            {
+              "en": "Messages can go to Trash or Archive, but can never be permanently deleted.",
+              "id": "Pesan dapat dipindahkan ke Trash atau Archive, tetapi tidak pernah dihapus permanen."
+            },
+            {
+              "en": "In a test of 40 synthetic emails, not a real inbox, trash precision was 100% with a 95% Wilson lower bound of 77.2%, recall was 72.2%, and 15% of suggestions were unsure. The 98% calibration target remains unproven.",
+              "id": "Dalam uji 40 email sintetis, bukan inbox nyata, presisi trash mencapai 100% dengan batas bawah Wilson 95% sebesar 77,2%, recall 72,2%, dan 15% saran berstatus unsure. Target kalibrasi 98% belum terbukti."
+            },
+            {
+              "en": "The first deployment exposed gaps the test suite had not caught: a missing Access secret, an invalid key pasted through a hidden prompt, and OAuth consent left in testing mode, where refresh tokens expire after seven days.",
+              "id": "Deploy pertama mengungkap celah yang tidak tertangkap test suite: Access secret yang belum dibuat, key tidak valid yang ditempel lewat prompt tersembunyi, dan OAuth consent dalam mode testing yang membuat refresh token kedaluwarsa setelah tujuh hari."
+            }
+          ],
           "icon": "inbox"
         },
         {
@@ -11747,6 +11901,28 @@
             "en": "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement.",
             "id": "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
           },
+          "summary": [
+            {
+              "en": "A voice agent continued speaking for about two seconds after a caller interrupted.",
+              "id": "Voice agent terus berbicara sekitar dua detik setelah penelepon menyela."
+            },
+            {
+              "en": "Two separate faults produced the same symptom: barge-in waited for the model to finish, while a blocking knowledge search prevented the receive loop from hearing new audio.",
+              "id": "Dua masalah berbeda menghasilkan gejala yang sama: barge-in menunggu model selesai, sementara knowledge search yang memblokir membuat receive loop tidak bisa mendengar audio baru."
+            },
+            {
+              "en": "Moving knowledge search off the receive loop reduced delay to 93 to 220 ms in a controlled harness with four calls per arm. The live cut-off result moved from 8 of 15 utterances to 9 of 15, showing no improvement.",
+              "id": "Memindahkan knowledge search dari receive loop menurunkan jeda menjadi 93 sampai 220 ms dalam harness terkendali, dengan empat panggilan per jalur. Hasil cut-off langsung berubah dari 8 dari 15 ujaran menjadi 9 dari 15, tanpa perbaikan."
+            },
+            {
+              "en": "Minimal-pair tests helped separate the faults, and experiments that missed their written criteria were removed instead of kept as switches.",
+              "id": "Pengujian minimal pair membantu memisahkan kedua masalah, dan eksperimen yang tidak memenuhi kriteria tertulis dihapus alih-alih dipertahankan sebagai switch."
+            },
+            {
+              "en": "The search delay improved under controlled conditions, but reliable turn-taking remained unresolved in live use.",
+              "id": "Jeda search membaik dalam kondisi terkendali, tetapi turn-taking yang andal masih belum terpecahkan dalam penggunaan langsung."
+            }
+          ],
           "icon": "mic"
         },
         {
@@ -11772,6 +11948,28 @@
             "en": "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode.",
             "id": "Uji offline di set development: FPR paket bersih yang noisy turun 36,4% ke 9,1%, tetapi recall High-risk turun. Dirilis hanya dalam shadow mode."
           },
+          "summary": [
+            {
+              "en": "The second-generation fraud engine targeted false alarms that could weaken reviewer trust.",
+              "id": "Engine fraud generasi kedua menargetkan false alarm yang dikhawatirkan dapat mengurangi kepercayaan reviewer."
+            },
+            {
+              "en": "On noisy but clean packets in the development set, false positives fell from 36.4% to 9.1%.",
+              "id": "Pada paket bersih yang noisy di set development, false positive turun dari 36,4% ke 9,1%."
+            },
+            {
+              "en": "High-risk recall also fell: from 1.000 to 0.841 on development and 0.429 on held-out data, failing the recall threshold set before evaluation. Better precision alone was not enough.",
+              "id": "Recall High-risk juga turun: dari 1,000 ke 0,841 di development dan 0,429 di held-out, sehingga ambang recall yang ditetapkan sebelum evaluasi tidak tercapai. Presisi yang lebih baik saja belum cukup."
+            },
+            {
+              "en": "The redesign moved scoring out of the LLM: deterministic rules and severity floors compute the result, while the model provides findings, a semantic review and narrative. The engine observes real cases in shadow mode without deciding outcomes.",
+              "id": "Desain ulang memindahkan perhitungan skor keluar dari LLM: aturan deterministik dan severity floor menentukan hasil, sementara model menyediakan temuan, tinjauan semantik, dan narasi. Engine mengamati kasus nyata lewat shadow mode tanpa mengambil keputusan."
+            },
+            {
+              "en": "Real case volume is still small, so the engine remains in shadow mode. A 3,780-run synthetic check supports isolation, not accuracy; evidence for accuracy is still needed before decisions can be automated.",
+              "id": "Volume kasus nyata masih kecil, sehingga engine tetap berada di shadow mode. Uji sintetis 3.780 run mendukung isolasi, bukan akurasi; bukti akurasi masih diperlukan sebelum keputusan dapat diotomatisasi."
+            }
+          ],
           "icon": "shield-alert"
         },
         {
@@ -11797,6 +11995,28 @@
             "en": "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded.",
             "id": "Sekitar 45% dari 22 pasangan CV/lowongan gagal. Dua bug parsing diperbaiki dengan tujuh regression test, tetapi run ulang batch awal tidak tercatat."
           },
+          "summary": [
+            {
+              "en": "In one 22-pair CV screening batch, about 45% of calls returned unusable output. The rate exposed a reliability problem, but did not identify its cause.",
+              "id": "Dalam satu batch screening berisi 22 pasangan CV dan lowongan, sekitar 45% panggilan menghasilkan output yang tidak bisa dipakai. Angka itu menunjukkan masalah reliabilitas, tetapi tidak menjelaskan penyebabnya."
+            },
+            {
+              "en": "Grouping errors by message revealed two parser faults: a truncated response lost its final JSON key, while a raw newline inside a string made an almost-valid answer impossible to parse.",
+              "id": "Pengelompokan berdasarkan pesan error menemukan dua masalah parser: respons terpotong kehilangan key JSON terakhir, sedangkan newline mentah di dalam string membuat jawaban yang nyaris valid gagal di-parse."
+            },
+            {
+              "en": "Stricter output controls and safer parsing were added, with seven regression tests replaying both failures. The original batch was never rerun, so there is no measured before-and-after result for the 45% failure rate.",
+              "id": "Kontrol output diperketat dan parsing diperbaiki, lalu tujuh regression test memutar ulang kedua kegagalan. Batch awal tidak pernah dijalankan ulang, sehingga tidak ada hasil sebelum-sesudah yang terukur untuk angka 45%."
+            },
+            {
+              "en": "A later 0.13% baseline came from a different model and prompt.",
+              "id": "Baseline 0,13% yang tercatat kemudian berasal dari model dan prompt berbeda."
+            },
+            {
+              "en": "It is a later reference point, not evidence that the fixes reduced the original batch failure rate.",
+              "id": "Angka itu menjadi titik pembanding di waktu berikutnya, bukan bukti bahwa perbaikan menurunkan tingkat kegagalan batch awal."
+            }
+          ],
           "icon": "bug"
         },
         {
@@ -11822,6 +12042,28 @@
             "en": "AI agents wrote most of a solo-built vendor portal. CI missed a skipped integration tier and two sign-in bugs. Productivity gains were not measured.",
             "id": "AI agent menulis mayoritas kode portal vendor. CI melewatkan integration tier yang di-skip dan dua bug login. Peningkatan produktivitas belum diukur."
           },
+          "summary": [
+            {
+              "en": "Over six weeks, one engineer opened 179 pull requests and merged 142 while AI agents wrote most of a vendor portal.",
+              "id": "Selama enam minggu, satu engineer membuka 179 pull request dan menggabungkan 142, sementara AI agent menulis sebagian besar kode portal vendor."
+            },
+            {
+              "en": "The workflow separated specification, implementation, review and deployment.",
+              "id": "Alur kerjanya memisahkan spesifikasi, implementasi, review, dan deployment."
+            },
+            {
+              "en": "The project used 51 numbered specs with task, acceptance-criteria and business-rule IDs, plus a constitution for agent behavior. CI checked changes against those references.",
+              "id": "Proyek ini menggunakan 51 spec bernomor dengan ID task, acceptance criteria, dan business rule, ditambah constitution untuk perilaku agent. CI memeriksa perubahan terhadap referensi tersebut."
+            },
+            {
+              "en": "Important gaps still reached review: a skipped integration tier showed green, a cookie exceeded 4 KB with 58 permission grants, and a session check ran before the database commit. Every merge had only one human reviewer.",
+              "id": "Beberapa celah tetap lolos ke tahap review: integration tier yang di-skip tetap melaporkan hijau, cookie melewati 4 KB dengan 58 permission grant, dan pemeriksaan session berjalan sebelum commit database. Setiap merge hanya ditinjau satu orang."
+            },
+            {
+              "en": "Planned safeguards include fail-closed CI and a second human reviewer for sign-in, approvals and payment flows. Productivity was not measured because there was no agent-free baseline.",
+              "id": "Perbaikan yang direncanakan mencakup CI yang gagal tertutup dan reviewer manusia kedua untuk login, approval, serta alur pembayaran. Produktivitas tidak diukur karena tidak ada baseline tanpa agent."
+            }
+          ],
           "icon": "file-code"
         },
         {
@@ -11843,6 +12085,23 @@
             "en": "A personal essay on growing up, finding direction and staying steady, written in Bahasa Indonesia.",
             "id": "Esai personal tentang bertumbuh, mencari arah, dan tetap teguh di tengah gelombang."
           },
+          "summary": [
+            {
+              "id": "Esai ini bergerak dari hitam, putih, dan abu-abu menuju rasa kehilangan arah yang sulit diberi nama."
+            },
+            {
+              "id": "Keramaian tidak menghapus jarak emosional; kedekatan orang lain justru menonjolkan kehampaan di dalam diri."
+            },
+            {
+              "id": "Matahari hadir sebagai cahaya yang menghangatkan sekaligus menyakitkan, sampai batas diri perlahan memudar. Setelah cahayanya ditinggalkan, laut gelap menjadi ruang untuk menghadapi ketidaksempurnaan dan bertahan."
+            },
+            {
+              "id": "Bintang-bintang kecil memberi arah tanpa menghapus malam. Kegelapan dalam esai ini bukan sekadar ancaman, tetapi ruang untuk menemukan ketenangan dan kekuatan secara perlahan."
+            },
+            {
+              "id": "Setiap perjumpaan bukan jawaban, melainkan cermin yang membuka pertanyaan baru tentang identitas diri. Citra bulan dan bintang menutup esai dengan gagasan bahwa cahaya lembut pun dapat membantu menemukan arah."
+            }
+          ],
           "icon": "moon-star"
         },
         {

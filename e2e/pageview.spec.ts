@@ -784,6 +784,43 @@ test("a post's Markdown table renders as a table that scrolls in its own region 
   await expectNoSeriousViolations(page);
 });
 
+/** A post's AI Summary paragraphs in one language (the dataset type narrows per post, so read them as optional text). */
+function summaryIn(slug: string, locale: "en" | "id"): string[] {
+  const post = data.floors.library.posts.find((item) => item.slug === slug);
+  const summary = (post?.summary ?? []) as { en?: string; id?: string }[];
+  return summary.map((paragraph) => paragraph[locale] ?? "");
+}
+
+test("a post opens with its AI Summary before the first body paragraph", async ({ page }) => {
+  const slug = "45-percent-of-our-llm-calls-failed";
+  await openPage(page, staticTier(`/en/blog/${slug}`));
+  const summary = page.getByRole("complementary", { name: en.blog.summary });
+  await expect(summary).toHaveCount(1);
+  await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveText(summaryIn(slug, "en"));
+  const box = await summary.boundingBox();
+  const first = await page.locator(".prose-hq > p").first().boundingBox();
+  expect(box && first && box.y + box.height < first.y).toBe(true);
+  await expectNoSeriousViolations(page);
+});
+
+test("the AI Summary label follows the page language and the paragraphs follow the post's", async ({ page }) => {
+  const slug = "making-a-voice-agent-interruptible";
+  await openPage(page, staticTier(`/id/blog/${slug}`));
+  const summary = page.getByRole("complementary", { name: id.blog.summary });
+  await expect(summary).toHaveCount(1);
+  await expect(summary.locator("[data-summary-paragraphs]")).toHaveAttribute("lang", "id");
+  await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveText(summaryIn(slug, "id"));
+});
+
+test("a post with no translation keeps the page's label over its own language's summary", async ({ page }) => {
+  const slug = "the-sun-the-moon-and-the-dark-sea";
+  await openPage(page, staticTier(`/en/blog/${slug}`));
+  const summary = page.getByRole("complementary", { name: en.blog.summary });
+  await expect(summary).toHaveCount(1);
+  await expect(summary.locator("[data-summary-paragraphs]")).toHaveAttribute("lang", "id");
+  await expect(summary.locator("[data-summary-paragraphs] > p")).toHaveText(summaryIn(slug, "id"));
+});
+
 test.describe("architecture diagrams", () => {
   const FIGURE_POSTS: { slug: string; figures: number }[] = [
     { slug: "making-a-voice-agent-interruptible", figures: 1 },
@@ -1019,8 +1056,9 @@ test.describe("reading a post", () => {
   test("one centred column for the head, the body and the end, with its contents beside it from 1280 px", async ({ page, browser }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openPage(page, staticTier(POST));
+    // The head, the AI Summary (owner decision 2026-11-14), the body and the end all share the one reading measure.
     const columns = await page.locator("article .pv-read").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width)]; }));
-    expect(columns).toHaveLength(3);
+    expect(columns).toHaveLength(4);
     for (const box of columns) expect(box).toEqual(columns[0]);
     expect(Math.abs(columns[0][0] * 2 + columns[0][1] - 1440)).toBeLessThanOrEqual(2);
     await expect(page.locator(".prose-hq > p").first()).toHaveCSS("font-size", "16px");

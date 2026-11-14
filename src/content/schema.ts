@@ -13,7 +13,8 @@ import { HEADLINE_MAX } from "./selectors";
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
  * (ProductionSchema), the separate study guides file (StudyGuidesFileSchema), the 3D hologram ids TimelineEntry.icon,
  * PostRef.icon, Publication.icon, Talk.icon and Pod.sculpture (IconIdSchema, checked against the vendored icons and
- * the sculpture recipes by `shapeIssues` in `shapes.ts`).
+ * the sculpture recipes by `shapeIssues` in `shapes.ts`), PostRef.summary (the AI Summary block above a hosted post,
+ * owner decision 2026-11-14).
  */
 
 export { DEFAULT_LOCALE, LOCALES } from "./locales";
@@ -372,6 +373,20 @@ export const TrackSchema = z.strictObject({
   lead: SlugSchema.optional(),
 });
 
+/** Longest AI Summary paragraph: the block is a hook, not a second article (owner decision 2026-11-14). */
+export const POST_SUMMARY_MAX = 320;
+
+/** AI Summary paragraphs per post (owner decision 2026-11-14: exactly 5). */
+export const POST_SUMMARY_PARAGRAPHS = { min: 5, max: 5 } as const;
+
+/**
+ * One AI Summary paragraph in `PostRef.summary` (owner decision 2026-11-14): both languages where the post has both, one
+ * where the post is single-language (the Sun/Moon essay). The block's label says the text is generated.
+ */
+export const PostSummaryParagraphSchema = z
+  .strictObject({ en: nonEmpty.max(POST_SUMMARY_MAX).optional(), id: nonEmpty.max(POST_SUMMARY_MAX).optional() })
+  .refine((value) => Boolean(value.en ?? value.id), { message: "A summary paragraph needs at least one language" });
+
 export const PostRefSchema = z.strictObject({
   slug: SlugSchema,
   title: LocalizedTextSchema,
@@ -381,6 +396,8 @@ export const PostRefSchema = z.strictObject({
   tags: z.array(nonEmpty),
   languages: z.array(LocaleSchema).min(1),
   excerpt: LocalizedTextSchema,
+  /** The AI Summary block above the body: exactly five short paragraphs, in the dataset, never the MDX frontmatter. */
+  summary: z.array(PostSummaryParagraphSchema).min(POST_SUMMARY_PARAGRAPHS.min).max(POST_SUMMARY_PARAGRAPHS.max).optional(),
   url: httpsUrl.optional(),
   /** L4 station hologram (Lucide icon id), unique across posts, publications and talks. */
   icon: IconIdSchema.optional(),
@@ -832,6 +849,7 @@ export type Pod = z.infer<typeof PodSchema>;
 export type PodStory = z.infer<typeof PodStorySchema>;
 export type EngineeringTopic = z.infer<typeof EngineeringTopicSchema>;
 export type Track = z.infer<typeof TrackSchema>;
+export type PostSummaryParagraph = z.infer<typeof PostSummaryParagraphSchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
 export type ResearchMetrics = z.infer<typeof ResearchMetricsSchema>;

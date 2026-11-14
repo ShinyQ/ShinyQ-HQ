@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { compilePost } from "@/components/blog/compile";
 import { readingMinutes } from "@/components/blog/headings";
+import { PostSummary } from "@/components/blog/PostSummary";
 import { JsonLd } from "@/components/JsonLd";
 import { ShareLinks } from "@/components/ShareLinks";
 import { CaseToc } from "@/components/page/CaseToc";
@@ -44,8 +45,10 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   const tcase = await getTranslations({ locale, namespace: "case" });
   const { content, headings } = await compilePost(found.source, slug, found.locale, t("tableLabel"));
   const updated = postUpdated(post, locale);
+  // The AI Summary reads in the language the body does (a fallback page keeps its own language's paragraphs).
+  const summary = post.summary?.map((paragraph) => paragraph[found.locale]).filter((text): text is string => Boolean(text)) ?? [];
 
-  // One reading measure (.pv-read) for the head, the body and the end; the contents sit in the right gutter from 1280 px.
+  // One reading measure (.pv-read) for the head, the AI Summary, the body and the end; the contents sit in the right gutter from 1280 px.
   return (
     <>
       <JsonLd data={pageJsonLd(locale, `/blog/${slug}`)} />
@@ -77,6 +80,11 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
             </p>
           )}
         </header>
+        {summary.length > 0 && (
+          <div className="pv-read mt-8">
+            <PostSummary paragraphs={summary} label={t("summary")} labelLang={locale} lang={found.locale} />
+          </div>
+        )}
         <div className="pv-post-body">
           {headings.length > 1 && (
             <aside className="pv-post-toc" lang={locale}>

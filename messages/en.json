@@ -392,6 +392,7 @@
   "blog": {
     "back": "Back to Writing",
     "readingTime": "{minutes} min read",
+    "summary": "AI Summary",
     "topics": "Topics",
     "tableLabel": "Scrollable table",
     "translationMissing": "This post is available in {language}. The original version is shown here.",
