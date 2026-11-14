@@ -44,6 +44,15 @@ describe("post AI summaries", () => {
     }
   });
 
+  it.each(hosted.map((post) => [post.slug, post] as const))("%s uses neutral synopsis voice", (_slug, post) => {
+    for (const locale of post.languages) {
+      const summary = post.summary!.map((paragraph) => paragraph[locale]!).join(" ");
+      const words = summary.toLowerCase().match(/[a-z]+/g) ?? [];
+      const personalPronouns = locale === "en" ? ["i", "me", "my", "mine", "we", "us", "our", "ours", "you", "your", "yours"] : ["saya", "aku", "kami", "kita", "anda", "kamu"];
+      expect(words, `${locale} point of view`).not.toEqual(expect.arrayContaining(personalPronouns));
+    }
+  });
+
   it("leaves external posts without a page unsummarised", () => {
     expect(posts.filter((post) => post.url && post.summary).map((post) => post.slug)).toEqual([]);
   });
