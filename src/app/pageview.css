@@ -585,7 +585,7 @@
 
   /* A post (blog/[slug]): one reading measure for its head, body and end, centred; the contents in the right gutter. */
   .pv-read {
-    max-width: 38rem;
+    max-width: var(--reading-measure);
     margin-inline: auto;
   }
 
@@ -599,7 +599,7 @@
 
   .pv-post-toc {
     width: 100%;
-    max-width: 38rem;
+    max-width: var(--reading-measure);
     margin-inline: auto;
     margin-bottom: var(--space-lg);
   }
@@ -628,7 +628,7 @@
 
     .pv-post-body {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 38rem) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, var(--reading-measure)) minmax(0, 1fr);
       column-gap: var(--gap-columns);
     }
 

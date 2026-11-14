@@ -264,7 +264,7 @@
   }
 
   .prose-hq > figure > figcaption {
-    padding-inline: max(0px, calc((100% - 38rem) / 2));
+    padding-inline: max(0px, calc((100% - var(--reading-measure)) / 2));
   }
 
   .prose-hq :where(blockquote):not(:where(.not-prose, .not-prose *)) {

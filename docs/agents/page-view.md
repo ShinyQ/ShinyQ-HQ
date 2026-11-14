@@ -145,16 +145,16 @@ never a contents target.
 - Journey entries (`/journey/<slug>`) and posts (`/blog/<slug>`) are Long Documents: a breadcrumb (`case.breadcrumb`,
   Journey / the entry's type) instead of the eyebrow, the 3D room (`L2:<slug>`, `case.room`) in the facts row, chapter
   gaps at the section scale, Previous and Next without arrows.
-- Posts (`/blog/<slug>`, reading revamp 2026-11-02): one centred measure (`.pv-read`, 38rem, about 68 characters) for
+- Posts (`/blog/<slug>`, reading revamp 2026-11-02): one centred measure (`.pv-read`, `--reading-measure` 42rem, about 75 characters) for
   the head, the body and the end. The head is the crumb, the title (`pv-post-title`, at most 52 px) and one meta line:
   the `<time>`, the reading time (`blog.readingTime`, 220 words a minute, `readingMinutes`) and the languages. The body
   (`.prose-hq`) is the ink token at 16 px on 28 px lines with a line of space between paragraphs, h2 in the display
   face, code in a framed `paper-2` well. The Neon Grid behind a post stops at 520 px, before the text.
   - Between the head and the body, the AI Summary block (owner decision 2026-11-14): `PostSummary`
     (`src/components/blog/PostSummary.tsx`) in a `.card` inside the same `.pv-read` measure, the `blog.summary` label
-    ("AI Summary" / "Ringkasan AI") with an `AccentDot`, then five `pv-body` paragraphs from `PostRef.summary` (the
-    first in the ink token). The paragraphs carry the body's language (`lang`), the label the page locale, so a
-    translation-fallback page pairs an English label with its Indonesian paragraphs. The label is a paragraph, never a
+    ("AI Summary" / "Ringkasan AI") with an `AccentDot`, then one continuous `pv-body` paragraph from `PostRef.summary`
+    in the ink token. The paragraph carries the body's language (`lang`), the label the page locale, so a
+    translation-fallback page pairs an English label with its Indonesian paragraph. The label is a paragraph, never a
     heading: "On this page" keeps listing only the body's h2s.
   - "On this page" (`CaseToc`, `case.onThisPage`) uses the shared [reading contents](#reading-contents),
     listing the h2s (`remarkPostHeadings` gives each a slug id at build) with `case.chapterCount` resolved

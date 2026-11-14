@@ -2,24 +2,19 @@ import { AccentDot } from "@/components/AccentDot";
 import type { Locale } from "@/content/schema";
 
 /**
- * The AI Summary block above a post's body (owner decision 2026-11-14): `PostRef.summary` as exactly five short paragraphs in
+ * The AI Summary block above a post's body (owner decision 2026-11-14): `PostRef.summary` as one continuous paragraph in
  * the language the body is written in, under a label that says the text is generated. Static and server-only: no client
  * JS, no motion. The label is a paragraph, never a heading, so "On this page" keeps listing only the body's h2s.
  */
-export function PostSummary({ paragraphs, label, labelLang, lang }: { paragraphs: readonly string[]; label: string; labelLang: Locale; lang: Locale }) {
+export function PostSummary({ text, label, labelLang, lang }: { text: string; label: string; labelLang: Locale; lang: Locale }) {
   return (
     <aside className="card p-5 sm:p-6" aria-labelledby="post-summary">
       <p id="post-summary" className="pv-meta flex items-center gap-2" lang={labelLang}>
         <AccentDot tone="cyan" />
         {label}
       </p>
-      <div className="mt-3 grid gap-3" lang={lang} data-summary-paragraphs>
-        {paragraphs.map((text, index) => (
-          // The first paragraph is the hook, so it reads in the ink token instead of the body's ink-2.
-          <p key={text} className={index === 0 ? "pv-body text-ink" : "pv-body"}>
-            {text}
-          </p>
-        ))}
+      <div className="mt-3" lang={lang} data-summary-paragraphs>
+        <p className="pv-body text-ink">{text}</p>
       </div>
     </aside>
   );
