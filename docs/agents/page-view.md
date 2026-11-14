@@ -148,14 +148,15 @@ never a contents target.
 - Posts (`/blog/<slug>`, reading revamp 2026-11-02): one centred measure (`.pv-read`, `--reading-measure` 42rem, about 75 characters) for
   the head, the body and the end. The head is the crumb, the title (`pv-post-title`, at most 52 px) and one meta line:
   the `<time>`, the reading time (`blog.readingTime`, 220 words a minute, `readingMinutes`) and the languages. The body
-  (`.prose-hq`) is the ink token at 16 px on 28 px lines with a line of space between paragraphs, h2 in the display
-  face, code in a framed `paper-2` well. The Neon Grid behind a post stops at 520 px, before the text.
+  (`.prose-hq`) is the ink token at 15 px on 26 px lines with a line of space between paragraphs, justified from 48rem
+  so a phone keeps natural word spacing, h2 in the display face, code in a framed `paper-2` well. The Neon Grid behind a
+  post stops at 520 px, before the text.
   - Between the head and the body, the AI Summary block (owner decision 2026-11-14): `PostSummary`
-    (`src/components/blog/PostSummary.tsx`) in a `.card` inside the same `.pv-read` measure, the `blog.summary` label
-    ("AI Summary" / "Ringkasan AI") with an `AccentDot`, then one continuous `pv-body` paragraph from `PostRef.summary`
-    in the ink token. The paragraph carries the body's language (`lang`), the label the page locale, so a
-    translation-fallback page pairs an English label with its Indonesian paragraph. The label is a paragraph, never a
-    heading: "On this page" keeps listing only the body's h2s.
+    (`src/components/blog/PostSummary.tsx`) in a `.pv-summary` card inside the same `.pv-read` measure, a ringed
+    `AccentDot`, the `blog.summary` label ("AI Summary" / "Ringkasan AI") and a fading rule, then one continuous
+    paragraph from `PostRef.summary` at 15 px, justified from 48rem. The paragraph carries the body's language (`lang`),
+    the label the page locale, so a translation-fallback page pairs an English label with its Indonesian paragraph. The
+    label is a paragraph, never a heading: "On this page" keeps listing only the body's h2s.
   - "On this page" (`CaseToc`, `case.onThisPage`) uses the shared [reading contents](#reading-contents),
     listing the h2s (`remarkPostHeadings` gives each a slug id at build) with `case.chapterCount` resolved
     on the server. With `avoid=".arch-break"` the desktop rail hides while a wide architecture figure

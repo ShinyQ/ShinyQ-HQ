@@ -41,8 +41,9 @@ uses (3D, HUD, dialogs) ship in `client-sheet.css` instead.
 
 - Display: Archivo condensed, weight 800, tracking -0.015em, `text-wrap: balance`. Hero name `pv-d-xl`, page titles
   `pv-d-l`, section heads `pv-h2` (52px at 1440), item titles `pv-h3`, figures `pv-num` (weight 700, tabular).
-- Body: Inter 16px, line-height 1.65; leads `pv-lead` at 52ch; prose 65ch. Posts read in the ink token on one 42rem
-  measure (`pv-read`) shared by the title, the meta and the body.
+- Body: Inter 16px, line-height 1.65; leads `pv-lead` at 52ch; prose 65ch. Posts read in the ink token at 15px on 26px
+  lines, justified once the measure is wide enough, on one 42rem measure (`pv-read`) shared by the title, the meta and the body.
+  The AI Summary is a `.pv-summary` card with a ringed marker and a fading rule; its 15px paragraph follows the same alignment.
 - Labels, captions and meta: `pv-meta`, Inter 14px in sentence case, untracked. Never mono, never capitals, never an
   eyebrow over a heading.
 - Mono (`--font-mono`): dates (`pv-date`) and code only.

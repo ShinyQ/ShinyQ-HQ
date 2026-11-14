@@ -8,13 +8,18 @@ import type { Locale } from "@/content/schema";
  */
 export function PostSummary({ text, label, labelLang, lang }: { text: string; label: string; labelLang: Locale; lang: Locale }) {
   return (
-    <aside className="card p-5 sm:p-6" aria-labelledby="post-summary">
-      <p id="post-summary" className="pv-meta flex items-center gap-2" lang={labelLang}>
-        <AccentDot tone="cyan" />
-        {label}
-      </p>
-      <div className="mt-3" lang={lang} data-summary-paragraphs>
-        <p className="pv-body text-ink">{text}</p>
+    <aside className="pv-summary card p-5 sm:p-6" aria-labelledby="post-summary">
+      <div className="pv-summary-head">
+        <span className="pv-summary-mark" aria-hidden="true">
+          <AccentDot tone="cyan" />
+        </span>
+        <p id="post-summary" className="pv-meta" lang={labelLang}>
+          {label}
+        </p>
+        <span className="pv-summary-rule" aria-hidden="true" />
+      </div>
+      <div lang={lang} data-summary-paragraphs>
+        <p className="pv-summary-text">{text}</p>
       </div>
     </aside>
   );
