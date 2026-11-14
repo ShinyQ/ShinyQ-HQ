@@ -5,7 +5,7 @@ import { POST_SUMMARY_MAX, POST_SUMMARY_PARAGRAPHS, PostRefSchema } from "@/cont
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
-// Owner decision 2026-11-14: every hosted post opens with an AI Summary block, 3 to 5 short paragraphs in the
+// Owner decision 2026-11-14: every hosted post opens with an AI Summary block, exactly five short paragraphs in the
 // language the post is written in. External posts (no `/blog` page) never carry one.
 const content = JSON.parse(readFileSync(path.join(process.cwd(), "content", "site-content.json"), "utf8"));
 const posts = content.floors.library.posts as {
@@ -26,9 +26,9 @@ describe("post AI summaries", () => {
     expect(hosted.filter((post) => !post.summary).map((post) => post.slug)).toEqual([]);
   });
 
-  it.each(hosted.map((post) => [post.slug, post] as const))("%s has 3 to 5 paragraphs in the post's own languages", (_slug, post) => {
-    expect(post.summary!.length).toBeGreaterThanOrEqual(POST_SUMMARY_PARAGRAPHS.min);
-    expect(post.summary!.length).toBeLessThanOrEqual(POST_SUMMARY_PARAGRAPHS.max);
+  it.each(hosted.map((post) => [post.slug, post] as const))("%s has exactly five paragraphs in the post's own languages", (_slug, post) => {
+    expect(post.summary!.length).toBe(POST_SUMMARY_PARAGRAPHS.min);
+    expect(post.summary!.length).toBe(POST_SUMMARY_PARAGRAPHS.max);
     for (const locale of post.languages) expect(post.summary!.every((paragraph) => paragraph[locale]?.trim()), locale).toBe(true);
   });
 
@@ -75,18 +75,18 @@ describe("PostRef.summary contract", () => {
   };
   const paragraph = { en: "A".repeat(80), id: "B".repeat(80) };
 
-  it("accepts 3 to 5 paragraphs with one language each", () => {
-    expect(() => PostRefSchema.parse({ ...post, summary: [paragraph, paragraph, paragraph] })).not.toThrow();
-    expect(() => PostRefSchema.parse({ ...post, summary: [{ id: paragraph.id }, { id: paragraph.id }, { id: paragraph.id }] })).not.toThrow();
+  it("accepts exactly five paragraphs with one language each", () => {
+    expect(() => PostRefSchema.parse({ ...post, summary: Array.from({ length: 5 }, () => paragraph) })).not.toThrow();
+    expect(() => PostRefSchema.parse({ ...post, summary: Array.from({ length: 5 }, () => ({ id: paragraph.id })) })).not.toThrow();
   });
 
-  it("rejects too few paragraphs, too many and an over-long one", () => {
-    expect(() => PostRefSchema.parse({ ...post, summary: [paragraph, paragraph] })).toThrow();
+  it("rejects any count other than five and an over-long paragraph", () => {
+    expect(() => PostRefSchema.parse({ ...post, summary: Array.from({ length: 4 }, () => paragraph) })).toThrow();
     expect(() => PostRefSchema.parse({ ...post, summary: Array.from({ length: 6 }, () => paragraph) })).toThrow();
-    expect(() => PostRefSchema.parse({ ...post, summary: [{ en: "A".repeat(POST_SUMMARY_MAX + 1), id: "x" }, paragraph, paragraph] })).toThrow();
+    expect(() => PostRefSchema.parse({ ...post, summary: [{ en: "A".repeat(POST_SUMMARY_MAX + 1), id: "x" }, ...Array.from({ length: 4 }, () => paragraph)] })).toThrow();
   });
 
   it("rejects a paragraph with no language at all", () => {
-    expect(() => PostRefSchema.parse({ ...post, summary: [{}, paragraph, paragraph] })).toThrow();
+    expect(() => PostRefSchema.parse({ ...post, summary: [{}, ...Array.from({ length: 4 }, () => paragraph)] })).toThrow();
   });
 });

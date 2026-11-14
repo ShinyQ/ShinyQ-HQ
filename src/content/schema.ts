@@ -376,8 +376,8 @@ export const TrackSchema = z.strictObject({
 /** Longest AI Summary paragraph: the block is a hook, not a second article (owner decision 2026-11-14). */
 export const POST_SUMMARY_MAX = 320;
 
-/** AI Summary paragraphs per post (owner decision 2026-11-14: 3 to 5). */
-export const POST_SUMMARY_PARAGRAPHS = { min: 3, max: 5 } as const;
+/** AI Summary paragraphs per post (owner decision 2026-11-14: exactly 5). */
+export const POST_SUMMARY_PARAGRAPHS = { min: 5, max: 5 } as const;
 
 /**
  * One AI Summary paragraph in `PostRef.summary` (owner decision 2026-11-14): both languages where the post has both, one
@@ -396,7 +396,7 @@ export const PostRefSchema = z.strictObject({
   tags: z.array(nonEmpty),
   languages: z.array(LocaleSchema).min(1),
   excerpt: LocalizedTextSchema,
-  /** The AI Summary block above the body: 3 to 5 short paragraphs, in the dataset, never the MDX frontmatter. */
+  /** The AI Summary block above the body: exactly five short paragraphs, in the dataset, never the MDX frontmatter. */
   summary: z.array(PostSummaryParagraphSchema).min(POST_SUMMARY_PARAGRAPHS.min).max(POST_SUMMARY_PARAGRAPHS.max).optional(),
   url: httpsUrl.optional(),
   /** L4 station hologram (Lucide icon id), unique across posts, publications and talks. */

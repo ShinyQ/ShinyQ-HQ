@@ -11579,12 +11579,20 @@
               "id": "Sebuah kelas pemrograman menjadi titik awal cerita: seorang mahasiswa menuntaskan latihan dalam hitungan menit, sementara mahasiswa lain memerlukan beberapa kali percobaan. Kontras itu memberi konteks pada sebutan bakat alami yang muncul kemudian."
             },
             {
-              "en": "The essay follows the work that came after: repeated reading, late nights, courses, teaching work and competitions beyond programming. By the fourth semester, progress meant not only learning another technology, but becoming better at learning unfamiliar subjects.",
-              "id": "Esai ini merunut latihan berulang, malam panjang, kursus, kegiatan asisten pengajar, dan lomba di luar pemrograman. Memasuki semester empat, kemajuan terlihat bukan hanya pada penguasaan teknologi, tetapi juga pada kemampuan mempelajari bidang baru."
+              "en": "The essay follows the work that came after: repeated reading, late nights, courses, teaching work and competitions beyond programming.",
+              "id": "Esai ini merunut latihan berulang, malam panjang, kursus, kegiatan asisten pengajar, dan lomba di luar pemrograman."
             },
             {
-              "en": "Those years were exhausting, not a routine worth repeating. They also built lasting curiosity and a steadier way to approach new material, much of the effort hidden behind a later compliment.",
-              "id": "Masa kuliah digambarkan melelahkan, bukan pola hidup yang layak diulang. Namun, rasa ingin tahu dan cara yang lebih tenang menghadapi materi baru tetap terbawa, meski proses panjang di balik pujian sering tidak terlihat."
+              "en": "By the fourth semester, progress meant not only learning another technology, but becoming better at learning unfamiliar subjects.",
+              "id": "Memasuki semester empat, kemajuan terlihat bukan hanya pada penguasaan teknologi, tetapi juga pada kemampuan mempelajari bidang baru."
+            },
+            {
+              "en": "Those years were exhausting, and the routine was not worth repeating.",
+              "id": "Masa kuliah digambarkan melelahkan dan rutinitasnya tidak layak diulang."
+            },
+            {
+              "en": "They also built lasting curiosity and a steadier way to approach new material, much of the effort hidden behind a later compliment.",
+              "id": "Namun, rasa ingin tahu dan cara yang lebih tenang menghadapi materi baru tetap terbawa, meski proses panjang di balik pujian sering tidak terlihat."
             }
           ],
           "icon": "sprout"
@@ -11622,8 +11630,12 @@
               "id": "Engineer penutur asli bahasa Indonesia harus bisa menyelesaikan task tanpa melihat test tersembunyi, sementara model tetap diharapkan gagal setelah aturan bahasa dijelaskan gamblang. Lebih dari 300 ide disaring sebelum sepuluh menjadi pull request."
             },
             {
-              "en": "All ten tasks were eventually merged; five needed redesigns after submission rules changed. Their contents stay private to avoid revealing the answers, so the work centers on early probes and evidence-backed decisions about which ideas to reject.",
-              "id": "Kesepuluh task akhirnya di-merge; lima perlu didesain ulang setelah aturan submission berubah. Isinya tidak ditampilkan agar jawaban tidak terbocorkan, sehingga prosesnya berfokus pada probe awal dan alasan berbasis bukti untuk menolak ide."
+              "en": "All ten tasks were eventually merged; five needed redesigns after submission rules changed.",
+              "id": "Kesepuluh task akhirnya di-merge; lima perlu didesain ulang setelah aturan submission berubah."
+            },
+            {
+              "en": "Their contents stay private to avoid revealing the answers, so the work centers on early probes and evidence-backed decisions about which ideas to reject.",
+              "id": "Isinya tidak ditampilkan agar jawaban tidak terbocorkan, sehingga prosesnya berfokus pada probe awal dan alasan berbasis bukti untuk menolak ide."
             },
             {
               "en": "No comparison with a workflow without agents was recorded, so no speedup is established. The clearest result is a repeatable way to check fairness before a task reaches review.",
@@ -11656,8 +11668,12 @@
           },
           "summary": [
             {
-              "en": "A support deadline prompted the move of a grounded voice agent from ACS to LiveKit. The media transport changed, while retrieval, escalation and conversation state stayed in place.",
-              "id": "Batas dukungan mendorong migrasi voice agent berbasis grounding dari ACS ke LiveKit. Transport media berubah, sementara retrieval, eskalasi, dan state percakapan tetap dipertahankan."
+              "en": "A support deadline prompted the move of a grounded voice agent from ACS to LiveKit.",
+              "id": "Batas dukungan mendorong migrasi voice agent berbasis grounding dari ACS ke LiveKit."
+            },
+            {
+              "en": "The media transport changed, while retrieval, escalation and conversation state stayed in place.",
+              "id": "Transport media berubah, sementara retrieval, eskalasi, dan state percakapan tetap dipertahankan."
             },
             {
               "en": "Two interfaces separated call handling from agent behavior, letting the new transport be built and reviewed without rewriting orchestration. Joining, audio, recovery and hand-back could then be tested as separate parts.",
@@ -11699,8 +11715,12 @@
           },
           "summary": [
             {
-              "en": "An audit found that a repository being scanned could execute its setup code inside the internet-facing API, alongside production secrets. A dependency-lock step could trigger a build of the repository itself.",
-              "id": "Audit menemukan kode dari repositori yang dipindai dapat menjalankan setup script di dalam API yang terbuka ke internet, berdampingan dengan secret production. Langkah penguncian dependency ternyata dapat memicu build proyek itu sendiri."
+              "en": "An audit found that a repository being scanned could execute its setup code inside the internet-facing API, alongside production secrets.",
+              "id": "Audit menemukan kode dari repositori yang dipindai dapat menjalankan setup script di dalam API yang terbuka ke internet, berdampingan dengan secret production."
+            },
+            {
+              "en": "A dependency-lock step could trigger a build of the repository itself.",
+              "id": "Langkah penguncian dependency ternyata dapat memicu build proyek itu sendiri."
             },
             {
               "en": "A same-day stopgap restricted subprocess environments; scans then moved into isolated queued jobs with scoped credentials, keeping repository code out of the API process.",
@@ -11754,8 +11774,12 @@
               "id": "Probe GraphQL {__typename} yang hanya berukuran 49 byte dan tidak membaca baris tetap memerlukan 21,4 sampai 25,6 detik. Hasil itu menunjuk ke delay admission pada kapasitas F2 bersama, bukan biaya query."
             },
             {
-              "en": "The same 140-request load took 61.02 seconds on F2 and 9.50 seconds on F8. Since capacity choice was outside the engineer's control, later work focused on sending less data; fixture and estimate results are labeled.",
-              "id": "Beban 140 request yang sama memerlukan 61,02 detik di F2 dan 9,50 detik di F8. Karena pilihan kapasitas bukan kewenangan engineer, optimasi berikutnya mengurangi data yang dikirim; hasil fixture dan estimasi ditandai."
+              "en": "The same 140-request load took 61.02 seconds on F2 and 9.50 seconds on F8.",
+              "id": "Beban 140 request yang sama memerlukan 61,02 detik di F2 dan 9,50 detik di F8."
+            },
+            {
+              "en": "Since capacity choice was outside the engineer's control, later work focused on sending less data; fixture and estimate results are labeled.",
+              "id": "Karena pilihan kapasitas bukan kewenangan engineer, optimasi berikutnya mengurangi data yang dikirim; hasil fixture dan estimasi ditandai."
             }
           ],
           "icon": "hourglass"
@@ -11785,8 +11809,12 @@
           },
           "summary": [
             {
-              "en": "Four managed-application test installs exposed a surprising block: every AI call failed despite correct roles. A read-only lock's deny assignment ran before RBAC and rejected required data actions from app identities.",
-              "id": "Empat test install managed application mengungkap hambatan yang tak terduga: semua panggilan AI gagal meski role sudah benar. Deny assignment dari read-only lock bekerja sebelum RBAC dan menolak data action yang dibutuhkan identity aplikasi."
+              "en": "Managed-application test installs exposed a surprising block: every AI call failed despite correct roles.",
+              "id": "Test install managed application mengungkap hambatan tak terduga: semua panggilan AI gagal meski role sudah benar."
+            },
+            {
+              "en": "A read-only lock's deny assignment ran before RBAC and rejected required data actions from app identities.",
+              "id": "Deny assignment dari read-only lock bekerja sebelum RBAC dan menolak data action yang dibutuhkan identity aplikasi."
             },
             {
               "en": "The lock protects a managed resource group from changes. Reads and publisher actions pass, but most writes and data actions are blocked unless they appear in the reviewed exception list.",
@@ -11832,8 +11860,12 @@
               "id": "Asisten inbox AI mengelompokkan email sebagai saran tindakan, tetapi prediksi yang meyakinkan bukan izin untuk memindahkan pesan. Persetujuan manusia tetap diperlukan sebelum tindakan dijalankan."
             },
             {
-              "en": "The decision model returns scores, while code applies guardrails and builds reasons from mail headers and sender history. Messages can go to Trash or Archive, never permanent deletion.",
-              "id": "Decision model mengembalikan skor, sementara kode menerapkan guardrail dan menyusun alasan dari header email serta riwayat pengirim. Pesan hanya dapat dipindahkan ke Trash atau Archive, tidak dihapus permanen."
+              "en": "The decision model returns scores, while code applies guardrails and builds reasons from mail headers and sender history.",
+              "id": "Decision model mengembalikan skor, sementara kode menerapkan guardrail dan menyusun alasan dari header email serta riwayat pengirim."
+            },
+            {
+              "en": "Messages can go to Trash or Archive, but can never be permanently deleted.",
+              "id": "Pesan dapat dipindahkan ke Trash atau Archive, tetapi tidak pernah dihapus permanen."
             },
             {
               "en": "In a test of 40 synthetic emails, not a real inbox, trash precision was 100% with a 95% Wilson lower bound of 77.2%, recall was 72.2%, and 15% of suggestions were unsure. The 98% calibration target remains unproven.",
@@ -11871,8 +11903,12 @@
           },
           "summary": [
             {
-              "en": "A voice agent continued speaking for about two seconds after a caller interrupted. Two separate faults produced the same symptom: barge-in waited for the model to finish, while a blocking knowledge search prevented the receive loop from hearing new audio.",
-              "id": "Voice agent terus berbicara sekitar dua detik setelah penelepon menyela. Dua masalah berbeda menghasilkan gejala yang sama: barge-in menunggu model selesai, sementara knowledge search yang memblokir membuat receive loop tidak bisa mendengar audio baru."
+              "en": "A voice agent continued speaking for about two seconds after a caller interrupted.",
+              "id": "Voice agent terus berbicara sekitar dua detik setelah penelepon menyela."
+            },
+            {
+              "en": "Two separate faults produced the same symptom: barge-in waited for the model to finish, while a blocking knowledge search prevented the receive loop from hearing new audio.",
+              "id": "Dua masalah berbeda menghasilkan gejala yang sama: barge-in menunggu model selesai, sementara knowledge search yang memblokir membuat receive loop tidak bisa mendengar audio baru."
             },
             {
               "en": "Moving knowledge search off the receive loop reduced delay to 93 to 220 ms in a controlled harness with four calls per arm. The live cut-off result moved from 8 of 15 utterances to 9 of 15, showing no improvement.",
@@ -11914,8 +11950,12 @@
           },
           "summary": [
             {
-              "en": "The second-generation fraud engine targeted false alarms that could weaken reviewer trust. On noisy but clean packets in the development set, false positives fell from 36.4% to 9.1%.",
-              "id": "Engine fraud generasi kedua menargetkan false alarm yang dikhawatirkan dapat mengurangi kepercayaan reviewer. Pada paket bersih yang noisy di set development, false positive turun dari 36,4% ke 9,1%."
+              "en": "The second-generation fraud engine targeted false alarms that could weaken reviewer trust.",
+              "id": "Engine fraud generasi kedua menargetkan false alarm yang dikhawatirkan dapat mengurangi kepercayaan reviewer."
+            },
+            {
+              "en": "On noisy but clean packets in the development set, false positives fell from 36.4% to 9.1%.",
+              "id": "Pada paket bersih yang noisy di set development, false positive turun dari 36,4% ke 9,1%."
             },
             {
               "en": "High-risk recall also fell: from 1.000 to 0.841 on development and 0.429 on held-out data, failing the recall threshold set before evaluation. Better precision alone was not enough.",
@@ -11969,8 +12009,12 @@
               "id": "Kontrol output diperketat dan parsing diperbaiki, lalu tujuh regression test memutar ulang kedua kegagalan. Batch awal tidak pernah dijalankan ulang, sehingga tidak ada hasil sebelum-sesudah yang terukur untuk angka 45%."
             },
             {
-              "en": "A later 0.13% baseline came from a different model and prompt. It is a later reference point, not evidence that the fixes reduced the original batch failure rate.",
-              "id": "Baseline 0,13% yang tercatat kemudian berasal dari model dan prompt berbeda. Angka itu menjadi titik pembanding di waktu berikutnya, bukan bukti bahwa perbaikan menurunkan tingkat kegagalan batch awal."
+              "en": "A later 0.13% baseline came from a different model and prompt.",
+              "id": "Baseline 0,13% yang tercatat kemudian berasal dari model dan prompt berbeda."
+            },
+            {
+              "en": "It is a later reference point, not evidence that the fixes reduced the original batch failure rate.",
+              "id": "Angka itu menjadi titik pembanding di waktu berikutnya, bukan bukti bahwa perbaikan menurunkan tingkat kegagalan batch awal."
             }
           ],
           "icon": "bug"
@@ -12000,8 +12044,12 @@
           },
           "summary": [
             {
-              "en": "Over six weeks, one engineer opened 179 pull requests and merged 142 while AI agents wrote most of a vendor portal. The workflow separated specification, implementation, review and deployment.",
-              "id": "Selama enam minggu, satu engineer membuka 179 pull request dan menggabungkan 142, sementara AI agent menulis sebagian besar kode portal vendor. Alur kerjanya memisahkan spesifikasi, implementasi, review, dan deployment."
+              "en": "Over six weeks, one engineer opened 179 pull requests and merged 142 while AI agents wrote most of a vendor portal.",
+              "id": "Selama enam minggu, satu engineer membuka 179 pull request dan menggabungkan 142, sementara AI agent menulis sebagian besar kode portal vendor."
+            },
+            {
+              "en": "The workflow separated specification, implementation, review and deployment.",
+              "id": "Alur kerjanya memisahkan spesifikasi, implementasi, review, dan deployment."
             },
             {
               "en": "The project used 51 numbered specs with task, acceptance-criteria and business-rule IDs, plus a constitution for agent behavior. CI checked changes against those references.",
@@ -12039,7 +12087,10 @@
           },
           "summary": [
             {
-              "id": "Esai ini bergerak dari hitam, putih, dan abu-abu menuju rasa kehilangan arah yang sulit diberi nama. Keramaian tidak menghapus jarak emosional; kedekatan orang lain justru menonjolkan kehampaan di dalam diri."
+              "id": "Esai ini bergerak dari hitam, putih, dan abu-abu menuju rasa kehilangan arah yang sulit diberi nama."
+            },
+            {
+              "id": "Keramaian tidak menghapus jarak emosional; kedekatan orang lain justru menonjolkan kehampaan di dalam diri."
             },
             {
               "id": "Matahari hadir sebagai cahaya yang menghangatkan sekaligus menyakitkan, sampai batas diri perlahan memudar. Setelah cahayanya ditinggalkan, laut gelap menjadi ruang untuk menghadapi ketidaksempurnaan dan bertahan."

@@ -2,7 +2,7 @@ import { AccentDot } from "@/components/AccentDot";
 import type { Locale } from "@/content/schema";
 
 /**
- * The AI Summary block above a post's body (owner decision 2026-11-14): `PostRef.summary` as 3 to 5 short paragraphs in
+ * The AI Summary block above a post's body (owner decision 2026-11-14): `PostRef.summary` as exactly five short paragraphs in
  * the language the body is written in, under a label that says the text is generated. Static and server-only: no client
  * JS, no motion. The label is a paragraph, never a heading, so "On this page" keeps listing only the body's h2s.
  */

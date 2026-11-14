@@ -152,7 +152,7 @@ never a contents target.
   face, code in a framed `paper-2` well. The Neon Grid behind a post stops at 520 px, before the text.
   - Between the head and the body, the AI Summary block (owner decision 2026-11-14): `PostSummary`
     (`src/components/blog/PostSummary.tsx`) in a `.card` inside the same `.pv-read` measure, the `blog.summary` label
-    ("AI Summary" / "Ringkasan AI") with an `AccentDot`, then 3 to 5 `pv-body` paragraphs from `PostRef.summary` (the
+    ("AI Summary" / "Ringkasan AI") with an `AccentDot`, then five `pv-body` paragraphs from `PostRef.summary` (the
     first in the ink token). The paragraphs carry the body's language (`lang`), the label the page locale, so a
     translation-fallback page pairs an English label with its Indonesian paragraphs. The label is a paragraph, never a
     heading: "On this page" keeps listing only the body's h2s.
