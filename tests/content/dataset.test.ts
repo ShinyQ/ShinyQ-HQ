@@ -93,6 +93,18 @@ describe("content/site-content.json", () => {
     }
   });
 
+  it("records AB-100 as earned with its public Microsoft Learn credential", () => {
+    const credentialUrl = "https://learn.microsoft.com/api/credentials/share/en-us/KurniadiAhmadWijaya-0298/660C3DC6F7B4FCF?sharingId=813CCE48E6426863";
+    expect(content.certifications.find((c) => c.id === "ab-100")).toMatchObject({ issued: "2026-11", credentialUrl, status: "earned" });
+    const stat = content.stats.find((s) => s.id === "microsoft-certifications");
+    expect(stat).toMatchObject({ value: "7" });
+    expect(stat?.label.en).toContain("AB-100");
+    const milestone = entries.find((e) => e.id === "certification-desk-2026");
+    expect(milestone?.end).toBe("2026-11");
+    expect(milestone?.summary.en).toContain("four Microsoft certifications");
+    expect(milestone?.highlights.some((h) => h.en.includes("AB-100"))).toBe(true);
+  });
+
   it("resolves every podRef and timelineRef", () => {
     const podIds = new Set(pods.map((p) => p.id));
     const entryIds = new Set(entries.map((e) => e.id));

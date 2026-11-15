@@ -349,16 +349,16 @@
     },
     {
       "id": "microsoft-certifications",
-      "value": "6",
+      "value": "7",
       "label": {
-        "en": "Microsoft, GitHub and Google certifications: GH-600, GH-300, AI-103, AI-901, AZ-900, Generative AI Leader",
-        "id": "Sertifikasi Microsoft, GitHub dan Google: GH-600, GH-300, AI-103, AI-901, AZ-900, Generative AI Leader"
+        "en": "Microsoft, GitHub and Google certifications: AB-100, GH-600, GH-300, AI-103, AI-901, AZ-900, Generative AI Leader",
+        "id": "Sertifikasi Microsoft, GitHub dan Google: AB-100, GH-600, GH-300, AI-103, AI-901, AZ-900, Generative AI Leader"
       },
       "short": {
         "en": "cloud and AI certifications",
         "id": "sertifikasi cloud dan AI"
       },
-      "source": "Microsoft Learn credential records (AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13; GH-300 credential 15A85CAB4BE4E174, earned 2026-10-31, valid until 2028-10-31); Credly badge for Google Generative AI Leader (certification ID cadb3b0724f442698b9997a9d5c2adb4, earned 2026-10-17, valid until 2029-10-17)",
+      "source": "Microsoft Learn credential records (AB-100 credential 660C3DC6F7B4FCF, earned 2026-11; AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13; GH-300 credential 15A85CAB4BE4E174, earned 2026-10-31, valid until 2028-10-31); Credly badge for Google Generative AI Leader (certification ID cadb3b0724f442698b9997a9d5c2adb4, earned 2026-10-17, valid until 2029-10-17)",
       "confidence": "verified"
     },
     {
@@ -554,7 +554,8 @@
       "name": "Microsoft Certified: Agentic AI Business Solutions Architect Expert",
       "issuer": "Microsoft",
       "issued": "2026-11",
-      "status": "in-progress"
+      "credentialUrl": "https://learn.microsoft.com/api/credentials/share/en-us/KurniadiAhmadWijaya-0298/660C3DC6F7B4FCF?sharingId=813CCE48E6426863",
+      "status": "earned"
     },
     {
       "id": "ai-103",
@@ -2328,10 +2329,10 @@
             "id": "Pembelajar dan peraih sertifikasi"
           },
           "start": "2026-05",
-          "end": "2026-10",
+          "end": "2026-11",
           "summary": {
-            "en": "I earned three Microsoft certifications, two GitHub certifications (agentic AI developer and GitHub Copilot) and the Google Generative AI Leader certification between May and October 2026.",
-            "id": "Saya meraih tiga sertifikasi Microsoft, dua sertifikasi GitHub (agentic AI developer dan GitHub Copilot) dan sertifikasi Google Generative AI Leader antara Mei dan Oktober 2026."
+            "en": "I earned four Microsoft certifications, two GitHub certifications (agentic AI developer and GitHub Copilot) and the Google Generative AI Leader certification between May and November 2026.",
+            "id": "Saya meraih empat sertifikasi Microsoft, dua sertifikasi GitHub (agentic AI developer dan GitHub Copilot) serta sertifikasi Google Generative AI Leader antara Mei dan November 2026."
           },
           "highlights": [
             {
@@ -2343,12 +2344,12 @@
               "id": "Azure AI Apps and Agents Developer Associate (AI-103), diraih pada September 2026"
             },
             {
-              "en": "GitHub Certified: Agentic AI Developer (GH-600) and GitHub Copilot (GH-300), October 2026",
-              "id": "GitHub Certified: Agentic AI Developer (GH-600) dan GitHub Copilot (GH-300), diraih pada Oktober 2026"
+              "en": "GitHub Certified: Agentic AI Developer (GH-600), GitHub Copilot (GH-300) and Google Generative AI Leader, October 2026",
+              "id": "GitHub Certified: Agentic AI Developer (GH-600), GitHub Copilot (GH-300) dan Google Generative AI Leader, diraih pada Oktober 2026"
             },
             {
-              "en": "Google Certified: Generative AI Leader, October 2026",
-              "id": "Google Certified: Generative AI Leader, diraih pada Oktober 2026"
+              "en": "Agentic AI Business Solutions Architect Expert (AB-100), November 2026",
+              "id": "Agentic AI Business Solutions Architect Expert (AB-100), diraih pada November 2026"
             }
           ],
           "stack": [

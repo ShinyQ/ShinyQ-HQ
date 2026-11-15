@@ -351,14 +351,20 @@ test("certifications open the in-site preview card (no frame), keyboard first", 
   await expect(card).toBeFocused();
 });
 
-test("the Indonesian preview card is localized", async ({ page }) => {
-  await openPage(page, staticTier("/id/contact"));
-  await page.locator(`#certifications [data-cert-open="${firstCert.id}"]`).first().click();
-  const dialog = page.getByRole("dialog", { name: firstCert.name });
-  await expect(dialog.getByRole("link", { name: /Buka kredensial/ })).toBeVisible();
-  await expect(dialog).toContainText("Diraih");
-  await dialog.getByRole("button", { name: "Tutup" }).click();
-  await expect(dialog).toBeHidden();
+test("AB-100 is earned and opens its credential in both locales", async ({ page }) => {
+  const ab100 = data.certifications.find((c) => c.id === "ab-100")!;
+  for (const [locale, messages] of [["en", en], ["id", id]] as const) {
+    await openPage(page, staticTier(`/${locale}/contact`));
+    await page.locator('#certifications [data-cert-open="ab-100"]').first().click();
+    const dialog = page.getByRole("dialog", { name: ab100.name });
+    await expect(dialog).toContainText(messages.certs.status.earned);
+    await expect(dialog).toContainText(messages.certs.preview.issued);
+    await expect(dialog).not.toContainText(messages.certs.status["in-progress"]);
+    await expect(dialog).not.toContainText(messages.certs.preview.planned);
+    await expect(dialog.getByTestId("cert-open")).toHaveAttribute("href", ab100.credentialUrl!);
+    await dialog.getByRole("button", { name: messages.certs.preview.close }).click();
+    await expect(dialog).toBeHidden();
+  }
 });
 
 test("no horizontal overflow on a 390 px phone", async ({ browser }) => {
