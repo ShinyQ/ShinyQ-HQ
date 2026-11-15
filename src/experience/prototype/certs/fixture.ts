@@ -6,7 +6,7 @@ import type { Certification } from "@/content/schema";
  * only exercise the layouts at 30 certifications. Never import this into shipped pages.
  */
 const real: Certification[] = [
-  { id: "ab-100", code: "AB-100", name: "Microsoft Certified: Agentic AI Business Solutions Architect Expert", issuer: "Microsoft", issued: "2026-11", status: "in-progress" },
+  { id: "ab-100", code: "AB-100", name: "Microsoft Certified: Agentic AI Business Solutions Architect Expert", issuer: "Microsoft", issued: "2026-11", credentialUrl: "https://learn.microsoft.com/api/credentials/share/en-us/KurniadiAhmadWijaya-0298/660C3DC6F7B4FCF?sharingId=813CCE48E6426863", status: "earned" },
   { id: "ai-103", code: "AI-103", name: "Microsoft Certified: Azure AI Apps and Agents Developer Associate", issuer: "Microsoft", issued: "2026-09", credentialUrl: "https://example.com/credential/ai-103", status: "earned" },
   { id: "ai-901", code: "AI-901", name: "Microsoft Certified: Azure AI Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/ai-901", status: "earned" },
   { id: "az-900", code: "AZ-900", name: "Microsoft Certified: Azure Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/az-900", status: "earned" },

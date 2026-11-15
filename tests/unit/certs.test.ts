@@ -22,14 +22,14 @@ describe("certification helpers", () => {
       expect(rank[a.status] <= rank[b.status], `${a.id} before ${b.id}`).toBe(true);
       if (a.status === b.status) expect(a.issued >= b.issued, `${a.id} before ${b.id}`).toBe(true);
     }
-    expect(sorted[0].id).toBe("gh-300");
+    expect(sorted[0].id).toBe("ab-100");
     expect(sorted.at(-1)?.status).toBe("expired");
   });
 
   it("features pinned certs first, then the newest earned with an exam code", () => {
-    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-300", "gh-600"]);
+    expect(featuredCertifications(getCertifications()).map((c) => c.id)).toEqual(["google-gen-ai-leader", "ab-100", "gh-300"]);
     const pinned = CERT_FIXTURE.map((c) => (c.id === "gh-900" ? { ...c, featured: true } : c));
-    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-900", "gh-300"]);
+    expect(featuredCertifications(pinned).map((c) => c.id)).toEqual(["google-gen-ai-leader", "gh-900", "ab-100"]);
     expect(featuredCertifications(CERT_FIXTURE.filter((c) => !c.code))).toHaveLength(3);
     expect(featuredCertifications(CERT_FIXTURE).every((c) => c.status === "earned")).toBe(true);
   });
@@ -96,7 +96,7 @@ describe("certification helpers", () => {
   it("builds locale-resolved views without confidence or verified labels", () => {
     const en = toCertViews(CERT_FIXTURE, "en");
     const id = toCertViews(CERT_FIXTURE, "id");
-    expect(en[0]).toMatchObject({ id: "gh-300", short: "GitHub Copilot", logo: "/tech/github.svg", issuedLabel: "Oct 2026", expiresLabel: "Oct 2028" });
+    expect(en[0]).toMatchObject({ id: "ab-100", short: "Agentic AI Business Solutions Architect Expert", logo: "/tech/microsoft.svg", issuedLabel: "Nov 2026", status: "earned" });
     expect(en.find((c) => c.id === "gh-600")).toMatchObject({ short: "Agentic AI Developer", expiresLabel: "Oct 2027" });
     expect(en.find((c) => c.id === "ai-103")).toMatchObject({ short: "Azure AI Apps and Agents Developer Associate", logo: "/tech/microsoft.svg", issuedLabel: "Sep 2026" });
     expect(id.find((c) => c.id === "az-305")?.issuedLabel).toBe("Okt 2026");

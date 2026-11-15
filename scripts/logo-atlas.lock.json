@@ -1,5 +1,5 @@
 {
-  "file": "/atlas/logos.35641603c2.webp",
+  "file": "/atlas/logos.783fb74d89.webp",
   "srcs": [
     "/tech/agent-framework.webp",
     "/tech/langgraph.svg",
@@ -67,9 +67,9 @@
     "/tech/k6.svg",
     "/tech/sonarqube.svg",
     "/tech/sentry.svg",
+    "/tech/microsoft.svg",
     "/tech/github.svg",
-    "/tech/google.svg",
-    "/tech/microsoft.svg"
+    "/tech/google.svg"
   ],
-  "sources": "e6911eb0eb5d"
+  "sources": "fdee5550d3b1"
 }
