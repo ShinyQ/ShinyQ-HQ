@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-14",
+  "asOf": "2026-11-16",
   "github": {
     "login": "ShinyQ",
     "contributionsLastYear": 11503,
@@ -13,9 +13,10 @@
   "huggingface": {
     "user": "ShinyQ",
     "models": 3,
-    "downloads": 74
+    "downloads": 78
   },
   "credentials": [
+    { "id": "ab-100", "reachable": true },
     { "id": "ai-103", "reachable": true },
     { "id": "ai-901", "reachable": true },
     { "id": "az-900", "reachable": true },
