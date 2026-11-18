@@ -6,7 +6,7 @@ import type { Locale } from "@/content/schema";
 import { Link } from "@/i18n/navigation";
 
 /**
- * The closing contact section (`#contact`): the availability line as the heading, the email, then About and contact,
+ * The closing contact section (`#contact`): the hiring CTA as the heading, the email, then About and contact,
  * View CV and any page-specific action (`children`, last, so an island that renders late never moves the others).
  * The landing, every case study and the CV page end with it, so a reader who is convinced never has to hunt for the
  * footer. Server markup only; one class set for every page, so it adds no CSS.
@@ -18,7 +18,7 @@ export async function ClosingCta({ locale, cv = true, children }: { locale: Loca
   return (
     <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec-l" data-testid="closing-cta">
       <h2 id="closing-title" className="pv-d-l max-w-[24ch] text-[length:var(--text-display-s)]">
-        {roof.availability[locale]}
+        {roof.contactCta[locale]}
       </h2>
       <a
         href={`mailto:${roof.contact.email}`}

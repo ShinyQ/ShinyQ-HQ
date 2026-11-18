@@ -80,6 +80,7 @@ export function makeContent(): SiteContent {
       roof: {
         contact: { email: "a@example.com", linkedin: "https://linkedin.com/in/x", github: "https://github.com/x" },
         availability: lt("Open"),
+        contactCta: lt("Get in touch"),
         cv: { fileName: "test-cv" },
       },
     },

@@ -723,6 +723,7 @@ export const SiteContentObjectSchema = z.strictObject({
     roof: z.strictObject({
       contact: ContactSchema,
       availability: LocalizedTextSchema,
+      contactCta: LocalizedTextSchema,
       cv: CvConfigSchema,
     }),
   }),

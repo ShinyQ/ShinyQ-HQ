@@ -9,7 +9,7 @@ import { EnterHqButton } from "./EnterHqButton";
 import { Portrait } from "./Portrait";
 
 /**
- * Landing hero (Hallmark Settled posture, 2026-10-27): the portrait and the name across the top, then the headline,
+ * Landing hero: the portrait and name sit above the headline,
  * the motto, the proof strip and the actions (View CV is the one primary, owner decision 2026-10-25) beside the Ask
  * bar. It fills the first screen, so the Selected work screenshots stay below the fold and never compete with the
  * name for LCP. Server-rendered over the static Neon Grid and one fixed bloom (src/app/landing.css); CvButton,
@@ -50,9 +50,9 @@ export async function HomeHero({ locale, proof }: { locale: Locale; proof: React
               </QuietLink>
               <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
             </div>
-            {/* One tap to reach him from the first screen (owner decision 2026-11-01): availability and the email. */}
+            {/* One tap to reach him from the first screen (owner decision 2026-11-01). */}
             <p className="pv-small mt-6 text-ink-2" data-testid="hero-contact">
-              {roof.availability[locale]}{" "}
+              {roof.contactCta[locale]}{" "}
               <a href={`mailto:${roof.contact.email}`} className="pv-uline text-ink transition-colors [overflow-wrap:anywhere] hover:text-cyan">
                 {roof.contact.email}
               </a>
