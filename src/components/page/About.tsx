@@ -24,7 +24,7 @@ export async function ContactPanel({ roof, profile, locale }: { roof: Roof; prof
   return (
     <section aria-labelledby="availability" className="card p-5 sm:p-6">
       <h2 id="availability" className="pv-h3">
-        {roof.availability[locale]}
+        {roof.contactCta[locale]}
       </h2>
       <a href={`mailto:${contact.email}`} className="pv-btn pv-btn-primary mt-5 w-full [overflow-wrap:anywhere]">
         <span className="sr-only">{tc("email")}: </span>

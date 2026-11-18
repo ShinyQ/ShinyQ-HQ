@@ -77,7 +77,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
           {th("currentRole")}: {profile.currentRole.title[locale]}, {profile.currentRole.org}, {formatYearMonth(profile.currentRole.since, locale)}
         </p>
         <p className="pv-small mt-2 text-ink-2" data-testid="quick-contact">
-          {roof.availability[locale]}{" "}
+          {roof.contactCta[locale]}{" "}
           <a href={`mailto:${roof.contact.email}`} className="pv-uline text-ink transition-colors [overflow-wrap:anywhere] hover:text-cyan">
             {roof.contact.email}
           </a>
@@ -136,7 +136,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <PostList posts={getPosts().slice(0, POST_ROWS)} locale={locale} />
       </SectionSplit>
 
-      <SectionSplit {...section("contact")} intro={roof.availability[locale]}>
+      <SectionSplit {...section("contact")} intro={roof.contactCta[locale]}>
         <ul className="flex flex-wrap gap-3">
           <li>
             <a href={`mailto:${roof.contact.email}`} className="pv-btn pv-btn-primary [overflow-wrap:anywhere]">

@@ -133,7 +133,7 @@ never a contents target.
 
 ### Closing section
 
-- `ClosingCta` (`src/components/page/ClosingCta.tsx`, server markup, `data-testid="closing-cta"`, `#contact`): the availability line (`roof.availability`) as the heading, the email (`mailto:`), then About and contact and View CV as ghost buttons, then any page action passed as children (last, so a late island never moves the others).
+- `ClosingCta` (`src/components/page/ClosingCta.tsx`, server markup, `data-testid="closing-cta"`, `#contact`): the contact CTA (`roof.contactCta`) as the heading, the email (`mailto:`), then About and contact and View CV as ghost buttons, then any page action passed as children (last, so a late island never moves the others).
 - Where (owner decision 2026-11-01, so a reader who is convinced never hunts for the footer): the landing's last section, every case study after "More {wing} projects", and `/cv` under the cover (`cv={false}`: the cover has View CV already).
 - Case studies add `AskAboutButton` (`src/components/page/AskAboutButton.tsx`, client): "Ask Rover about this project" (`case.askAboutLabel`) opens the Ask dock with `case.askAbout` and the project title, entry `case`. Like the hero bar it shows until Ask the HQ is known to be off. The question always takes Ask's default route ([ask.md](ask.md#scope-routing), `namesProject`).
 - One class set for every page, so it adds no CSS; case study HTML grows by the section only.
@@ -208,8 +208,9 @@ never a contents target.
 
 ### Hero
 
-- `HomeHero` (`src/components/page/Hero.tsx`), Hallmark posture Ledge: it fills the first screen, the static Neon Grid
-  is the field above and the content rests at its base, so `#work` (and its lazy screenshots) starts below the fold.
+- `HomeHero` (`src/components/page/Hero.tsx`) fills at least the first screen on desktop, keeping `#work` and its
+  lazy screenshots below the fold. At `64rem` and wider the content is centered vertically below the nav, with
+  room to grow in short windows. Tablet keeps the Hallmark Ledge posture; phone height follows content.
 - First the owner portrait beside the name (`.pv-d-xl`, no eyebrow).
 - Portrait: `Portrait` (`src/components/page/Portrait.tsx`):
   - round, cyan ring with one quiet cyan glow, 72/96/128 px
@@ -226,8 +227,8 @@ never a contents target.
   - the stats ledger skips these ids, so no number shows twice.
 - The actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button, solid cyan (full width on phones), then
   See the work (`/labs`), then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
-- Under the actions, the contact line (`data-testid="hero-contact"`, owner decision 2026-11-01): the availability
-  (`roof.availability`) and the email as a `mailto:` link, in `pv-small`, so a recruiter can write from the first
+- Under the actions, the contact line (`data-testid="hero-contact"`, owner decision 2026-11-01): the CTA
+  (`roof.contactCta`) and the email as a `mailto:` link, in `pv-small`, so a recruiter can write from the first
   screen (1440 x 900 and 390 x 844, `e2e/pageview.spec.ts`). Server markup, no new CSS.
 - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link
   path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`.

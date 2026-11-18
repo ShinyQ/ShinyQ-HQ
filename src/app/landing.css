@@ -1,7 +1,7 @@
 /*
   Landing layer (src/components/page/Hero.tsx and the home sections). The hero fills the first screen (Ledge): the
-  static Neon Grid is the field above, and the name, the role, the motto, the proof and the actions rest at its base
-  beside the Ask bar, under one fixed indigo bloom. Nothing moves: no loops, no entrance, so the h1 (the LCP) paints
+  static Neon Grid surrounds the hero content and Ask bar under one fixed indigo bloom. Desktop centers the content
+  vertically; tablet keeps it near the base. Nothing moves: no loops, no entrance, so the h1 (the LCP) paints
   at once.
 */
 @layer components {
@@ -24,6 +24,8 @@
   @media (min-width: 64rem) {
     .hx {
       min-height: calc(100svh - var(--nav-h));
+      justify-content: center;
+      padding-block: var(--space-2xl);
     }
   }
 

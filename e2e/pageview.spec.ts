@@ -422,6 +422,37 @@ for (const viewport of [
   });
 }
 
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1920, height: 1200 }]) {
+  test(`landing: centers the desktop hero at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route("**/api/ask", (route) => route.fulfill({ json: ASK_ON }));
+    await openPage(page, staticTier("/en"));
+
+    const hero = page.locator(".hx");
+    const content = hero.getByRole("region", { name: data.profile.name });
+    await expect(content).toBeInViewport({ ratio: 1 });
+    await expect(hero.getByRole("textbox", { name: en.ask.hero.label })).toBeInViewport();
+    await expect.poll(async () => {
+      const outer = (await hero.boundingBox())!;
+      const inner = (await content.boundingBox())!;
+      return Math.abs((inner.y - outer.y) - (outer.y + outer.height - inner.y - inner.height));
+    }).toBeLessThanOrEqual(2);
+    expect((await page.locator("#work").boundingBox())!.y).toBeGreaterThanOrEqual(viewport.height - 1);
+  });
+}
+
+test("landing: the hero grows and scrolls in a short desktop window", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 360 });
+  await openPage(page, staticTier("/en"));
+  const hero = page.locator(".hx");
+  const title = hero.getByRole("heading", { level: 1 });
+  await expect(title).toBeInViewport({ ratio: 1 });
+  const email = hero.getByRole("link", { name: data.floors.roof.contact.email });
+  await email.scrollIntoViewIfNeeded();
+  await expect(email).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
 test("landing: the first paint waits for the whole hero (a render-blocking expect link on its last node)", async ({ page }) => {
   // A busy device can paint a half-parsed hero; the rest arriving then shifts the backdrop and the centered column (#156).
   await openPage(page, staticTier("/en"));
@@ -934,7 +965,7 @@ for (const viewport of [
  * `/api/ask` is mocked (the static server has no Functions).
  */
 const CLOSING_AS_OF = "2026-11-01";
-const closingAvailability = data.floors.roof.availability.en;
+const closingContactCta = data.floors.roof.contactCta.en;
 const closingEmail = data.floors.roof.contact.email;
 const heroTitle = data.floors.labs.pods.find((p) => p.slug === heroPod.slug)!.title.en;
 
@@ -960,7 +991,7 @@ test.describe("closing section", () => {
     await openPage(page, `/en/labs/${heroPod.slug}?tier=static`);
     const closing = page.getByTestId("closing-cta");
     await expect(closing).toHaveCount(1);
-    await expect(closing.getByRole("heading", { level: 2 })).toHaveText(closingAvailability);
+    await expect(closing.getByRole("heading", { level: 2 })).toHaveText(closingContactCta);
     await expect(closing.getByRole("link", { name: closingEmail })).toHaveAttribute("href", `mailto:${closingEmail}`);
     await expect(closing.getByRole("link", { name: en.home.aboutContact })).toHaveAttribute("href", /\/en\/contact/);
     await expect(closing.getByRole("link", { name: en.common.viewCv })).toBeVisible();
@@ -988,7 +1019,7 @@ test.describe("closing section", () => {
   test("the CV page ends with the closing section without a second View CV", async ({ page }) => {
     await openPage(page, "/en/cv?tier=static");
     const closing = page.getByTestId("closing-cta");
-    await expect(closing.getByRole("heading", { level: 2 })).toHaveText(closingAvailability);
+    await expect(closing.getByRole("heading", { level: 2 })).toHaveText(closingContactCta);
     await expect(closing.getByRole("link", { name: closingEmail })).toBeVisible();
     await expect(closing.getByRole("link", { name: en.common.viewCv })).toHaveCount(0);
     await expect(closing.getByTestId("case-ask")).toHaveCount(0);
@@ -1007,11 +1038,11 @@ test.describe("landing hero contact line (owner decision 2026-11-01)", () => {
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
   ]) {
-    test(`shows the availability line and the email in the first screen (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    test(`shows the contact CTA and the email in the first screen (${viewport.width}x${viewport.height})`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await openPage(page, "/en?tier=static");
       const line = page.getByTestId("hero-contact");
-      await expect(line).toContainText(data.floors.roof.availability.en);
+      await expect(line).toContainText(data.floors.roof.contactCta.en);
       const mail = line.getByRole("link", { name: data.floors.roof.contact.email });
       await expect(mail).toHaveAttribute("href", `mailto:${data.floors.roof.contact.email}`);
       const b = (await mail.boundingBox())!;
@@ -1027,7 +1058,7 @@ test.describe("Quick view brief (owner decision 2026-11-01)", () => {
     await openPage(page, staticTier("/en/quick"));
     const email = data.floors.roof.contact.email;
     const contact = page.getByTestId("quick-contact");
-    await expect(contact).toContainText(data.floors.roof.availability.en);
+    await expect(contact).toContainText(data.floors.roof.contactCta.en);
     for (const action of [contact.getByRole("link", { name: email }), page.getByTestId("cv-open-quick")]) {
       const box = (await action.boundingBox())!;
       expect(box.y + box.height, "in the first screen").toBeLessThanOrEqual(844);
